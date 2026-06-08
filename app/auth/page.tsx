@@ -1,0 +1,253 @@
+"use client";
+
+import { useState } from "react";
+import { signIn } from "next-auth/react";
+import { keyToDatabaseTier, membershipTiers, type TierKey } from "@/lib/membership";
+import type { DatabaseTier } from "@/lib/membership";
+
+export default function AuthPage() {
+  const [selectedTier, setSelectedTier] = useState<TierKey | null>(null);
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [signupName, setSignupName] = useState("");
+  const [signupEmail, setSignupEmail] = useState("");
+  const [signupPassword, setSignupPassword] = useState("");
+  const [loginError, setLoginError] = useState("");
+  const [signupError, setSignupError] = useState("");
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [signupLoading, setSignupLoading] = useState(false);
+
+  const selectedTierDetails = membershipTiers.find((tier) => tier.key === selectedTier);
+  const selectedDatabaseTier: DatabaseTier | null = selectedTier
+    ? keyToDatabaseTier[selectedTier]
+    : null;
+
+  const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setLoginLoading(true);
+    setLoginError("");
+
+    const result = await signIn("credentials", {
+      email: loginEmail,
+      password: loginPassword,
+      callbackUrl: "/dashboard",
+      redirect: false,
+    });
+
+    setLoginLoading(false);
+
+    if (!result || result.error) {
+      setLoginError("Invalid email or password.");
+      return;
+    }
+
+    window.location.href = result.url ?? "/dashboard";
+  };
+
+  const handleSignup = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!selectedDatabaseTier) {
+      setSignupError("Please choose a membership plan before signing up.");
+      return;
+    }
+
+    setSignupLoading(true);
+    setSignupError("");
+
+    const response = await fetch("/api/auth/signup", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name: signupName,
+        email: signupEmail,
+        password: signupPassword,
+        membershipTier: selectedDatabaseTier,
+      }),
+    });
+
+    if (!response.ok) {
+      const data = (await response.json().catch(() => ({}))) as { error?: string };
+      setSignupLoading(false);
+      setSignupError(data.error ?? "Unable to create account.");
+      return;
+    }
+
+    const loginResult = await signIn("credentials", {
+      email: signupEmail,
+      password: signupPassword,
+      callbackUrl: "/dashboard",
+      redirect: false,
+    });
+
+    setSignupLoading(false);
+
+    if (!loginResult || loginResult.error) {
+      setSignupError("Account created, but auto-login failed. Please log in manually.");
+      return;
+    }
+
+    window.location.href = loginResult.url ?? "/dashboard";
+  };
+
+  return (
+    <div className="mx-auto w-full max-w-6xl px-6 py-14 md:py-20">
+      <section className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-7">
+        <h1 className="text-3xl font-semibold text-zinc-100">Choose Your Membership Plan</h1>
+        <p className="mt-2 max-w-3xl text-zinc-300">
+          Compare each tier to find the support level that fits your goals, then select a
+          plan before completing sign up.
+        </p>
+        <div className="mt-6 grid gap-5 md:grid-cols-3">
+          {membershipTiers.map((tier) => {
+            const isSelected = selectedTier === tier.key;
+
+            return (
+              <article
+                key={tier.key}
+                className={`rounded-2xl border p-6 transition ${
+                  isSelected
+                    ? "border-[#22c55e] bg-[#22c55e]/10"
+                    : "border-[#18243a] bg-[#0f1d34]/70"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-semibold text-zinc-100">{tier.name}</h2>
+                  {isSelected && (
+                    <span className="rounded-full bg-[#22c55e]/20 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#9df3bd]">
+                      Selected
+                    </span>
+                  )}
+                </div>
+                <p className="mt-2 text-2xl font-bold text-[#98b144]">{tier.priceLabel}</p>
+                <p className="mt-3 text-sm text-zinc-300">{tier.summary}</p>
+                <ul className="mt-4 space-y-2 text-sm text-zinc-200">
+                  {tier.features.map((feature) => (
+                    <li key={feature} className="flex items-start gap-2">
+                      <span className="mt-1 h-2 w-2 rounded-full bg-[#22c55e]" />
+                      <span>{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+                <button
+                  type="button"
+                  onClick={() => setSelectedTier(tier.key)}
+                  className={`mt-6 w-full rounded-full px-4 py-2.5 text-sm font-semibold transition ${
+                    isSelected
+                      ? "bg-[#22c55e] text-black"
+                      : "border border-[#2b3650] text-zinc-100 hover:border-[#7f9434] hover:text-[#98b144]"
+                  }`}
+                >
+                  {isSelected ? "Plan Selected" : `Choose ${tier.name}`}
+                </button>
+              </article>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="mt-6 grid gap-6 md:grid-cols-2">
+        <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-7">
+          <h2 className="text-3xl font-semibold text-zinc-100">Member Login</h2>
+          <p className="mt-2 text-zinc-300">
+            Access your training dashboard and member-only drill content.
+          </p>
+          <form className="mt-6 space-y-4" onSubmit={handleLogin}>
+            <label className="block">
+              <span className="text-sm text-zinc-300">Email</span>
+              <input
+                type="email"
+                placeholder="you@example.com"
+                value={loginEmail}
+                onChange={(event) => setLoginEmail(event.target.value)}
+                className="mt-2 w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 placeholder:text-zinc-500 focus:border-[#22c55e]"
+                required
+              />
+            </label>
+            <label className="block">
+              <span className="text-sm text-zinc-300">Password</span>
+              <input
+                type="password"
+                placeholder="••••••••"
+                value={loginPassword}
+                onChange={(event) => setLoginPassword(event.target.value)}
+                className="mt-2 w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 placeholder:text-zinc-500 focus:border-[#22c55e]"
+                required
+              />
+            </label>
+            {loginError && <p className="text-sm text-red-300">{loginError}</p>}
+            <button
+              type="submit"
+              disabled={loginLoading}
+              className="w-full rounded-full bg-[#22c55e] px-5 py-3 font-semibold text-black transition hover:bg-[#35db72] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {loginLoading ? "Logging in..." : "Login"}
+            </button>
+          </form>
+        </article>
+
+        <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-7">
+          <h2 className="text-3xl font-semibold text-zinc-100">Create Account</h2>
+          <p className="mt-2 text-zinc-300">
+            Join LCB Training and start improving your game this week.
+          </p>
+          <div className="mt-4 rounded-xl border border-[#2b3650] bg-black/80 p-4 text-sm">
+            <p className="text-zinc-300">Selected plan</p>
+            <p className="mt-1 font-semibold text-[#98b144]">
+              {selectedTierDetails
+                ? `${selectedTierDetails.name} (${selectedTierDetails.priceLabel})`
+                : "No plan selected yet"}
+            </p>
+          </div>
+          <form className="mt-6 space-y-4" onSubmit={handleSignup}>
+            <label className="block">
+              <span className="text-sm text-zinc-300">Full Name</span>
+              <input
+                type="text"
+                placeholder="Player Name"
+                value={signupName}
+                onChange={(event) => setSignupName(event.target.value)}
+                className="mt-2 w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 placeholder:text-zinc-500 focus:border-[#22c55e]"
+                required
+              />
+            </label>
+            <label className="block">
+              <span className="text-sm text-zinc-300">Email</span>
+              <input
+                type="email"
+                placeholder="you@example.com"
+                value={signupEmail}
+                onChange={(event) => setSignupEmail(event.target.value)}
+                className="mt-2 w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 placeholder:text-zinc-500 focus:border-[#22c55e]"
+                required
+              />
+            </label>
+            <label className="block">
+              <span className="text-sm text-zinc-300">Password</span>
+              <input
+                type="password"
+                placeholder="At least 8 characters"
+                value={signupPassword}
+                onChange={(event) => setSignupPassword(event.target.value)}
+                className="mt-2 w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 placeholder:text-zinc-500 focus:border-[#22c55e]"
+                minLength={8}
+                required
+              />
+            </label>
+            <input type="hidden" name="plan" value={selectedTier ?? ""} />
+            {signupError && <p className="text-sm text-red-300">{signupError}</p>}
+            <button
+              type="submit"
+              disabled={!selectedTier || signupLoading}
+              className="w-full rounded-full border border-[#22c55e] bg-[#22c55e]/10 px-5 py-3 font-semibold text-[#9df3bd] transition hover:bg-[#22c55e]/20 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {signupLoading ? "Creating account..." : "Sign Up"}
+            </button>
+          </form>
+        </article>
+      </section>
+    </div>
+  );
+}
