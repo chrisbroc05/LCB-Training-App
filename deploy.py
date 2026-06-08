@@ -9,6 +9,23 @@ import urllib.request
 from collections import Counter
 
 
+def load_local_env(path: str = ".env") -> None:
+    if not os.path.exists(path):
+        return
+
+    with open(path, "r", encoding="utf-8") as env_file:
+        for raw_line in env_file:
+            line = raw_line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+
+            key, value = line.split("=", 1)
+            key = key.strip()
+            value = value.strip().strip('"').strip("'")
+            if key:
+                os.environ.setdefault(key, value)
+
+
 def run_command(command: list[str], description: str, capture_output: bool = False) -> str:
     print(f"-> {description}")
     result = subprocess.run(
@@ -100,6 +117,7 @@ def trigger_render_deploy() -> None:
 
 def main() -> int:
     try:
+        load_local_env(".env")
         run_command(["git", "add", "."], "Running git add .")
 
         commit_message = build_commit_message()
