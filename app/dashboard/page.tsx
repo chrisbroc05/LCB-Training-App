@@ -33,6 +33,21 @@ const resources: Resource[] = [
   },
 ];
 
+const introVideos = [
+  {
+    title: "Welcome to LCB Training - Who I am and my coaching philosophy",
+    embedUrl: "https://player.vimeo.com/video/1199103395",
+  },
+  {
+    title: "How the program works and what to expect",
+    embedUrl: "https://player.vimeo.com/video/1199103402",
+  },
+  {
+    title: "How to submit your swing for analysis",
+    embedUrl: "https://player.vimeo.com/video/1199103401",
+  },
+];
+
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
   if (!session?.user) {
@@ -46,7 +61,34 @@ export default async function DashboardPage() {
   return (
     <div className="mx-auto w-full max-w-6xl px-6 py-14 md:py-20">
       <section className="rounded-3xl border border-[#18243a] bg-[#0b1324]/80 p-8">
-        <h1 className="text-3xl font-semibold text-zinc-100">Member Dashboard</h1>
+        <h1 className="text-3xl font-semibold text-zinc-100">Start Here</h1>
+        <p className="mt-2 text-zinc-300">
+          Watch these quick intro videos first so you know exactly how to get the most out
+          of your membership.
+        </p>
+        <div className="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+          {introVideos.map((video) => (
+            <article
+              key={video.embedUrl}
+              className="rounded-2xl border border-[#24314a] bg-black/40 p-4"
+            >
+              <div className="overflow-hidden rounded-xl border border-[#2b3650]">
+                <iframe
+                  src={video.embedUrl}
+                  title={video.title}
+                  className="aspect-video w-full"
+                  allow="autoplay; fullscreen; picture-in-picture"
+                  allowFullScreen
+                />
+              </div>
+              <h2 className="mt-3 text-sm font-medium text-zinc-100">{video.title}</h2>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-8 rounded-3xl border border-[#18243a] bg-[#0b1324]/80 p-8">
+        <h2 className="text-3xl font-semibold text-zinc-100">Member Dashboard</h2>
         <p className="mt-2 text-zinc-300">
           You are logged in as a <span className="font-semibold text-[#98b144]">{currentTier.name}</span>{" "}
           member. Your library and coaching tools are unlocked based on this plan.
