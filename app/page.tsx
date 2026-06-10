@@ -3,16 +3,19 @@ import { membershipTiers } from "@/lib/membership";
 
 const introVideos = [
   {
-    title: "Welcome to LCB Training - Who I am and my coaching philosophy",
-    embedUrl: "https://player.vimeo.com/video/1199103395",
+    title: "Welcome to LCB Training",
+    embedUrl:
+      "https://player.vimeo.com/video/1199103395?title=0&byline=0&portrait=0&badge=0&autopause=0&player_id=0&app_id=58479",
   },
   {
     title: "How the program works and what to expect",
-    embedUrl: "https://player.vimeo.com/video/1199103402",
+    embedUrl:
+      "https://player.vimeo.com/video/1199103402?title=0&byline=0&portrait=0&badge=0&autopause=0&player_id=0&app_id=58479",
   },
   {
     title: "How to submit your swing for analysis",
-    embedUrl: "https://player.vimeo.com/video/1199103401",
+    embedUrl:
+      "https://player.vimeo.com/video/1199103401?title=0&byline=0&portrait=0&badge=0&autopause=0&player_id=0&app_id=58479",
   },
 ];
 
@@ -91,22 +94,27 @@ export default function Home() {
           Start with these intro videos to understand the coaching approach, program flow,
           and how to submit film for feedback.
         </p>
-        <div className="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+        <div className="mt-6 grid gap-6 md:grid-cols-3 md:gap-5">
           {introVideos.map((video) => (
             <article
               key={video.embedUrl}
-              className="rounded-2xl border border-[#24314a] bg-black/40 p-4"
+              className="flex h-full w-full flex-col rounded-2xl border border-[#24314a] bg-black/40 p-4 md:mx-auto md:max-w-[320px]"
             >
-              <div className="overflow-hidden rounded-xl border border-[#2b3650]">
+              <div className="relative w-full overflow-hidden rounded-xl border border-[#2b3650] pt-[177.78%]">
                 <iframe
                   src={video.embedUrl}
                   title={video.title}
-                  className="aspect-video w-full"
+                  width="640"
+                  height="360"
+                  frameBorder="0"
+                  className="absolute left-0 top-0 h-full w-full"
                   allow="autoplay; fullscreen; picture-in-picture"
                   allowFullScreen
                 />
               </div>
-              <h3 className="mt-3 text-sm font-medium text-zinc-100">{video.title}</h3>
+              <h3 className="mt-4 min-h-12 text-base font-semibold leading-snug text-zinc-100 md:text-lg">
+                {video.title}
+              </h3>
             </article>
           ))}
         </div>
