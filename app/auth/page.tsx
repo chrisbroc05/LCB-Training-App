@@ -1,12 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import { keyToDatabaseTier, membershipTiers, type TierKey } from "@/lib/membership";
 import type { DatabaseTier } from "@/lib/membership";
 
 export default function AuthPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <AuthContent />
+    </Suspense>
+  );
+}
+
+function AuthContent() {
   const searchParams = useSearchParams();
   const [selectedTier, setSelectedTier] = useState<TierKey | null>(null);
   const [loginEmail, setLoginEmail] = useState("");
