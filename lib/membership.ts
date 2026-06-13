@@ -58,3 +58,9 @@ export const databaseTierToKey: Record<DatabaseTier, TierKey> = {
   PRO: "pro",
   ELITE: "elite",
 };
+
+export const validDatabaseTiers: DatabaseTier[] = ["BASIC", "PRO", "ELITE"];
+
+export function isDatabaseTier(value: string): value is DatabaseTier {
+  return validDatabaseTiers.includes(value as DatabaseTier);
+}

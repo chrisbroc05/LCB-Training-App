@@ -1,16 +1,12 @@
 import { NextResponse } from "next/server";
 import { hash } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import type { DatabaseTier } from "@/lib/membership";
 
 type SignupBody = {
   name?: string;
   email?: string;
   password?: string;
-  membershipTier?: DatabaseTier;
 };
-
-const validTiers: DatabaseTier[] = ["BASIC", "PRO", "ELITE"];
 
 export async function POST(request: Request) {
   try {
@@ -18,17 +14,12 @@ export async function POST(request: Request) {
     const name = body.name?.trim() ?? "";
     const email = body.email?.trim().toLowerCase();
     const password = body.password ?? "";
-    const membershipTier = body.membershipTier;
 
-    if (!email || !password || !membershipTier) {
+    if (!email || !password) {
       return NextResponse.json(
-        { error: "Email, password, and membership tier are required." },
+        { error: "Email and password are required." },
         { status: 400 },
       );
-    }
-
-    if (!validTiers.includes(membershipTier)) {
-      return NextResponse.json({ error: "Invalid membership tier selected." }, { status: 400 });
     }
 
     if (password.length < 8) {
@@ -54,7 +45,7 @@ export async function POST(request: Request) {
         name: name || null,
         email,
         password: hashedPassword,
-        membershipTier,
+        membershipTier: "BASIC",
       },
     });
 

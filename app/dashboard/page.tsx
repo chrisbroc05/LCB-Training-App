@@ -33,11 +33,18 @@ const resources: Resource[] = [
   },
 ];
 
-export default async function DashboardPage() {
+type DashboardPageProps = {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
+
+export default async function DashboardPage({ searchParams }: DashboardPageProps) {
   const session = await getServerSession(authOptions);
   if (!session?.user) {
     redirect("/auth");
   }
+  const resolvedSearchParams = searchParams ? await searchParams : {};
+  const checkoutStatus =
+    typeof resolvedSearchParams.checkout === "string" ? resolvedSearchParams.checkout : null;
 
   const membershipTier = (session.user.membershipTier ?? "BASIC") as DatabaseTier;
   const userTier = databaseTierToKey[membershipTier];
@@ -56,6 +63,12 @@ export default async function DashboardPage() {
           Active membership: {currentTier.name}
         </div>
       </section>
+
+      {checkoutStatus === "success" && (
+        <section className="mt-6 rounded-xl border border-[#22c55e]/40 bg-[#22c55e]/10 px-5 py-4 text-sm text-[#bafccf]">
+          Payment successful. Your membership is active and your dashboard access has been updated.
+        </section>
+      )}
 
       <section className="mt-8 grid gap-5 md:grid-cols-3">
         {resources.map((resource) => {

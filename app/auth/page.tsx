@@ -2,10 +2,17 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
+import { useSearchParams } from "next/navigation";
+import { loadStripe } from "@stripe/stripe-js";
 import { keyToDatabaseTier, membershipTiers, type TierKey } from "@/lib/membership";
 import type { DatabaseTier } from "@/lib/membership";
 
+const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+  ? loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
+  : null;
+
 export default function AuthPage() {
+  const searchParams = useSearchParams();
   const [selectedTier, setSelectedTier] = useState<TierKey | null>(null);
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
@@ -21,6 +28,7 @@ export default function AuthPage() {
   const selectedDatabaseTier: DatabaseTier | null = selectedTier
     ? keyToDatabaseTier[selectedTier]
     : null;
+  const checkoutStatus = searchParams.get("checkout");
 
   const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -64,7 +72,6 @@ export default function AuthPage() {
         name: signupName,
         email: signupEmail,
         password: signupPassword,
-        membershipTier: selectedDatabaseTier,
       }),
     });
 
@@ -78,18 +85,51 @@ export default function AuthPage() {
     const loginResult = await signIn("credentials", {
       email: signupEmail,
       password: signupPassword,
-      callbackUrl: "/dashboard",
+      callbackUrl: "/auth",
       redirect: false,
     });
 
-    setSignupLoading(false);
-
     if (!loginResult || loginResult.error) {
+      setSignupLoading(false);
       setSignupError("Account created, but auto-login failed. Please log in manually.");
       return;
     }
 
-    window.location.href = loginResult.url ?? "/dashboard";
+    const checkoutResponse = await fetch("/api/stripe/checkout", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ membershipTier: selectedDatabaseTier }),
+    });
+
+    if (!checkoutResponse.ok) {
+      const data = (await checkoutResponse.json().catch(() => ({}))) as { error?: string };
+      setSignupLoading(false);
+      setSignupError(data.error ?? "Unable to start checkout. Please try again.");
+      return;
+    }
+
+    const checkoutData = (await checkoutResponse.json()) as { sessionId?: string };
+    if (!checkoutData.sessionId) {
+      setSignupLoading(false);
+      setSignupError("Unable to start checkout. Please try again.");
+      return;
+    }
+
+    const stripe = stripePromise ? await stripePromise : null;
+    if (!stripe) {
+      setSignupLoading(false);
+      setSignupError("Stripe is not configured. Add NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY.");
+      return;
+    }
+
+    const { error } = await stripe.redirectToCheckout({ sessionId: checkoutData.sessionId });
+    setSignupLoading(false);
+
+    if (error) {
+      setSignupError(error.message ?? "Unable to redirect to checkout.");
+    }
   };
 
   return (
@@ -147,6 +187,12 @@ export default function AuthPage() {
           })}
         </div>
       </section>
+
+      {checkoutStatus === "cancelled" && (
+        <section className="mt-6 rounded-xl border border-yellow-500/40 bg-yellow-500/10 px-5 py-4 text-sm text-yellow-100">
+          Checkout was cancelled. Your account is ready, and you can choose a plan again any time.
+        </section>
+      )}
 
       <section className="mt-6 grid gap-6 md:grid-cols-2">
         <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-7">

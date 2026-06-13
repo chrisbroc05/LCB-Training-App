@@ -56,7 +56,7 @@ export const authOptions: NextAuthOptions = {
         token.membershipTier = user.membershipTier;
       }
 
-      if (token.sub && !token.membershipTier) {
+      if (token.sub) {
         const dbUser = await prisma.user.findUnique({
           where: { id: token.sub },
           select: { membershipTier: true },

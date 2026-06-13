@@ -15,6 +15,9 @@ Required:
 - `DATABASE_URL` - PostgreSQL connection string
 - `NEXTAUTH_SECRET` - random secure string for session signing
 - `NEXTAUTH_URL` - app base URL (for local dev: `http://localhost:3000`)
+- `STRIPE_SECRET_KEY` - Stripe secret API key for checkout + webhooks
+- `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` - Stripe publishable key used on signup
+- `STRIPE_WEBHOOK_SECRET` - signing secret for `/api/webhooks/stripe`
 
 ## Database Setup
 
