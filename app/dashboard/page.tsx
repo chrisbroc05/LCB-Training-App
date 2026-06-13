@@ -15,6 +15,11 @@ type Resource = {
   description: string;
 };
 
+type VideoLibraryItem = {
+  title: string;
+  url: string;
+};
+
 const resources: Resource[] = [
   {
     title: "Full Drill Library",
@@ -30,6 +35,36 @@ const resources: Resource[] = [
     title: "Priority Feedback + Group Calls",
     accessTier: "elite",
     description: "Fast turnaround feedback and monthly live virtual group coaching.",
+  },
+];
+
+const hittingVideos: VideoLibraryItem[] = [
+  { title: "Coil into your load", url: "https://player.vimeo.com/video/1200422510" },
+  { title: "Recreate this feeling", url: "https://player.vimeo.com/video/1200422513" },
+  { title: "Med ball & tee combo #1", url: "https://player.vimeo.com/video/1200422511" },
+  { title: "Med ball & tee combo #2", url: "https://player.vimeo.com/video/1200422512" },
+  { title: "Stop casting your hands", url: "https://player.vimeo.com/video/1200422514" },
+  { title: "Lead arm drill", url: "https://player.vimeo.com/video/1200422515" },
+  { title: "Slot position", url: "https://player.vimeo.com/video/1200422517" },
+  { title: "Posture work", url: "https://player.vimeo.com/video/1200422516" },
+  { title: "Don't drift in your load", url: "https://player.vimeo.com/video/1200422500" },
+];
+
+const fieldingVideos: VideoLibraryItem[] = [
+  { title: "Do these everyday", url: "https://player.vimeo.com/video/1200425708" },
+  {
+    title: "4 drills you can do with just a glove, ball and bucket",
+    url: "https://player.vimeo.com/video/1200425698",
+  },
+  { title: "Make plays on the run", url: "https://player.vimeo.com/video/1200425704" },
+  { title: "Body control", url: "https://player.vimeo.com/video/1200425706" },
+  {
+    title: "Timing and getting around the baseball",
+    url: "https://player.vimeo.com/video/1200425705",
+  },
+  {
+    title: "3 drills to improve footwork and timing",
+    url: "https://player.vimeo.com/video/1200425707",
   },
 ];
 
@@ -101,6 +136,64 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
             </article>
           );
         })}
+      </section>
+
+      <section className="mt-10 space-y-8">
+        <div>
+          <h2 className="text-2xl font-semibold text-zinc-100">Hitting Library</h2>
+          <p className="mt-2 text-zinc-300">
+            Drill demonstrations for swing mechanics, load, posture, and bat path.
+          </p>
+          <div className="mt-5 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+            {hittingVideos.map((video) => (
+              <article
+                key={video.url}
+                className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4"
+              >
+                <div className="overflow-hidden rounded-xl border border-[#2b3650] bg-black">
+                  <div className="aspect-video w-full">
+                    <iframe
+                      src={video.url}
+                      title={video.title}
+                      className="h-full w-full"
+                      allow="autoplay; fullscreen; picture-in-picture"
+                      allowFullScreen
+                    />
+                  </div>
+                </div>
+                <p className="mt-3 text-sm font-medium text-zinc-100">{video.title}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <h2 className="text-2xl font-semibold text-zinc-100">Fielding Library</h2>
+          <p className="mt-2 text-zinc-300">
+            Defensive drill work for control, timing, footwork, and making game-speed plays.
+          </p>
+          <div className="mt-5 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+            {fieldingVideos.map((video) => (
+              <article
+                key={video.url}
+                className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4"
+              >
+                <div className="overflow-hidden rounded-xl border border-[#2b3650] bg-black">
+                  <div className="aspect-video w-full">
+                    <iframe
+                      src={video.url}
+                      title={video.title}
+                      className="h-full w-full"
+                      allow="autoplay; fullscreen; picture-in-picture"
+                      allowFullScreen
+                    />
+                  </div>
+                </div>
+                <p className="mt-3 text-sm font-medium text-zinc-100">{video.title}</p>
+              </article>
+            ))}
+          </div>
+        </div>
       </section>
     </div>
   );

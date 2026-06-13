@@ -1,11 +1,14 @@
 import { NextResponse } from "next/server";
 import { hash } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import { isDatabaseTier, type DatabaseTier } from "@/lib/membership";
+import { sendNewMemberNotification } from "@/lib/notifications";
 
 type SignupBody = {
   name?: string;
   email?: string;
   password?: string;
+  selectedMembershipTier?: string;
 };
 
 export async function POST(request: Request) {
@@ -14,6 +17,10 @@ export async function POST(request: Request) {
     const name = body.name?.trim() ?? "";
     const email = body.email?.trim().toLowerCase();
     const password = body.password ?? "";
+    const selectedMembershipTier = body.selectedMembershipTier?.toUpperCase() ?? "BASIC";
+    const membershipTierForNotification: DatabaseTier = isDatabaseTier(selectedMembershipTier)
+      ? selectedMembershipTier
+      : "BASIC";
 
     if (!email || !password) {
       return NextResponse.json(
@@ -48,6 +55,15 @@ export async function POST(request: Request) {
         membershipTier: "BASIC",
       },
     });
+
+    try {
+      await sendNewMemberNotification({
+        userEmail: email,
+        membershipTier: membershipTierForNotification,
+      });
+    } catch (error) {
+      console.error("Failed to send new member notification", error);
+    }
 
     return NextResponse.json({ success: true }, { status: 201 });
   } catch {

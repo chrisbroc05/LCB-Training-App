@@ -18,6 +18,8 @@ Required:
 - `STRIPE_SECRET_KEY` - Stripe secret API key for checkout + webhooks
 - `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` - Stripe publishable key used on signup
 - `STRIPE_WEBHOOK_SECRET` - signing secret for `/api/webhooks/stripe`
+- `NOTIFICATION_EMAIL` - Gmail address used to send app notifications
+- `EMAIL_PASSWORD` - Gmail app password for `NOTIFICATION_EMAIL`
 
 ## Database Setup
 

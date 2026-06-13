@@ -75,6 +75,7 @@ function AuthContent() {
         name: signupName,
         email: signupEmail,
         password: signupPassword,
+        selectedMembershipTier: selectedDatabaseTier,
       }),
     });
 
