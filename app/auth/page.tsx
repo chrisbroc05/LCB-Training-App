@@ -3,13 +3,8 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
-import { loadStripe } from "@stripe/stripe-js";
 import { keyToDatabaseTier, membershipTiers, type TierKey } from "@/lib/membership";
 import type { DatabaseTier } from "@/lib/membership";
-
-const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
-  ? loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
-  : null;
 
 export default function AuthPage() {
   const searchParams = useSearchParams();
@@ -110,26 +105,15 @@ export default function AuthPage() {
       return;
     }
 
-    const checkoutData = (await checkoutResponse.json()) as { sessionId?: string };
-    if (!checkoutData.sessionId) {
+    const checkoutData = (await checkoutResponse.json()) as { url?: string };
+    if (!checkoutData.url) {
       setSignupLoading(false);
       setSignupError("Unable to start checkout. Please try again.");
       return;
     }
 
-    const stripe = stripePromise ? await stripePromise : null;
-    if (!stripe) {
-      setSignupLoading(false);
-      setSignupError("Stripe is not configured. Add NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY.");
-      return;
-    }
-
-    const { error } = await stripe.redirectToCheckout({ sessionId: checkoutData.sessionId });
     setSignupLoading(false);
-
-    if (error) {
-      setSignupError(error.message ?? "Unable to redirect to checkout.");
-    }
+    window.location.href = checkoutData.url;
   };
 
   return (

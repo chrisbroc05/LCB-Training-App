@@ -60,11 +60,11 @@ export async function POST(request: Request) {
       },
     });
 
-    if (!checkoutSession.id) {
+    if (!checkoutSession.url) {
       return NextResponse.json({ error: "Unable to create checkout session." }, { status: 500 });
     }
 
-    return NextResponse.json({ sessionId: checkoutSession.id });
+    return NextResponse.json({ url: checkoutSession.url });
   } catch {
     return NextResponse.json({ error: "Unable to start Stripe checkout." }, { status: 500 });
   }
