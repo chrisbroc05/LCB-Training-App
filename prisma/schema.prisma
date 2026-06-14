@@ -12,18 +12,41 @@ enum MembershipTier {
   ELITE
 }
 
+enum MentalGameTopic {
+  SLUMP
+  CONFIDENCE
+  NERVES
+  FEAR_OF_FAILURE
+  PRESSURE_SITUATIONS
+  LOSING_MOTIVATION
+  OTHER
+}
+
+enum MentalGameResponsePreference {
+  VIDEO_RESPONSE
+  WRITTEN_RESPONSE
+}
+
+enum MentalGameSubmissionStatus {
+  PENDING
+  REVIEWING
+  COMPLETED
+}
+
 model User {
-  id             String         @id @default(cuid())
-  name           String?
-  email          String         @unique
-  password       String
-  membershipTier MembershipTier @default(BASIC)
-  emailVerified  DateTime?
-  image          String?
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  accounts       Account[]
-  sessions       Session[]
+  id                     String                 @id @default(cuid())
+  name                   String?
+  email                  String                 @unique
+  password               String
+  membershipTier         MembershipTier         @default(BASIC)
+  emailVerified          DateTime?
+  image                  String?
+  createdAt              DateTime               @default(now())
+  updatedAt              DateTime               @updatedAt
+  accounts               Account[]
+  sessions               Session[]
+  mentalGameSubmissions  MentalGameSubmission[]
+  swingAnalysisSubmissions SwingAnalysisSubmission[]
 }
 
 model Account {
@@ -58,4 +81,46 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+model MentalGameSubmission {
+  id                 String                       @id @default(cuid())
+  userId             String
+  userEmail          String
+  playerName         String
+  playerAge          String
+  topic              MentalGameTopic
+  message            String
+  videoPath          String?
+  responsePreference MentalGameResponsePreference
+  status             MentalGameSubmissionStatus   @default(PENDING)
+  responseText       String?
+  responseVideoUrl   String?
+  respondedAt        DateTime?
+  createdAt          DateTime                     @default(now())
+  updatedAt          DateTime                     @updatedAt
+  user               User                         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model SwingAnalysisSubmission {
+  id                 String                       @id @default(cuid())
+  userId             String
+  userEmail          String
+  playerName         String
+  pitchType          String
+  handedness         String
+  notes              String
+  submittedVideo     String
+  responsePreference MentalGameResponsePreference
+  status             MentalGameSubmissionStatus   @default(PENDING)
+  responseText       String?
+  responseVideoUrl   String?
+  respondedAt        DateTime?
+  createdAt          DateTime                     @default(now())
+  updatedAt          DateTime                     @updatedAt
+  user               User                         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }

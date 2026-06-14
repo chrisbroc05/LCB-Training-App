@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { hasDatabaseTierAccess, type DatabaseTier } from "@/lib/membership";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -18,11 +21,15 @@ export const metadata: Metadata = {
   description: "Baseball membership training platform by LCB Training",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const session = await getServerSession(authOptions);
+  const membershipTier = (session?.user?.membershipTier ?? "BASIC") as DatabaseTier;
+  const hasProAccess = hasDatabaseTierAccess(membershipTier, "pro");
+
   return (
     <html
       lang="en"
@@ -52,6 +59,14 @@ export default function RootLayout({
               >
                 Submit Swing
               </Link>
+              {hasProAccess && (
+                <Link
+                  href="/mental-game"
+                  className="rounded-full border border-[#22c55e]/70 bg-[#22c55e]/10 px-4 py-2 font-medium text-[#8df0b1] transition hover:bg-[#22c55e]/20"
+                >
+                  Mental Support
+                </Link>
+              )}
             </nav>
           </div>
         </header>

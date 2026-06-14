@@ -14,28 +14,33 @@ export const membershipTiers: MembershipTier[] = [
     key: "basic",
     name: "Basic",
     priceLabel: "$5 / month",
-    summary: "Access to the full drill library.",
-    features: ["Full drill library", "Weekly program updates", "Mobile-friendly access"],
+    summary: "Full hitting, fielding, and mindset video libraries.",
+    features: [
+      "Full hitting video library",
+      "Full fielding video library",
+      "Mindset video library",
+    ],
   },
   {
     key: "pro",
     name: "Pro",
     priceLabel: "$15 / month",
-    summary: "Drill library plus weekly swing analysis feedback.",
+    summary: "Everything in Basic plus weekly swing analysis and mental game support.",
     features: [
       "Everything in Basic",
-      "Weekly swing analysis feedback",
-      "Personal progress tracking",
+      "Weekly swing analysis submission",
+      "Mental game support form",
     ],
   },
   {
     key: "elite",
     name: "Elite",
     priceLabel: "$25 / month",
-    summary: "Everything in Pro plus priority support and group coaching calls.",
+    summary: "Everything in Pro plus priority feedback and monthly group call access.",
     features: [
       "Everything in Pro",
-      "Priority feedback turnaround",
+      "Priority feedback on swing submissions",
+      "Priority feedback on mental game submissions",
       "Monthly live group calls",
     ],
   },
@@ -63,4 +68,12 @@ export const validDatabaseTiers: DatabaseTier[] = ["BASIC", "PRO", "ELITE"];
 
 export function isDatabaseTier(value: string): value is DatabaseTier {
   return validDatabaseTiers.includes(value as DatabaseTier);
+}
+
+export function hasTierAccess(userTier: TierKey, requiredTier: TierKey) {
+  return tierRank[userTier] >= tierRank[requiredTier];
+}
+
+export function hasDatabaseTierAccess(userTier: DatabaseTier, requiredTier: TierKey) {
+  return hasTierAccess(databaseTierToKey[userTier], requiredTier);
 }
