@@ -47,7 +47,7 @@ export async function uploadVideoToVimeo(params: { fileBuffer: Buffer; fileName:
       "Content-Type": "application/offset+octet-stream",
       Accept: "application/vnd.vimeo.*+json;version=3.4",
     },
-    body: params.fileBuffer,
+    body: new Uint8Array(params.fileBuffer),
   });
 
   if (!uploadResponse.ok && uploadResponse.status !== 204) {
