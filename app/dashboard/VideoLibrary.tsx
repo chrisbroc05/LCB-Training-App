@@ -58,26 +58,31 @@ function VideoSection({ heading, description, videos, onSelectVideo }: VideoSect
     <div>
       <h2 className="text-2xl font-semibold text-zinc-100">{heading}</h2>
       <p className="mt-2 text-zinc-300">{description}</p>
-      <div className="mt-5 grid gap-6 md:grid-cols-2">
+      <div className="mt-6 grid gap-8 lg:grid-cols-2">
         {videos.map((video) => (
           <button
             key={video.url}
             type="button"
             onClick={() => onSelectVideo(video)}
-            className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-5 text-left transition hover:border-[#2b7c4b] hover:bg-[#11203a]"
+            className="group rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-6 text-left transition hover:border-[#2b7c4b] hover:bg-[#11203a]"
           >
-            <div className="overflow-hidden rounded-xl border border-[#2b3650] bg-black">
+            <div className="relative overflow-hidden rounded-xl border border-[#2b3650] bg-black">
               <div className="aspect-video w-full">
                 <iframe
                   src={video.url}
                   title={video.title}
-                  className="h-full w-full"
+                  className="h-full w-full pointer-events-none"
                   allow="autoplay; fullscreen; picture-in-picture"
                   allowFullScreen
                 />
               </div>
+              <div className="absolute inset-0 flex items-center justify-center bg-black/45 transition group-hover:bg-black/35">
+                <span className="rounded-full border border-white/60 bg-black/60 px-5 py-2 text-sm font-semibold text-white">
+                  Play Video
+                </span>
+              </div>
             </div>
-            <p className="mt-3 text-base font-medium text-zinc-100">{video.title}</p>
+            <p className="mt-4 text-lg font-semibold text-zinc-100">{video.title}</p>
           </button>
         ))}
       </div>
@@ -131,7 +136,7 @@ export default function VideoLibrary() {
           onClick={() => setSelectedVideo(null)}
         >
           <div
-            className="relative h-[80vh] w-[80vw] max-w-6xl overflow-hidden rounded-2xl border border-[#2b3650] bg-black shadow-2xl"
+            className="relative h-[80vh] w-[92vw] sm:w-[85vw] lg:w-[80vw] max-w-6xl overflow-hidden rounded-2xl border border-[#2b3650] bg-black shadow-2xl"
             onClick={(event) => event.stopPropagation()}
           >
             <button

@@ -4,5 +4,7 @@ export function isAdminEmail(email?: string | null) {
     return false;
   }
 
-  return email.toLowerCase() === adminEmail.toLowerCase();
+  const normalize = (value: string) => value.trim().replace(/^['"]|['"]$/g, "").toLowerCase();
+
+  return normalize(email) === normalize(adminEmail);
 }

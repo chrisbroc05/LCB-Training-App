@@ -88,7 +88,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         </section>
       )}
 
-      <section className="mt-8 grid gap-5 md:grid-cols-3">
+      <section className="mt-8 grid gap-5 md:grid-cols-2">
         {resources.map((resource) => {
           const hasAccess = tierRank[userTier] >= tierRank[resource.accessTier];
 
