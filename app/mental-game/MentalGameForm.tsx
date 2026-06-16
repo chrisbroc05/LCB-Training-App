@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
 type ResponsePreference = "VIDEO_RESPONSE" | "WRITTEN_RESPONSE";
@@ -13,23 +14,25 @@ export default function MentalGameForm() {
   const [responsePreference, setResponsePreference] = useState<ResponsePreference>("VIDEO_RESPONSE");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
-  const [submitSuccess, setSubmitSuccess] = useState("");
+  const [submittedTopic, setSubmittedTopic] = useState("");
+  const [submittedMessage, setSubmittedMessage] = useState("");
+  const [showConfirmationModal, setShowConfirmationModal] = useState(false);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setSubmitError("");
-    setSubmitSuccess("");
 
     if (!playerName.trim() || !playerAge.trim() || !message.trim()) {
       setSubmitError("Please complete all required fields before submitting.");
       return;
     }
 
+    const trimmedMessage = message.trim();
     const formData = new FormData();
     formData.set("playerName", playerName.trim());
     formData.set("playerAge", playerAge.trim());
     formData.set("topic", topic);
-    formData.set("message", message.trim());
+    formData.set("message", trimmedMessage);
     formData.set("responsePreference", responsePreference);
     if (video) {
       formData.set("video", video);
@@ -48,7 +51,9 @@ export default function MentalGameForm() {
       return;
     }
 
-    setSubmitSuccess("Submission received. You will hear back within 48 hours.");
+    setSubmittedTopic(topic);
+    setSubmittedMessage(trimmedMessage);
+    setShowConfirmationModal(true);
     setPlayerName("");
     setPlayerAge("");
     setTopic("SLUMP");
@@ -148,7 +153,6 @@ export default function MentalGameForm() {
       </fieldset>
 
       {submitError && <p className="text-sm text-red-300">{submitError}</p>}
-      {submitSuccess && <p className="text-sm text-[#9df3bd]">{submitSuccess}</p>}
 
       <button
         type="submit"
@@ -157,6 +161,30 @@ export default function MentalGameForm() {
       >
         {isSubmitting ? "Submitting..." : "Submit Mental Game Support"}
       </button>
+
+      {showConfirmationModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+          <div className="w-[92vw] max-w-2xl rounded-2xl border border-[#2b3650] bg-[#0b1324] p-6 shadow-2xl md:p-8">
+            <h2 className="text-2xl font-semibold text-zinc-100">Submission Received</h2>
+            <div className="mt-4 rounded-xl border border-[#2b3650] bg-black/40 p-4">
+              <p className="text-sm font-semibold text-zinc-200">Mental Game Summary</p>
+              <p className="mt-2 text-sm text-zinc-300">
+                <span className="font-semibold text-zinc-100">Topic:</span> {submittedTopic}
+              </p>
+              <p className="mt-2 whitespace-pre-wrap text-sm text-zinc-300">{submittedMessage}</p>
+            </div>
+            <p className="mt-4 text-sm text-[#9df3bd]">You will hear back within 48 hours.</p>
+            <div className="mt-6 flex justify-end">
+              <Link
+                href="/dashboard"
+                className="rounded-full bg-[#22c55e] px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-[#35db72]"
+              >
+                Back to Dashboard
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
     </form>
   );
 }

@@ -27,6 +27,92 @@ function getNotificationRecipient() {
   return notificationEmail;
 }
 
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function getTierLabel(tier: DatabaseTier) {
+  return tier.charAt(0) + tier.slice(1).toLowerCase();
+}
+
+function getPriorityLabel(tier: DatabaseTier) {
+  if (tier === "ELITE") {
+    return "High";
+  }
+
+  if (tier === "PRO") {
+    return "Standard";
+  }
+
+  return "Standard";
+}
+
+function getLogoUrl() {
+  const appUrl = process.env.NEXTAUTH_URL?.replace(/\/$/, "");
+  return appUrl ? `${appUrl}/logo/lcb-training-logo.png` : "";
+}
+
+function buildSubmissionNotificationHtml(params: {
+  title: string;
+  membershipTier: DatabaseTier;
+  userEmail: string;
+  detailRows: Array<{ label: string; value: string }>;
+}) {
+  const priority = getPriorityLabel(params.membershipTier);
+  const tierLabel = getTierLabel(params.membershipTier);
+  const logoUrl = getLogoUrl();
+
+  const rowMarkup = params.detailRows
+    .map(
+      (row) => `
+        <tr>
+          <td style="padding: 10px 12px; border-bottom: 1px solid #23324f; color: #9ca3af; font-size: 13px; width: 180px;">${escapeHtml(row.label)}</td>
+          <td style="padding: 10px 12px; border-bottom: 1px solid #23324f; color: #f4f4f5; font-size: 13px; white-space: pre-wrap;">${escapeHtml(row.value)}</td>
+        </tr>`,
+    )
+    .join("");
+
+  return `
+    <div style="margin:0; padding:24px; background:#05070d; font-family: Arial, sans-serif;">
+      <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width: 720px; margin: 0 auto; border-collapse: collapse; border: 1px solid #1f2c43; border-radius: 12px; overflow: hidden; background: #0b1324;">
+        <tr>
+          <td style="background: linear-gradient(90deg, #000000 0%, #0f1d34 70%, #7fbf2f 100%); padding: 20px 24px;">
+            ${
+              logoUrl
+                ? `<img src="${logoUrl}" alt="LCB Training" style="height: 42px; width: auto; display: block; margin-bottom: 12px;" />`
+                : ""
+            }
+            <div style="color: #f4f4f5; font-size: 20px; font-weight: 700;">${escapeHtml(params.title)}</div>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding: 18px 24px; border-bottom: 1px solid #1f2c43;">
+            <div style="color: #9ca3af; font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px;">Submission Overview</div>
+            <div style="color: #f4f4f5; font-size: 14px; line-height: 1.7;">
+              <strong style="color:#98b144;">Membership Tier:</strong> ${escapeHtml(tierLabel)}<br/>
+              <strong style="color:#98b144;">Priority:</strong> ${escapeHtml(priority)}<br/>
+              <strong style="color:#98b144;">Submitting User:</strong> ${escapeHtml(params.userEmail)}
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding: 0 24px 24px;">
+            <div style="color: #f4f4f5; font-size: 14px; font-weight: 600; margin: 18px 0 10px;">Submission Details</div>
+            <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse; border: 1px solid #23324f; border-radius: 8px; overflow: hidden; background: #060b16;">
+              ${rowMarkup}
+            </table>
+          </td>
+        </tr>
+      </table>
+    </div>
+  `;
+}
+
 export async function sendNewMemberNotification(params: {
   userEmail: string;
   membershipTier: DatabaseTier;
@@ -42,19 +128,47 @@ export async function sendNewMemberNotification(params: {
 
 export async function sendSwingSubmissionNotification(params: {
   userEmail: string;
+  membershipTier: DatabaseTier;
+  playerName: string;
+  pitchType: string;
+  handedness: string;
+  notes: string;
+  responsePreference: "VIDEO_RESPONSE" | "WRITTEN_RESPONSE";
   submittedVideo: string;
 }) {
   const transporter = createTransporter();
+  const html = buildSubmissionNotificationHtml({
+    title: "New Swing Submission",
+    membershipTier: params.membershipTier,
+    userEmail: params.userEmail,
+    detailRows: [
+      { label: "Player Name", value: params.playerName },
+      { label: "Pitch Type Focus", value: params.pitchType },
+      { label: "Handedness", value: params.handedness },
+      {
+        label: "Preferred Response",
+        value:
+          params.responsePreference === "VIDEO_RESPONSE"
+            ? "Video Response from Coach"
+            : "Written Response",
+      },
+      { label: "Submitted Video", value: params.submittedVideo },
+      { label: "Notes", value: params.notes || "No notes provided." },
+    ],
+  });
+
   await transporter.sendMail({
     from: process.env.NOTIFICATION_EMAIL,
     to: getNotificationRecipient(),
     subject: "New Swing Submission",
-    text: `A user submitted a new swing analysis video.\n\nEmail: ${params.userEmail}\nSubmitted Video: ${params.submittedVideo}`,
+    text: `New Swing Submission\n\nMembership Tier: ${getTierLabel(params.membershipTier)}\nPriority: ${getPriorityLabel(params.membershipTier)}\nSubmitting User: ${params.userEmail}\nPlayer Name: ${params.playerName}\nPitch Type Focus: ${params.pitchType}\nHandedness: ${params.handedness}\nPreferred Response: ${params.responsePreference}\nSubmitted Video: ${params.submittedVideo}\nNotes: ${params.notes || "No notes provided."}`,
+    html,
   });
 }
 
 export async function sendMentalGameSubmissionNotification(params: {
   userEmail: string;
+  membershipTier: DatabaseTier;
   playerName: string;
   playerAge: string;
   topic: string;
@@ -64,11 +178,33 @@ export async function sendMentalGameSubmissionNotification(params: {
   status: string;
 }) {
   const transporter = createTransporter();
+  const html = buildSubmissionNotificationHtml({
+    title: "New Mental Game Submission",
+    membershipTier: params.membershipTier,
+    userEmail: params.userEmail,
+    detailRows: [
+      { label: "Player Name", value: params.playerName },
+      { label: "Player Age", value: params.playerAge },
+      { label: "Topic", value: params.topic },
+      {
+        label: "Preferred Response",
+        value:
+          params.responsePreference === "VIDEO_RESPONSE"
+            ? "Video Response from Coach"
+            : "Written Response",
+      },
+      { label: "Video", value: params.videoPath ?? "No video uploaded" },
+      { label: "Status", value: params.status },
+      { label: "Message", value: params.message },
+    ],
+  });
+
   await transporter.sendMail({
     from: process.env.NOTIFICATION_EMAIL,
     to: getNotificationRecipient(),
     subject: "New Mental Game Submission",
-    text: `A user submitted a new mental game request.\n\nSubmitting User Email: ${params.userEmail}\nPlayer Name: ${params.playerName}\nPlayer Age: ${params.playerAge}\nTopic: ${params.topic}\nMessage: ${params.message}\nVideo: ${params.videoPath ?? "No video uploaded"}\nResponse Preference: ${params.responsePreference}\nStatus: ${params.status}`,
+    text: `New Mental Game Submission\n\nMembership Tier: ${getTierLabel(params.membershipTier)}\nPriority: ${getPriorityLabel(params.membershipTier)}\nSubmitting User: ${params.userEmail}\nPlayer Name: ${params.playerName}\nPlayer Age: ${params.playerAge}\nTopic: ${params.topic}\nMessage: ${params.message}\nVideo: ${params.videoPath ?? "No video uploaded"}\nResponse Preference: ${params.responsePreference}\nStatus: ${params.status}`,
+    html,
   });
 }
 

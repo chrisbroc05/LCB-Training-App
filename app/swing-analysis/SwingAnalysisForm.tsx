@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
 export default function SwingAnalysisForm() {
@@ -15,12 +16,12 @@ export default function SwingAnalysisForm() {
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
-  const [submitSuccess, setSubmitSuccess] = useState("");
+  const [submittedNotes, setSubmittedNotes] = useState("");
+  const [showConfirmationModal, setShowConfirmationModal] = useState(false);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setSubmitError("");
-    setSubmitSuccess("");
 
     if (!playerName.trim()) {
       setSubmitError("Please provide the player name.");
@@ -33,6 +34,7 @@ export default function SwingAnalysisForm() {
     }
 
     setIsSubmitting(true);
+    const trimmedNotes = notes.trim();
 
     const formData = new FormData();
     formData.set("playerName", playerName.trim());
@@ -40,7 +42,7 @@ export default function SwingAnalysisForm() {
     formData.set("videoUrl", videoUrl.trim());
     formData.set("pitchType", pitchType);
     formData.set("handedness", handedness);
-    formData.set("notes", notes.trim());
+    formData.set("notes", trimmedNotes);
     formData.set("responsePreference", responsePreference);
     if (videoFile) {
       formData.set("video", videoFile);
@@ -59,7 +61,8 @@ export default function SwingAnalysisForm() {
       return;
     }
 
-    setSubmitSuccess("Submission received. Coach notification sent.");
+    setSubmittedNotes(trimmedNotes);
+    setShowConfirmationModal(true);
     setPlayerName("");
     setVideoFileName("");
     setVideoFile(null);
@@ -176,7 +179,6 @@ export default function SwingAnalysisForm() {
       </fieldset>
 
       {submitError && <p className="text-sm text-red-300">{submitError}</p>}
-      {submitSuccess && <p className="text-sm text-[#9df3bd]">{submitSuccess}</p>}
 
       <button
         type="submit"
@@ -185,6 +187,29 @@ export default function SwingAnalysisForm() {
       >
         {isSubmitting ? "Submitting..." : "Submit Swing Analysis"}
       </button>
+
+      {showConfirmationModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+          <div className="w-[92vw] max-w-2xl rounded-2xl border border-[#2b3650] bg-[#0b1324] p-6 shadow-2xl md:p-8">
+            <h2 className="text-2xl font-semibold text-zinc-100">Submission Received</h2>
+            <div className="mt-4 rounded-xl border border-[#2b3650] bg-black/40 p-4">
+              <p className="text-sm font-semibold text-zinc-200">Swing Analysis Summary</p>
+              <p className="mt-2 whitespace-pre-wrap text-sm text-zinc-300">
+                {submittedNotes || "No notes provided."}
+              </p>
+            </div>
+            <p className="mt-4 text-sm text-[#9df3bd]">You will hear back within 48 hours.</p>
+            <div className="mt-6 flex justify-end">
+              <Link
+                href="/dashboard"
+                className="rounded-full bg-[#22c55e] px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-[#35db72]"
+              >
+                Back to Dashboard
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
     </form>
   );
 }

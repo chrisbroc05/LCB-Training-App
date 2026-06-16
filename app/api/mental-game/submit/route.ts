@@ -107,6 +107,7 @@ export async function POST(request: Request) {
     try {
       await sendMentalGameSubmissionNotification({
         userEmail: submission.userEmail,
+        membershipTier,
         playerName: submission.playerName,
         playerAge: submission.playerAge,
         topic: submission.topic,

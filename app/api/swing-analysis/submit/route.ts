@@ -72,6 +72,12 @@ export async function POST(request: Request) {
 
     await sendSwingSubmissionNotification({
       userEmail: session.user.email,
+      membershipTier,
+      playerName,
+      pitchType,
+      handedness,
+      notes,
+      responsePreference: responsePreference as "VIDEO_RESPONSE" | "WRITTEN_RESPONSE",
       submittedVideo,
     });
 
