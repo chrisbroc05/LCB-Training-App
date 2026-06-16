@@ -44,8 +44,8 @@ export default async function RootLayout({
         <header className="sticky top-0 z-20 border-b border-[#18243a] bg-black/95 backdrop-blur">
           <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-4">
             <Link href="/" className="flex items-center gap-3">
-              <div className="relative h-12 w-32 overflow-hidden rounded-md border border-[#3b4b6a] bg-[#0f1d34]">
-                <BrandLogo className="object-contain p-1" />
+              <div className="relative h-12 w-32">
+                <BrandLogo className="object-contain" />
               </div>
               <span className="text-xl font-semibold tracking-tight text-zinc-100">
                 LCB <span className="text-[#22c55e]">Training</span>
