@@ -1,5 +1,5 @@
-import Image from "next/image";
 import Link from "next/link";
+import BrandLogo from "@/app/BrandLogo";
 import { membershipTiers } from "@/lib/membership";
 
 const introVideos = [
@@ -25,7 +25,7 @@ export default function Home() {
     <div className="mx-auto w-full max-w-6xl px-6 py-14 md:py-20">
       <section className="rounded-3xl border border-[#18243a] bg-gradient-to-br from-[#0f1d34] to-[#050b16] p-8 shadow-2xl shadow-black/60 md:p-12">
         <div className="relative mb-6 h-14 w-40 overflow-hidden rounded-md border border-[#3b4b6a] bg-[#0f1d34]">
-          <Image src="/lcb-training-logo.png" alt="LCB Training Logo" fill className="object-contain p-1" />
+          <BrandLogo className="object-contain p-1" />
         </div>
         <p className="text-sm font-medium uppercase tracking-[0.2em] text-[#7f9434]">
           LCB Training Membership

@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import Image from "next/image";
 import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { hasDatabaseTierAccess, type DatabaseTier } from "@/lib/membership";
 import UserAuthStatus from "@/app/UserAuthStatus";
 import { isAdminEmail } from "@/lib/admin";
+import BrandLogo from "@/app/BrandLogo";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -45,7 +45,7 @@ export default async function RootLayout({
           <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-4">
             <Link href="/" className="flex items-center gap-3">
               <div className="relative h-12 w-32 overflow-hidden rounded-md border border-[#3b4b6a] bg-[#0f1d34]">
-                <Image src="/lcb-training-logo.png" alt="LCB Training Logo" fill className="object-contain p-1" />
+                <BrandLogo className="object-contain p-1" />
               </div>
               <span className="text-xl font-semibold tracking-tight text-zinc-100">
                 LCB <span className="text-[#22c55e]">Training</span>
