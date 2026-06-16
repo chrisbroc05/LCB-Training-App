@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useState } from "react";
 
+const SUBMISSION_TIMEOUT_MS = 90000;
+
 export default function SwingAnalysisForm() {
   const [playerName, setPlayerName] = useState("");
   const [videoFileName, setVideoFileName] = useState("");
@@ -35,6 +37,7 @@ export default function SwingAnalysisForm() {
 
     setIsSubmitting(true);
     const trimmedNotes = notes.trim();
+    console.log("[SwingAnalysisForm] Starting submission");
 
     const formData = new FormData();
     formData.set("playerName", playerName.trim());
@@ -46,31 +49,62 @@ export default function SwingAnalysisForm() {
     formData.set("responsePreference", responsePreference);
     if (videoFile) {
       formData.set("video", videoFile);
+      console.log(
+        `[SwingAnalysisForm] Attached uploaded file: ${videoFile.name} (${videoFile.size} bytes)`,
+      );
+    } else {
+      console.log("[SwingAnalysisForm] No local file uploaded, using URL");
     }
 
-    const response = await fetch("/api/swing-analysis/submit", {
-      method: "POST",
-      body: formData,
-    });
+    const abortController = new AbortController();
+    const timeoutId = window.setTimeout(() => {
+      abortController.abort();
+    }, SUBMISSION_TIMEOUT_MS);
 
-    setIsSubmitting(false);
+    try {
+      const response = await fetch("/api/swing-analysis/submit", {
+        method: "POST",
+        body: formData,
+        signal: abortController.signal,
+      });
+      window.clearTimeout(timeoutId);
 
-    if (!response.ok) {
-      const data = (await response.json().catch(() => ({}))) as { error?: string };
-      setSubmitError(data.error ?? "Unable to submit swing analysis.");
-      return;
+      if (!response.ok) {
+        const data = (await response.json().catch(() => ({}))) as { error?: string };
+        console.error("[SwingAnalysisForm] Submission failed", response.status, data);
+        setSubmitError(
+          data.error ??
+            "Unable to submit swing analysis. Please try again, or use a smaller video file.",
+        );
+        return;
+      }
+
+      console.log("[SwingAnalysisForm] Submission completed successfully");
+      setSubmittedNotes(trimmedNotes);
+      setShowConfirmationModal(true);
+      setPlayerName("");
+      setVideoFileName("");
+      setVideoFile(null);
+      setVideoUrl("");
+      setPitchType("Fastball timing");
+      setHandedness("Right-handed hitter");
+      setNotes("");
+      setResponsePreference("VIDEO_RESPONSE");
+    } catch (error) {
+      window.clearTimeout(timeoutId);
+      if (error instanceof DOMException && error.name === "AbortError") {
+        console.error("[SwingAnalysisForm] Submission timed out");
+        setSubmitError(
+          "Submission timed out while uploading. Please try a smaller video or submit via video URL.",
+        );
+        return;
+      }
+
+      console.error("[SwingAnalysisForm] Unexpected submission error", error);
+      setSubmitError("Submission failed unexpectedly. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
-
-    setSubmittedNotes(trimmedNotes);
-    setShowConfirmationModal(true);
-    setPlayerName("");
-    setVideoFileName("");
-    setVideoFile(null);
-    setVideoUrl("");
-    setPitchType("Fastball timing");
-    setHandedness("Right-handed hitter");
-    setNotes("");
-    setResponsePreference("VIDEO_RESPONSE");
   };
 
   return (
