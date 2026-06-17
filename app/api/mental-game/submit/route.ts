@@ -1,12 +1,10 @@
-import { randomUUID } from "crypto";
-import { mkdir, writeFile } from "fs/promises";
-import path from "path";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { hasDatabaseTierAccess, type DatabaseTier } from "@/lib/membership";
 import { prisma } from "@/lib/prisma";
 import { sendMentalGameSubmissionNotification } from "@/lib/notifications";
+import { uploadVideoToVimeo } from "@/lib/vimeo";
 
 type TopicValue =
   | "SLUMP"
@@ -30,9 +28,16 @@ const validTopics: TopicValue[] = [
 ];
 
 const validResponsePreferences: ResponsePreferenceValue[] = ["VIDEO_RESPONSE", "WRITTEN_RESPONSE"];
+const MAX_VIDEO_UPLOAD_BYTES = 100 * 1024 * 1024; // 100 MB
+const VIMEO_TIMEOUT_MS = 120000;
 
-function sanitizeFilename(value: string) {
-  return value.replace(/[^a-zA-Z0-9._-]/g, "_");
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
+  return await Promise.race([
+    promise,
+    new Promise<T>((_, reject) => {
+      setTimeout(() => reject(new Error(`${label} timed out after ${timeoutMs}ms`)), timeoutMs);
+    }),
+  ]);
 }
 
 export async function POST(request: Request) {
@@ -77,17 +82,22 @@ export async function POST(request: Request) {
 
     let videoPath: string | null = null;
     if (uploadedVideo instanceof File && uploadedVideo.size > 0) {
-      const uploadDirectory = path.join(process.cwd(), "public", "uploads", "mental-game");
-      await mkdir(uploadDirectory, { recursive: true });
+      if (uploadedVideo.size > MAX_VIDEO_UPLOAD_BYTES) {
+        return NextResponse.json(
+          { error: "Uploaded video is too large. Please upload a file under 100MB." },
+          { status: 413 },
+        );
+      }
 
-      const safeOriginalName = sanitizeFilename(uploadedVideo.name || "mental-game-video.mp4");
-      const extension = path.extname(safeOriginalName) || ".mp4";
-      const generatedName = `${Date.now()}-${randomUUID()}${extension}`;
-      const absolutePath = path.join(uploadDirectory, generatedName);
       const fileBuffer = Buffer.from(await uploadedVideo.arrayBuffer());
-
-      await writeFile(absolutePath, fileBuffer);
-      videoPath = `/uploads/mental-game/${generatedName}`;
+      videoPath = await withTimeout(
+        uploadVideoToVimeo({
+          fileBuffer,
+          fileName: uploadedVideo.name || "mental-game-submission.mp4",
+        }),
+        VIMEO_TIMEOUT_MS,
+        "Vimeo upload",
+      );
     }
 
     const submission = await prisma.mentalGameSubmission.create({

@@ -1,16 +1,16 @@
 import { randomUUID } from "crypto";
-import { mkdir, writeFile } from "fs/promises";
-import path from "path";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { hasDatabaseTierAccess, type DatabaseTier } from "@/lib/membership";
 import { prisma } from "@/lib/prisma";
 import { sendSwingSubmissionNotification } from "@/lib/notifications";
+import { uploadVideoToVimeo } from "@/lib/vimeo";
 
 const MAX_VIDEO_UPLOAD_BYTES = 100 * 1024 * 1024; // 100 MB
 const DB_TIMEOUT_MS = 15000;
 const EMAIL_TIMEOUT_MS = 15000;
+const VIMEO_TIMEOUT_MS = 120000;
 
 async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
   return await Promise.race([
@@ -72,18 +72,17 @@ export async function POST(request: Request) {
         );
       }
 
-      const uploadDirectory = path.join(process.cwd(), "public", "uploads", "swing-analysis");
-      await mkdir(uploadDirectory, { recursive: true });
-      const extension = path.extname(uploadedVideo.name || "") || ".mp4";
-      const generatedName = `${Date.now()}-${randomUUID()}${extension}`;
-      const absolutePath = path.join(uploadDirectory, generatedName);
       const fileBuffer = Buffer.from(await uploadedVideo.arrayBuffer());
-      console.log(
-        `[swing-submit:${requestId}] Writing uploaded video to disk (${absolutePath})`,
+      console.log(`[swing-submit:${requestId}] Uploading video to Vimeo`);
+      submittedVideo = await withTimeout(
+        uploadVideoToVimeo({
+          fileBuffer,
+          fileName: uploadedVideo.name || `swing-analysis-${requestId}.mp4`,
+        }),
+        VIMEO_TIMEOUT_MS,
+        "Vimeo upload",
       );
-      await writeFile(absolutePath, fileBuffer);
-      submittedVideo = `/uploads/swing-analysis/${generatedName}`;
-      console.log(`[swing-submit:${requestId}] File persisted as ${submittedVideo}`);
+      console.log(`[swing-submit:${requestId}] Vimeo upload complete (${submittedVideo})`);
     } else {
       console.log(`[swing-submit:${requestId}] No uploaded file, using provided video URL`);
     }

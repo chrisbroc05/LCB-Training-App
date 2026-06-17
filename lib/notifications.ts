@@ -36,6 +36,10 @@ function escapeHtml(value: string) {
     .replaceAll("'", "&#39;");
 }
 
+function isHttpUrl(value: string) {
+  return /^https?:\/\//i.test(value.trim());
+}
+
 function getTierLabel(tier: DatabaseTier) {
   return tier.charAt(0) + tier.slice(1).toLowerCase();
 }
@@ -69,11 +73,17 @@ function buildSubmissionNotificationHtml(params: {
 
   const rowMarkup = params.detailRows
     .map(
-      (row) => `
+      (row) => {
+        const valueMarkup = isHttpUrl(row.value)
+          ? `<a href="${escapeHtml(row.value)}" target="_blank" rel="noopener noreferrer" style="color:#8fd7ff; text-decoration:underline;">${escapeHtml(row.value)}</a>`
+          : escapeHtml(row.value);
+
+        return `
         <tr>
           <td style="padding: 10px 12px; border-bottom: 1px solid #23324f; color: #9ca3af; font-size: 13px; width: 180px;">${escapeHtml(row.label)}</td>
-          <td style="padding: 10px 12px; border-bottom: 1px solid #23324f; color: #f4f4f5; font-size: 13px; white-space: pre-wrap;">${escapeHtml(row.value)}</td>
-        </tr>`,
+          <td style="padding: 10px 12px; border-bottom: 1px solid #23324f; color: #f4f4f5; font-size: 13px; white-space: pre-wrap;">${valueMarkup}</td>
+        </tr>`;
+      },
     )
     .join("");
 
