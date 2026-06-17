@@ -1,5 +1,6 @@
 export async function uploadVideoToVimeo(params: { fileBuffer: Buffer; fileName: string }) {
   const accessToken = process.env.VIMEO_ACCESS_TOKEN;
+  const folderId = "29488403";
   if (!accessToken) {
     throw new Error("VIMEO_ACCESS_TOKEN is required for video responses.");
   }
@@ -57,6 +58,21 @@ export async function uploadVideoToVimeo(params: { fileBuffer: Buffer; fileName:
   const videoId = createPayload.uri.split("/").pop();
   if (!videoId) {
     throw new Error("Unable to resolve uploaded Vimeo video id.");
+  }
+
+  const addToFolderResponse = await fetch(
+    `https://api.vimeo.com/me/projects/${folderId}/videos/${videoId}`,
+    {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: "application/vnd.vimeo.*+json;version=3.4",
+      },
+    },
+  );
+
+  if (!addToFolderResponse.ok && addToFolderResponse.status !== 204) {
+    throw new Error(`Unable to add Vimeo video to folder ${folderId}.`);
   }
 
   return `https://vimeo.com/${videoId}`;
