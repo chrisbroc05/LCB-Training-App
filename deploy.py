@@ -84,6 +84,15 @@ def build_commit_message() -> str:
     return f"{headline}\n\nFiles: {preview}"
 
 
+def has_staged_changes() -> bool:
+    staged = run_command(
+        ["git", "diff", "--cached", "--name-status"],
+        "Checking for staged changes",
+        capture_output=True,
+    )
+    return bool(staged.strip())
+
+
 def trigger_render_deploy() -> None:
     deploy_hook = os.getenv("RENDER_DEPLOY_HOOK")
     if not deploy_hook:
@@ -120,10 +129,13 @@ def main() -> int:
         load_local_env(".env")
         run_command(["git", "add", "."], "Running git add .")
 
-        commit_message = build_commit_message()
-        print(f"-> Commit message summary:\n{commit_message}")
+        if has_staged_changes():
+            commit_message = build_commit_message()
+            print(f"-> Commit message summary:\n{commit_message}")
+            run_command(["git", "commit", "-m", commit_message], "Committing changes")
+        else:
+            print("-> No staged changes found. Skipping commit and continuing to deploy.")
 
-        run_command(["git", "commit", "-m", commit_message], "Committing changes")
         run_command(["git", "push", "origin", "main"], "Pushing to origin main")
 
         trigger_render_deploy()
