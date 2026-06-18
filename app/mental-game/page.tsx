@@ -14,6 +14,7 @@ export default async function MentalGamePage() {
   if (!hasDatabaseTierAccess(membershipTier, "pro")) {
     redirect("/dashboard?upgrade=pro-required");
   }
+  const vimeoUploadEnabled = process.env.VIMEO_UPLOAD_ENABLED?.toLowerCase() === "true";
 
   return (
     <div className="mx-auto w-full max-w-4xl px-6 py-14 md:py-20">
@@ -23,7 +24,7 @@ export default async function MentalGamePage() {
           Submit what you are dealing with mentally so your coach can send support and adjustments.
         </p>
 
-        <MentalGameForm />
+        <MentalGameForm vimeoUploadEnabled={vimeoUploadEnabled} />
       </section>
     </div>
   );

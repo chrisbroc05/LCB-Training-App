@@ -5,7 +5,7 @@ import { useState } from "react";
 
 const SUBMISSION_TIMEOUT_MS = 90000;
 
-export default function SwingAnalysisForm() {
+export default function SwingAnalysisForm({ vimeoUploadEnabled }: { vimeoUploadEnabled: boolean }) {
   const [playerName, setPlayerName] = useState("");
   const [videoFileName, setVideoFileName] = useState("");
   const [videoFile, setVideoFile] = useState<File | null>(null);
@@ -30,8 +30,13 @@ export default function SwingAnalysisForm() {
       return;
     }
 
-    if (!videoFileName && !videoUrl.trim()) {
+    if (vimeoUploadEnabled && !videoFileName && !videoUrl.trim()) {
       setSubmitError("Please upload a video file or provide a video URL.");
+      return;
+    }
+
+    if (!vimeoUploadEnabled && !videoUrl.trim()) {
+      setSubmitError("Vimeo upload is currently disabled. Please provide a direct Vimeo video URL.");
       return;
     }
 
@@ -47,11 +52,13 @@ export default function SwingAnalysisForm() {
     formData.set("handedness", handedness);
     formData.set("notes", trimmedNotes);
     formData.set("responsePreference", responsePreference);
-    if (videoFile) {
+    if (vimeoUploadEnabled && videoFile) {
       formData.set("video", videoFile);
       console.log(
         `[SwingAnalysisForm] Attached uploaded file: ${videoFile.name} (${videoFile.size} bytes)`,
       );
+    } else if (!vimeoUploadEnabled && videoFile) {
+      console.log("[SwingAnalysisForm] Ignoring uploaded file because Vimeo upload is disabled");
     } else {
       console.log("[SwingAnalysisForm] No local file uploaded, using URL");
     }
@@ -120,19 +127,25 @@ export default function SwingAnalysisForm() {
         />
       </label>
 
-      <label className="block">
-        <span className="text-sm text-zinc-300">Upload video</span>
-        <input
-          type="file"
-          accept="video/*"
-          className="mt-2 w-full rounded-lg border border-dashed border-[#3b4b6a] bg-black px-4 py-4 text-sm text-zinc-300 file:mr-4 file:rounded-md file:border-0 file:bg-[#22c55e] file:px-3 file:py-2 file:font-semibold file:text-black hover:file:bg-[#35db72]"
-          onChange={(event) => {
-            const file = event.target.files?.[0] ?? null;
-            setVideoFile(file);
-            setVideoFileName(file?.name ?? "");
-          }}
-        />
-      </label>
+      {vimeoUploadEnabled ? (
+        <label className="block">
+          <span className="text-sm text-zinc-300">Upload video</span>
+          <input
+            type="file"
+            accept="video/*"
+            className="mt-2 w-full rounded-lg border border-dashed border-[#3b4b6a] bg-black px-4 py-4 text-sm text-zinc-300 file:mr-4 file:rounded-md file:border-0 file:bg-[#22c55e] file:px-3 file:py-2 file:font-semibold file:text-black hover:file:bg-[#35db72]"
+            onChange={(event) => {
+              const file = event.target.files?.[0] ?? null;
+              setVideoFile(file);
+              setVideoFileName(file?.name ?? "");
+            }}
+          />
+        </label>
+      ) : (
+        <p className="text-xs text-yellow-200">
+          Vimeo upload mode is currently disabled. Please paste a Vimeo URL below.
+        </p>
+      )}
 
       <label className="block">
         <span className="text-sm text-zinc-300">Or paste a video URL</span>

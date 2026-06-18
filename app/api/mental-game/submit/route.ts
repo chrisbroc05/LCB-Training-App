@@ -31,6 +31,7 @@ const validTopics: TopicValue[] = [
 const validResponsePreferences: ResponsePreferenceValue[] = ["VIDEO_RESPONSE", "WRITTEN_RESPONSE"];
 const MAX_VIDEO_UPLOAD_BYTES = 100 * 1024 * 1024; // 100 MB
 const VIMEO_TIMEOUT_MS = 120000;
+const vimeoUploadEnabled = process.env.VIMEO_UPLOAD_ENABLED?.toLowerCase() === "true";
 
 async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
   return await Promise.race([
@@ -70,6 +71,7 @@ export async function POST(request: Request) {
     const responsePreference = String(formData.get("responsePreference") ?? "")
       .trim()
       .toUpperCase() as ResponsePreferenceValue;
+    const videoUrl = String(formData.get("videoUrl") ?? "").trim();
     const uploadedVideo = formData.get("video");
 
     if (!playerName || !playerAge || !message) {
@@ -87,11 +89,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid response preference selected." }, { status: 400 });
     }
 
-    let videoPath: string | null = null;
+    let videoPath: string | null = videoUrl || null;
     if (uploadedVideo instanceof File && uploadedVideo.size > 0) {
       console.log(
         `[mental-submit:${requestId}] Uploaded file detected (${uploadedVideo.name}, ${uploadedVideo.size} bytes)`,
       );
+      if (!vimeoUploadEnabled) {
+        console.warn(
+          `[mental-submit:${requestId}] Uploaded file ignored because VIMEO_UPLOAD_ENABLED is false`,
+        );
+      } else {
       if (uploadedVideo.size > MAX_VIDEO_UPLOAD_BYTES) {
         return NextResponse.json(
           { error: "Uploaded video is too large. Please upload a file under 100MB." },
@@ -110,6 +117,7 @@ export async function POST(request: Request) {
         "Vimeo upload",
       );
       console.log(`[mental-submit:${requestId}] Vimeo upload complete (${videoPath})`);
+      }
     }
 
     const submission = await prisma.mentalGameSubmission.create({

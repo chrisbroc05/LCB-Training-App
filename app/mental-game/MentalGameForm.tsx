@@ -5,12 +5,13 @@ import { useState } from "react";
 
 type ResponsePreference = "VIDEO_RESPONSE" | "WRITTEN_RESPONSE";
 
-export default function MentalGameForm() {
+export default function MentalGameForm({ vimeoUploadEnabled }: { vimeoUploadEnabled: boolean }) {
   const [playerName, setPlayerName] = useState("");
   const [playerAge, setPlayerAge] = useState("");
   const [topic, setTopic] = useState("SLUMP");
   const [message, setMessage] = useState("");
   const [video, setVideo] = useState<File | null>(null);
+  const [manualVideoUrl, setManualVideoUrl] = useState("");
   const [responsePreference, setResponsePreference] = useState<ResponsePreference>("VIDEO_RESPONSE");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
@@ -34,6 +35,7 @@ export default function MentalGameForm() {
     formData.set("topic", topic);
     formData.set("message", trimmedMessage);
     formData.set("responsePreference", responsePreference);
+    formData.set("videoUrl", manualVideoUrl.trim());
     if (video) {
       formData.set("video", video);
     }
@@ -59,6 +61,7 @@ export default function MentalGameForm() {
     setTopic("SLUMP");
     setMessage("");
     setVideo(null);
+    setManualVideoUrl("");
     setResponsePreference("VIDEO_RESPONSE");
   };
 
@@ -116,13 +119,33 @@ export default function MentalGameForm() {
 
       <label className="block">
         <span className="text-sm text-zinc-300">Optional video upload</span>
-        <input
-          type="file"
-          accept="video/*"
-          onChange={(event) => setVideo(event.target.files?.[0] ?? null)}
-          className="mt-2 w-full rounded-lg border border-dashed border-[#3b4b6a] bg-black px-4 py-4 text-sm text-zinc-300 file:mr-4 file:rounded-md file:border-0 file:bg-[#22c55e] file:px-3 file:py-2 file:font-semibold file:text-black hover:file:bg-[#35db72]"
-        />
+        {vimeoUploadEnabled ? (
+          <input
+            type="file"
+            accept="video/*"
+            onChange={(event) => setVideo(event.target.files?.[0] ?? null)}
+            className="mt-2 w-full rounded-lg border border-dashed border-[#3b4b6a] bg-black px-4 py-4 text-sm text-zinc-300 file:mr-4 file:rounded-md file:border-0 file:bg-[#22c55e] file:px-3 file:py-2 file:font-semibold file:text-black hover:file:bg-[#35db72]"
+          />
+        ) : (
+          <p className="mt-2 text-xs text-yellow-200">
+            Vimeo upload mode is currently disabled. Submit without video, or paste a Vimeo link
+            below.
+          </p>
+        )}
       </label>
+
+      {!vimeoUploadEnabled && (
+        <label className="block">
+          <span className="text-sm text-zinc-300">Optional Vimeo video URL</span>
+          <input
+            type="url"
+            placeholder="https://vimeo.com/..."
+            value={manualVideoUrl}
+            onChange={(event) => setManualVideoUrl(event.target.value)}
+            className="mt-2 w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 placeholder:text-zinc-500 focus:border-[#22c55e]"
+          />
+        </label>
+      )}
 
       <fieldset>
         <legend className="text-sm text-zinc-300">How would you like to receive your response?</legend>

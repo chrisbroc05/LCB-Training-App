@@ -11,6 +11,7 @@ const MAX_VIDEO_UPLOAD_BYTES = 100 * 1024 * 1024; // 100 MB
 const DB_TIMEOUT_MS = 15000;
 const EMAIL_TIMEOUT_MS = 15000;
 const VIMEO_TIMEOUT_MS = 120000;
+const vimeoUploadEnabled = process.env.VIMEO_UPLOAD_ENABLED?.toLowerCase() === "true";
 
 async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
   return await Promise.race([
@@ -62,6 +63,20 @@ export async function POST(request: Request) {
       console.log(
         `[swing-submit:${requestId}] Uploaded file detected (${uploadedVideo.name}, ${uploadedVideo.size} bytes)`,
       );
+      if (!vimeoUploadEnabled) {
+        console.warn(
+          `[swing-submit:${requestId}] Uploaded file ignored because VIMEO_UPLOAD_ENABLED is false`,
+        );
+        if (!videoUrl) {
+          return NextResponse.json(
+            {
+              error:
+                "Vimeo file upload is currently disabled. Please provide a direct Vimeo video URL.",
+            },
+            { status: 400 },
+          );
+        }
+      } else {
       if (uploadedVideo.size > MAX_VIDEO_UPLOAD_BYTES) {
         console.warn(
           `[swing-submit:${requestId}] File too large (${uploadedVideo.size} > ${MAX_VIDEO_UPLOAD_BYTES})`,
@@ -83,6 +98,7 @@ export async function POST(request: Request) {
         "Vimeo upload",
       );
       console.log(`[swing-submit:${requestId}] Vimeo upload complete (${submittedVideo})`);
+      }
     } else {
       console.log(`[swing-submit:${requestId}] No uploaded file, using provided video URL`);
     }
