@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -41,20 +42,26 @@ async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: str
 }
 
 export async function POST(request: Request) {
+  const requestId = randomUUID();
   try {
+    console.log(`[mental-submit:${requestId}] Request received`);
     const session = await getServerSession(authOptions);
     if (!session?.user?.id || !session.user.email) {
+      console.warn(`[mental-submit:${requestId}] Unauthorized request`);
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    console.log(`[mental-submit:${requestId}] Session validated for ${session.user.email}`);
 
     const membershipTier = (session.user.membershipTier ?? "BASIC") as DatabaseTier;
     if (!hasDatabaseTierAccess(membershipTier, "pro")) {
+      console.warn(`[mental-submit:${requestId}] Access denied for tier ${membershipTier}`);
       return NextResponse.json(
         { error: "Mental game support submissions require a Pro or Elite membership." },
         { status: 403 },
       );
     }
 
+    console.log(`[mental-submit:${requestId}] Parsing multipart form data`);
     const formData = await request.formData();
     const playerName = String(formData.get("playerName") ?? "").trim();
     const playerAge = String(formData.get("playerAge") ?? "").trim();
@@ -82,6 +89,9 @@ export async function POST(request: Request) {
 
     let videoPath: string | null = null;
     if (uploadedVideo instanceof File && uploadedVideo.size > 0) {
+      console.log(
+        `[mental-submit:${requestId}] Uploaded file detected (${uploadedVideo.name}, ${uploadedVideo.size} bytes)`,
+      );
       if (uploadedVideo.size > MAX_VIDEO_UPLOAD_BYTES) {
         return NextResponse.json(
           { error: "Uploaded video is too large. Please upload a file under 100MB." },
@@ -90,6 +100,7 @@ export async function POST(request: Request) {
       }
 
       const fileBuffer = Buffer.from(await uploadedVideo.arrayBuffer());
+      console.log(`[mental-submit:${requestId}] Uploading video to Vimeo`);
       videoPath = await withTimeout(
         uploadVideoToVimeo({
           fileBuffer,
@@ -98,6 +109,7 @@ export async function POST(request: Request) {
         VIMEO_TIMEOUT_MS,
         "Vimeo upload",
       );
+      console.log(`[mental-submit:${requestId}] Vimeo upload complete (${videoPath})`);
     }
 
     const submission = await prisma.mentalGameSubmission.create({
@@ -131,7 +143,26 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ success: true }, { status: 201 });
-  } catch {
-    return NextResponse.json({ error: "Unable to submit mental game support right now." }, { status: 500 });
+  } catch (error) {
+    console.error(`[mental-submit:${requestId}] Submission failed`, error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    const isVimeoError =
+      errorMessage.includes("VIMEO_ACCESS_TOKEN") ||
+      errorMessage.toLowerCase().includes("vimeo");
+
+    if (isVimeoError) {
+      return NextResponse.json(
+        {
+          error:
+            "Video upload failed while contacting Vimeo. Please verify Vimeo API credentials/permissions, or submit without a video.",
+        },
+        { status: 502 },
+      );
+    }
+
+    return NextResponse.json(
+      { error: "Unable to submit mental game support right now. Please try again shortly." },
+      { status: 500 },
+    );
   }
 }

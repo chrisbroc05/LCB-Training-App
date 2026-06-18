@@ -149,6 +149,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true }, { status: 201 });
   } catch (error) {
     console.error(`[swing-submit:${requestId}] Submission failed`, error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    const isVimeoError =
+      errorMessage.includes("VIMEO_ACCESS_TOKEN") ||
+      errorMessage.toLowerCase().includes("vimeo");
+
+    if (isVimeoError) {
+      return NextResponse.json(
+        {
+          error:
+            "Video upload failed while contacting Vimeo. Please verify Vimeo API credentials/permissions, or submit using a direct Vimeo URL instead.",
+        },
+        { status: 502 },
+      );
+    }
+
     return NextResponse.json(
       { error: "Unable to submit swing analysis right now. Please try again in a moment." },
       { status: 500 },

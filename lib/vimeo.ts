@@ -1,3 +1,8 @@
+async function getResponseDetails(response: Response) {
+  const raw = await response.text();
+  return raw.slice(0, 1000);
+}
+
 export async function uploadVideoToVimeo(params: { fileBuffer: Buffer; fileName: string }) {
   const accessToken = process.env.VIMEO_ACCESS_TOKEN;
   const folderId = "29488403";
@@ -25,7 +30,10 @@ export async function uploadVideoToVimeo(params: { fileBuffer: Buffer; fileName:
   });
 
   if (!createResponse.ok) {
-    throw new Error("Unable to create Vimeo upload.");
+    const details = await getResponseDetails(createResponse);
+    throw new Error(
+      `Unable to create Vimeo upload (status ${createResponse.status}). Response: ${details}`,
+    );
   }
 
   const createPayload = (await createResponse.json()) as {
@@ -52,7 +60,10 @@ export async function uploadVideoToVimeo(params: { fileBuffer: Buffer; fileName:
   });
 
   if (!uploadResponse.ok && uploadResponse.status !== 204) {
-    throw new Error("Unable to upload video bytes to Vimeo.");
+    const details = await getResponseDetails(uploadResponse);
+    throw new Error(
+      `Unable to upload video bytes to Vimeo (status ${uploadResponse.status}). Response: ${details}`,
+    );
   }
 
   const videoId = createPayload.uri.split("/").pop();
@@ -72,7 +83,10 @@ export async function uploadVideoToVimeo(params: { fileBuffer: Buffer; fileName:
   );
 
   if (!addToFolderResponse.ok && addToFolderResponse.status !== 204) {
-    throw new Error(`Unable to add Vimeo video to folder ${folderId}.`);
+    const details = await getResponseDetails(addToFolderResponse);
+    throw new Error(
+      `Unable to add Vimeo video to folder ${folderId} (status ${addToFolderResponse.status}). Response: ${details}`,
+    );
   }
 
   return `https://vimeo.com/${videoId}`;
