@@ -9,6 +9,7 @@ export default async function AdminPage() {
   if (!isAdminEmail(session?.user?.email)) {
     redirect("/dashboard");
   }
+  const vimeoUploadEnabled = process.env.VIMEO_UPLOAD_ENABLED?.toLowerCase() === "true";
 
   return (
     <div className="mx-auto w-full max-w-7xl px-6 py-14 md:py-20">
@@ -17,7 +18,7 @@ export default async function AdminPage() {
         <p className="mt-2 text-zinc-300">
           Review swing analysis and mental game submissions, then send video or written responses.
         </p>
-        <AdminPanel />
+        <AdminPanel vimeoUploadEnabled={vimeoUploadEnabled} />
       </section>
     </div>
   );

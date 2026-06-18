@@ -235,10 +235,32 @@ export async function sendSubmissionResponseEmail(params: {
       ? `Your coach has sent a video response: ${params.videoResponseUrl}`
       : `Your coach has sent a written response:\n\n${params.writtenResponse}`;
 
+  const htmlResponseBody =
+    params.responseMode === "VIDEO"
+      ? `Your coach has sent a video response: <a href="${escapeHtml(
+          params.videoResponseUrl ?? "",
+        )}" target="_blank" rel="noopener noreferrer" style="color:#8fd7ff; text-decoration:underline;">${escapeHtml(
+          params.videoResponseUrl ?? "",
+        )}</a>`
+      : `Your coach has sent a written response:<br/><br/>${escapeHtml(params.writtenResponse ?? "")}`;
+
   await transporter.sendMail({
     from: process.env.NOTIFICATION_EMAIL,
     to: params.toEmail,
     subject: "Your LCB Training Coach Response",
     text: `Hi ${params.playerName},\n\nThanks for your ${submissionLabel} submission.\n\n${responseBody}\n\n-LCB Training`,
+    html: `<div style="font-family: Arial, sans-serif; color: #e5e7eb; background: #05070d; padding: 24px;">
+      <div style="max-width: 620px; margin: 0 auto; border: 1px solid #1f2c43; border-radius: 12px; overflow: hidden; background: #0b1324;">
+        <div style="background: linear-gradient(90deg, #000000 0%, #0f1d34 70%, #7fbf2f 100%); padding: 18px 20px; font-size: 18px; font-weight: 700; color: #f4f4f5;">
+          Your LCB Training Coach Response
+        </div>
+        <div style="padding: 20px; font-size: 14px; line-height: 1.65; color: #e5e7eb;">
+          <p style="margin: 0 0 12px;">Hi ${escapeHtml(params.playerName)},</p>
+          <p style="margin: 0 0 12px;">Thanks for your ${escapeHtml(submissionLabel)} submission.</p>
+          <p style="margin: 0 0 12px;">${htmlResponseBody}</p>
+          <p style="margin: 0;">-LCB Training</p>
+        </div>
+      </div>
+    </div>`,
   });
 }

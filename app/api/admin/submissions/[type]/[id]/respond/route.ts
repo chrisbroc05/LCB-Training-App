@@ -13,6 +13,14 @@ type RouteContext = {
   }>;
 };
 
+function isVimeoUploadEnabled() {
+  return process.env.VIMEO_UPLOAD_ENABLED?.toLowerCase() === "true";
+}
+
+function isValidVimeoUrl(value: string) {
+  return /^https?:\/\/(www\.)?vimeo\.com\/\d+/i.test(value.trim());
+}
+
 export async function POST(request: Request, context: RouteContext) {
   const session = await getServerSession(authOptions);
   if (!isAdminEmail(session?.user?.email)) {
@@ -30,6 +38,8 @@ export async function POST(request: Request, context: RouteContext) {
     .toLowerCase();
   const writtenResponse = String(formData.get("writtenResponse") ?? "").trim();
   const responseVideo = formData.get("responseVideo");
+  const responseVideoUrl = String(formData.get("responseVideoUrl") ?? "").trim();
+  const vimeoUploadEnabled = isVimeoUploadEnabled();
 
   if (responseMode !== "written" && responseMode !== "video") {
     return NextResponse.json({ error: "Invalid response mode." }, { status: 400 });
@@ -39,21 +49,32 @@ export async function POST(request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Written response is required." }, { status: 400 });
   }
 
-  if (responseMode === "video" && !(responseVideo instanceof File) && !responseVideo) {
+  if (responseMode === "video" && vimeoUploadEnabled && !(responseVideo instanceof File) && !responseVideo) {
     return NextResponse.json({ error: "Video response file is required." }, { status: 400 });
+  }
+
+  if (responseMode === "video" && !vimeoUploadEnabled && !isValidVimeoUrl(responseVideoUrl)) {
+    return NextResponse.json(
+      { error: "Please provide a valid Vimeo video link." },
+      { status: 400 },
+    );
   }
 
   let videoResponseUrl: string | undefined;
   if (responseMode === "video") {
-    if (!(responseVideo instanceof File) || responseVideo.size === 0) {
-      return NextResponse.json({ error: "Video response file is required." }, { status: 400 });
-    }
+    if (vimeoUploadEnabled) {
+      if (!(responseVideo instanceof File) || responseVideo.size === 0) {
+        return NextResponse.json({ error: "Video response file is required." }, { status: 400 });
+      }
 
-    const videoBuffer = Buffer.from(await responseVideo.arrayBuffer());
-    videoResponseUrl = await uploadVideoToVimeo({
-      fileBuffer: videoBuffer,
-      fileName: responseVideo.name || "coach-response.mp4",
-    });
+      const videoBuffer = Buffer.from(await responseVideo.arrayBuffer());
+      videoResponseUrl = await uploadVideoToVimeo({
+        fileBuffer: videoBuffer,
+        fileName: responseVideo.name || "coach-response.mp4",
+      });
+    } else {
+      videoResponseUrl = responseVideoUrl;
+    }
   }
 
   if (params.type === "mental") {

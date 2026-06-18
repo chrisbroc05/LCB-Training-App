@@ -24,7 +24,7 @@ type SubmissionDetail = SubmissionListItem & {
   responsePreference?: "VIDEO_RESPONSE" | "WRITTEN_RESPONSE";
 };
 
-export default function AdminPanel() {
+export default function AdminPanel({ vimeoUploadEnabled }: { vimeoUploadEnabled: boolean }) {
   const [tab, setTab] = useState<TabType>("swing");
   const [items, setItems] = useState<SubmissionListItem[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -34,6 +34,7 @@ export default function AdminPanel() {
   const [writtenResponse, setWrittenResponse] = useState("");
   const [responseMode, setResponseMode] = useState<"written" | "video">("written");
   const [responseVideo, setResponseVideo] = useState<File | null>(null);
+  const [manualVideoUrl, setManualVideoUrl] = useState("");
   const [sendStatus, setSendStatus] = useState("");
   const [sendError, setSendError] = useState("");
 
@@ -75,6 +76,7 @@ export default function AdminPanel() {
       setDetail(data.submission);
       setWrittenResponse("");
       setResponseVideo(null);
+      setManualVideoUrl("");
       setResponseMode("written");
       setSendStatus("");
       setSendError("");
@@ -109,11 +111,19 @@ export default function AdminPanel() {
       }
       formData.set("writtenResponse", writtenResponse.trim());
     } else {
-      if (!responseVideo) {
-        setSendError("Please upload a response video.");
-        return;
+      if (vimeoUploadEnabled) {
+        if (!responseVideo) {
+          setSendError("Please upload a response video.");
+          return;
+        }
+        formData.set("responseVideo", responseVideo);
+      } else {
+        if (!manualVideoUrl.trim()) {
+          setSendError("Please paste a Vimeo response link.");
+          return;
+        }
+        formData.set("responseVideoUrl", manualVideoUrl.trim());
       }
-      formData.set("responseVideo", responseVideo);
     }
 
     const response = await fetch(`/api/admin/submissions/${tab}/${detail.id}/respond`, {
@@ -283,6 +293,9 @@ export default function AdminPanel() {
 
             <div className="rounded-xl border border-[#2b3650] bg-[#0b1324]/70 p-4">
               <h3 className="text-lg font-semibold text-zinc-100">Send Response</h3>
+              {!vimeoUploadEnabled && (
+                <p className="mt-1 text-xs text-yellow-200">Manual Vimeo link mode</p>
+              )}
               <div className="mt-4 space-y-4">
                 <div className="flex gap-4">
                   <label className="flex items-center gap-2 text-sm text-zinc-200">
@@ -313,13 +326,23 @@ export default function AdminPanel() {
                     placeholder="Write your response here..."
                     className="w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 placeholder:text-zinc-500 focus:border-[#22c55e]"
                   />
-                ) : (
+                ) : vimeoUploadEnabled ? (
                   <input
                     type="file"
                     accept="video/*"
                     onChange={(event) => setResponseVideo(event.target.files?.[0] ?? null)}
                     className="w-full rounded-lg border border-dashed border-[#3b4b6a] bg-black px-4 py-4 text-sm text-zinc-300 file:mr-4 file:rounded-md file:border-0 file:bg-[#22c55e] file:px-3 file:py-2 file:font-semibold file:text-black hover:file:bg-[#35db72]"
                   />
+                ) : (
+                  <div className="space-y-2">
+                    <input
+                      type="url"
+                      value={manualVideoUrl}
+                      onChange={(event) => setManualVideoUrl(event.target.value)}
+                      placeholder="https://vimeo.com/..."
+                      className="w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 placeholder:text-zinc-500 focus:border-[#22c55e]"
+                    />
+                  </div>
                 )}
 
                 {sendError && <p className="text-sm text-red-300">{sendError}</p>}
