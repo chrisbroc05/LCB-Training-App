@@ -3,6 +3,7 @@ import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 import { isDatabaseTier } from "@/lib/membership";
 import { stripe } from "@/lib/stripe";
+import { sendPaymentFailedEmail } from "@/lib/notifications";
 
 function mapPriceIdToTier(priceId?: string | null) {
   if (!priceId) {
@@ -95,7 +96,7 @@ export async function POST(request: Request) {
     const currentPeriodEnd = getSubscriptionPeriodEnd(subscription);
     const cancelAtPeriodEnd = subscription.cancel_at_period_end;
     const status =
-      subscription.status === "canceled"
+      event.type === "customer.subscription.deleted" || subscription.status === "canceled"
         ? "CANCELED"
         : cancelAtPeriodEnd
           ? "CANCEL_AT_PERIOD_END"
@@ -141,6 +142,42 @@ export async function POST(request: Request) {
       },
       data,
     });
+  }
+
+  if (event.type === "invoice.payment_failed") {
+    const invoice = event.data.object as Stripe.Invoice;
+    const stripeCustomerId = typeof invoice.customer === "string" ? invoice.customer : null;
+    const stripeSubscriptionId =
+      typeof invoice.subscription === "string" ? invoice.subscription : null;
+
+    if (stripeCustomerId || stripeSubscriptionId) {
+      const user = await prisma.user.findFirst({
+        where: {
+          OR: [
+            ...(stripeCustomerId ? [{ stripeCustomerId }] : []),
+            ...(stripeSubscriptionId ? [{ stripeSubscriptionId }] : []),
+          ],
+        },
+        select: {
+          email: true,
+          name: true,
+        },
+      });
+
+      if (user?.email) {
+        try {
+          await sendPaymentFailedEmail({
+            toEmail: user.email,
+            displayName: user.name ?? user.email,
+            amountDueCents: invoice.amount_due,
+            currency: invoice.currency,
+            invoiceUrl: invoice.hosted_invoice_url,
+          });
+        } catch (error) {
+          console.error("Failed to send payment failed email", error);
+        }
+      }
+    }
   }
 
   return NextResponse.json({ received: true });

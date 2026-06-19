@@ -297,3 +297,56 @@ export async function sendSubscriptionCancellationEmail(params: {
     </div>`,
   });
 }
+
+export async function sendPaymentFailedEmail(params: {
+  toEmail: string;
+  displayName: string;
+  amountDueCents?: number | null;
+  currency?: string | null;
+  invoiceUrl?: string | null;
+}) {
+  const transporter = createTransporter();
+  const amountDue =
+    typeof params.amountDueCents === "number"
+      ? `${(params.amountDueCents / 100).toFixed(2)} ${(params.currency ?? "USD").toUpperCase()}`
+      : "your subscription amount";
+  const invoiceLink = params.invoiceUrl?.trim() ?? "";
+
+  const textBody = `Hi ${params.displayName},
+
+We couldn't process your latest subscription payment for ${amountDue}.
+
+Please update your billing information as soon as possible to avoid interruption to your LCB Training access.
+${invoiceLink ? `\nInvoice link: ${invoiceLink}` : ""}
+
+-LCB Training`;
+
+  const htmlInvoice = invoiceLink
+    ? `<p style="margin: 0 0 12px;"><a href="${escapeHtml(
+        invoiceLink,
+      )}" target="_blank" rel="noopener noreferrer" style="color:#8fd7ff; text-decoration:underline;">View Invoice</a></p>`
+    : "";
+
+  await transporter.sendMail({
+    from: process.env.NOTIFICATION_EMAIL,
+    to: params.toEmail,
+    subject: "Payment Failed - Update Billing Information",
+    text: textBody,
+    html: `<div style="font-family: Arial, sans-serif; color: #e5e7eb; background: #05070d; padding: 24px;">
+      <div style="max-width: 620px; margin: 0 auto; border: 1px solid #1f2c43; border-radius: 12px; overflow: hidden; background: #0b1324;">
+        <div style="background: linear-gradient(90deg, #000000 0%, #0f1d34 70%, #7fbf2f 100%); padding: 18px 20px; font-size: 18px; font-weight: 700; color: #f4f4f5;">
+          Payment Failed
+        </div>
+        <div style="padding: 20px; font-size: 14px; line-height: 1.65; color: #e5e7eb;">
+          <p style="margin: 0 0 12px;">Hi ${escapeHtml(params.displayName)},</p>
+          <p style="margin: 0 0 12px;">We could not process your latest subscription payment for <strong>${escapeHtml(
+            amountDue,
+          )}</strong>.</p>
+          <p style="margin: 0 0 12px;">Please update your billing information as soon as possible to avoid interruption to your LCB Training access.</p>
+          ${htmlInvoice}
+          <p style="margin: 0;">-LCB Training</p>
+        </div>
+      </div>
+    </div>`,
+  });
+}
