@@ -12,6 +12,13 @@ enum MembershipTier {
   ELITE
 }
 
+enum SubscriptionStatus {
+  NONE
+  ACTIVE
+  CANCEL_AT_PERIOD_END
+  CANCELED
+}
+
 enum MentalGameTopic {
   SLUMP
   CONFIDENCE
@@ -39,6 +46,12 @@ model User {
   email                  String                 @unique
   password               String
   membershipTier         MembershipTier         @default(BASIC)
+  subscriptionStatus     SubscriptionStatus     @default(NONE)
+  stripeCustomerId       String?                @unique
+  stripeSubscriptionId   String?                @unique
+  stripePriceId          String?
+  subscriptionCurrentPeriodEnd DateTime?
+  subscriptionCancelAtPeriodEnd Boolean         @default(false)
   emailVerified          DateTime?
   image                  String?
   createdAt              DateTime               @default(now())

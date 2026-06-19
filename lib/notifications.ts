@@ -264,3 +264,36 @@ export async function sendSubmissionResponseEmail(params: {
     </div>`,
   });
 }
+
+export async function sendSubscriptionCancellationEmail(params: {
+  toEmail: string;
+  displayName: string;
+  effectiveEndDate: Date;
+}) {
+  const transporter = createTransporter();
+  const formattedDate = params.effectiveEndDate.toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+
+  await transporter.sendMail({
+    from: process.env.NOTIFICATION_EMAIL,
+    to: params.toEmail,
+    subject: "LCB Training Subscription Cancellation Confirmed",
+    text: `Hi ${params.displayName},\n\nYour subscription has been canceled and will remain active until ${formattedDate}. After that date, your account will move to Basic membership.\n\nIf this was a mistake, you can re-subscribe any time from your account.\n\n-LCB Training`,
+    html: `<div style="font-family: Arial, sans-serif; color: #e5e7eb; background: #05070d; padding: 24px;">
+      <div style="max-width: 620px; margin: 0 auto; border: 1px solid #1f2c43; border-radius: 12px; overflow: hidden; background: #0b1324;">
+        <div style="background: linear-gradient(90deg, #000000 0%, #0f1d34 70%, #7fbf2f 100%); padding: 18px 20px; font-size: 18px; font-weight: 700; color: #f4f4f5;">
+          Subscription Cancellation Confirmed
+        </div>
+        <div style="padding: 20px; font-size: 14px; line-height: 1.65; color: #e5e7eb;">
+          <p style="margin: 0 0 12px;">Hi ${escapeHtml(params.displayName)},</p>
+          <p style="margin: 0 0 12px;">Your subscription has been canceled and will remain active until <strong>${escapeHtml(formattedDate)}</strong>.</p>
+          <p style="margin: 0 0 12px;">After that date, your account will move to Basic membership.</p>
+          <p style="margin: 0;">If this was a mistake, you can re-subscribe any time from your account settings.</p>
+        </div>
+      </div>
+    </div>`,
+  });
+}

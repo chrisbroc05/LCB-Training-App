@@ -18,6 +18,9 @@ Required:
 - `STRIPE_SECRET_KEY` - Stripe secret API key for checkout + webhooks
 - `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` - Stripe publishable key used on signup
 - `STRIPE_WEBHOOK_SECRET` - signing secret for `/api/webhooks/stripe`
+- `STRIPE_BASIC_PRICE_ID` - Stripe recurring price ID for Basic membership
+- `STRIPE_PRO_PRICE_ID` - Stripe recurring price ID for Pro membership
+- `STRIPE_ELITE_PRICE_ID` - Stripe recurring price ID for Elite membership
 - `NOTIFICATION_EMAIL` - Gmail address used to send app notifications
 - `EMAIL_PASSWORD` - Gmail app password for `NOTIFICATION_EMAIL`
 

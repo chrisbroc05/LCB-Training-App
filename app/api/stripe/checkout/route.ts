@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { ensureStripeCatalog, getOrCreateSubscriptionPriceId, stripe } from "@/lib/stripe";
+import { getSubscriptionPriceId, stripe } from "@/lib/stripe";
 import { isDatabaseTier } from "@/lib/membership";
 
 type CheckoutBody = {
@@ -37,8 +37,7 @@ export async function POST(request: Request) {
     }
 
     const membershipTier = requestedTier;
-    await ensureStripeCatalog();
-    const priceId = await getOrCreateSubscriptionPriceId(membershipTier);
+    const priceId = getSubscriptionPriceId(membershipTier);
     const baseUrl = getBaseUrl(request);
 
     const checkoutSession = await stripe.checkout.sessions.create({

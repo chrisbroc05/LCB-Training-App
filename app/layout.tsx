@@ -55,6 +55,11 @@ export default async function RootLayout({
               <Link href="/dashboard" className="transition hover:text-[#7f9434]">
                 Dashboard
               </Link>
+              {session?.user && (
+                <Link href="/settings" className="transition hover:text-[#7f9434]">
+                  Settings
+                </Link>
+              )}
               <Link
                 href="/swing-analysis"
                 className="rounded-full border border-[#22c55e]/70 bg-[#22c55e]/10 px-4 py-2 font-medium text-[#8df0b1] transition hover:bg-[#22c55e]/20"
@@ -87,7 +92,18 @@ export default async function RootLayout({
         </header>
         <main className="flex-1">{children}</main>
         <footer className="border-t border-[#18243a] py-6 text-center text-sm text-zinc-400">
-          © {new Date().getFullYear()} LCB Training. All rights reserved.
+          <div className="mx-auto flex w-full max-w-6xl flex-col items-center justify-center gap-2 px-6 md:flex-row md:gap-4">
+            <span>© {new Date().getFullYear()} LCB Training. All rights reserved.</span>
+            <span className="hidden text-zinc-600 md:inline">|</span>
+            <div className="flex items-center gap-4">
+              <Link href="/terms" className="transition hover:text-[#98b144]">
+                Terms of Service
+              </Link>
+              <Link href="/privacy" className="transition hover:text-[#98b144]">
+                Privacy Policy
+              </Link>
+            </div>
+          </div>
         </footer>
       </body>
     </html>

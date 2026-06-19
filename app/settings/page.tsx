@@ -1,0 +1,99 @@
+import { redirect } from "next/navigation";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import type { DatabaseTier } from "@/lib/membership";
+import CancelSubscriptionButton from "@/app/settings/CancelSubscriptionButton";
+
+function formatTierLabel(tier: DatabaseTier) {
+  return tier.charAt(0) + tier.slice(1).toLowerCase();
+}
+
+function formatDate(date: Date | null) {
+  if (!date) {
+    return "Not available";
+  }
+
+  return new Intl.DateTimeFormat("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  }).format(date);
+}
+
+export default async function SettingsPage() {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    redirect("/auth");
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: {
+      membershipTier: true,
+      subscriptionStatus: true,
+      subscriptionCurrentPeriodEnd: true,
+      stripeSubscriptionId: true,
+      subscriptionCancelAtPeriodEnd: true,
+    },
+  });
+
+  if (!user) {
+    redirect("/auth");
+  }
+
+  const hasSubscription = Boolean(user.stripeSubscriptionId);
+  const isCancelScheduled = user.subscriptionCancelAtPeriodEnd;
+
+  return (
+    <div className="mx-auto w-full max-w-4xl px-6 py-14 md:py-20">
+      <section className="rounded-3xl border border-[#18243a] bg-[#0b1324]/80 p-8">
+        <h1 className="text-3xl font-semibold text-zinc-100">Account Settings</h1>
+        <p className="mt-2 text-zinc-300">
+          Review your current membership details and manage your Stripe subscription.
+        </p>
+      </section>
+
+      <section className="mt-8 grid gap-5 md:grid-cols-2">
+        <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-6">
+          <h2 className="text-lg font-semibold text-zinc-100">Membership Tier</h2>
+          <p className="mt-3 text-zinc-300">
+            Current plan:{" "}
+            <span className="font-semibold text-[#98b144]">
+              {formatTierLabel(user.membershipTier as DatabaseTier)}
+            </span>
+          </p>
+          <p className="mt-2 text-sm text-zinc-400">
+            Subscription status: {user.subscriptionStatus.replaceAll("_", " ")}
+          </p>
+        </article>
+
+        <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-6">
+          <h2 className="text-lg font-semibold text-zinc-100">Next Billing Date</h2>
+          <p className="mt-3 text-zinc-300">{formatDate(user.subscriptionCurrentPeriodEnd)}</p>
+          {isCancelScheduled && (
+            <p className="mt-2 text-sm text-yellow-200">
+              Your subscription is set to cancel at period end.
+            </p>
+          )}
+        </article>
+      </section>
+
+      <section className="mt-8 rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-6">
+        <h2 className="text-lg font-semibold text-zinc-100">Subscription Management</h2>
+        <p className="mt-2 text-zinc-300">
+          Canceling stops future billing and keeps your access active through the current cycle.
+        </p>
+        {!hasSubscription ? (
+          <p className="mt-4 text-sm text-zinc-400">
+            No active Stripe subscription was found for this account.
+          </p>
+        ) : (
+          <div className="mt-4">
+            <CancelSubscriptionButton disabled={isCancelScheduled} />
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
