@@ -148,7 +148,9 @@ export async function POST(request: Request) {
     const invoice = event.data.object as Stripe.Invoice;
     const stripeCustomerId = typeof invoice.customer === "string" ? invoice.customer : null;
     const stripeSubscriptionId =
-      typeof invoice.subscription === "string" ? invoice.subscription : null;
+      typeof (invoice as { subscription?: unknown }).subscription === "string"
+        ? ((invoice as { subscription?: string }).subscription ?? null)
+        : null;
 
     if (stripeCustomerId || stripeSubscriptionId) {
       const user = await prisma.user.findFirst({
