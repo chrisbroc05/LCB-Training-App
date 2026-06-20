@@ -3,7 +3,7 @@ services:
     name: lcb-training-web
     env: node
     buildCommand: npm install && npm run prisma:generate && npm run build
-    startCommand: npm start
+    startCommand: npm run prisma:deploy && npm start
     envVars:
       - key: NODE_VERSION
         value: 20.x
