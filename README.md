@@ -23,6 +23,7 @@ Required:
 - `STRIPE_ELITE_PRICE_ID` - Stripe recurring price ID for Elite membership
 - `NOTIFICATION_EMAIL` - Gmail address used to send app notifications
 - `EMAIL_PASSWORD` - Gmail app password for `NOTIFICATION_EMAIL`
+- `ONBOARDING_CRON_SECRET` - shared secret used by daily onboarding email cron endpoint
 
 ## Database Setup
 

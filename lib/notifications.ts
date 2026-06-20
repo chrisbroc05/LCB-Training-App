@@ -350,3 +350,164 @@ ${invoiceLink ? `\nInvoice link: ${invoiceLink}` : ""}
     </div>`,
   });
 }
+
+export async function sendMembershipTierChangeEmail(params: {
+  toEmail: string;
+  displayName: string;
+  newTier: DatabaseTier;
+}) {
+  const transporter = createTransporter();
+  const tierLabel = getTierLabel(params.newTier);
+
+  await transporter.sendMail({
+    from: process.env.NOTIFICATION_EMAIL,
+    to: params.toEmail,
+    subject: "Your Membership Tier Has Been Updated",
+    text: `Hi ${params.displayName},\n\nYour LCB Training membership has been updated to ${tierLabel}. Any prorated Stripe adjustment has been applied automatically.\n\n-LCB Training`,
+    html: `<div style="font-family: Arial, sans-serif; color: #e5e7eb; background: #05070d; padding: 24px;">
+      <div style="max-width: 620px; margin: 0 auto; border: 1px solid #1f2c43; border-radius: 12px; overflow: hidden; background: #0b1324;">
+        <div style="background: linear-gradient(90deg, #000000 0%, #0f1d34 70%, #7fbf2f 100%); padding: 18px 20px; font-size: 18px; font-weight: 700; color: #f4f4f5;">
+          Membership Updated
+        </div>
+        <div style="padding: 20px; font-size: 14px; line-height: 1.65; color: #e5e7eb;">
+          <p style="margin: 0 0 12px;">Hi ${escapeHtml(params.displayName)},</p>
+          <p style="margin: 0 0 12px;">Your LCB Training membership has been updated to <strong>${escapeHtml(
+            tierLabel,
+          )}</strong>.</p>
+          <p style="margin: 0;">Any prorated Stripe adjustment has been applied automatically.</p>
+        </div>
+      </div>
+    </div>`,
+  });
+}
+
+function getLoginUrl() {
+  const appUrl = process.env.NEXTAUTH_URL?.replace(/\/$/, "");
+  return appUrl ? `${appUrl}/auth` : "http://localhost:3000/auth";
+}
+
+function buildOnboardingEmailShell(params: {
+  heading: string;
+  intro: string;
+  bodyHtml: string;
+}) {
+  const logoUrl = getLogoUrl();
+
+  return `<div style="font-family: Arial, sans-serif; color: #e5e7eb; background: #05070d; padding: 24px;">
+    <div style="max-width: 700px; margin: 0 auto; border: 1px solid #1f2c43; border-radius: 12px; overflow: hidden; background: #0b1324;">
+      <div style="background: linear-gradient(90deg, #000000 0%, #0f1d34 70%, #7fbf2f 100%); padding: 20px 24px;">
+        ${
+          logoUrl
+            ? `<img src="${logoUrl}" alt="LCB Training" style="height: 42px; width: auto; display: block; margin-bottom: 12px;" />`
+            : ""
+        }
+        <div style="font-size: 20px; font-weight: 700; color: #f4f4f5;">${escapeHtml(params.heading)}</div>
+      </div>
+      <div style="padding: 22px 24px; font-size: 14px; line-height: 1.7; color: #e5e7eb;">
+        <p style="margin: 0 0 14px;">${params.intro}</p>
+        ${params.bodyHtml}
+      </div>
+    </div>
+  </div>`;
+}
+
+export async function sendOnboardingEmail1(params: {
+  toEmail: string;
+  displayName: string;
+  membershipTier: DatabaseTier;
+}) {
+  const transporter = createTransporter();
+  const tierLabel = getTierLabel(params.membershipTier);
+  const loginUrl = getLoginUrl();
+  const introVideosText = "Start by watching the intro videos so you can learn the training flow.";
+  const dashboardGuidance =
+    params.membershipTier === "BASIC"
+      ? "You currently have access to the hitting, fielding, and mindset libraries. Use your dashboard to build a weekly routine."
+      : "You currently have full libraries plus coaching submission tools. Use your dashboard to access swing analysis and mental game support.";
+
+  await transporter.sendMail({
+    from: process.env.NOTIFICATION_EMAIL,
+    to: params.toEmail,
+    subject: "Welcome to LCB Training!",
+    text: `Hi ${params.displayName},
+
+Welcome to LCB Training!
+
+${introVideosText}
+${dashboardGuidance}
+
+Current membership: ${tierLabel}
+Log in: ${loginUrl}
+
+-LCB Training`,
+    html: buildOnboardingEmailShell({
+      heading: "Welcome to LCB Training!",
+      intro: `Hi ${escapeHtml(params.displayName)}, welcome aboard.`,
+      bodyHtml: `<p style="margin: 0 0 12px;">${escapeHtml(introVideosText)}</p>
+        <p style="margin: 0 0 12px;">${escapeHtml(dashboardGuidance)}</p>
+        <p style="margin: 0 0 16px;"><strong style="color:#98b144;">Current Membership:</strong> ${escapeHtml(
+          tierLabel,
+        )}</p>
+        <a href="${escapeHtml(
+          loginUrl,
+        )}" target="_blank" rel="noopener noreferrer" style="display:inline-block; background:#22c55e; color:#0a0a0a; text-decoration:none; font-weight:700; padding:10px 16px; border-radius:999px;">Log In to Your Dashboard</a>`,
+    }),
+  });
+}
+
+export async function sendOnboardingEmail2(params: {
+  toEmail: string;
+  displayName: string;
+}) {
+  const transporter = createTransporter();
+
+  await transporter.sendMail({
+    from: process.env.NOTIFICATION_EMAIL,
+    to: params.toEmail,
+    subject: "Have you checked out the drill library?",
+    text: `Hi ${params.displayName},
+
+Have you checked out the drill library?
+
+Take a look at the hitting and fielding video libraries and pick one drill to focus on this week.
+Also make time for the mindset library to strengthen confidence and game focus.
+
+-LCB Training`,
+    html: buildOnboardingEmailShell({
+      heading: "Have you checked out the drill library?",
+      intro: `Hi ${escapeHtml(params.displayName)}, quick check-in from the LCB Training team.`,
+      bodyHtml: `<p style="margin: 0 0 12px;">Take a look at the hitting and fielding video libraries and choose one drill to focus on this week.</p>
+        <p style="margin: 0;">Also make time for the mindset library to strengthen confidence, focus, and in-game composure.</p>`,
+    }),
+  });
+}
+
+export async function sendOnboardingEmail3(params: {
+  toEmail: string;
+  displayName: string;
+  membershipTier: DatabaseTier;
+}) {
+  const transporter = createTransporter();
+  const isAdvancedTier = params.membershipTier === "PRO" || params.membershipTier === "ELITE";
+  const message = isAdvancedTier
+    ? "You have swing analysis and mental game support available right now. Submit your first video this week and start getting personalized coaching feedback."
+    : "Ready for personalized feedback? Upgrade to Pro or Elite to unlock swing analysis and mental game support submissions.";
+
+  await transporter.sendMail({
+    from: process.env.NOTIFICATION_EMAIL,
+    to: params.toEmail,
+    subject: "Time to put your skills to the test!",
+    text: `Hi ${params.displayName},
+
+Time to put your skills to the test!
+
+${message}
+
+-LCB Training`,
+    html: buildOnboardingEmailShell({
+      heading: "Time to put your skills to the test!",
+      intro: `Hi ${escapeHtml(params.displayName)}, you are one week in.`,
+      bodyHtml: `<p style="margin: 0;">${escapeHtml(message)}</p>`,
+    }),
+  });
+}

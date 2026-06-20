@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import type { DatabaseTier } from "@/lib/membership";
 import { stripe } from "@/lib/stripe";
 import CancelSubscriptionButton from "@/app/settings/CancelSubscriptionButton";
+import ChangeMembershipSection from "@/app/settings/ChangeMembershipSection";
 
 function formatTierLabel(tier: DatabaseTier) {
   return tier.charAt(0) + tier.slice(1).toLowerCase();
@@ -140,6 +141,11 @@ export default async function SettingsPage() {
           </div>
         )}
       </section>
+
+      <ChangeMembershipSection
+        currentTier={user.membershipTier as DatabaseTier}
+        hasSubscription={hasSubscription}
+      />
     </div>
   );
 }

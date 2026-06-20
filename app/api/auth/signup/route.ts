@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { hash } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { isDatabaseTier, type DatabaseTier } from "@/lib/membership";
-import { sendNewMemberNotification } from "@/lib/notifications";
+import { sendNewMemberNotification, sendOnboardingEmail1 } from "@/lib/notifications";
 
 type SignupBody = {
   name?: string;
@@ -47,12 +47,19 @@ export async function POST(request: Request) {
 
     const hashedPassword = await hash(password, 12);
 
-    await prisma.user.create({
+    const createdUser = await prisma.user.create({
       data: {
         name: name || null,
         email,
         password: hashedPassword,
         membershipTier: "BASIC",
+        signupDate: new Date(),
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        membershipTier: true,
       },
     });
 
@@ -63,6 +70,20 @@ export async function POST(request: Request) {
       });
     } catch (error) {
       console.error("Failed to send new member notification", error);
+    }
+
+    try {
+      await sendOnboardingEmail1({
+        toEmail: createdUser.email,
+        displayName: createdUser.name ?? createdUser.email,
+        membershipTier: createdUser.membershipTier,
+      });
+      await prisma.user.update({
+        where: { id: createdUser.id },
+        data: { onboardingEmail1Sent: true },
+      });
+    } catch (error) {
+      console.error("Failed to send onboarding welcome email", error);
     }
 
     return NextResponse.json({ success: true }, { status: 201 });
