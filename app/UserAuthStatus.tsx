@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { signOut } from "next-auth/react";
 
 type UserAuthStatusProps = {
@@ -31,7 +32,9 @@ export default function UserAuthStatus({
   return (
     <div className="flex items-center gap-3">
       <div className="rounded-full border border-[#2b3650] bg-black/40 px-4 py-2 text-xs text-zinc-200">
-        <span className="font-semibold text-zinc-100">{displayName}</span>
+        <Link href="/profile" className="font-semibold text-zinc-100 transition hover:text-[#98b144]">
+          {displayName}
+        </Link>
         <span className="mx-2 text-zinc-500">|</span>
         <span className="text-[#98b144]">{formatTierLabel(membershipTier)}</span>
       </div>

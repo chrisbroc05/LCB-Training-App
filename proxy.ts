@@ -7,5 +7,5 @@ export default withAuth({
 });
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/swing-analysis/:path*", "/mental-game/:path*", "/settings/:path*"],
+  matcher: ["/dashboard/:path*", "/swing-analysis/:path*", "/mental-game/:path*", "/settings/:path*", "/profile/:path*"],
 };
