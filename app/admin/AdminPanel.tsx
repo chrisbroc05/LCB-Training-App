@@ -24,6 +24,23 @@ type SubmissionDetail = SubmissionListItem & {
   responsePreference?: "VIDEO_RESPONSE" | "WRITTEN_RESPONSE";
 };
 
+function toVimeoEmbedUrl(url: string | null) {
+  if (!url) {
+    return null;
+  }
+
+  if (url.includes("player.vimeo.com/video/")) {
+    return url;
+  }
+
+  const match = url.match(/vimeo\.com\/(\d+)/i);
+  if (!match) {
+    return null;
+  }
+
+  return `https://player.vimeo.com/video/${match[1]}`;
+}
+
 export default function AdminPanel({ vimeoUploadEnabled }: { vimeoUploadEnabled: boolean }) {
   const [tab, setTab] = useState<TabType>("swing");
   const [items, setItems] = useState<SubmissionListItem[]>([]);
@@ -35,8 +52,9 @@ export default function AdminPanel({ vimeoUploadEnabled }: { vimeoUploadEnabled:
   const [responseMode, setResponseMode] = useState<"written" | "video">("written");
   const [responseVideo, setResponseVideo] = useState<File | null>(null);
   const [manualVideoUrl, setManualVideoUrl] = useState("");
-  const [sendStatus, setSendStatus] = useState("");
   const [sendError, setSendError] = useState("");
+  const [showResponseModal, setShowResponseModal] = useState(false);
+  const [responseSummary, setResponseSummary] = useState("");
 
   useEffect(() => {
     const loadList = async () => {
@@ -52,8 +70,9 @@ export default function AdminPanel({ vimeoUploadEnabled }: { vimeoUploadEnabled:
       setItems(data.submissions);
       setSelectedId(null);
       setDetail(null);
-      setSendStatus("");
       setSendError("");
+      setShowResponseModal(false);
+      setResponseSummary("");
     };
 
     void loadList();
@@ -78,8 +97,9 @@ export default function AdminPanel({ vimeoUploadEnabled }: { vimeoUploadEnabled:
       setResponseVideo(null);
       setManualVideoUrl("");
       setResponseMode("written");
-      setSendStatus("");
       setSendError("");
+      setShowResponseModal(false);
+      setResponseSummary("");
     };
 
     void loadDetail();
@@ -93,6 +113,7 @@ export default function AdminPanel({ vimeoUploadEnabled }: { vimeoUploadEnabled:
   }, [detail]);
 
   const isVimeoVideo = selectedVideoUrl?.includes("vimeo.com") ?? false;
+  const embedVideoUrl = isVimeoVideo ? toVimeoEmbedUrl(selectedVideoUrl) : selectedVideoUrl;
 
   const handleSendResponse = async () => {
     if (!detail) {
@@ -100,7 +121,6 @@ export default function AdminPanel({ vimeoUploadEnabled }: { vimeoUploadEnabled:
     }
 
     setSendError("");
-    setSendStatus("");
     const formData = new FormData();
     formData.set("responseMode", responseMode);
 
@@ -137,7 +157,12 @@ export default function AdminPanel({ vimeoUploadEnabled }: { vimeoUploadEnabled:
       return;
     }
 
-    setSendStatus("Response sent and submission marked as Responded.");
+    const summary =
+      responseMode === "written"
+        ? `Written response sent: "${writtenResponse.trim().slice(0, 180)}${writtenResponse.trim().length > 180 ? "..." : ""}"`
+        : `Video response sent${vimeoUploadEnabled ? " using uploaded file." : ` with link: ${manualVideoUrl.trim()}`}`;
+    setResponseSummary(summary);
+    setShowResponseModal(true);
     setItems((previous) =>
       previous.map((item) =>
         item.id === detail.id
@@ -275,15 +300,31 @@ export default function AdminPanel({ vimeoUploadEnabled }: { vimeoUploadEnabled:
 
             {selectedVideoUrl && (
               <div className="overflow-hidden rounded-xl border border-[#2b3650] bg-black">
+                <div className="border-b border-[#2b3650] px-4 py-2">
+                  <a
+                    href={selectedVideoUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-[#8fd7ff] underline"
+                  >
+                    Open submission video link
+                  </a>
+                </div>
                 <div className="aspect-video w-full">
                   {isVimeoVideo ? (
-                    <iframe
-                      src={selectedVideoUrl.replace("vimeo.com/", "player.vimeo.com/video/")}
-                      title="Submission video"
-                      className="h-full w-full"
-                      allow="autoplay; fullscreen; picture-in-picture"
-                      allowFullScreen
-                    />
+                    embedVideoUrl ? (
+                      <iframe
+                        src={embedVideoUrl}
+                        title="Submission video"
+                        className="h-full w-full"
+                        allow="autoplay; fullscreen; picture-in-picture"
+                        allowFullScreen
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center px-4 text-center text-sm text-zinc-400">
+                        Unable to embed this Vimeo URL. Use the link above to open it.
+                      </div>
+                    )
                   ) : (
                     <video src={selectedVideoUrl} controls className="h-full w-full" />
                   )}
@@ -346,7 +387,6 @@ export default function AdminPanel({ vimeoUploadEnabled }: { vimeoUploadEnabled:
                 )}
 
                 {sendError && <p className="text-sm text-red-300">{sendError}</p>}
-                {sendStatus && <p className="text-sm text-[#9df3bd]">{sendStatus}</p>}
 
                 <button
                   type="button"
@@ -360,6 +400,35 @@ export default function AdminPanel({ vimeoUploadEnabled }: { vimeoUploadEnabled:
           </div>
         )}
       </section>
+      {showResponseModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+          <div className="w-full max-w-xl rounded-2xl border border-[#2b3650] bg-[#0b1324] p-6 shadow-2xl">
+            <h3 className="text-2xl font-semibold text-zinc-100">Response Sent</h3>
+            <p className="mt-3 text-sm text-zinc-300">
+              Coach response was sent successfully and the submission has been marked as Responded.
+            </p>
+            <div className="mt-4 rounded-xl border border-[#2b3650] bg-black/30 p-4">
+              <p className="text-xs uppercase tracking-wide text-zinc-400">Summary</p>
+              <p className="mt-2 whitespace-pre-wrap text-sm text-zinc-200">
+                {responseSummary || "Response sent successfully."}
+              </p>
+            </div>
+            <div className="mt-6 flex justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowResponseModal(false);
+                  setSelectedId(null);
+                  setDetail(null);
+                }}
+                className="rounded-full bg-[#22c55e] px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-[#35db72]"
+              >
+                Return to Inbox
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

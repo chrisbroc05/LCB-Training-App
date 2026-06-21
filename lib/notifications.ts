@@ -248,12 +248,14 @@ export async function sendSubmissionResponseEmail(params: {
           params.videoResponseUrl ?? "",
         )}</a>`
       : `Your coach has sent a written response:<br/><br/>${escapeHtml(params.writtenResponse ?? "")}`;
+  const settingsUrl = `${process.env.NEXTAUTH_URL?.replace(/\/$/, "") ?? "http://localhost:3000"}/settings`;
   const isFreeTier = params.membershipTier === "FREE";
   const freeTierCtaText = isFreeTier
     ? `Want to keep progressing?
 
 Basic ($5/month) unlocks the full hitting, fielding, and mindset libraries.
 Pro ($15/month) unlocks ongoing swing analysis feedback plus mental game support.
+Upgrade now in Settings: ${settingsUrl}
 `
     : "";
   const freeTierCtaHtml = isFreeTier
@@ -261,14 +263,21 @@ Pro ($15/month) unlocks ongoing swing analysis feedback plus mental game support
         <p style="margin:0 0 8px; font-weight:700; color:#98b144;">Keep building your progress</p>
         <p style="margin:0 0 6px;"><strong>Basic ($5/month):</strong> Full hitting, fielding, and mindset video libraries.</p>
         <p style="margin:0;"><strong>Pro ($15/month):</strong> Ongoing swing analysis feedback and mental game support.</p>
+        <p style="margin:8px 0 0;"><a href="${escapeHtml(
+          settingsUrl,
+        )}" target="_blank" rel="noopener noreferrer" style="color:#8fd7ff; text-decoration:underline;">Upgrade your membership in Settings</a></p>
       </div>`
     : "";
+  const generalSettingsCtaText = `Manage your membership and upgrades: ${settingsUrl}`;
+  const generalSettingsCtaHtml = `<p style="margin: 12px 0 0;"><a href="${escapeHtml(
+    settingsUrl,
+  )}" target="_blank" rel="noopener noreferrer" style="color:#8fd7ff; text-decoration:underline;">Manage or upgrade your membership in Settings</a></p>`;
 
   await transporter.sendMail({
     from: process.env.NOTIFICATION_EMAIL,
     to: params.toEmail,
     subject: "Your LCB Training Coach Response",
-    text: `Hi ${params.playerName},\n\nThanks for your ${submissionLabel} submission.\n\n${responseBody}\n${freeTierCtaText}\n-LCB Training`,
+    text: `Hi ${params.playerName},\n\nThanks for your ${submissionLabel} submission.\n\n${responseBody}\n${freeTierCtaText}\n${generalSettingsCtaText}\n\n-LCB Training`,
     html: `<div style="font-family: Arial, sans-serif; color: #e5e7eb; background: #05070d; padding: 24px;">
       <div style="max-width: 620px; margin: 0 auto; border: 1px solid #1f2c43; border-radius: 12px; overflow: hidden; background: #0b1324;">
         <div style="background: linear-gradient(90deg, #000000 0%, #0f1d34 70%, #7fbf2f 100%); padding: 18px 20px; font-size: 18px; font-weight: 700; color: #f4f4f5;">
@@ -279,6 +288,7 @@ Pro ($15/month) unlocks ongoing swing analysis feedback plus mental game support
           <p style="margin: 0 0 12px;">Thanks for your ${escapeHtml(submissionLabel)} submission.</p>
           <p style="margin: 0 0 12px;">${htmlResponseBody}</p>
           ${freeTierCtaHtml}
+          ${generalSettingsCtaHtml}
           <p style="margin: 12px 0 0;">-LCB Training</p>
         </div>
       </div>

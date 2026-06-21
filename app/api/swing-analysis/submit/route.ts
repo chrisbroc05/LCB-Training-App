@@ -129,7 +129,7 @@ export async function POST(request: Request) {
     }
 
     console.log(`[swing-submit:${requestId}] Creating swing submission record`);
-    await withTimeout(
+    const createdSubmission = await withTimeout(
       prisma.swingAnalysisSubmission.create({
       data: {
         userId: session.user.id,
@@ -146,7 +146,14 @@ export async function POST(request: Request) {
       DB_TIMEOUT_MS,
       "Database insert",
     );
-    console.log(`[swing-submit:${requestId}] Submission saved to database`);
+    console.log(
+      `[swing-submit:${requestId}] Submission saved to database (id=${createdSubmission.id}, submittedVideo=${createdSubmission.submittedVideo})`,
+    );
+    if (!createdSubmission.submittedVideo?.trim()) {
+      console.warn(
+        `[swing-submit:${requestId}] Submission stored with empty submittedVideo for id=${createdSubmission.id}`,
+      );
+    }
 
     if (membershipTier === "FREE") {
       await prisma.user.update({
