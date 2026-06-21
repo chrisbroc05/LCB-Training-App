@@ -2,7 +2,7 @@ import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { hasDatabaseTierAccess, type DatabaseTier } from "@/lib/membership";
+import type { DatabaseTier } from "@/lib/membership";
 import { prisma } from "@/lib/prisma";
 import { sendSwingSubmissionNotification } from "@/lib/notifications";
 import { uploadVideoToVimeo } from "@/lib/vimeo";
@@ -35,13 +35,25 @@ export async function POST(request: Request) {
     }
     console.log(`[swing-submit:${requestId}] Session validated for ${session.user.email}`);
 
-    const membershipTier = (session.user.membershipTier ?? "BASIC") as DatabaseTier;
-    if (!hasDatabaseTierAccess(membershipTier, "pro")) {
+    const membershipTier = (session.user.membershipTier ?? "FREE") as DatabaseTier;
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { freeSubmissionUsed: true },
+    });
+
+    if (membershipTier === "BASIC") {
       console.warn(
         `[swing-submit:${requestId}] Access denied for tier ${membershipTier} (${session.user.email})`,
       );
       return NextResponse.json(
-        { error: "Swing analysis submissions require a Pro or Elite membership." },
+        { error: "Swing analysis submissions require Free (one-time), Pro, or Elite membership." },
+        { status: 403 },
+      );
+    }
+
+    if (membershipTier === "FREE" && user?.freeSubmissionUsed) {
+      return NextResponse.json(
+        { error: "Your one free submission has already been used. Please upgrade to continue." },
         { status: 403 },
       );
     }
@@ -135,6 +147,13 @@ export async function POST(request: Request) {
       "Database insert",
     );
     console.log(`[swing-submit:${requestId}] Submission saved to database`);
+
+    if (membershipTier === "FREE") {
+      await prisma.user.update({
+        where: { id: session.user.id },
+        data: { freeSubmissionUsed: true },
+      });
+    }
 
     console.log(
       `[swing-submit:${requestId}] Sending submission notification (no Vimeo upload in this step)`,

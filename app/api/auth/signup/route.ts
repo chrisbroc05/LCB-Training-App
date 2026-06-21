@@ -17,10 +17,10 @@ export async function POST(request: Request) {
     const name = body.name?.trim() ?? "";
     const email = body.email?.trim().toLowerCase();
     const password = body.password ?? "";
-    const selectedMembershipTier = body.selectedMembershipTier?.toUpperCase() ?? "BASIC";
+    const selectedMembershipTier = body.selectedMembershipTier?.toUpperCase() ?? "FREE";
     const membershipTierForNotification: DatabaseTier = isDatabaseTier(selectedMembershipTier)
       ? selectedMembershipTier
-      : "BASIC";
+      : "FREE";
 
     if (!email || !password) {
       return NextResponse.json(
@@ -52,7 +52,7 @@ export async function POST(request: Request) {
         name: name || null,
         email,
         password: hashedPassword,
-        membershipTier: "BASIC",
+        membershipTier: "FREE",
         signupDate: new Date(),
       },
       select: {

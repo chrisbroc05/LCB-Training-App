@@ -30,7 +30,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const session = await getServerSession(authOptions);
-  const membershipTier = (session?.user?.membershipTier ?? "BASIC") as DatabaseTier;
+  const membershipTier = (session?.user?.membershipTier ?? "FREE") as DatabaseTier;
   const hasProAccess = hasDatabaseTierAccess(membershipTier, "pro");
   const hasAdminAccess = isAdminEmail(session?.user?.email);
   const userDisplayName = session?.user?.name || session?.user?.email || "Member";

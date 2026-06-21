@@ -96,11 +96,17 @@ export async function POST(request: Request, context: RouteContext) {
       },
     });
 
+    const user = await prisma.user.findUnique({
+      where: { id: updated.userId },
+      select: { membershipTier: true },
+    });
+
     await sendSubmissionResponseEmail({
       toEmail: updated.userEmail,
       playerName: updated.playerName,
       submissionType: "MENTAL_GAME",
       responseMode: responseMode === "video" ? "VIDEO" : "WRITTEN",
+      membershipTier: user?.membershipTier,
       writtenResponse: responseMode === "written" ? writtenResponse : undefined,
       videoResponseUrl: responseMode === "video" ? videoResponseUrl : undefined,
     });
@@ -126,11 +132,17 @@ export async function POST(request: Request, context: RouteContext) {
     },
   });
 
+  const user = await prisma.user.findUnique({
+    where: { id: updated.userId },
+    select: { membershipTier: true },
+  });
+
   await sendSubmissionResponseEmail({
     toEmail: updated.userEmail,
     playerName: updated.playerName,
     submissionType: "SWING_ANALYSIS",
     responseMode: responseMode === "video" ? "VIDEO" : "WRITTEN",
+    membershipTier: user?.membershipTier,
     writtenResponse: responseMode === "written" ? writtenResponse : undefined,
     videoResponseUrl: responseMode === "video" ? videoResponseUrl : undefined,
   });

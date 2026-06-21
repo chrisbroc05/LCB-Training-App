@@ -36,6 +36,7 @@ export default function Home() {
         <p className="mt-5 max-w-2xl text-lg leading-relaxed text-zinc-300">
           LCB Training helps athletes grow as complete competitors through skill training,
           movement work, and accountability that carries into games, school, and everyday life.
+          New members start with one free submission (swing analysis or mental game support).
         </p>
         <div className="mt-8 flex flex-wrap gap-4">
           <Link
@@ -126,14 +127,14 @@ export default function Home() {
           <div>
             <h2 className="text-3xl font-semibold text-zinc-100">Choose Your Membership Tier</h2>
             <p className="mt-2 text-zinc-300">
-              Start with the level that fits your training schedule and support needs.
+              Start with Free, then move to the tier that fits your training schedule and support needs.
             </p>
           </div>
           <Link href="/auth" className="hidden text-sm font-medium text-[#98b144] md:block">
             Get started now →
           </Link>
         </div>
-        <div className="grid gap-5 md:grid-cols-3">
+        <div className="grid gap-5 md:grid-cols-4">
           {membershipTiers.map((tier) => (
             <article
               key={tier.key}

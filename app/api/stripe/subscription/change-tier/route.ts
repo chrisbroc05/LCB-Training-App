@@ -36,6 +36,12 @@ export async function POST(request: Request) {
     if (!isDatabaseTier(requestedTier)) {
       return NextResponse.json({ error: "Invalid membership tier selected." }, { status: 400 });
     }
+    if (requestedTier === "FREE") {
+      return NextResponse.json(
+        { error: "Switching to Free is not supported from active subscriptions." },
+        { status: 400 },
+      );
+    }
 
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },

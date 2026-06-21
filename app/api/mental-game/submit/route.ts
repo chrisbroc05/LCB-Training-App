@@ -2,7 +2,7 @@ import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { hasDatabaseTierAccess, type DatabaseTier } from "@/lib/membership";
+import type { DatabaseTier } from "@/lib/membership";
 import { prisma } from "@/lib/prisma";
 import { sendMentalGameSubmissionNotification } from "@/lib/notifications";
 import { uploadVideoToVimeo } from "@/lib/vimeo";
@@ -53,11 +53,23 @@ export async function POST(request: Request) {
     }
     console.log(`[mental-submit:${requestId}] Session validated for ${session.user.email}`);
 
-    const membershipTier = (session.user.membershipTier ?? "BASIC") as DatabaseTier;
-    if (!hasDatabaseTierAccess(membershipTier, "pro")) {
+    const membershipTier = (session.user.membershipTier ?? "FREE") as DatabaseTier;
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { freeSubmissionUsed: true },
+    });
+
+    if (membershipTier === "BASIC") {
       console.warn(`[mental-submit:${requestId}] Access denied for tier ${membershipTier}`);
       return NextResponse.json(
-        { error: "Mental game support submissions require a Pro or Elite membership." },
+        { error: "Mental game submissions require Free (one-time), Pro, or Elite membership." },
+        { status: 403 },
+      );
+    }
+
+    if (membershipTier === "FREE" && user?.freeSubmissionUsed) {
+      return NextResponse.json(
+        { error: "Your one free submission has already been used. Please upgrade to continue." },
         { status: 403 },
       );
     }
@@ -133,6 +145,13 @@ export async function POST(request: Request) {
         status: "PENDING",
       },
     });
+
+    if (membershipTier === "FREE") {
+      await prisma.user.update({
+        where: { id: session.user.id },
+        data: { freeSubmissionUsed: true },
+      });
+    }
 
     try {
       await sendMentalGameSubmissionNotification({

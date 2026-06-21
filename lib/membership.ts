@@ -1,5 +1,5 @@
-export type TierKey = "basic" | "pro" | "elite";
-export type DatabaseTier = "BASIC" | "PRO" | "ELITE";
+export type TierKey = "free" | "basic" | "pro" | "elite";
+export type DatabaseTier = "FREE" | "BASIC" | "PRO" | "ELITE";
 
 export type MembershipTier = {
   key: TierKey;
@@ -10,6 +10,17 @@ export type MembershipTier = {
 };
 
 export const membershipTiers: MembershipTier[] = [
+  {
+    key: "free",
+    name: "Free",
+    priceLabel: "$0 / month",
+    summary: "One free submission total: swing analysis or mental game support.",
+    features: [
+      "One total free submission (swing or mental game)",
+      "No drill library access",
+      "No mindset library access",
+    ],
+  },
   {
     key: "basic",
     name: "Basic",
@@ -47,24 +58,27 @@ export const membershipTiers: MembershipTier[] = [
 ];
 
 export const tierRank: Record<TierKey, number> = {
+  free: 0,
   basic: 1,
   pro: 2,
   elite: 3,
 };
 
 export const keyToDatabaseTier: Record<TierKey, DatabaseTier> = {
+  free: "FREE",
   basic: "BASIC",
   pro: "PRO",
   elite: "ELITE",
 };
 
 export const databaseTierToKey: Record<DatabaseTier, TierKey> = {
+  FREE: "free",
   BASIC: "basic",
   PRO: "pro",
   ELITE: "elite",
 };
 
-export const validDatabaseTiers: DatabaseTier[] = ["BASIC", "PRO", "ELITE"];
+export const validDatabaseTiers: DatabaseTier[] = ["FREE", "BASIC", "PRO", "ELITE"];
 
 export function isDatabaseTier(value: string): value is DatabaseTier {
   return validDatabaseTiers.includes(value as DatabaseTier);

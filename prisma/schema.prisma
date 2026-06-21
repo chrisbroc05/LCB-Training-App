@@ -7,6 +7,7 @@ datasource db {
 }
 
 enum MembershipTier {
+  FREE
   BASIC
   PRO
   ELITE
@@ -49,7 +50,8 @@ model User {
   onboardingEmail1Sent   Boolean                @default(false)
   onboardingEmail2Sent   Boolean                @default(false)
   onboardingEmail3Sent   Boolean                @default(false)
-  membershipTier         MembershipTier         @default(BASIC)
+  freeSubmissionUsed     Boolean                @default(false)
+  membershipTier         MembershipTier         @default(FREE)
   subscriptionStatus     SubscriptionStatus     @default(ACTIVE)
   stripeCustomerId       String?                @unique
   stripeSubscriptionId   String?                @unique

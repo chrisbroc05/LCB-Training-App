@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import VideoLibrary from "@/app/dashboard/VideoLibrary";
+import { prisma } from "@/lib/prisma";
 import {
   databaseTierToKey,
   hasTierAccess,
@@ -20,6 +21,11 @@ type Resource = {
 
 const resources: Resource[] = [
   {
+    title: "One Free Submission",
+    accessTier: "free",
+    description: "Free members can submit one swing analysis OR one mental game support request.",
+  },
+  {
     title: "Hitting + Fielding Video Library",
     accessTier: "basic",
     description: "Progressive drill plans for contact, power, and timing.",
@@ -30,9 +36,9 @@ const resources: Resource[] = [
     description: "Mental performance lessons to build confidence, focus, and composure.",
   },
   {
-    title: "Weekly Swing Analysis + Mental Game Support",
+    title: "Unlimited Swing Analysis + Mental Game Support",
     accessTier: "pro",
-    description: "Submit swing video and mental game forms each week for direct coaching support.",
+    description: "Submit swing and mental game forms anytime for direct coaching support.",
   },
   {
     title: "Priority Feedback + Monthly Group Call",
@@ -57,7 +63,11 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const upgradeStatus =
     typeof resolvedSearchParams.upgrade === "string" ? resolvedSearchParams.upgrade : null;
 
-  const membershipTier = (session.user.membershipTier ?? "BASIC") as DatabaseTier;
+  const membershipTier = (session.user.membershipTier ?? "FREE") as DatabaseTier;
+  const userRecord = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { freeSubmissionUsed: true },
+  });
   const userTier = databaseTierToKey[membershipTier];
   const currentTier = membershipTiers.find((tier) => tier.key === userTier) ?? membershipTiers[0];
 
@@ -85,6 +95,12 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         <section className="mt-6 rounded-xl border border-yellow-500/40 bg-yellow-500/10 px-5 py-4 text-sm text-yellow-100">
           Pro or Elite membership is required to access swing analysis and mental game support
           forms.
+        </section>
+      )}
+      {upgradeStatus === "free-submission-used" && (
+        <section className="mt-6 rounded-xl border border-yellow-500/40 bg-yellow-500/10 px-5 py-4 text-sm text-yellow-100">
+          Your one free submission has already been used. Upgrade to continue with additional
+          submissions and unlocked training content.
         </section>
       )}
 
@@ -124,11 +140,10 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       <section className="mt-8 rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-6">
         <h2 className="text-xl font-semibold text-zinc-100">Coaching Submissions</h2>
         <p className="mt-2 text-zinc-300">
-          Weekly swing analysis and mental game support forms are available for Pro and Elite
-          members.
+          Free members get one total submission. Pro and Elite members get unlimited submissions.
         </p>
         <div className="mt-5 flex flex-wrap gap-3">
-          {hasTierAccess(userTier, "pro") ? (
+          {hasTierAccess(userTier, "pro") || (userTier === "free" && !userRecord?.freeSubmissionUsed) ? (
             <>
               <Link
                 href="/swing-analysis"
@@ -145,10 +160,10 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
             </>
           ) : (
             <Link
-              href="/auth"
+              href="/upgrade"
               className="rounded-full border border-[#2b3650] bg-black/40 px-5 py-2.5 text-sm font-semibold text-zinc-300 transition hover:border-[#7f9434] hover:text-[#98b144]"
             >
-              Upgrade to Pro or Elite to unlock forms
+              Upgrade to continue submissions
             </Link>
           )}
         </div>

@@ -5,10 +5,10 @@ import { signOut } from "next-auth/react";
 type UserAuthStatusProps = {
   isLoggedIn: boolean;
   displayName: string;
-  membershipTier: "BASIC" | "PRO" | "ELITE";
+  membershipTier: "FREE" | "BASIC" | "PRO" | "ELITE";
 };
 
-function formatTierLabel(tier: "BASIC" | "PRO" | "ELITE") {
+function formatTierLabel(tier: "FREE" | "BASIC" | "PRO" | "ELITE") {
   return tier.charAt(0) + tier.slice(1).toLowerCase();
 }
 

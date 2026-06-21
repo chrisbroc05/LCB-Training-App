@@ -53,7 +53,11 @@ function getPriorityLabel(tier: DatabaseTier) {
     return "Standard";
   }
 
-  return "Standard";
+  if (tier === "BASIC") {
+    return "Standard";
+  }
+
+  return "Free";
 }
 
 function getLogoUrl() {
@@ -223,6 +227,7 @@ export async function sendSubmissionResponseEmail(params: {
   playerName: string;
   submissionType: "SWING_ANALYSIS" | "MENTAL_GAME";
   responseMode: "VIDEO" | "WRITTEN";
+  membershipTier?: DatabaseTier;
   writtenResponse?: string;
   videoResponseUrl?: string;
 }) {
@@ -243,12 +248,27 @@ export async function sendSubmissionResponseEmail(params: {
           params.videoResponseUrl ?? "",
         )}</a>`
       : `Your coach has sent a written response:<br/><br/>${escapeHtml(params.writtenResponse ?? "")}`;
+  const isFreeTier = params.membershipTier === "FREE";
+  const freeTierCtaText = isFreeTier
+    ? `Want to keep progressing?
+
+Basic ($5/month) unlocks the full hitting, fielding, and mindset libraries.
+Pro ($15/month) unlocks ongoing swing analysis feedback plus mental game support.
+`
+    : "";
+  const freeTierCtaHtml = isFreeTier
+    ? `<div style="margin-top:16px; padding:12px; border:1px solid #2b3650; border-radius:10px; background:#060b16;">
+        <p style="margin:0 0 8px; font-weight:700; color:#98b144;">Keep building your progress</p>
+        <p style="margin:0 0 6px;"><strong>Basic ($5/month):</strong> Full hitting, fielding, and mindset video libraries.</p>
+        <p style="margin:0;"><strong>Pro ($15/month):</strong> Ongoing swing analysis feedback and mental game support.</p>
+      </div>`
+    : "";
 
   await transporter.sendMail({
     from: process.env.NOTIFICATION_EMAIL,
     to: params.toEmail,
     subject: "Your LCB Training Coach Response",
-    text: `Hi ${params.playerName},\n\nThanks for your ${submissionLabel} submission.\n\n${responseBody}\n\n-LCB Training`,
+    text: `Hi ${params.playerName},\n\nThanks for your ${submissionLabel} submission.\n\n${responseBody}\n${freeTierCtaText}\n-LCB Training`,
     html: `<div style="font-family: Arial, sans-serif; color: #e5e7eb; background: #05070d; padding: 24px;">
       <div style="max-width: 620px; margin: 0 auto; border: 1px solid #1f2c43; border-radius: 12px; overflow: hidden; background: #0b1324;">
         <div style="background: linear-gradient(90deg, #000000 0%, #0f1d34 70%, #7fbf2f 100%); padding: 18px 20px; font-size: 18px; font-weight: 700; color: #f4f4f5;">
@@ -258,7 +278,8 @@ export async function sendSubmissionResponseEmail(params: {
           <p style="margin: 0 0 12px;">Hi ${escapeHtml(params.playerName)},</p>
           <p style="margin: 0 0 12px;">Thanks for your ${escapeHtml(submissionLabel)} submission.</p>
           <p style="margin: 0 0 12px;">${htmlResponseBody}</p>
-          <p style="margin: 0;">-LCB Training</p>
+          ${freeTierCtaHtml}
+          <p style="margin: 12px 0 0;">-LCB Training</p>
         </div>
       </div>
     </div>`,
@@ -421,7 +442,9 @@ export async function sendOnboardingEmail1(params: {
   const loginUrl = getLoginUrl();
   const introVideosText = "Start by watching the intro videos so you can learn the training flow.";
   const dashboardGuidance =
-    params.membershipTier === "BASIC"
+    params.membershipTier === "FREE"
+      ? "You currently have one free submission total (swing analysis or mental game support). Use it when you are ready for focused feedback."
+      : params.membershipTier === "BASIC"
       ? "You currently have access to the hitting, fielding, and mindset libraries. Use your dashboard to build a weekly routine."
       : "You currently have full libraries plus coaching submission tools. Use your dashboard to access swing analysis and mental game support.";
 

@@ -2,16 +2,30 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import SwingAnalysisForm from "@/app/swing-analysis/SwingAnalysisForm";
-import { hasDatabaseTierAccess, type DatabaseTier } from "@/lib/membership";
+import type { DatabaseTier } from "@/lib/membership";
+import { prisma } from "@/lib/prisma";
 
 export default async function SwingAnalysisPage() {
   const session = await getServerSession(authOptions);
   if (!session?.user) {
     redirect("/auth");
   }
-  const membershipTier = (session.user.membershipTier ?? "BASIC") as DatabaseTier;
-  if (!hasDatabaseTierAccess(membershipTier, "pro")) {
-    redirect("/dashboard?upgrade=pro-required");
+  const membershipTier = (session.user.membershipTier ?? "FREE") as DatabaseTier;
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { freeSubmissionUsed: true },
+  });
+
+  if (membershipTier === "FREE" && user?.freeSubmissionUsed) {
+    redirect("/upgrade?reason=free-submission-used");
+  }
+
+  if (membershipTier === "BASIC") {
+    redirect("/upgrade?reason=pro-required");
+  }
+
+  if (!hasDatabaseTierAccess(membershipTier, "free")) {
+    redirect("/upgrade");
   }
   const vimeoUploadEnabled = process.env.VIMEO_UPLOAD_ENABLED?.toLowerCase() === "true";
 

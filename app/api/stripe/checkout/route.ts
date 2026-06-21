@@ -37,6 +37,12 @@ export async function POST(request: Request) {
     }
 
     const membershipTier = requestedTier;
+    if (membershipTier === "FREE") {
+      return NextResponse.json(
+        { error: "Free tier does not require checkout." },
+        { status: 400 },
+      );
+    }
     const priceId = getSubscriptionPriceId(membershipTier);
     const baseUrl = getBaseUrl(request);
 

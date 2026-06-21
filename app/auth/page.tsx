@@ -16,7 +16,7 @@ export default function AuthPage() {
 
 function AuthContent() {
   const searchParams = useSearchParams();
-  const [selectedTier, setSelectedTier] = useState<TierKey | null>(null);
+  const [selectedTier, setSelectedTier] = useState<TierKey>("free");
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [signupName, setSignupName] = useState("");
@@ -28,9 +28,7 @@ function AuthContent() {
   const [signupLoading, setSignupLoading] = useState(false);
 
   const selectedTierDetails = membershipTiers.find((tier) => tier.key === selectedTier);
-  const selectedDatabaseTier: DatabaseTier | null = selectedTier
-    ? keyToDatabaseTier[selectedTier]
-    : null;
+  const selectedDatabaseTier: DatabaseTier = keyToDatabaseTier[selectedTier];
   const checkoutStatus = searchParams.get("checkout");
 
   const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -57,11 +55,6 @@ function AuthContent() {
 
   const handleSignup = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-
-    if (!selectedDatabaseTier) {
-      setSignupError("Please choose a membership plan before signing up.");
-      return;
-    }
 
     setSignupLoading(true);
     setSignupError("");
@@ -99,6 +92,12 @@ function AuthContent() {
       return;
     }
 
+    if (selectedDatabaseTier === "FREE") {
+      setSignupLoading(false);
+      window.location.href = "/dashboard";
+      return;
+    }
+
     const checkoutResponse = await fetch("/api/stripe/checkout", {
       method: "POST",
       headers: {
@@ -130,10 +129,10 @@ function AuthContent() {
       <section className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-7">
         <h1 className="text-3xl font-semibold text-zinc-100">Choose Your Membership Plan</h1>
         <p className="mt-2 max-w-3xl text-zinc-300">
-          Compare each tier to find the support level that fits your goals, then select a
-          plan before completing sign up.
+          New members can start free with one swing analysis or mental game submission, then
+          upgrade anytime for more access.
         </p>
-        <div className="mt-6 grid gap-5 md:grid-cols-3">
+        <div className="mt-6 grid gap-5 md:grid-cols-4">
           {membershipTiers.map((tier) => {
             const isSelected = selectedTier === tier.key;
 
@@ -275,11 +274,11 @@ function AuthContent() {
                 required
               />
             </label>
-            <input type="hidden" name="plan" value={selectedTier ?? ""} />
+            <input type="hidden" name="plan" value={selectedTier} />
             {signupError && <p className="text-sm text-red-300">{signupError}</p>}
             <button
               type="submit"
-              disabled={!selectedTier || signupLoading}
+              disabled={signupLoading}
               className="w-full rounded-full border border-[#22c55e] bg-[#22c55e]/10 px-5 py-3 font-semibold text-[#9df3bd] transition hover:bg-[#22c55e]/20 disabled:cursor-not-allowed disabled:opacity-40"
             >
               {signupLoading ? "Creating account..." : "Sign Up"}

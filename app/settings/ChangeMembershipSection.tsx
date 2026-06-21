@@ -24,7 +24,9 @@ export default function ChangeMembershipSection({
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  const availableTiers = membershipTiers.filter((tier) => tier.key !== databaseTierToKey[currentTier]);
+  const availableTiers = membershipTiers.filter(
+    (tier) => tier.key !== "free" && tier.key !== databaseTierToKey[currentTier],
+  );
 
   async function handleTierChange(nextTier: DatabaseTier) {
     const shouldContinue = window.confirm(
