@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import MentalGameForm from "@/app/mental-game/MentalGameForm";
-import type { DatabaseTier } from "@/lib/membership";
+import { hasDatabaseTierAccess, type DatabaseTier } from "@/lib/membership";
 import { prisma } from "@/lib/prisma";
 
 export default async function MentalGamePage() {
