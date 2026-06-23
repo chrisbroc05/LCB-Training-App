@@ -4,8 +4,9 @@ import Link from "next/link";
 import { useState } from "react";
 
 const SUBMISSION_TIMEOUT_MS = 90000;
+const MAX_VIDEO_UPLOAD_BYTES = 100 * 1024 * 1024;
 
-export default function SwingAnalysisForm({ vimeoUploadEnabled }: { vimeoUploadEnabled: boolean }) {
+export default function SwingAnalysisForm() {
   const [playerName, setPlayerName] = useState("");
   const [videoFileName, setVideoFileName] = useState("");
   const [videoFile, setVideoFile] = useState<File | null>(null);
@@ -30,13 +31,13 @@ export default function SwingAnalysisForm({ vimeoUploadEnabled }: { vimeoUploadE
       return;
     }
 
-    if (vimeoUploadEnabled && !videoFileName && !videoUrl.trim()) {
+    if (!videoFileName && !videoUrl.trim()) {
       setSubmitError("Please upload a video file or provide a video URL.");
       return;
     }
 
-    if (!vimeoUploadEnabled && !videoUrl.trim()) {
-      setSubmitError("Vimeo upload is currently disabled. Please provide a direct Vimeo video URL.");
+    if (videoFile && videoFile.size > MAX_VIDEO_UPLOAD_BYTES) {
+      setSubmitError("Video exceeds 100MB. Please trim the video and try again.");
       return;
     }
 
@@ -52,13 +53,11 @@ export default function SwingAnalysisForm({ vimeoUploadEnabled }: { vimeoUploadE
     formData.set("handedness", handedness);
     formData.set("notes", trimmedNotes);
     formData.set("responsePreference", responsePreference);
-    if (vimeoUploadEnabled && videoFile) {
+    if (videoFile) {
       formData.set("video", videoFile);
       console.log(
         `[SwingAnalysisForm] Attached uploaded file: ${videoFile.name} (${videoFile.size} bytes)`,
       );
-    } else if (!vimeoUploadEnabled && videoFile) {
-      console.log("[SwingAnalysisForm] Ignoring uploaded file because Vimeo upload is disabled");
     } else {
       console.log("[SwingAnalysisForm] No local file uploaded, using URL");
     }
@@ -102,7 +101,7 @@ export default function SwingAnalysisForm({ vimeoUploadEnabled }: { vimeoUploadE
       if (error instanceof DOMException && error.name === "AbortError") {
         console.error("[SwingAnalysisForm] Submission timed out");
         setSubmitError(
-          "Submission timed out while uploading. Please try a smaller video or submit via video URL.",
+          "Submission timed out while uploading. Please try again with a trimmed video file.",
         );
         return;
       }
@@ -127,31 +126,36 @@ export default function SwingAnalysisForm({ vimeoUploadEnabled }: { vimeoUploadE
         />
       </label>
 
-      {vimeoUploadEnabled ? (
-        <label className="block">
-          <span className="text-sm text-zinc-300">Upload video</span>
-          <input
-            type="file"
-            accept="video/*"
-            className="mt-2 w-full rounded-lg border border-dashed border-[#3b4b6a] bg-black px-4 py-4 text-sm text-zinc-300 file:mr-4 file:rounded-md file:border-0 file:bg-[#22c55e] file:px-3 file:py-2 file:font-semibold file:text-black hover:file:bg-[#35db72]"
-            onChange={(event) => {
-              const file = event.target.files?.[0] ?? null;
-              setVideoFile(file);
-              setVideoFileName(file?.name ?? "");
-            }}
-          />
-        </label>
-      ) : (
-        <p className="text-xs text-yellow-200">
-          Vimeo upload mode is currently disabled. Please paste a Vimeo URL below.
+      <label className="block">
+        <span className="text-sm text-zinc-300">Upload video</span>
+        <input
+          type="file"
+          accept="video/*"
+          className="mt-2 w-full rounded-lg border border-dashed border-[#3b4b6a] bg-black px-4 py-4 text-sm text-zinc-300 file:mr-4 file:rounded-md file:border-0 file:bg-[#22c55e] file:px-3 file:py-2 file:font-semibold file:text-black hover:file:bg-[#35db72]"
+          onChange={(event) => {
+            const file = event.target.files?.[0] ?? null;
+            if (file && file.size > MAX_VIDEO_UPLOAD_BYTES) {
+              setSubmitError("Video exceeds 100MB. Please trim the video and try again.");
+              setVideoFile(null);
+              setVideoFileName("");
+              return;
+            }
+
+            setSubmitError("");
+            setVideoFile(file);
+            setVideoFileName(file?.name ?? "");
+          }}
+        />
+        <p className="mt-2 text-xs text-zinc-400">
+          Max file size is 100MB. Please trim the video if it exceeds that limit.
         </p>
-      )}
+      </label>
 
       <label className="block">
         <span className="text-sm text-zinc-300">Or paste a video URL</span>
         <input
           type="url"
-          placeholder="https://vimeo.com/..."
+          placeholder="https://..."
           value={videoUrl}
           onChange={(event) => setVideoUrl(event.target.value)}
           className="mt-2 w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 placeholder:text-zinc-500 focus:border-[#22c55e]"

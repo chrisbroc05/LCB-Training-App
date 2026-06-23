@@ -24,23 +24,6 @@ type SubmissionDetail = SubmissionListItem & {
   responsePreference?: "VIDEO_RESPONSE" | "WRITTEN_RESPONSE";
 };
 
-function toVimeoEmbedUrl(url: string | null) {
-  if (!url) {
-    return null;
-  }
-
-  if (url.includes("player.vimeo.com/video/")) {
-    return url;
-  }
-
-  const match = url.match(/vimeo\.com\/(\d+)/i);
-  if (!match) {
-    return null;
-  }
-
-  return `https://player.vimeo.com/video/${match[1]}`;
-}
-
 export default function AdminPanel({ vimeoUploadEnabled }: { vimeoUploadEnabled: boolean }) {
   const [tab, setTab] = useState<TabType>("swing");
   const [items, setItems] = useState<SubmissionListItem[]>([]);
@@ -112,8 +95,10 @@ export default function AdminPanel({ vimeoUploadEnabled }: { vimeoUploadEnabled:
     return detail.submittedVideo || detail.videoPath || null;
   }, [detail]);
 
-  const isVimeoVideo = selectedVideoUrl?.includes("vimeo.com") ?? false;
-  const embedVideoUrl = isVimeoVideo ? toVimeoEmbedUrl(selectedVideoUrl) : selectedVideoUrl;
+  const canInlineVideo = selectedVideoUrl
+    ? selectedVideoUrl.startsWith("/api/submission-videos/") ||
+      (selectedVideoUrl.startsWith("http") && !selectedVideoUrl.includes("vimeo.com"))
+    : false;
 
   const handleSendResponse = async () => {
     if (!detail) {
@@ -301,32 +286,32 @@ export default function AdminPanel({ vimeoUploadEnabled }: { vimeoUploadEnabled:
             {selectedVideoUrl && (
               <div className="overflow-hidden rounded-xl border border-[#2b3650] bg-black">
                 <div className="border-b border-[#2b3650] px-4 py-2">
-                  <a
-                    href={selectedVideoUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-[#8fd7ff] underline"
-                  >
-                    Open submission video link
-                  </a>
+                  <div className="flex gap-3">
+                    <a
+                      href={selectedVideoUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-[#8fd7ff] underline"
+                    >
+                      Open submission video link
+                    </a>
+                    <a
+                      href={`${selectedVideoUrl}${selectedVideoUrl.includes("?") ? "&" : "?"}download=1`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-[#8fd7ff] underline"
+                    >
+                      Download video
+                    </a>
+                  </div>
                 </div>
                 <div className="aspect-video w-full">
-                  {isVimeoVideo ? (
-                    embedVideoUrl ? (
-                      <iframe
-                        src={embedVideoUrl}
-                        title="Submission video"
-                        className="h-full w-full"
-                        allow="autoplay; fullscreen; picture-in-picture"
-                        allowFullScreen
-                      />
-                    ) : (
-                      <div className="flex h-full items-center justify-center px-4 text-center text-sm text-zinc-400">
-                        Unable to embed this Vimeo URL. Use the link above to open it.
-                      </div>
-                    )
-                  ) : (
+                  {canInlineVideo ? (
                     <video src={selectedVideoUrl} controls className="h-full w-full" />
+                  ) : (
+                    <div className="flex h-full items-center justify-center px-4 text-center text-sm text-zinc-400">
+                      Use the links above to open or download this submission video.
+                    </div>
                   )}
                 </div>
               </div>

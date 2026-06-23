@@ -5,13 +5,15 @@ import { authOptions } from "@/lib/auth";
 import type { DatabaseTier } from "@/lib/membership";
 import { prisma } from "@/lib/prisma";
 import { sendSwingSubmissionNotification } from "@/lib/notifications";
-import { uploadVideoToVimeo } from "@/lib/vimeo";
+import {
+  createTemporaryVideoDownloadLink,
+  EMAIL_VIDEO_ATTACHMENT_MAX_BYTES,
+  MAX_SUBMISSION_VIDEO_BYTES,
+  persistSubmissionVideoFile,
+} from "@/lib/submission-videos";
 
-const MAX_VIDEO_UPLOAD_BYTES = 100 * 1024 * 1024; // 100 MB
 const DB_TIMEOUT_MS = 15000;
 const EMAIL_TIMEOUT_MS = 15000;
-const VIMEO_TIMEOUT_MS = 120000;
-const vimeoUploadEnabled = process.env.VIMEO_UPLOAD_ENABLED?.toLowerCase() === "true";
 
 async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
   return await Promise.race([
@@ -70,28 +72,23 @@ export async function POST(request: Request) {
     const videoUrl = String(formData.get("videoUrl") ?? "").trim();
     const uploadedVideo = formData.get("video");
     let submittedVideo = videoUrl;
+    let emailAttachment:
+      | {
+          fileName: string;
+          content: Buffer;
+          contentType: string;
+        }
+      | undefined;
+    let temporaryDownloadLink: string | undefined;
+    let temporaryDownloadExpiresAt: Date | undefined;
 
     if (uploadedVideo instanceof File && uploadedVideo.size > 0) {
       console.log(
         `[swing-submit:${requestId}] Uploaded file detected (${uploadedVideo.name}, ${uploadedVideo.size} bytes)`,
       );
-      if (!vimeoUploadEnabled) {
+      if (uploadedVideo.size > MAX_SUBMISSION_VIDEO_BYTES) {
         console.warn(
-          `[swing-submit:${requestId}] Uploaded file ignored because VIMEO_UPLOAD_ENABLED is false`,
-        );
-        if (!videoUrl) {
-          return NextResponse.json(
-            {
-              error:
-                "Vimeo file upload is currently disabled. Please provide a direct Vimeo video URL.",
-            },
-            { status: 400 },
-          );
-        }
-      } else {
-      if (uploadedVideo.size > MAX_VIDEO_UPLOAD_BYTES) {
-        console.warn(
-          `[swing-submit:${requestId}] File too large (${uploadedVideo.size} > ${MAX_VIDEO_UPLOAD_BYTES})`,
+          `[swing-submit:${requestId}] File too large (${uploadedVideo.size} > ${MAX_SUBMISSION_VIDEO_BYTES})`,
         );
         return NextResponse.json(
           { error: "Uploaded video is too large. Please upload a file under 100MB." },
@@ -99,17 +96,23 @@ export async function POST(request: Request) {
         );
       }
 
-      const fileBuffer = Buffer.from(await uploadedVideo.arrayBuffer());
-      console.log(`[swing-submit:${requestId}] Uploading video to Vimeo`);
-      submittedVideo = await withTimeout(
-        uploadVideoToVimeo({
-          fileBuffer,
-          fileName: uploadedVideo.name || `swing-analysis-${requestId}.mp4`,
-        }),
-        VIMEO_TIMEOUT_MS,
-        "Vimeo upload",
+      const storedVideo = await withTimeout(
+        persistSubmissionVideoFile(uploadedVideo),
+        EMAIL_TIMEOUT_MS,
+        "Video file storage",
       );
-      console.log(`[swing-submit:${requestId}] Vimeo upload complete (${submittedVideo})`);
+
+      submittedVideo = storedVideo.relativeUrl;
+      if (storedVideo.sizeBytes <= EMAIL_VIDEO_ATTACHMENT_MAX_BYTES) {
+        emailAttachment = {
+          fileName: storedVideo.originalFileName,
+          content: storedVideo.fileBuffer,
+          contentType: storedVideo.mimeType,
+        };
+      } else {
+        const tempLink = createTemporaryVideoDownloadLink(storedVideo.videoId);
+        temporaryDownloadLink = tempLink.url;
+        temporaryDownloadExpiresAt = tempLink.expiresAt;
       }
     } else {
       console.log(`[swing-submit:${requestId}] No uploaded file, using provided video URL`);
@@ -163,7 +166,7 @@ export async function POST(request: Request) {
     }
 
     console.log(
-      `[swing-submit:${requestId}] Sending submission notification (no Vimeo upload in this step)`,
+      `[swing-submit:${requestId}] Sending submission notification`,
     );
     try {
       await withTimeout(
@@ -176,6 +179,9 @@ export async function POST(request: Request) {
           notes,
           responsePreference: responsePreference as "VIDEO_RESPONSE" | "WRITTEN_RESPONSE",
           submittedVideo,
+          videoAttachment: emailAttachment,
+          temporaryVideoLink: temporaryDownloadLink,
+          temporaryVideoLinkExpiresAt: temporaryDownloadExpiresAt,
         }),
         EMAIL_TIMEOUT_MS,
         "Notification email",
@@ -191,21 +197,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true }, { status: 201 });
   } catch (error) {
     console.error(`[swing-submit:${requestId}] Submission failed`, error);
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    const isVimeoError =
-      errorMessage.includes("VIMEO_ACCESS_TOKEN") ||
-      errorMessage.toLowerCase().includes("vimeo");
-
-    if (isVimeoError) {
-      return NextResponse.json(
-        {
-          error:
-            "Video upload failed while contacting Vimeo. Please verify Vimeo API credentials/permissions, or submit using a direct Vimeo URL instead.",
-        },
-        { status: 502 },
-      );
-    }
-
     return NextResponse.json(
       { error: "Unable to submit swing analysis right now. Please try again in a moment." },
       { status: 500 },

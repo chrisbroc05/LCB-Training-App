@@ -5,7 +5,12 @@ import { authOptions } from "@/lib/auth";
 import type { DatabaseTier } from "@/lib/membership";
 import { prisma } from "@/lib/prisma";
 import { sendMentalGameSubmissionNotification } from "@/lib/notifications";
-import { uploadVideoToVimeo } from "@/lib/vimeo";
+import {
+  createTemporaryVideoDownloadLink,
+  EMAIL_VIDEO_ATTACHMENT_MAX_BYTES,
+  MAX_SUBMISSION_VIDEO_BYTES,
+  persistSubmissionVideoFile,
+} from "@/lib/submission-videos";
 
 type TopicValue =
   | "SLUMP"
@@ -29,9 +34,7 @@ const validTopics: TopicValue[] = [
 ];
 
 const validResponsePreferences: ResponsePreferenceValue[] = ["VIDEO_RESPONSE", "WRITTEN_RESPONSE"];
-const MAX_VIDEO_UPLOAD_BYTES = 100 * 1024 * 1024; // 100 MB
-const VIMEO_TIMEOUT_MS = 120000;
-const vimeoUploadEnabled = process.env.VIMEO_UPLOAD_ENABLED?.toLowerCase() === "true";
+const STORAGE_TIMEOUT_MS = 15000;
 
 async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
   return await Promise.race([
@@ -85,6 +88,15 @@ export async function POST(request: Request) {
       .toUpperCase() as ResponsePreferenceValue;
     const videoUrl = String(formData.get("videoUrl") ?? "").trim();
     const uploadedVideo = formData.get("video");
+    let emailAttachment:
+      | {
+          fileName: string;
+          content: Buffer;
+          contentType: string;
+        }
+      | undefined;
+    let temporaryDownloadLink: string | undefined;
+    let temporaryDownloadExpiresAt: Date | undefined;
 
     if (!playerName || !playerAge || !message) {
       return NextResponse.json(
@@ -106,29 +118,29 @@ export async function POST(request: Request) {
       console.log(
         `[mental-submit:${requestId}] Uploaded file detected (${uploadedVideo.name}, ${uploadedVideo.size} bytes)`,
       );
-      if (!vimeoUploadEnabled) {
-        console.warn(
-          `[mental-submit:${requestId}] Uploaded file ignored because VIMEO_UPLOAD_ENABLED is false`,
-        );
-      } else {
-      if (uploadedVideo.size > MAX_VIDEO_UPLOAD_BYTES) {
+      if (uploadedVideo.size > MAX_SUBMISSION_VIDEO_BYTES) {
         return NextResponse.json(
           { error: "Uploaded video is too large. Please upload a file under 100MB." },
           { status: 413 },
         );
       }
 
-      const fileBuffer = Buffer.from(await uploadedVideo.arrayBuffer());
-      console.log(`[mental-submit:${requestId}] Uploading video to Vimeo`);
-      videoPath = await withTimeout(
-        uploadVideoToVimeo({
-          fileBuffer,
-          fileName: uploadedVideo.name || "mental-game-submission.mp4",
-        }),
-        VIMEO_TIMEOUT_MS,
-        "Vimeo upload",
+      const storedVideo = await withTimeout(
+        persistSubmissionVideoFile(uploadedVideo),
+        STORAGE_TIMEOUT_MS,
+        "Video file storage",
       );
-      console.log(`[mental-submit:${requestId}] Vimeo upload complete (${videoPath})`);
+      videoPath = storedVideo.relativeUrl;
+      if (storedVideo.sizeBytes <= EMAIL_VIDEO_ATTACHMENT_MAX_BYTES) {
+        emailAttachment = {
+          fileName: storedVideo.originalFileName,
+          content: storedVideo.fileBuffer,
+          contentType: storedVideo.mimeType,
+        };
+      } else {
+        const tempLink = createTemporaryVideoDownloadLink(storedVideo.videoId);
+        temporaryDownloadLink = tempLink.url;
+        temporaryDownloadExpiresAt = tempLink.expiresAt;
       }
     }
 
@@ -164,6 +176,9 @@ export async function POST(request: Request) {
         videoPath: submission.videoPath,
         responsePreference: submission.responsePreference,
         status: submission.status,
+        videoAttachment: emailAttachment,
+        temporaryVideoLink: temporaryDownloadLink,
+        temporaryVideoLinkExpiresAt: temporaryDownloadExpiresAt,
       });
     } catch (error) {
       console.error("Failed to send mental game submission notification", error);
@@ -172,21 +187,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true }, { status: 201 });
   } catch (error) {
     console.error(`[mental-submit:${requestId}] Submission failed`, error);
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    const isVimeoError =
-      errorMessage.includes("VIMEO_ACCESS_TOKEN") ||
-      errorMessage.toLowerCase().includes("vimeo");
-
-    if (isVimeoError) {
-      return NextResponse.json(
-        {
-          error:
-            "Video upload failed while contacting Vimeo. Please verify Vimeo API credentials/permissions, or submit without a video.",
-        },
-        { status: 502 },
-      );
-    }
-
     return NextResponse.json(
       { error: "Unable to submit mental game support right now. Please try again shortly." },
       { status: 500 },

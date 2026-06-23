@@ -149,8 +149,23 @@ export async function sendSwingSubmissionNotification(params: {
   notes: string;
   responsePreference: "VIDEO_RESPONSE" | "WRITTEN_RESPONSE";
   submittedVideo: string;
+  videoAttachment?: {
+    fileName: string;
+    content: Buffer;
+    contentType: string;
+  };
+  temporaryVideoLink?: string;
+  temporaryVideoLinkExpiresAt?: Date;
 }) {
   const transporter = createTransporter();
+  const attachmentSummary = params.videoAttachment
+    ? `Attached file: ${params.videoAttachment.fileName}`
+    : "No attached file";
+  const tempLinkSummary = params.temporaryVideoLink ?? "Not provided";
+  const tempLinkExpiry = params.temporaryVideoLinkExpiresAt
+    ? params.temporaryVideoLinkExpiresAt.toLocaleString()
+    : "Not provided";
+
   const html = buildSubmissionNotificationHtml({
     title: "New Swing Submission",
     membershipTier: params.membershipTier,
@@ -166,7 +181,10 @@ export async function sendSwingSubmissionNotification(params: {
             ? "Video Response from Coach"
             : "Written Response",
       },
-      { label: "Submitted Video", value: params.submittedVideo },
+      { label: "Submitted Video Reference", value: params.submittedVideo },
+      { label: "Attached Video", value: attachmentSummary },
+      { label: "Temporary Download Link", value: tempLinkSummary },
+      { label: "Temporary Link Expires", value: tempLinkExpiry },
       { label: "Notes", value: params.notes || "No notes provided." },
     ],
   });
@@ -175,8 +193,17 @@ export async function sendSwingSubmissionNotification(params: {
     from: process.env.NOTIFICATION_EMAIL,
     to: getNotificationRecipient(),
     subject: "New Swing Submission",
-    text: `New Swing Submission\n\nMembership Tier: ${getTierLabel(params.membershipTier)}\nPriority: ${getPriorityLabel(params.membershipTier)}\nSubmitting User: ${params.userEmail}\nPlayer Name: ${params.playerName}\nPitch Type Focus: ${params.pitchType}\nHandedness: ${params.handedness}\nPreferred Response: ${params.responsePreference}\nSubmitted Video: ${params.submittedVideo}\nNotes: ${params.notes || "No notes provided."}`,
+    text: `New Swing Submission\n\nMembership Tier: ${getTierLabel(params.membershipTier)}\nPriority: ${getPriorityLabel(params.membershipTier)}\nSubmitting User: ${params.userEmail}\nPlayer Name: ${params.playerName}\nPitch Type Focus: ${params.pitchType}\nHandedness: ${params.handedness}\nPreferred Response: ${params.responsePreference}\nSubmitted Video Reference: ${params.submittedVideo}\nAttached Video: ${attachmentSummary}\nTemporary Download Link: ${tempLinkSummary}\nTemporary Link Expires: ${tempLinkExpiry}\nNotes: ${params.notes || "No notes provided."}`,
     html,
+    attachments: params.videoAttachment
+      ? [
+          {
+            filename: params.videoAttachment.fileName,
+            content: params.videoAttachment.content,
+            contentType: params.videoAttachment.contentType,
+          },
+        ]
+      : undefined,
   });
 }
 
@@ -190,8 +217,22 @@ export async function sendMentalGameSubmissionNotification(params: {
   videoPath: string | null;
   responsePreference: string;
   status: string;
+  videoAttachment?: {
+    fileName: string;
+    content: Buffer;
+    contentType: string;
+  };
+  temporaryVideoLink?: string;
+  temporaryVideoLinkExpiresAt?: Date;
 }) {
   const transporter = createTransporter();
+  const attachmentSummary = params.videoAttachment
+    ? `Attached file: ${params.videoAttachment.fileName}`
+    : "No attached file";
+  const tempLinkSummary = params.temporaryVideoLink ?? "Not provided";
+  const tempLinkExpiry = params.temporaryVideoLinkExpiresAt
+    ? params.temporaryVideoLinkExpiresAt.toLocaleString()
+    : "Not provided";
   const html = buildSubmissionNotificationHtml({
     title: "New Mental Game Submission",
     membershipTier: params.membershipTier,
@@ -207,7 +248,10 @@ export async function sendMentalGameSubmissionNotification(params: {
             ? "Video Response from Coach"
             : "Written Response",
       },
-      { label: "Video", value: params.videoPath ?? "No video uploaded" },
+      { label: "Video Reference", value: params.videoPath ?? "No video uploaded" },
+      { label: "Attached Video", value: attachmentSummary },
+      { label: "Temporary Download Link", value: tempLinkSummary },
+      { label: "Temporary Link Expires", value: tempLinkExpiry },
       { label: "Status", value: params.status },
       { label: "Message", value: params.message },
     ],
@@ -217,8 +261,17 @@ export async function sendMentalGameSubmissionNotification(params: {
     from: process.env.NOTIFICATION_EMAIL,
     to: getNotificationRecipient(),
     subject: "New Mental Game Submission",
-    text: `New Mental Game Submission\n\nMembership Tier: ${getTierLabel(params.membershipTier)}\nPriority: ${getPriorityLabel(params.membershipTier)}\nSubmitting User: ${params.userEmail}\nPlayer Name: ${params.playerName}\nPlayer Age: ${params.playerAge}\nTopic: ${params.topic}\nMessage: ${params.message}\nVideo: ${params.videoPath ?? "No video uploaded"}\nResponse Preference: ${params.responsePreference}\nStatus: ${params.status}`,
+    text: `New Mental Game Submission\n\nMembership Tier: ${getTierLabel(params.membershipTier)}\nPriority: ${getPriorityLabel(params.membershipTier)}\nSubmitting User: ${params.userEmail}\nPlayer Name: ${params.playerName}\nPlayer Age: ${params.playerAge}\nTopic: ${params.topic}\nMessage: ${params.message}\nVideo Reference: ${params.videoPath ?? "No video uploaded"}\nAttached Video: ${attachmentSummary}\nTemporary Download Link: ${tempLinkSummary}\nTemporary Link Expires: ${tempLinkExpiry}\nResponse Preference: ${params.responsePreference}\nStatus: ${params.status}`,
     html,
+    attachments: params.videoAttachment
+      ? [
+          {
+            filename: params.videoAttachment.fileName,
+            content: params.videoAttachment.content,
+            contentType: params.videoAttachment.contentType,
+          },
+        ]
+      : undefined,
   });
 }
 

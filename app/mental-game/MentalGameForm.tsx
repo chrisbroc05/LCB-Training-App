@@ -4,8 +4,9 @@ import Link from "next/link";
 import { useState } from "react";
 
 type ResponsePreference = "VIDEO_RESPONSE" | "WRITTEN_RESPONSE";
+const MAX_VIDEO_UPLOAD_BYTES = 100 * 1024 * 1024;
 
-export default function MentalGameForm({ vimeoUploadEnabled }: { vimeoUploadEnabled: boolean }) {
+export default function MentalGameForm() {
   const [playerName, setPlayerName] = useState("");
   const [playerAge, setPlayerAge] = useState("");
   const [topic, setTopic] = useState("SLUMP");
@@ -25,6 +26,10 @@ export default function MentalGameForm({ vimeoUploadEnabled }: { vimeoUploadEnab
 
     if (!playerName.trim() || !playerAge.trim() || !message.trim()) {
       setSubmitError("Please complete all required fields before submitting.");
+      return;
+    }
+    if (video && video.size > MAX_VIDEO_UPLOAD_BYTES) {
+      setSubmitError("Video exceeds 100MB. Please trim the video and try again.");
       return;
     }
 
@@ -119,33 +124,37 @@ export default function MentalGameForm({ vimeoUploadEnabled }: { vimeoUploadEnab
 
       <label className="block">
         <span className="text-sm text-zinc-300">Optional video upload</span>
-        {vimeoUploadEnabled ? (
-          <input
-            type="file"
-            accept="video/*"
-            onChange={(event) => setVideo(event.target.files?.[0] ?? null)}
-            className="mt-2 w-full rounded-lg border border-dashed border-[#3b4b6a] bg-black px-4 py-4 text-sm text-zinc-300 file:mr-4 file:rounded-md file:border-0 file:bg-[#22c55e] file:px-3 file:py-2 file:font-semibold file:text-black hover:file:bg-[#35db72]"
-          />
-        ) : (
-          <p className="mt-2 text-xs text-yellow-200">
-            Vimeo upload mode is currently disabled. Submit without video, or paste a Vimeo link
-            below.
-          </p>
-        )}
+        <input
+          type="file"
+          accept="video/*"
+          onChange={(event) => {
+            const selected = event.target.files?.[0] ?? null;
+            if (selected && selected.size > MAX_VIDEO_UPLOAD_BYTES) {
+              setSubmitError("Video exceeds 100MB. Please trim the video and try again.");
+              setVideo(null);
+              return;
+            }
+
+            setSubmitError("");
+            setVideo(selected);
+          }}
+          className="mt-2 w-full rounded-lg border border-dashed border-[#3b4b6a] bg-black px-4 py-4 text-sm text-zinc-300 file:mr-4 file:rounded-md file:border-0 file:bg-[#22c55e] file:px-3 file:py-2 file:font-semibold file:text-black hover:file:bg-[#35db72]"
+        />
+        <p className="mt-2 text-xs text-zinc-400">
+          Max file size is 100MB. Please trim the video if it exceeds that limit.
+        </p>
       </label>
 
-      {!vimeoUploadEnabled && (
-        <label className="block">
-          <span className="text-sm text-zinc-300">Optional Vimeo video URL</span>
-          <input
-            type="url"
-            placeholder="https://vimeo.com/..."
-            value={manualVideoUrl}
-            onChange={(event) => setManualVideoUrl(event.target.value)}
-            className="mt-2 w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 placeholder:text-zinc-500 focus:border-[#22c55e]"
-          />
-        </label>
-      )}
+      <label className="block">
+        <span className="text-sm text-zinc-300">Optional external video URL</span>
+        <input
+          type="url"
+          placeholder="https://..."
+          value={manualVideoUrl}
+          onChange={(event) => setManualVideoUrl(event.target.value)}
+          className="mt-2 w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 placeholder:text-zinc-500 focus:border-[#22c55e]"
+        />
+      </label>
 
       <fieldset>
         <legend className="text-sm text-zinc-300">How would you like to receive your response?</legend>

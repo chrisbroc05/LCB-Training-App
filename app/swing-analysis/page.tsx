@@ -27,7 +27,6 @@ export default async function SwingAnalysisPage() {
   if (!hasDatabaseTierAccess(membershipTier, "free")) {
     redirect("/upgrade");
   }
-  const vimeoUploadEnabled = process.env.VIMEO_UPLOAD_ENABLED?.toLowerCase() === "true";
 
   return (
     <div className="mx-auto w-full max-w-4xl px-6 py-14 md:py-20">
@@ -38,7 +37,7 @@ export default async function SwingAnalysisPage() {
           targeted feedback.
         </p>
 
-        <SwingAnalysisForm vimeoUploadEnabled={vimeoUploadEnabled} />
+        <SwingAnalysisForm />
       </section>
     </div>
   );
