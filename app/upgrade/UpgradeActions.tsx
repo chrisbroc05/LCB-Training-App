@@ -3,10 +3,12 @@
 import { useState } from "react";
 
 type UpgradeActionsProps = {
-  tier: "BASIC" | "PRO";
+  tier: "BASIC" | "PRO" | "ELITE";
 };
 
 export default function UpgradeActions({ tier }: UpgradeActionsProps) {
+  const tierLabel = tier.charAt(0) + tier.slice(1).toLowerCase();
+
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -41,9 +43,9 @@ export default function UpgradeActions({ tier }: UpgradeActionsProps) {
         type="button"
         onClick={startCheckout}
         disabled={isLoading}
-        className="rounded-full bg-[#22c55e] px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-[#35db72] disabled:cursor-not-allowed disabled:opacity-60"
+        className="w-full rounded-full bg-[#22c55e] px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-[#35db72] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
       >
-        {isLoading ? "Redirecting..." : `Upgrade to ${tier === "BASIC" ? "Basic" : "Pro"}`}
+        {isLoading ? "Redirecting..." : `Upgrade to ${tierLabel}`}
       </button>
       {error && <p className="mt-2 text-sm text-red-300">{error}</p>}
     </div>

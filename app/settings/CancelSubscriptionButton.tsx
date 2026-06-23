@@ -54,7 +54,7 @@ export default function CancelSubscriptionButton({ disabled = false }: CancelSub
         type="button"
         onClick={handleCancel}
         disabled={disabled || isSubmitting}
-        className="rounded-full border border-red-500/70 bg-red-500/10 px-5 py-2.5 text-sm font-semibold text-red-200 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+        className="w-full rounded-full border border-red-500/70 bg-red-500/10 px-5 py-2.5 text-sm font-semibold text-red-200 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
       >
         {isSubmitting ? "Cancelling..." : "Cancel Subscription"}
       </button>

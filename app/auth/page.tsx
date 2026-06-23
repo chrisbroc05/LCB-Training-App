@@ -16,7 +16,7 @@ export default function AuthPage() {
 
 function AuthContent() {
   const searchParams = useSearchParams();
-  const [selectedTier, setSelectedTier] = useState<TierKey>("free");
+  const [manuallySelectedTier, setManuallySelectedTier] = useState<TierKey | null>(null);
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [signupName, setSignupName] = useState("");
@@ -27,6 +27,12 @@ function AuthContent() {
   const [loginLoading, setLoginLoading] = useState(false);
   const [signupLoading, setSignupLoading] = useState(false);
 
+  const tierQueryParam = searchParams.get("tier");
+  const normalizedTierQuery = tierQueryParam?.toLowerCase();
+  const preselectedTierFromQuery = membershipTiers.find(
+    (tier) => tier.key === normalizedTierQuery,
+  )?.key;
+  const selectedTier: TierKey = manuallySelectedTier ?? preselectedTierFromQuery ?? "free";
   const selectedTierDetails = membershipTiers.find((tier) => tier.key === selectedTier);
   const selectedDatabaseTier: DatabaseTier = keyToDatabaseTier[selectedTier];
   const checkoutStatus = searchParams.get("checkout");
@@ -125,9 +131,9 @@ function AuthContent() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-6 py-14 md:py-20">
-      <section className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-7">
-        <h1 className="text-3xl font-semibold text-zinc-100">Choose Your Membership Plan</h1>
+    <div className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 sm:py-14 md:py-20">
+      <section className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-5 sm:p-7">
+        <h1 className="text-2xl font-semibold leading-tight text-zinc-100 sm:text-3xl">Choose Your Membership Plan</h1>
         <p className="mt-2 max-w-3xl text-zinc-300">
           New members can start free with one swing analysis or mental game submission, then
           upgrade anytime for more access.
@@ -145,7 +151,7 @@ function AuthContent() {
                     : "border-[#18243a] bg-[#0f1d34]/70"
                 }`}
               >
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col items-start gap-2 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between">
                   <h2 className="text-xl font-semibold text-zinc-100">{tier.name}</h2>
                   {isSelected && (
                     <span className="rounded-full bg-[#22c55e]/20 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#9df3bd]">
@@ -165,7 +171,7 @@ function AuthContent() {
                 </ul>
                 <button
                   type="button"
-                  onClick={() => setSelectedTier(tier.key)}
+                  onClick={() => setManuallySelectedTier(tier.key)}
                   className={`mt-6 w-full rounded-full px-4 py-2.5 text-sm font-semibold transition ${
                     isSelected
                       ? "bg-[#22c55e] text-black"
@@ -186,9 +192,9 @@ function AuthContent() {
         </section>
       )}
 
-      <section className="mt-6 grid gap-6 md:grid-cols-2">
-        <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-7">
-          <h2 className="text-3xl font-semibold text-zinc-100">Member Login</h2>
+      <section className="mt-6 grid gap-5 md:grid-cols-2">
+        <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-5 sm:p-7">
+          <h2 className="text-2xl font-semibold text-zinc-100 sm:text-3xl">Member Login</h2>
           <p className="mt-2 text-zinc-300">
             Access your training dashboard and member-only drill content.
           </p>
@@ -226,8 +232,8 @@ function AuthContent() {
           </form>
         </article>
 
-        <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-7">
-          <h2 className="text-3xl font-semibold text-zinc-100">Create Account</h2>
+        <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-5 sm:p-7">
+          <h2 className="text-2xl font-semibold text-zinc-100 sm:text-3xl">Create Account</h2>
           <p className="mt-2 text-zinc-300">
             Join LCB Training and start improving your game this week.
           </p>

@@ -24,6 +24,11 @@ Required:
 - `NOTIFICATION_EMAIL` - Gmail address used to send app notifications
 - `EMAIL_PASSWORD` - Gmail app password for `NOTIFICATION_EMAIL`
 - `ONBOARDING_CRON_SECRET` - shared secret used by daily onboarding email cron endpoint
+- `CLOUDINARY_CLOUD_NAME` - Cloudinary cloud name used for admin-uploaded response videos
+- `CLOUDINARY_API_KEY` - Cloudinary API key for signed server-side uploads
+- `CLOUDINARY_API_SECRET` - Cloudinary API secret for signed server-side uploads
+- `CLOUDINARY_UPLOAD_FOLDER` - optional Cloudinary folder path for uploaded videos
+- `CLOUDINARY_ADMIN_RESPONSE_UPLOAD_ENABLED` - set to `true` to enable admin device-uploaded response videos (default off)
 
 ## Database Setup
 

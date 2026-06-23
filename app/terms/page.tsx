@@ -1,8 +1,8 @@
 export default function TermsPage() {
   return (
-    <div className="mx-auto w-full max-w-4xl px-6 py-14 md:py-20">
-      <section className="rounded-3xl border border-[#18243a] bg-[#0b1324]/80 p-8">
-        <h1 className="text-3xl font-semibold text-zinc-100">Terms of Service</h1>
+    <div className="mx-auto w-full max-w-4xl px-4 py-10 sm:px-6 sm:py-14 md:py-20">
+      <section className="rounded-3xl border border-[#18243a] bg-[#0b1324]/80 p-5 sm:p-8">
+        <h1 className="text-2xl font-semibold text-zinc-100 sm:text-3xl">Terms of Service</h1>
         <p className="mt-3 text-sm text-zinc-400">Last updated: June 19, 2026</p>
         <p className="mt-4 text-zinc-300">
           These Terms of Service govern your use of LCB Training memberships, content, and coaching
@@ -11,7 +11,7 @@ export default function TermsPage() {
       </section>
 
       <section className="mt-8 space-y-5">
-        <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-6">
+        <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
           <h2 className="text-xl font-semibold text-zinc-100">1. Membership Subscriptions</h2>
           <p className="mt-3 text-zinc-300">
             Paid memberships are billed on a recurring basis through Stripe. Your access level
@@ -24,7 +24,7 @@ export default function TermsPage() {
           </p>
         </article>
 
-        <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-6">
+        <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
           <h2 className="text-xl font-semibold text-zinc-100">2. Refund Policy</h2>
           <p className="mt-3 text-zinc-300">
             Membership fees are generally non-refundable once billed. If you cancel your
@@ -37,7 +37,7 @@ export default function TermsPage() {
           </p>
         </article>
 
-        <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-6">
+        <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
           <h2 className="text-xl font-semibold text-zinc-100">3. Content Ownership</h2>
           <p className="mt-3 text-zinc-300">
             All training videos, coaching materials, branding, and website content are owned by
@@ -50,7 +50,7 @@ export default function TermsPage() {
           </p>
         </article>
 
-        <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-6">
+        <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
           <h2 className="text-xl font-semibold text-zinc-100">4. Acceptable Use</h2>
           <p className="mt-3 text-zinc-300">You agree not to use LCB Training to:</p>
           <ul className="mt-3 list-disc space-y-2 pl-5 text-zinc-300">

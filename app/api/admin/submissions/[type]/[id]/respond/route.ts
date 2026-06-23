@@ -4,7 +4,13 @@ import { authOptions } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin";
 import { sendSubmissionResponseEmail } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
-import { uploadVideoToVimeo } from "@/lib/vimeo";
+import {
+  getCloudinaryAttachmentDownloadUrl,
+  uploadVideoToCloudinary,
+} from "@/lib/cloudinary";
+
+const MAX_VIDEO_UPLOAD_BYTES = 100 * 1024 * 1024; // 100MB
+const EMAIL_VIDEO_ATTACHMENT_MAX_BYTES = 10 * 1024 * 1024; // 10MB
 
 type RouteContext = {
   params: Promise<{
@@ -13,12 +19,12 @@ type RouteContext = {
   }>;
 };
 
-function isVimeoUploadEnabled() {
-  return process.env.VIMEO_UPLOAD_ENABLED?.toLowerCase() === "true";
-}
-
 function isValidVimeoUrl(value: string) {
   return /^https?:\/\/(www\.)?vimeo\.com\/\d+/i.test(value.trim());
+}
+
+function isCloudinaryAdminUploadEnabled() {
+  return process.env.CLOUDINARY_ADMIN_RESPONSE_UPLOAD_ENABLED?.toLowerCase() === "true";
 }
 
 export async function POST(request: Request, context: RouteContext) {
@@ -39,7 +45,10 @@ export async function POST(request: Request, context: RouteContext) {
   const writtenResponse = String(formData.get("writtenResponse") ?? "").trim();
   const responseVideo = formData.get("responseVideo");
   const responseVideoUrl = String(formData.get("responseVideoUrl") ?? "").trim();
-  const vimeoUploadEnabled = isVimeoUploadEnabled();
+  const videoInputMode = String(formData.get("videoInputMode") ?? "upload")
+    .trim()
+    .toLowerCase();
+  const cloudinaryAdminUploadEnabled = isCloudinaryAdminUploadEnabled();
 
   if (responseMode !== "written" && responseMode !== "video") {
     return NextResponse.json({ error: "Invalid response mode." }, { status: 400 });
@@ -49,30 +58,75 @@ export async function POST(request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Written response is required." }, { status: 400 });
   }
 
-  if (responseMode === "video" && vimeoUploadEnabled && !(responseVideo instanceof File) && !responseVideo) {
-    return NextResponse.json({ error: "Video response file is required." }, { status: 400 });
-  }
-
-  if (responseMode === "video" && !vimeoUploadEnabled && !isValidVimeoUrl(responseVideoUrl)) {
-    return NextResponse.json(
-      { error: "Please provide a valid Vimeo video link." },
-      { status: 400 },
-    );
+  if (responseMode === "video" && videoInputMode !== "upload" && videoInputMode !== "vimeo") {
+    return NextResponse.json({ error: "Invalid video input mode." }, { status: 400 });
   }
 
   let videoResponseUrl: string | undefined;
+  let videoResponseAttachment:
+    | {
+        fileName: string;
+        content: Buffer;
+        contentType: string;
+      }
+    | undefined;
+  let videoResponseDownloadLink: string | undefined;
+
   if (responseMode === "video") {
-    if (vimeoUploadEnabled) {
+    if (videoInputMode === "upload") {
+      if (!cloudinaryAdminUploadEnabled) {
+        return NextResponse.json(
+          { error: "Device upload is currently disabled. Please use a Vimeo response link." },
+          { status: 400 },
+        );
+      }
+
       if (!(responseVideo instanceof File) || responseVideo.size === 0) {
         return NextResponse.json({ error: "Video response file is required." }, { status: 400 });
       }
 
+      if (responseVideo.size > MAX_VIDEO_UPLOAD_BYTES) {
+        return NextResponse.json(
+          { error: "Uploaded response video must be under 100MB." },
+          { status: 413 },
+        );
+      }
+
       const videoBuffer = Buffer.from(await responseVideo.arrayBuffer());
-      videoResponseUrl = await uploadVideoToVimeo({
-        fileBuffer: videoBuffer,
-        fileName: responseVideo.name || "coach-response.mp4",
-      });
+      let cloudinaryUpload;
+      try {
+        cloudinaryUpload = await uploadVideoToCloudinary({
+          fileBuffer: videoBuffer,
+          fileName: responseVideo.name || "coach-response.mp4",
+        });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Unknown Cloudinary upload error";
+        return NextResponse.json(
+          { error: `Unable to upload coach response video: ${message}` },
+          { status: 502 },
+        );
+      }
+      videoResponseUrl = cloudinaryUpload.secureUrl;
+
+      if (videoBuffer.byteLength <= EMAIL_VIDEO_ATTACHMENT_MAX_BYTES) {
+        videoResponseAttachment = {
+          fileName: responseVideo.name || "coach-response.mp4",
+          content: videoBuffer,
+          contentType: responseVideo.type || "video/mp4",
+        };
+      } else {
+        videoResponseDownloadLink = getCloudinaryAttachmentDownloadUrl({
+          publicId: cloudinaryUpload.publicId,
+          format: cloudinaryUpload.format,
+        });
+      }
     } else {
+      if (!isValidVimeoUrl(responseVideoUrl)) {
+        return NextResponse.json(
+          { error: "Please provide a valid Vimeo video link." },
+          { status: 400 },
+        );
+      }
       videoResponseUrl = responseVideoUrl;
     }
   }
@@ -109,6 +163,8 @@ export async function POST(request: Request, context: RouteContext) {
       membershipTier: user?.membershipTier,
       writtenResponse: responseMode === "written" ? writtenResponse : undefined,
       videoResponseUrl: responseMode === "video" ? videoResponseUrl : undefined,
+      videoAttachment: responseMode === "video" ? videoResponseAttachment : undefined,
+      videoDownloadLink: responseMode === "video" ? videoResponseDownloadLink : undefined,
     });
 
     return NextResponse.json({ success: true });
@@ -145,6 +201,8 @@ export async function POST(request: Request, context: RouteContext) {
     membershipTier: user?.membershipTier,
     writtenResponse: responseMode === "written" ? writtenResponse : undefined,
     videoResponseUrl: responseMode === "video" ? videoResponseUrl : undefined,
+    videoAttachment: responseMode === "video" ? videoResponseAttachment : undefined,
+    videoDownloadLink: responseMode === "video" ? videoResponseDownloadLink : undefined,
   });
 
   return NextResponse.json({ success: true });

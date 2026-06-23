@@ -283,23 +283,55 @@ export async function sendSubmissionResponseEmail(params: {
   membershipTier?: DatabaseTier;
   writtenResponse?: string;
   videoResponseUrl?: string;
+  videoAttachment?: {
+    fileName: string;
+    content: Buffer;
+    contentType: string;
+  };
+  videoDownloadLink?: string;
 }) {
   const transporter = createTransporter();
   const submissionLabel =
     params.submissionType === "SWING_ANALYSIS" ? "swing analysis" : "mental game support";
 
+  const videoBodyLines = [
+    params.videoResponseUrl ? `Video response: ${params.videoResponseUrl}` : "",
+    params.videoAttachment ? `Attached video file: ${params.videoAttachment.fileName}` : "",
+    params.videoDownloadLink ? `Download video: ${params.videoDownloadLink}` : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
   const responseBody =
     params.responseMode === "VIDEO"
-      ? `Your coach has sent a video response: ${params.videoResponseUrl}`
+      ? `Your coach has sent a video response.\n${videoBodyLines}`
       : `Your coach has sent a written response:\n\n${params.writtenResponse}`;
 
   const htmlResponseBody =
     params.responseMode === "VIDEO"
-      ? `Your coach has sent a video response: <a href="${escapeHtml(
-          params.videoResponseUrl ?? "",
-        )}" target="_blank" rel="noopener noreferrer" style="color:#8fd7ff; text-decoration:underline;">${escapeHtml(
-          params.videoResponseUrl ?? "",
-        )}</a>`
+      ? `<p style="margin:0 0 8px;">Your coach has sent a video response.</p>
+        ${
+          params.videoResponseUrl
+            ? `<p style="margin:0 0 8px;">Watch online: <a href="${escapeHtml(
+                params.videoResponseUrl,
+              )}" target="_blank" rel="noopener noreferrer" style="color:#8fd7ff; text-decoration:underline;">${escapeHtml(
+                params.videoResponseUrl,
+              )}</a></p>`
+            : ""
+        }
+        ${
+          params.videoAttachment
+            ? `<p style="margin:0 0 8px;">Attached video file: ${escapeHtml(params.videoAttachment.fileName)}</p>`
+            : ""
+        }
+        ${
+          params.videoDownloadLink
+            ? `<p style="margin:0;">Download video: <a href="${escapeHtml(
+                params.videoDownloadLink,
+              )}" target="_blank" rel="noopener noreferrer" style="color:#8fd7ff; text-decoration:underline;">${escapeHtml(
+                params.videoDownloadLink,
+              )}</a></p>`
+            : ""
+        }`
       : `Your coach has sent a written response:<br/><br/>${escapeHtml(params.writtenResponse ?? "")}`;
   const settingsUrl = `${process.env.NEXTAUTH_URL?.replace(/\/$/, "") ?? "http://localhost:3000"}/settings`;
   const isFreeTier = params.membershipTier === "FREE";
@@ -346,6 +378,15 @@ Upgrade now in Settings: ${settingsUrl}
         </div>
       </div>
     </div>`,
+    attachments: params.videoAttachment
+      ? [
+          {
+            filename: params.videoAttachment.fileName,
+            content: params.videoAttachment.content,
+            contentType: params.videoAttachment.contentType,
+          },
+        ]
+      : undefined,
   });
 }
 

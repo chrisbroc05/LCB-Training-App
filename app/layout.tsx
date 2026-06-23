@@ -43,39 +43,39 @@ export default async function RootLayout({
     >
       <body className="min-h-full flex flex-col bg-black text-zinc-100">
         <header className="sticky top-0 z-20 border-b border-[#18243a] bg-black/95 backdrop-blur">
-          <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-4">
-            <Link href="/" className="flex items-center gap-3">
-              <div className="relative h-12 w-32">
+          <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-4">
+            <Link href="/" className="flex items-center gap-2 sm:gap-3">
+              <div className="relative h-10 w-28 sm:h-12 sm:w-32">
                 <BrandLogo className="object-contain" />
               </div>
-              <span className="text-xl font-semibold tracking-tight text-zinc-100">
+              <span className="text-lg font-semibold tracking-tight text-zinc-100 sm:text-xl">
                 LCB <span className="text-[#22c55e]">Training</span>
               </span>
             </Link>
-            <nav className="flex items-center gap-5 text-sm text-zinc-200">
-              <Link href="/dashboard" className="transition hover:text-[#7f9434]">
+            <nav className="flex w-full flex-wrap items-center gap-2 text-[11px] text-zinc-200 sm:w-auto sm:justify-end sm:gap-4 sm:text-sm">
+              <Link href="/dashboard" className="rounded-full px-2 py-1 transition hover:text-[#7f9434] sm:px-0 sm:py-0">
                 Dashboard
               </Link>
               {session?.user && (
-                <Link href="/settings" className="transition hover:text-[#7f9434]">
+                <Link href="/settings" className="rounded-full px-2 py-1 transition hover:text-[#7f9434] sm:px-0 sm:py-0">
                   Settings
                 </Link>
               )}
               {hasBasicAccess && (
-                <Link href="/workouts" className="transition hover:text-[#7f9434]">
+                <Link href="/workouts" className="rounded-full px-2 py-1 transition hover:text-[#7f9434] sm:px-0 sm:py-0">
                   Workouts
                 </Link>
               )}
               <Link
                 href="/swing-analysis"
-                className="rounded-full border border-[#22c55e]/70 bg-[#22c55e]/10 px-4 py-2 font-medium text-[#8df0b1] transition hover:bg-[#22c55e]/20"
+                className="rounded-full border border-[#22c55e]/70 bg-[#22c55e]/10 px-2.5 py-1.5 font-medium text-[#8df0b1] transition hover:bg-[#22c55e]/20 sm:px-4 sm:py-2"
               >
                 Submit Swing
               </Link>
               {hasProAccess && (
                 <Link
                   href="/mental-game"
-                  className="rounded-full border border-[#22c55e]/70 bg-[#22c55e]/10 px-4 py-2 font-medium text-[#8df0b1] transition hover:bg-[#22c55e]/20"
+                  className="rounded-full border border-[#22c55e]/70 bg-[#22c55e]/10 px-2.5 py-1.5 font-medium text-[#8df0b1] transition hover:bg-[#22c55e]/20 sm:px-4 sm:py-2"
                 >
                   Mental Support
                 </Link>
@@ -83,7 +83,7 @@ export default async function RootLayout({
               {hasAdminAccess && (
                 <Link
                   href="/admin"
-                  className="rounded-full border border-yellow-500/60 bg-yellow-500/10 px-4 py-2 font-medium text-yellow-200 transition hover:bg-yellow-500/20"
+                  className="rounded-full border border-yellow-500/60 bg-yellow-500/10 px-2.5 py-1.5 font-medium text-yellow-200 transition hover:bg-yellow-500/20 sm:px-4 sm:py-2"
                 >
                   Admin
                 </Link>
@@ -98,7 +98,7 @@ export default async function RootLayout({
         </header>
         <main className="flex-1">{children}</main>
         <footer className="border-t border-[#18243a] py-6 text-center text-sm text-zinc-400">
-          <div className="mx-auto flex w-full max-w-6xl flex-col items-center justify-center gap-2 px-6 md:flex-row md:gap-4">
+          <div className="mx-auto flex w-full max-w-6xl flex-col items-center justify-center gap-2 px-4 sm:px-6 md:flex-row md:gap-4">
             <span>© {new Date().getFullYear()} LCB Training. All rights reserved.</span>
             <span className="hidden text-zinc-600 md:inline">|</span>
             <div className="flex items-center gap-4">

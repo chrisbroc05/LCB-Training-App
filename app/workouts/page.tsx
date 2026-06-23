@@ -90,27 +90,27 @@ export default async function WorkoutsPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-6 py-14 md:py-20">
-      <section className="rounded-3xl border border-[#18243a] bg-[#0b1324]/80 p-8">
-        <h1 className="text-3xl font-semibold text-zinc-100">Workout Library</h1>
+    <div className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 sm:py-14 md:py-20">
+      <section className="rounded-3xl border border-[#18243a] bg-[#0b1324]/80 p-5 sm:p-8">
+        <h1 className="text-2xl font-semibold leading-tight text-zinc-100 sm:text-3xl">Workout Library</h1>
         <p className="mt-2 text-zinc-300">
           Training programs organized by age group. Open each PDF to view or download your workout
           plan.
         </p>
       </section>
 
-      <div className="mt-8 space-y-8">
+      <div className="mt-8 space-y-6 sm:space-y-8">
         {workoutGroups.map((group) => (
           <section
             key={group.label}
-            className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-6"
+            className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6"
           >
-            <h2 className="text-2xl font-semibold text-zinc-100">{group.label}</h2>
-            <div className="mt-5 grid gap-4 md:grid-cols-3">
+            <h2 className="text-xl font-semibold text-zinc-100 sm:text-2xl">{group.label}</h2>
+            <div className="mt-4 grid gap-4 md:mt-5 md:grid-cols-3">
               {group.programs.map((program) => (
                 <article
                   key={`${group.label}-${program.title}`}
-                  className="rounded-xl border border-[#2b3650] bg-black/30 p-5"
+                  className="rounded-xl border border-[#2b3650] bg-black/30 p-4 sm:p-5"
                 >
                   <h3 className="text-lg font-semibold text-zinc-100">{program.title}</h3>
                   <p className="mt-2 text-sm text-zinc-300">{program.description}</p>

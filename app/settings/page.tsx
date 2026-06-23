@@ -93,16 +93,16 @@ export default async function SettingsPage() {
   const isCancelScheduled = user.subscriptionCancelAtPeriodEnd;
 
   return (
-    <div className="mx-auto w-full max-w-4xl px-6 py-14 md:py-20">
-      <section className="rounded-3xl border border-[#18243a] bg-[#0b1324]/80 p-8">
-        <h1 className="text-3xl font-semibold text-zinc-100">Account Settings</h1>
+    <div className="mx-auto w-full max-w-4xl px-4 py-10 sm:px-6 sm:py-14 md:py-20">
+      <section className="rounded-3xl border border-[#18243a] bg-[#0b1324]/80 p-5 sm:p-8">
+        <h1 className="text-2xl font-semibold leading-tight text-zinc-100 sm:text-3xl">Account Settings</h1>
         <p className="mt-2 text-zinc-300">
           Review your current membership details and manage your Stripe subscription.
         </p>
       </section>
 
-      <section className="mt-8 grid gap-5 md:grid-cols-2">
-        <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-6">
+      <section className="mt-8 grid gap-4 sm:gap-5 md:grid-cols-2">
+        <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
           <h2 className="text-lg font-semibold text-zinc-100">Membership Tier</h2>
           <p className="mt-3 text-zinc-300">
             Current plan:{" "}
@@ -115,7 +115,7 @@ export default async function SettingsPage() {
           </p>
         </article>
 
-        <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-6">
+        <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
           <h2 className="text-lg font-semibold text-zinc-100">Next Billing Date</h2>
           <p className="mt-3 text-zinc-300">{formatDate(nextBillingDate)}</p>
           {isCancelScheduled && (
@@ -126,7 +126,7 @@ export default async function SettingsPage() {
         </article>
       </section>
 
-      <section className="mt-8 rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-6">
+      <section className="mt-8 rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
         <h2 className="text-lg font-semibold text-zinc-100">Subscription Management</h2>
         <p className="mt-2 text-zinc-300">
           Canceling stops future billing and keeps your access active through the current cycle.

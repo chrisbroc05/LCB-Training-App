@@ -24,7 +24,11 @@ type SubmissionDetail = SubmissionListItem & {
   responsePreference?: "VIDEO_RESPONSE" | "WRITTEN_RESPONSE";
 };
 
-export default function AdminPanel({ vimeoUploadEnabled }: { vimeoUploadEnabled: boolean }) {
+export default function AdminPanel({
+  cloudinaryUploadEnabled,
+}: {
+  cloudinaryUploadEnabled: boolean;
+}) {
   const [tab, setTab] = useState<TabType>("swing");
   const [items, setItems] = useState<SubmissionListItem[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -33,6 +37,9 @@ export default function AdminPanel({ vimeoUploadEnabled }: { vimeoUploadEnabled:
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [writtenResponse, setWrittenResponse] = useState("");
   const [responseMode, setResponseMode] = useState<"written" | "video">("written");
+  const [videoInputMode, setVideoInputMode] = useState<"upload" | "vimeo">(
+    cloudinaryUploadEnabled ? "upload" : "vimeo",
+  );
   const [responseVideo, setResponseVideo] = useState<File | null>(null);
   const [manualVideoUrl, setManualVideoUrl] = useState("");
   const [sendError, setSendError] = useState("");
@@ -80,13 +87,14 @@ export default function AdminPanel({ vimeoUploadEnabled }: { vimeoUploadEnabled:
       setResponseVideo(null);
       setManualVideoUrl("");
       setResponseMode("written");
+      setVideoInputMode(cloudinaryUploadEnabled ? "upload" : "vimeo");
       setSendError("");
       setShowResponseModal(false);
       setResponseSummary("");
     };
 
     void loadDetail();
-  }, [selectedId, tab]);
+  }, [selectedId, tab, cloudinaryUploadEnabled]);
 
   const selectedVideoUrl = useMemo(() => {
     if (!detail) {
@@ -116,9 +124,10 @@ export default function AdminPanel({ vimeoUploadEnabled }: { vimeoUploadEnabled:
       }
       formData.set("writtenResponse", writtenResponse.trim());
     } else {
-      if (vimeoUploadEnabled) {
+      formData.set("videoInputMode", videoInputMode);
+      if (videoInputMode === "upload") {
         if (!responseVideo) {
-          setSendError("Please upload a response video.");
+          setSendError("Please upload a response video file.");
           return;
         }
         formData.set("responseVideo", responseVideo);
@@ -145,7 +154,9 @@ export default function AdminPanel({ vimeoUploadEnabled }: { vimeoUploadEnabled:
     const summary =
       responseMode === "written"
         ? `Written response sent: "${writtenResponse.trim().slice(0, 180)}${writtenResponse.trim().length > 180 ? "..." : ""}"`
-        : `Video response sent${vimeoUploadEnabled ? " using uploaded file." : ` with link: ${manualVideoUrl.trim()}`}`;
+        : videoInputMode === "upload"
+          ? `Video response sent using uploaded file: ${responseVideo?.name ?? "video file"}.`
+          : `Video response sent with Vimeo link: ${manualVideoUrl.trim()}`;
     setResponseSummary(summary);
     setShowResponseModal(true);
     setItems((previous) =>
@@ -165,13 +176,13 @@ export default function AdminPanel({ vimeoUploadEnabled }: { vimeoUploadEnabled:
   };
 
   return (
-    <div className="mt-8 grid gap-6 lg:grid-cols-[360px_1fr]">
-      <aside className="rounded-2xl border border-[#18243a] bg-black/30 p-4">
-        <div className="flex gap-2">
+    <div className="mt-6 grid gap-4 sm:mt-8 sm:gap-6 lg:grid-cols-[360px_1fr]">
+      <aside className="rounded-2xl border border-[#18243a] bg-black/30 p-3 sm:p-4">
+        <div className="flex flex-wrap gap-2">
           <button
             type="button"
             onClick={() => setTab("swing")}
-            className={`rounded-full px-4 py-2 text-sm font-semibold ${
+            className={`rounded-full px-3 py-1.5 text-xs font-semibold sm:px-4 sm:py-2 sm:text-sm ${
               tab === "swing"
                 ? "bg-[#22c55e] text-black"
                 : "border border-[#2b3650] text-zinc-200 hover:border-[#7f9434]"
@@ -182,7 +193,7 @@ export default function AdminPanel({ vimeoUploadEnabled }: { vimeoUploadEnabled:
           <button
             type="button"
             onClick={() => setTab("mental")}
-            className={`rounded-full px-4 py-2 text-sm font-semibold ${
+            className={`rounded-full px-3 py-1.5 text-xs font-semibold sm:px-4 sm:py-2 sm:text-sm ${
               tab === "mental"
                 ? "bg-[#22c55e] text-black"
                 : "border border-[#2b3650] text-zinc-200 hover:border-[#7f9434]"
@@ -232,13 +243,13 @@ export default function AdminPanel({ vimeoUploadEnabled }: { vimeoUploadEnabled:
         </div>
       </aside>
 
-      <section className="rounded-2xl border border-[#18243a] bg-black/30 p-5">
+      <section className="rounded-2xl border border-[#18243a] bg-black/30 p-4 sm:p-5">
         {!selectedId && <p className="text-zinc-400">Select a submission to view details.</p>}
         {loadingDetail && <p className="text-zinc-400">Loading submission details...</p>}
         {!loadingDetail && detail && (
-          <div className="space-y-5">
+            <div className="space-y-4 sm:space-y-5">
             <div>
-              <h2 className="text-2xl font-semibold text-zinc-100">{detail.playerName}</h2>
+              <h2 className="break-words text-xl font-semibold leading-tight text-zinc-100 sm:text-2xl">{detail.playerName}</h2>
               <p className="mt-1 text-sm text-zinc-300">Submitted by {detail.userEmail}</p>
               <p className="mt-1 text-sm text-zinc-400">
                 {new Date(detail.createdAt).toLocaleString()} -{" "}
@@ -286,7 +297,7 @@ export default function AdminPanel({ vimeoUploadEnabled }: { vimeoUploadEnabled:
             {selectedVideoUrl && (
               <div className="overflow-hidden rounded-xl border border-[#2b3650] bg-black">
                 <div className="border-b border-[#2b3650] px-4 py-2">
-                  <div className="flex gap-3">
+                  <div className="flex flex-wrap gap-3">
                     <a
                       href={selectedVideoUrl}
                       target="_blank"
@@ -319,11 +330,12 @@ export default function AdminPanel({ vimeoUploadEnabled }: { vimeoUploadEnabled:
 
             <div className="rounded-xl border border-[#2b3650] bg-[#0b1324]/70 p-4">
               <h3 className="text-lg font-semibold text-zinc-100">Send Response</h3>
-              {!vimeoUploadEnabled && (
-                <p className="mt-1 text-xs text-yellow-200">Manual Vimeo link mode</p>
-              )}
+              <p className="mt-1 text-xs text-zinc-400">
+                For video responses, choose either device upload (camera roll supported) or a manual
+                Vimeo link.
+              </p>
               <div className="mt-4 space-y-4">
-                <div className="flex gap-4">
+                <div className="flex flex-wrap gap-4">
                   <label className="flex items-center gap-2 text-sm text-zinc-200">
                     <input
                       type="radio"
@@ -352,22 +364,63 @@ export default function AdminPanel({ vimeoUploadEnabled }: { vimeoUploadEnabled:
                     placeholder="Write your response here..."
                     className="w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 placeholder:text-zinc-500 focus:border-[#22c55e]"
                   />
-                ) : vimeoUploadEnabled ? (
-                  <input
-                    type="file"
-                    accept="video/*"
-                    onChange={(event) => setResponseVideo(event.target.files?.[0] ?? null)}
-                    className="w-full rounded-lg border border-dashed border-[#3b4b6a] bg-black px-4 py-4 text-sm text-zinc-300 file:mr-4 file:rounded-md file:border-0 file:bg-[#22c55e] file:px-3 file:py-2 file:font-semibold file:text-black hover:file:bg-[#35db72]"
-                  />
                 ) : (
-                  <div className="space-y-2">
-                    <input
-                      type="url"
-                      value={manualVideoUrl}
-                      onChange={(event) => setManualVideoUrl(event.target.value)}
-                      placeholder="https://vimeo.com/..."
-                      className="w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 placeholder:text-zinc-500 focus:border-[#22c55e]"
-                    />
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setVideoInputMode("upload")}
+                        disabled={!cloudinaryUploadEnabled}
+                        className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
+                          videoInputMode === "upload"
+                            ? "bg-[#22c55e] text-black"
+                            : "border border-[#2b3650] text-zinc-200 hover:border-[#7f9434]"
+                        } ${!cloudinaryUploadEnabled ? "cursor-not-allowed opacity-50" : ""}`}
+                      >
+                        Upload from Device
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setVideoInputMode("vimeo")}
+                        className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
+                          videoInputMode === "vimeo"
+                            ? "bg-[#22c55e] text-black"
+                            : "border border-[#2b3650] text-zinc-200 hover:border-[#7f9434]"
+                        }`}
+                      >
+                        Paste Vimeo Link
+                      </button>
+                    </div>
+
+                    {!cloudinaryUploadEnabled && (
+                      <p className="text-xs text-yellow-200">
+                        Device upload is currently disabled. Use a Vimeo link for now.
+                      </p>
+                    )}
+
+                    {videoInputMode === "upload" && cloudinaryUploadEnabled ? (
+                      <div className="space-y-2">
+                        <input
+                          type="file"
+                          accept="video/*"
+                          onChange={(event) => setResponseVideo(event.target.files?.[0] ?? null)}
+                          className="w-full rounded-lg border border-dashed border-[#3b4b6a] bg-black px-4 py-4 text-sm text-zinc-300 file:mr-4 file:rounded-md file:border-0 file:bg-[#22c55e] file:px-3 file:py-2 file:font-semibold file:text-black hover:file:bg-[#35db72]"
+                        />
+                        <p className="text-xs text-zinc-400">
+                          Upload from desktop or phone camera roll. Files under 10MB are attached
+                          to the member email. Larger files are stored on Cloudinary and sent as a
+                          download link.
+                        </p>
+                      </div>
+                    ) : (
+                      <input
+                        type="url"
+                        value={manualVideoUrl}
+                        onChange={(event) => setManualVideoUrl(event.target.value)}
+                        placeholder="https://vimeo.com/..."
+                        className="w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 placeholder:text-zinc-500 focus:border-[#22c55e]"
+                      />
+                    )}
                   </div>
                 )}
 
@@ -376,7 +429,7 @@ export default function AdminPanel({ vimeoUploadEnabled }: { vimeoUploadEnabled:
                 <button
                   type="button"
                   onClick={handleSendResponse}
-                  className="rounded-full bg-[#22c55e] px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-[#35db72]"
+                  className="w-full rounded-full bg-[#22c55e] px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-[#35db72] sm:w-auto"
                 >
                   Send Response
                 </button>
@@ -387,8 +440,8 @@ export default function AdminPanel({ vimeoUploadEnabled }: { vimeoUploadEnabled:
       </section>
       {showResponseModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
-          <div className="w-full max-w-xl rounded-2xl border border-[#2b3650] bg-[#0b1324] p-6 shadow-2xl">
-            <h3 className="text-2xl font-semibold text-zinc-100">Response Sent</h3>
+          <div className="w-full max-w-xl rounded-2xl border border-[#2b3650] bg-[#0b1324] p-5 sm:p-6 shadow-2xl">
+            <h3 className="text-xl font-semibold text-zinc-100 sm:text-2xl">Response Sent</h3>
             <p className="mt-3 text-sm text-zinc-300">
               Coach response was sent successfully and the submission has been marked as Responded.
             </p>
@@ -406,7 +459,7 @@ export default function AdminPanel({ vimeoUploadEnabled }: { vimeoUploadEnabled:
                   setSelectedId(null);
                   setDetail(null);
                 }}
-                className="rounded-full bg-[#22c55e] px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-[#35db72]"
+                className="w-full rounded-full bg-[#22c55e] px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-[#35db72] sm:w-auto"
               >
                 Return to Inbox
               </button>

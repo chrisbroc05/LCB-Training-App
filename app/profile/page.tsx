@@ -184,16 +184,16 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
     })) ?? user.subscriptionCurrentPeriodEnd;
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-6 py-14 md:py-20">
-      <section className="rounded-3xl border border-[#18243a] bg-[#0b1324]/80 p-8">
-        <h1 className="text-3xl font-semibold text-zinc-100">My Profile</h1>
+    <div className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 sm:py-14 md:py-20">
+      <section className="rounded-3xl border border-[#18243a] bg-[#0b1324]/80 p-5 sm:p-8">
+        <h1 className="text-2xl font-semibold leading-tight text-zinc-100 sm:text-3xl">My Profile</h1>
         <p className="mt-2 text-zinc-300">
           Review your account details and track your coaching submissions in one place.
         </p>
       </section>
 
-      <section className="mt-8 grid gap-5 md:grid-cols-2">
-        <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-6">
+      <section className="mt-8 grid gap-4 sm:gap-5 md:grid-cols-2">
+        <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
           <h2 className="text-lg font-semibold text-zinc-100">Account Info</h2>
           <p className="mt-3 text-sm text-zinc-300">Name: {user.name ?? "Not provided"}</p>
           <p className="mt-1 text-sm text-zinc-300">Email: {user.email}</p>
@@ -202,7 +202,7 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
           </div>
         </article>
 
-        <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-6">
+        <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
           <h2 className="text-lg font-semibold text-zinc-100">Membership Details</h2>
           <p className="mt-3 text-sm text-zinc-300">Next billing date: {formatDate(nextBillingDate)}</p>
           <Link
@@ -214,8 +214,8 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
         </article>
       </section>
 
-      <section className="mt-8 grid gap-5 lg:grid-cols-[1fr_1.2fr]">
-        <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-6">
+      <section className="mt-8 grid gap-4 sm:gap-5 lg:grid-cols-[1fr_1.2fr]">
+        <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
           <h2 className="text-lg font-semibold text-zinc-100">My Submissions</h2>
           {merged.length === 0 ? (
             <p className="mt-4 text-sm text-zinc-400">You have not submitted any requests yet.</p>
@@ -234,7 +234,7 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
                         : "border-[#2b3650] bg-black/30 hover:border-[#3c4a68]"
                     }`}
                   >
-                    <div className="flex items-center justify-between gap-2">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
                       <p className="text-sm font-semibold text-zinc-100">
                         {submission.type === "SWING" ? "Swing Analysis" : "Mental Game Support"}
                       </p>
@@ -256,7 +256,7 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
           )}
         </article>
 
-        <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-6">
+        <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
           <h2 className="text-lg font-semibold text-zinc-100">Submission Details</h2>
           {!selectedSubmission ? (
             <p className="mt-4 text-sm text-zinc-400">Select a submission to view details.</p>

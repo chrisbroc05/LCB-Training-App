@@ -56,15 +56,15 @@ type VideoSectionProps = {
 function VideoSection({ heading, description, videos, onSelectVideo }: VideoSectionProps) {
   return (
     <div>
-      <h2 className="text-2xl font-semibold text-zinc-100">{heading}</h2>
+      <h2 className="text-xl font-semibold text-zinc-100 sm:text-2xl">{heading}</h2>
       <p className="mt-2 text-zinc-300">{description}</p>
-      <div className="mt-6 grid gap-8 lg:grid-cols-2">
+      <div className="mt-6 grid gap-5 sm:gap-6 lg:grid-cols-2">
         {videos.map((video) => (
           <button
             key={video.url}
             type="button"
             onClick={() => onSelectVideo(video)}
-            className="group rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-6 text-left transition hover:border-[#2b7c4b] hover:bg-[#11203a]"
+            className="group rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 text-left transition hover:border-[#2b7c4b] hover:bg-[#11203a] sm:p-6"
           >
             <div className="relative overflow-hidden rounded-xl border border-[#2b3650] bg-black">
               <div className="aspect-video w-full">
@@ -77,12 +77,12 @@ function VideoSection({ heading, description, videos, onSelectVideo }: VideoSect
                 />
               </div>
               <div className="absolute inset-0 flex items-center justify-center bg-black/45 transition group-hover:bg-black/35">
-                <span className="rounded-full border border-white/60 bg-black/60 px-5 py-2 text-sm font-semibold text-white">
+                <span className="rounded-full border border-white/60 bg-black/60 px-4 py-2 text-xs font-semibold text-white sm:px-5 sm:text-sm">
                   Play Video
                 </span>
               </div>
             </div>
-            <p className="mt-4 text-lg font-semibold text-zinc-100">{video.title}</p>
+              <p className="mt-4 text-base font-semibold text-zinc-100 sm:text-lg">{video.title}</p>
           </button>
         ))}
       </div>
@@ -136,7 +136,7 @@ export default function VideoLibrary() {
           onClick={() => setSelectedVideo(null)}
         >
           <div
-            className="relative h-[80vh] w-[92vw] sm:w-[85vw] lg:w-[80vw] max-w-6xl overflow-hidden rounded-2xl border border-[#2b3650] bg-black shadow-2xl"
+            className="relative h-[78dvh] w-[96vw] sm:h-[80vh] sm:w-[85vw] lg:w-[80vw] max-w-6xl overflow-hidden rounded-2xl border border-[#2b3650] bg-black shadow-2xl"
             onClick={(event) => event.stopPropagation()}
           >
             <button

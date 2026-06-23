@@ -85,7 +85,7 @@ export default function ChangeMembershipSection({
   }
 
   return (
-    <section className="mt-8 rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-6">
+    <section className="mt-8 rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
       <h2 className="text-lg font-semibold text-zinc-100">Upgrade Membership</h2>
       <p className="mt-2 text-zinc-300">
         {hasSubscription
@@ -100,9 +100,9 @@ export default function ChangeMembershipSection({
           return (
             <article
               key={tier.key}
-              className="rounded-xl border border-[#2b3650] bg-black/30 p-5"
+              className="rounded-xl border border-[#2b3650] bg-black/30 p-4 sm:p-5"
             >
-              <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h3 className="text-base font-semibold text-zinc-100">{tier.name}</h3>
                   <p className="text-sm text-[#9df3bd]">{tier.priceLabel}</p>
@@ -111,7 +111,7 @@ export default function ChangeMembershipSection({
                   type="button"
                   onClick={() => handleTierChange(nextTier)}
                   disabled={isSubmitting}
-                  className="rounded-full border border-[#22c55e]/70 bg-[#22c55e]/10 px-4 py-2 text-sm font-semibold text-[#8df0b1] transition hover:bg-[#22c55e]/20 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="w-full rounded-full border border-[#22c55e]/70 bg-[#22c55e]/10 px-4 py-2 text-sm font-semibold text-[#8df0b1] transition hover:bg-[#22c55e]/20 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
                 >
                   {isPending
                     ? "Updating..."

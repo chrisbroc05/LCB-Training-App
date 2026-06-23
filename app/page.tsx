@@ -22,32 +22,32 @@ const introVideos = [
 
 export default function Home() {
   return (
-    <div className="mx-auto w-full max-w-6xl px-6 py-14 md:py-20">
-      <section className="rounded-3xl border border-[#18243a] bg-gradient-to-br from-[#0f1d34] to-[#050b16] p-8 shadow-2xl shadow-black/60 md:p-12">
-        <div className="relative mb-6 h-14 w-40">
+    <div className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 sm:py-14 md:py-20">
+      <section className="rounded-3xl border border-[#18243a] bg-gradient-to-br from-[#0f1d34] to-[#050b16] p-5 shadow-2xl shadow-black/60 sm:p-8 md:p-12">
+        <div className="relative mb-5 h-12 w-32 sm:mb-6 sm:h-14 sm:w-40">
           <BrandLogo className="object-contain" />
         </div>
         <p className="text-sm font-medium uppercase tracking-[0.2em] text-[#7f9434]">
           LCB Training Membership
         </p>
-        <h1 className="mt-4 max-w-3xl text-4xl font-bold tracking-tight text-zinc-100 md:text-6xl">
+        <h1 className="mt-4 max-w-3xl text-3xl font-bold tracking-tight text-zinc-100 sm:text-4xl md:text-6xl">
           Build confidence on and off the field with complete player development.
         </h1>
-        <p className="mt-5 max-w-2xl text-lg leading-relaxed text-zinc-300">
+        <p className="mt-5 max-w-2xl text-base leading-relaxed text-zinc-300 sm:text-lg">
           LCB Training helps athletes grow as complete competitors through skill training,
           movement work, and accountability that carries into games, school, and everyday life.
           New members start with one free submission (swing analysis or mental game support).
         </p>
-        <div className="mt-8 flex flex-wrap gap-4">
+        <div className="mt-8 flex flex-wrap gap-3 sm:gap-4">
           <Link
             href="/auth"
-            className="rounded-full bg-[#22c55e] px-6 py-3 font-semibold text-black transition hover:bg-[#35db72]"
+            className="w-full rounded-full bg-[#22c55e] px-6 py-3 text-center font-semibold text-black transition hover:bg-[#35db72] sm:w-auto"
           >
             Join LCB Training
           </Link>
           <Link
             href="/dashboard"
-            className="rounded-full border border-[#2b3650] px-6 py-3 font-semibold text-zinc-100 transition hover:border-[#7f9434] hover:text-[#98b144]"
+            className="w-full rounded-full border border-[#2b3650] px-6 py-3 text-center font-semibold text-zinc-100 transition hover:border-[#7f9434] hover:text-[#98b144] sm:w-auto"
           >
             Explore Member Dashboard
           </Link>
@@ -55,7 +55,7 @@ export default function Home() {
       </section>
 
       <section className="mt-14">
-        <h2 className="text-3xl font-semibold text-zinc-100">What We Train</h2>
+        <h2 className="text-2xl font-semibold text-zinc-100 sm:text-3xl">What We Train</h2>
         <p className="mt-2 max-w-3xl text-zinc-300">
           Every membership is built to improve game performance while developing discipline,
           confidence, and leadership habits beyond baseball.
@@ -91,7 +91,7 @@ export default function Home() {
       </section>
 
       <section className="mt-14">
-        <h2 className="text-3xl font-semibold text-zinc-100">See What LCB Training Is All About</h2>
+        <h2 className="text-2xl font-semibold leading-tight text-zinc-100 sm:text-3xl">See What LCB Training Is All About</h2>
         <p className="mt-2 max-w-3xl text-zinc-300">
           Start with these intro videos to understand the coaching approach, program flow,
           and how to submit film for feedback.
@@ -123,9 +123,9 @@ export default function Home() {
       </section>
 
       <section className="mt-14">
-        <div className="mb-6 flex items-end justify-between">
+        <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div>
-            <h2 className="text-3xl font-semibold text-zinc-100">Choose Your Membership Tier</h2>
+            <h2 className="text-2xl font-semibold leading-tight text-zinc-100 sm:text-3xl">Choose Your Membership Tier</h2>
             <p className="mt-2 text-zinc-300">
               Start with Free, then move to the tier that fits your training schedule and support needs.
             </p>
@@ -151,6 +151,12 @@ export default function Home() {
                   </li>
                 ))}
               </ul>
+              <Link
+                href={`/auth?tier=${tier.key}`}
+                className="mt-6 inline-flex w-full items-center justify-center rounded-full bg-[#22c55e] px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-[#35db72]"
+              >
+                Get Started
+              </Link>
             </article>
           ))}
         </div>

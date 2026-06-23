@@ -114,7 +114,7 @@ export default function SwingAnalysisForm() {
   };
 
   return (
-    <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
+    <form className="mt-6 space-y-5 sm:mt-8" onSubmit={handleSubmit}>
       <label className="block">
         <span className="text-sm text-zinc-300">Player name</span>
         <input
@@ -162,7 +162,7 @@ export default function SwingAnalysisForm() {
         />
       </label>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2">
         <label className="block">
           <span className="text-sm text-zinc-300">Pitch Type Focus</span>
           <select
@@ -234,15 +234,15 @@ export default function SwingAnalysisForm() {
       <button
         type="submit"
         disabled={isSubmitting}
-        className="rounded-full bg-[#22c55e] px-6 py-3 font-semibold text-black transition hover:bg-[#35db72] disabled:cursor-not-allowed disabled:opacity-60"
+        className="w-full rounded-full bg-[#22c55e] px-6 py-3 font-semibold text-black transition hover:bg-[#35db72] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
       >
         {isSubmitting ? "Submitting..." : "Submit Swing Analysis"}
       </button>
 
       {showConfirmationModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
-          <div className="w-[92vw] max-w-2xl rounded-2xl border border-[#2b3650] bg-[#0b1324] p-6 shadow-2xl md:p-8">
-            <h2 className="text-2xl font-semibold text-zinc-100">Submission Received</h2>
+          <div className="w-[94vw] max-w-2xl rounded-2xl border border-[#2b3650] bg-[#0b1324] p-5 shadow-2xl sm:p-6 md:p-8">
+            <h2 className="text-xl font-semibold text-zinc-100 sm:text-2xl">Submission Received</h2>
             <div className="mt-4 rounded-xl border border-[#2b3650] bg-black/40 p-4">
               <p className="text-sm font-semibold text-zinc-200">Swing Analysis Summary</p>
               <p className="mt-2 whitespace-pre-wrap text-sm text-zinc-300">
