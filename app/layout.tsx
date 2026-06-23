@@ -32,7 +32,6 @@ export default async function RootLayout({
   const session = await getServerSession(authOptions);
   const membershipTier = (session?.user?.membershipTier ?? "FREE") as DatabaseTier;
   const hasBasicAccess = hasDatabaseTierAccess(membershipTier, "basic");
-  const hasProAccess = hasDatabaseTierAccess(membershipTier, "pro");
   const hasAdminAccess = isAdminEmail(session?.user?.email);
   const userDisplayName = session?.user?.name || session?.user?.email || "Member";
 
@@ -72,7 +71,7 @@ export default async function RootLayout({
               >
                 Submit Swing
               </Link>
-              {hasProAccess && (
+              {session?.user && (
                 <Link
                   href="/mental-game"
                   className="rounded-full border border-[#22c55e]/70 bg-[#22c55e]/10 px-2.5 py-1.5 font-medium text-[#8df0b1] transition hover:bg-[#22c55e]/20 sm:px-4 sm:py-2"
