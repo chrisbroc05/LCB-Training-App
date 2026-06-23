@@ -78,7 +78,11 @@ export async function uploadVideoToCloudinary(params: UploadVideoParams): Promis
   formData.set("public_id", publicId);
   formData.set("signature", signature);
   formData.set("resource_type", "video");
-  formData.set("file", new Blob([params.fileBuffer]), params.fileName || "coach-response.mp4");
+  formData.set(
+    "file",
+    new Blob([new Uint8Array(params.fileBuffer)]),
+    params.fileName || "coach-response.mp4",
+  );
 
   const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/video/upload`, {
     method: "POST",
