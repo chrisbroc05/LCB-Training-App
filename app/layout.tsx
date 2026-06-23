@@ -31,6 +31,7 @@ export default async function RootLayout({
 }>) {
   const session = await getServerSession(authOptions);
   const membershipTier = (session?.user?.membershipTier ?? "FREE") as DatabaseTier;
+  const hasBasicAccess = hasDatabaseTierAccess(membershipTier, "basic");
   const hasProAccess = hasDatabaseTierAccess(membershipTier, "pro");
   const hasAdminAccess = isAdminEmail(session?.user?.email);
   const userDisplayName = session?.user?.name || session?.user?.email || "Member";
@@ -58,6 +59,11 @@ export default async function RootLayout({
               {session?.user && (
                 <Link href="/settings" className="transition hover:text-[#7f9434]">
                   Settings
+                </Link>
+              )}
+              {hasBasicAccess && (
+                <Link href="/workouts" className="transition hover:text-[#7f9434]">
+                  Workouts
                 </Link>
               )}
               <Link
