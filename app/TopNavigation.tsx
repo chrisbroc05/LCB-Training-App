@@ -128,7 +128,7 @@ export default function TopNavigation({ isLoggedIn, isAdmin, hasBasicAccess }: T
 
   if (isAdmin) {
     return (
-      <nav className="ml-auto flex items-center gap-2">
+      <nav className="flex items-center justify-end gap-2 md:justify-self-end">
         <Link href="/admin" onClick={closeMenus} className={linkClass(pathname.startsWith("/admin"))}>
           Admin Dashboard
         </Link>
@@ -148,7 +148,7 @@ export default function TopNavigation({ isLoggedIn, isAdmin, hasBasicAccess }: T
 
   if (!isLoggedIn) {
     return (
-      <nav className="ml-auto">
+      <nav className="flex justify-end md:justify-self-end">
         <Link href="/auth" onClick={closeMenus} className={linkClass(pathname.startsWith("/auth"))}>
           Login
         </Link>
@@ -157,13 +157,11 @@ export default function TopNavigation({ isLoggedIn, isAdmin, hasBasicAccess }: T
   }
 
   return (
-    <nav className="ml-auto">
+    <nav className="flex justify-end md:justify-self-end">
       <div className="hidden items-center gap-1 md:flex">
         <Link href="/dashboard" onClick={closeMenus} className={linkClass(pathname === "/dashboard")}>
           Dashboard
         </Link>
-        {renderDesktopDropdown("training", "Training", trainingLinks)}
-        {renderDesktopDropdown("coaching", "Coaching", coachingLinks)}
         {renderDesktopDropdown("account", "Account", accountLinks)}
       </div>
 
@@ -171,10 +169,23 @@ export default function TopNavigation({ isLoggedIn, isAdmin, hasBasicAccess }: T
         <button
           type="button"
           onClick={() => setMobileOpen((current) => !current)}
-          className="rounded-lg border border-[#2b3650] bg-[#0b1324] px-3 py-2 text-xl leading-none text-zinc-100"
+          className="rounded-lg border border-[#2b3650] bg-[#0b1324] px-3 py-2 text-zinc-100"
           aria-label="Toggle navigation menu"
         >
-          ?
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            aria-hidden="true"
+          >
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <line x1="3" y1="12" x2="21" y2="12" />
+            <line x1="3" y1="18" x2="21" y2="18" />
+          </svg>
         </button>
         {mobileOpen && (
           <div className="absolute left-4 right-4 top-[68px] z-30 rounded-xl border border-[#2b3650] bg-[#0b1324] p-4 shadow-2xl shadow-black/50">

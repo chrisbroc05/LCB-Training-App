@@ -41,8 +41,9 @@ export default async function RootLayout({
     >
       <body className="min-h-full flex flex-col bg-black text-zinc-100">
         <header className="sticky top-0 z-20 border-b border-[#18243a] bg-black/95 backdrop-blur">
-          <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-4">
-            <Link href="/" className="flex items-center gap-2 sm:gap-3">
+          <div className="mx-auto w-full max-w-6xl px-4 py-3 sm:px-6 sm:py-4">
+            <div className="flex items-center justify-between gap-3 md:grid md:grid-cols-[1fr_auto_1fr] md:items-center">
+            <Link href="/" className="flex items-center gap-2 sm:gap-3 md:justify-self-start">
               <div className="relative h-10 w-28 sm:h-12 sm:w-32">
                 <BrandLogo className="object-contain" />
               </div>
@@ -50,11 +51,15 @@ export default async function RootLayout({
                 LCB <span className="text-[#22c55e]">Training</span>
               </span>
             </Link>
+            <p className="hidden text-sm italic font-light tracking-wide text-[#2D6A4F] md:block md:justify-self-center">
+              Work Hard. Be Memorable.
+            </p>
             <TopNavigation
               isLoggedIn={Boolean(session?.user)}
               isAdmin={hasAdminAccess}
               hasBasicAccess={hasBasicAccess}
             />
+            </div>
           </div>
         </header>
         <main className="flex-1">{children}</main>
