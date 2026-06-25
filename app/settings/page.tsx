@@ -6,6 +6,7 @@ import type { DatabaseTier } from "@/lib/membership";
 import { stripe } from "@/lib/stripe";
 import CancelSubscriptionButton from "@/app/settings/CancelSubscriptionButton";
 import ChangeMembershipSection from "@/app/settings/ChangeMembershipSection";
+import { isAdminEmail } from "@/lib/admin";
 
 function formatTierLabel(tier: DatabaseTier) {
   return tier.charAt(0) + tier.slice(1).toLowerCase();
@@ -66,6 +67,9 @@ export default async function SettingsPage() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     redirect("/auth");
+  }
+  if (isAdminEmail(session.user.email)) {
+    redirect("/admin");
   }
 
   const user = await prisma.user.findUnique({

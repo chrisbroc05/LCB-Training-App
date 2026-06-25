@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { hasDatabaseTierAccess, type DatabaseTier } from "@/lib/membership";
 import { prisma } from "@/lib/prisma";
+import { isAdminEmail } from "@/lib/admin";
 
 type ProgramCategory = "strength" | "speed";
 type PhaseNumber = 1 | 2 | 3;
@@ -201,6 +202,9 @@ export default async function WorkoutsPage() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     redirect("/auth");
+  }
+  if (isAdminEmail(session.user.email)) {
+    redirect("/admin");
   }
 
   const membershipTier = (session.user.membershipTier ?? "FREE") as DatabaseTier;

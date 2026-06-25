@@ -7,6 +7,7 @@ type UserAuthStatusProps = {
   isLoggedIn: boolean;
   displayName: string;
   membershipTier: "FREE" | "BASIC" | "PRO" | "ELITE";
+  isAdminView?: boolean;
 };
 
 function formatTierLabel(tier: "FREE" | "BASIC" | "PRO" | "ELITE") {
@@ -17,6 +18,7 @@ export default function UserAuthStatus({
   isLoggedIn,
   displayName,
   membershipTier,
+  isAdminView = false,
 }: UserAuthStatusProps) {
   if (!isLoggedIn) {
     return (
@@ -26,6 +28,18 @@ export default function UserAuthStatus({
       >
         Login
       </a>
+    );
+  }
+
+  if (isAdminView) {
+    return (
+      <button
+        type="button"
+        onClick={() => signOut({ callbackUrl: "/auth" })}
+        className="rounded-full border border-[#22c55e]/70 bg-[#22c55e]/10 px-3 py-1.5 text-xs font-medium text-[#8df0b1] transition hover:bg-[#22c55e]/20 sm:px-4 sm:py-2 sm:text-sm"
+      >
+        Log Out
+      </button>
     );
   }
 

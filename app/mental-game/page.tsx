@@ -4,11 +4,15 @@ import { authOptions } from "@/lib/auth";
 import MentalGameForm from "@/app/mental-game/MentalGameForm";
 import { hasDatabaseTierAccess, type DatabaseTier } from "@/lib/membership";
 import { prisma } from "@/lib/prisma";
+import { isAdminEmail } from "@/lib/admin";
 
 export default async function MentalGamePage() {
   const session = await getServerSession(authOptions);
   if (!session?.user) {
     redirect("/auth");
+  }
+  if (isAdminEmail(session.user.email)) {
+    redirect("/admin");
   }
 
   const membershipTier = (session.user.membershipTier ?? "FREE") as DatabaseTier;
