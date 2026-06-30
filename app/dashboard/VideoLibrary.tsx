@@ -35,6 +35,33 @@ const fieldingVideos: VideoLibraryItem[] = [
     title: "3 drills to improve footwork and timing",
     url: "https://player.vimeo.com/video/1200425707",
   },
+  { title: "Daily Progressions", url: "https://player.vimeo.com/video/1205918751" },
+  {
+    title: "Daily Progressions (Short Hops)",
+    url: "https://player.vimeo.com/video/1205918743",
+  },
+  { title: "Forehand Footwork", url: "https://player.vimeo.com/video/1205921603" },
+  { title: "Fielding Timing (2 Cones)", url: "https://player.vimeo.com/video/1205921606" },
+  {
+    title: "Backhand Progression (2 Cones)",
+    url: "https://player.vimeo.com/video/1205921604",
+  },
+  { title: "Fielding Timing", url: "https://player.vimeo.com/video/1205921593" },
+  {
+    title: "Backhand Timing Drill (One Cone)",
+    url: "https://player.vimeo.com/video/1205921605",
+  },
+  {
+    title: "How These Drills Translate to the Game",
+    url: "https://player.vimeo.com/video/1205924083",
+  },
+  { title: "Backhand Footwork", url: "https://player.vimeo.com/video/1205924081" },
+  {
+    title: "Getting Around the Baseball Drill",
+    url: "https://player.vimeo.com/video/1205924082",
+  },
+  { title: "Quick Feet Drill", url: "https://player.vimeo.com/video/1205924080" },
+  { title: "Backhand Footwork Drill", url: "https://player.vimeo.com/video/1205924073" },
 ];
 
 function autoplayUrl(url: string) {
