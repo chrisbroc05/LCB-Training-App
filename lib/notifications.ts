@@ -339,7 +339,7 @@ export async function sendSubmissionResponseEmail(params: {
     ? `Want to keep progressing?
 
 Basic ($5/month) unlocks the full hitting, fielding, and mindset libraries.
-Pro ($15/month) unlocks ongoing swing analysis feedback plus mental game support.
+Pro ($9/month) unlocks ongoing swing analysis feedback plus mental game support.
 Upgrade now in Settings: ${settingsUrl}
 `
     : "";
@@ -347,7 +347,7 @@ Upgrade now in Settings: ${settingsUrl}
     ? `<div style="margin-top:16px; padding:12px; border:1px solid #2b3650; border-radius:10px; background:#060b16;">
         <p style="margin:0 0 8px; font-weight:700; color:#98b144;">Keep building your progress</p>
         <p style="margin:0 0 6px;"><strong>Basic ($5/month):</strong> Full hitting, fielding, and mindset video libraries.</p>
-        <p style="margin:0;"><strong>Pro ($15/month):</strong> Ongoing swing analysis feedback and mental game support.</p>
+        <p style="margin:0;"><strong>Pro ($9/month):</strong> Ongoing swing analysis feedback and mental game support.</p>
         <p style="margin:8px 0 0;"><a href="${escapeHtml(
           settingsUrl,
         )}" target="_blank" rel="noopener noreferrer" style="color:#8fd7ff; text-decoration:underline;">Upgrade your membership in Settings</a></p>

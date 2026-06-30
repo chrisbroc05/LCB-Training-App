@@ -35,7 +35,7 @@ export const membershipTiers: MembershipTier[] = [
   {
     key: "pro",
     name: "Pro",
-    priceLabel: "$15 / month",
+    priceLabel: "$9 / month",
     summary: "Everything in Basic plus weekly swing analysis and mental game support.",
     features: [
       "Everything in Basic",
@@ -46,7 +46,7 @@ export const membershipTiers: MembershipTier[] = [
   {
     key: "elite",
     name: "Elite",
-    priceLabel: "$25 / month",
+    priceLabel: "$14 / month",
     summary: "Everything in Pro plus priority feedback and monthly group call access.",
     features: [
       "Everything in Pro",

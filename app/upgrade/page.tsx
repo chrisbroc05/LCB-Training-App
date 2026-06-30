@@ -45,7 +45,7 @@ export default async function UpgradePage({ searchParams }: UpgradePageProps) {
 
         <article className="rounded-2xl border border-[#22c55e]/40 bg-[#22c55e]/10 p-4 sm:p-6">
           <h2 className="text-xl font-semibold text-zinc-100 sm:text-2xl">Pro</h2>
-          <p className="mt-2 text-2xl font-bold text-[#98b144]">$15 / month</p>
+          <p className="mt-2 text-2xl font-bold text-[#98b144]">$9 / month</p>
           <p className="mt-3 text-zinc-200">
             Everything in Basic plus ongoing personalized swing and mental game support.
           </p>
@@ -59,7 +59,7 @@ export default async function UpgradePage({ searchParams }: UpgradePageProps) {
 
         <article className="rounded-2xl border border-[#7f9434]/40 bg-[#7f9434]/10 p-4 sm:p-6">
           <h2 className="text-xl font-semibold text-zinc-100 sm:text-2xl">Elite</h2>
-          <p className="mt-2 text-2xl font-bold text-[#98b144]">$25 / month</p>
+          <p className="mt-2 text-2xl font-bold text-[#98b144]">$14 / month</p>
           <p className="mt-3 text-zinc-200">
             Everything in Pro with top-priority coaching responses and monthly group call access.
           </p>
