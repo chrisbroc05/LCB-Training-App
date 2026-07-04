@@ -30,6 +30,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const session = await getServerSession(authOptions);
+  const gaId = process.env.NEXT_PUBLIC_GA_ID;
   const membershipTier = (session?.user?.membershipTier ?? "FREE") as DatabaseTier;
   const hasBasicAccess = hasDatabaseTierAccess(membershipTier, "basic");
   const hasAdminAccess = isAdminEmail(session?.user?.email);
@@ -39,6 +40,23 @@ export default async function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <head>
+        {gaId ? (
+          <>
+            <script async src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`} />
+            <script
+              dangerouslySetInnerHTML={{
+                __html: `
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', '${gaId}');
+`,
+              }}
+            />
+          </>
+        ) : null}
+      </head>
       <body className="min-h-full flex flex-col bg-black text-zinc-100">
         <header className="sticky top-0 z-20 border-b border-[#18243a] bg-black/95 backdrop-blur">
           <div className="mx-auto w-full max-w-6xl px-4 py-3 sm:px-6 sm:py-4">
