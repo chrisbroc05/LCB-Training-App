@@ -17,6 +17,20 @@ const hittingVideos: VideoLibraryItem[] = [
   { title: "Slot position", url: "https://player.vimeo.com/video/1200422517" },
   { title: "Posture work", url: "https://player.vimeo.com/video/1200422516" },
   { title: "Don't drift in your load", url: "https://player.vimeo.com/video/1200422500" },
+  { title: "PVC Pipe/Light Bat Swings", url: "https://player.vimeo.com/video/1207507965" },
+  { title: "Top Hand - High Tee Drill", url: "https://player.vimeo.com/video/1207509269" },
+  { title: "Half Bat Drill", url: "https://player.vimeo.com/video/1207510044" },
+  { title: "Low Tee - Outside Pitch", url: "https://player.vimeo.com/video/1207511052" },
+  { title: "45 Degree Angled In", url: "https://player.vimeo.com/video/1207512012" },
+  { title: "45 Degree Drill - Angled Out", url: "https://player.vimeo.com/video/1207513205" },
+  {
+    title: "Staying Stacked in Our Back Leg",
+    url: "https://player.vimeo.com/video/1207514238",
+  },
+  {
+    title: "Be Able to Hit These 3 Pitches",
+    url: "https://player.vimeo.com/video/1207516198",
+  },
 ];
 
 const fieldingVideos: VideoLibraryItem[] = [
