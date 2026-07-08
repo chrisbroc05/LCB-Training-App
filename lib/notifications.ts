@@ -140,6 +140,37 @@ export async function sendNewMemberNotification(params: {
   });
 }
 
+export async function sendSubmissionReceivedEmail(params: {
+  toEmail: string;
+  firstName: string;
+}) {
+  const transporter = createTransporter();
+  const safeFirstName = params.firstName.trim() || "there";
+
+  await transporter.sendMail({
+    from: process.env.NOTIFICATION_EMAIL,
+    to: params.toEmail,
+    subject: "We got your submission — Coach Broc will be in touch!",
+    text: `Hey ${safeFirstName}, your submission has been received. Coach Broc personally reviews every submission and will get back to you within 48 hours. In the meantime keep working hard. — LCB Training`,
+    html: `<div style="margin:0; padding:24px; background:#05070d; font-family: Arial, sans-serif;">
+      <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width: 620px; margin: 0 auto; border-collapse: collapse; border: 1px solid #1f2c43; border-radius: 12px; overflow: hidden; background: #0b1324;">
+        <tr>
+          <td style="background: linear-gradient(90deg, #000000 0%, #0f1d34 70%, #52B788 100%); padding: 18px 20px;">
+            <div style="color: #f4f4f5; font-size: 18px; font-weight: 700;">We got your submission — Coach Broc will be in touch!</div>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding: 20px; font-size: 14px; line-height: 1.7; color: #e5e7eb;">
+            <p style="margin: 0;">Hey ${escapeHtml(
+              safeFirstName,
+            )}, your submission has been received. Coach Broc personally reviews every submission and will get back to you within 48 hours. In the meantime keep working hard. — LCB Training</p>
+          </td>
+        </tr>
+      </table>
+    </div>`,
+  });
+}
+
 export async function sendSwingSubmissionNotification(params: {
   userEmail: string;
   membershipTier: DatabaseTier;

@@ -4,7 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import type { DatabaseTier } from "@/lib/membership";
 import { prisma } from "@/lib/prisma";
-import { sendMentalGameSubmissionNotification } from "@/lib/notifications";
+import { sendMentalGameSubmissionNotification, sendSubmissionReceivedEmail } from "@/lib/notifications";
 import {
   createTemporaryVideoDownloadLink,
   EMAIL_VIDEO_ATTACHMENT_MAX_BYTES,
@@ -182,6 +182,17 @@ export async function POST(request: Request) {
       });
     } catch (error) {
       console.error("Failed to send mental game submission notification", error);
+    }
+
+    try {
+      const firstName =
+        session.user.name?.trim().split(/\s+/)[0] ?? playerName.trim().split(/\s+/)[0] ?? "there";
+      await sendSubmissionReceivedEmail({
+        toEmail: submission.userEmail,
+        firstName,
+      });
+    } catch (error) {
+      console.error("Failed to send mental game user confirmation email", error);
     }
 
     return NextResponse.json({ success: true }, { status: 201 });

@@ -31,6 +31,7 @@ export default async function RootLayout({
 }>) {
   const session = await getServerSession(authOptions);
   const gaId = process.env.NEXT_PUBLIC_GA_ID;
+  const userDisplayName = session?.user?.name?.trim() ?? "";
   const membershipTier = (session?.user?.membershipTier ?? "FREE") as DatabaseTier;
   const hasBasicAccess = hasDatabaseTierAccess(membershipTier, "basic");
   const hasAdminAccess = isAdminEmail(session?.user?.email);
@@ -76,6 +77,7 @@ export default async function RootLayout({
               isLoggedIn={Boolean(session?.user)}
               isAdmin={hasAdminAccess}
               hasBasicAccess={hasBasicAccess}
+              userDisplayName={userDisplayName}
             />
             </div>
           </div>

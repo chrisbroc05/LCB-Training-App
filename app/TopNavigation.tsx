@@ -9,6 +9,7 @@ type TopNavigationProps = {
   isLoggedIn: boolean;
   isAdmin: boolean;
   hasBasicAccess: boolean;
+  userDisplayName?: string;
 };
 
 type MenuKey = "training" | "coaching" | "account";
@@ -25,10 +26,18 @@ function linkClass(active: boolean) {
     : "rounded-lg px-3 py-2 text-sm text-zinc-200 transition hover:bg-[#1a253a] hover:text-[#9df3bd]";
 }
 
-export default function TopNavigation({ isLoggedIn, isAdmin, hasBasicAccess }: TopNavigationProps) {
+export default function TopNavigation({
+  isLoggedIn,
+  isAdmin,
+  hasBasicAccess,
+  userDisplayName,
+}: TopNavigationProps) {
   const pathname = usePathname();
   const [openDesktopMenu, setOpenDesktopMenu] = useState<MenuKey | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const showGreeting = Boolean(
+    isLoggedIn && userDisplayName && pathname !== "/" && !pathname.startsWith("/auth"),
+  );
   const closeMenus = () => {
     setOpenDesktopMenu(null);
     setMobileOpen(false);
@@ -148,9 +157,16 @@ export default function TopNavigation({ isLoggedIn, isAdmin, hasBasicAccess }: T
 
   if (!isLoggedIn) {
     return (
-      <nav className="flex justify-end md:justify-self-end">
+      <nav className="flex items-center justify-end gap-1 md:justify-self-end">
         <Link href="/auth" onClick={closeMenus} className={linkClass(pathname.startsWith("/auth"))}>
           Login
+        </Link>
+        <Link
+          href="/auth?mode=signup"
+          onClick={closeMenus}
+          className={linkClass(false)}
+        >
+          Sign Up
         </Link>
       </nav>
     );
@@ -162,6 +178,9 @@ export default function TopNavigation({ isLoggedIn, isAdmin, hasBasicAccess }: T
         <Link href="/dashboard" onClick={closeMenus} className={linkClass(pathname === "/dashboard")}>
           Dashboard
         </Link>
+        {showGreeting ? (
+          <span className="px-2 text-xs font-medium text-[#52B788]">{userDisplayName}</span>
+        ) : null}
         {renderDesktopDropdown("account", "Account", accountLinks)}
       </div>
 
@@ -190,6 +209,9 @@ export default function TopNavigation({ isLoggedIn, isAdmin, hasBasicAccess }: T
         {mobileOpen && (
           <div className="absolute left-4 right-4 top-[68px] z-30 rounded-xl border border-[#2b3650] bg-[#0b1324] p-4 shadow-2xl shadow-black/50">
             <div className="space-y-4">
+              {showGreeting ? (
+                <p className="text-sm font-medium text-[#52B788]">{userDisplayName}</p>
+              ) : null}
               <div>
                 <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-400">Main</p>
                 <Link href="/dashboard" onClick={closeMenus} className={linkClass(pathname === "/dashboard")}>
