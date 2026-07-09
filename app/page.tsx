@@ -36,6 +36,16 @@ const testimonials = [
       "I hit around .350 and batted leadoff for most of the season. That's way better than in the past. I'm definitely happy with the season — especially with my hitting performance.",
     attribution: "Varsity Infielder, Class of 2026",
   },
+  {
+    quote:
+      "My team could not stop talking about your training and would love to have you back again.",
+    attribution: "Coach, 15U Baseball Team",
+  },
+  {
+    quote:
+      "After your lesson with my son, he was actually very excited. The next game he went 3 for 3 and got in the car and said 'I did what Coach Chris taught me and it worked!'",
+    attribution: "Parent of a 13U Player",
+  },
 ];
 
 export default function Home() {
@@ -188,7 +198,7 @@ export default function Home() {
           <div className="mx-auto mt-4 h-[2px] w-28 rounded-full bg-[#52B788]" />
         </div>
 
-        <div className="mt-10 grid gap-5 md:grid-cols-3">
+        <div className="mt-10 grid gap-5 md:grid-cols-2">
           {testimonials.map((testimonial) => (
             <article
               key={testimonial.attribution}
