@@ -13,6 +13,7 @@ import {
   membershipTiers,
   type DatabaseTier,
 } from "@/lib/membership";
+import DashboardUpgradeSection from "@/app/dashboard/DashboardUpgradeSection";
 
 type DashboardPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -136,6 +137,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       subscriptionStatus: true,
       subscriptionCurrentPeriodEnd: true,
       subscriptionCancelAtPeriodEnd: true,
+      stripeSubscriptionId: true,
     },
   });
 
@@ -150,6 +152,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const displayName = userRecord.name?.trim() || session.user.email?.split("@")[0] || "Member";
   const quickLinks = getQuickLinks(membershipTier, freeSubmissionUsed);
   const isPaidMember = membershipTier !== "FREE";
+  const hasSubscription = Boolean(userRecord.stripeSubscriptionId);
   const showFreeSubmissionCard = membershipTier === "FREE";
 
   const pendingSubmissions = canAccessCoachingNav(membershipTier)
@@ -436,6 +439,11 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           ) : null}
         </section>
       ) : null}
+
+      <DashboardUpgradeSection
+        membershipTier={membershipTier}
+        hasSubscription={hasSubscription}
+      />
     </div>
   );
 }

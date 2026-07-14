@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import BillingFrequencyToggle from "@/app/BillingFrequencyToggle";
 import {
   formatTierPriceLabel,
@@ -23,6 +23,19 @@ export default function ChangeMembershipSection({
   currentTier,
   hasSubscription,
 }: ChangeMembershipSectionProps) {
+  return (
+    <Suspense fallback={null}>
+      <ChangeMembershipContent currentTier={currentTier} hasSubscription={hasSubscription} />
+    </Suspense>
+  );
+}
+
+function ChangeMembershipContent({
+  currentTier,
+  hasSubscription,
+}: ChangeMembershipSectionProps) {
+  const searchParams = useSearchParams();
+  const highlightedTierKey = searchParams.get("tier")?.toLowerCase();
   const router = useRouter();
   const [billingFrequency, setBillingFrequency] = useState<BillingFrequency>("monthly");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -106,11 +119,16 @@ export default function ChangeMembershipSection({
           const nextTier = keyToDatabaseTier[tier.key];
           const isPending = pendingTier === nextTier;
           const priceLabel = formatTierPriceLabel(tier.key, billingFrequency);
+          const isHighlighted = highlightedTierKey === tier.key;
 
           return (
             <article
               key={tier.key}
-              className="rounded-xl border border-[#2b3650] bg-black/30 p-4 sm:p-5"
+              className={`rounded-xl border bg-black/30 p-4 sm:p-5 ${
+                isHighlighted
+                  ? "border-[#52B788] bg-[#0f1d34]"
+                  : "border-[#2b3650]"
+              }`}
             >
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
