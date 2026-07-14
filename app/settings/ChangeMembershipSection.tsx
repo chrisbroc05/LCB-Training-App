@@ -2,6 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import BillingFrequencyToggle from "@/app/BillingFrequencyToggle";
+import {
+  formatTierPriceLabel,
+  type BillingFrequency,
+} from "@/lib/billing";
 import {
   keyToDatabaseTier,
   membershipTiers,
@@ -19,6 +24,7 @@ export default function ChangeMembershipSection({
   hasSubscription,
 }: ChangeMembershipSectionProps) {
   const router = useRouter();
+  const [billingFrequency, setBillingFrequency] = useState<BillingFrequency>("monthly");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pendingTier, setPendingTier] = useState<DatabaseTier | null>(null);
   const [error, setError] = useState("");
@@ -48,7 +54,7 @@ export default function ChangeMembershipSection({
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ membershipTier: nextTier }),
+          body: JSON.stringify({ membershipTier: nextTier, billingFrequency }),
         });
 
         const data = (await response.json().catch(() => ({}))) as { error?: string };
@@ -65,7 +71,7 @@ export default function ChangeMembershipSection({
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ membershipTier: nextTier }),
+          body: JSON.stringify({ membershipTier: nextTier, billingFrequency }),
         });
 
         const data = (await response.json().catch(() => ({}))) as { error?: string; url?: string };
@@ -92,10 +98,14 @@ export default function ChangeMembershipSection({
           ? "Switch to another membership tier anytime. Stripe will automatically apply prorated charges or credits."
           : "Choose a paid tier to start your subscription through Stripe checkout."}
       </p>
+      <div className="mt-5 flex justify-center">
+        <BillingFrequencyToggle value={billingFrequency} onChange={setBillingFrequency} />
+      </div>
       <div className="mt-5 grid gap-4">
         {availableTiers.map((tier) => {
           const nextTier = keyToDatabaseTier[tier.key];
           const isPending = pendingTier === nextTier;
+          const priceLabel = formatTierPriceLabel(tier.key, billingFrequency);
 
           return (
             <article
@@ -105,7 +115,7 @@ export default function ChangeMembershipSection({
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h3 className="text-base font-semibold text-zinc-100">{tier.name}</h3>
-                  <p className="text-sm text-[#9df3bd]">{tier.priceLabel}</p>
+                  <p className="text-sm text-[#9df3bd]">{priceLabel}</p>
                 </div>
                 <button
                   type="button"

@@ -10,15 +10,24 @@ function mapPriceIdToTier(priceId?: string | null) {
     return null;
   }
 
-  if (priceId === process.env.STRIPE_BASIC_PRICE_ID) {
+  if (
+    priceId === process.env.STRIPE_BASIC_PRICE_ID ||
+    priceId === process.env.STRIPE_BASIC_ANNUAL_PRICE_ID
+  ) {
     return "BASIC";
   }
 
-  if (priceId === process.env.STRIPE_PRO_PRICE_ID) {
+  if (
+    priceId === process.env.STRIPE_PRO_PRICE_ID ||
+    priceId === process.env.STRIPE_PRO_ANNUAL_PRICE_ID
+  ) {
     return "PRO";
   }
 
-  if (priceId === process.env.STRIPE_ELITE_PRICE_ID) {
+  if (
+    priceId === process.env.STRIPE_ELITE_PRICE_ID ||
+    priceId === process.env.STRIPE_ELITE_ANNUAL_PRICE_ID
+  ) {
     return "ELITE";
   }
 

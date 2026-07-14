@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { parseBillingFrequency } from "@/lib/billing";
 import { getSubscriptionPriceId, stripe } from "@/lib/stripe";
 import { isDatabaseTier } from "@/lib/membership";
 
 type CheckoutBody = {
   membershipTier?: string;
+  billingFrequency?: string;
 };
 
 function getBaseUrl(request: Request) {
@@ -43,7 +45,8 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
-    const priceId = getSubscriptionPriceId(membershipTier);
+    const billingFrequency = parseBillingFrequency(body.billingFrequency);
+    const priceId = getSubscriptionPriceId(membershipTier, billingFrequency);
     const baseUrl = getBaseUrl(request);
 
     const checkoutSession = await stripe.checkout.sessions.create({

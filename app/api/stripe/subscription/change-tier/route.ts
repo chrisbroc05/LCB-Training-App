@@ -2,12 +2,14 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { parseBillingFrequency } from "@/lib/billing";
 import { isDatabaseTier, type DatabaseTier } from "@/lib/membership";
 import { sendMembershipTierChangeEmail } from "@/lib/notifications";
 import { getSubscriptionPriceId, stripe } from "@/lib/stripe";
 
 type ChangeTierBody = {
   membershipTier?: string;
+  billingFrequency?: string;
 };
 
 function getPeriodEndFromSubscription(subscription: {
@@ -65,7 +67,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "You are already on this membership tier." }, { status: 400 });
     }
 
-    const newPriceId = getSubscriptionPriceId(requestedTier as DatabaseTier);
+    const billingFrequency = parseBillingFrequency(body.billingFrequency);
+    const newPriceId = getSubscriptionPriceId(requestedTier as DatabaseTier, billingFrequency);
     const existingSubscription = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
 
     if (

@@ -6,32 +6,30 @@ import { useSearchParams } from "next/navigation";
 import { keyToDatabaseTier, membershipTiers, type TierKey } from "@/lib/membership";
 import type { DatabaseTier } from "@/lib/membership";
 import BrandLogo from "@/app/BrandLogo";
+import BillingFrequencyToggle from "@/app/BillingFrequencyToggle";
+import { getTierPricing, parseBillingFrequency, type BillingFrequency } from "@/lib/billing";
 
 type AuthMode = "login" | "signup";
 
 const signupTierDetails: Record<
   TierKey,
   {
-    price: string;
     features: string[];
   }
 > = {
   free: {
-    price: "$0",
     features: [
       "1 free swing analysis OR mental game submission",
       "Personal feedback from Coach Broc",
     ],
   },
   basic: {
-    price: "$5/month",
     features: [
       "Full hitting, fielding, and mindset video drill library",
       "9 downloadable workout programs",
     ],
   },
   pro: {
-    price: "$9/month",
     features: [
       "Everything in Basic",
       "Unlimited swing analysis and mental game submissions",
@@ -39,7 +37,6 @@ const signupTierDetails: Record<
     ],
   },
   elite: {
-    price: "$14/month",
     features: [
       "Everything in Pro",
       "Priority feedback",
@@ -80,6 +77,10 @@ function AuthContent() {
   const selectedTier: TierKey = manuallySelectedTier ?? preselectedTierFromQuery ?? "free";
   const selectedDatabaseTier: DatabaseTier = keyToDatabaseTier[selectedTier];
   const checkoutStatus = searchParams.get("checkout");
+  const billingQueryParam = searchParams.get("billing");
+  const [billingFrequency, setBillingFrequency] = useState<BillingFrequency>(
+    parseBillingFrequency(billingQueryParam),
+  );
 
   const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -153,7 +154,10 @@ function AuthContent() {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ membershipTier: selectedDatabaseTier }),
+      body: JSON.stringify({
+        membershipTier: selectedDatabaseTier,
+        billingFrequency,
+      }),
     });
 
     if (!checkoutResponse.ok) {
@@ -293,10 +297,17 @@ function AuthContent() {
 
               <div className="pt-2">
                 <p className="text-sm font-medium text-zinc-300">Select your membership tier</p>
+                <div className="mt-4 flex justify-center">
+                  <BillingFrequencyToggle
+                    value={billingFrequency}
+                    onChange={setBillingFrequency}
+                  />
+                </div>
                 <div className="mt-4 grid gap-4 md:grid-cols-4">
                   {membershipTiers.map((tier) => {
                     const isSelected = selectedTier === tier.key;
                     const customTier = signupTierDetails[tier.key];
+                    const pricing = getTierPricing(tier.key, billingFrequency);
                     return (
                       <button
                         key={tier.key}
@@ -309,7 +320,10 @@ function AuthContent() {
                         }`}
                       >
                         <h2 className="text-xl font-semibold text-zinc-100">{tier.name}</h2>
-                        <p className="mt-1 text-xl font-bold text-[#98b144]">{customTier.price}</p>
+                        <p className="mt-1 text-xl font-bold text-[#98b144]">{pricing.primary}</p>
+                        {pricing.secondary ? (
+                          <p className="mt-1 text-sm text-zinc-400">{pricing.secondary}</p>
+                        ) : null}
                         <ul className="mt-4 space-y-2 text-sm text-zinc-200">
                           {customTier.features.map((feature) => (
                             <li key={`${tier.key}-${feature}`} className="flex items-start gap-2">

@@ -1,12 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import type { BillingFrequency } from "@/lib/billing";
 
 type UpgradeActionsProps = {
   tier: "BASIC" | "PRO" | "ELITE";
+  billingFrequency?: BillingFrequency;
 };
 
-export default function UpgradeActions({ tier }: UpgradeActionsProps) {
+export default function UpgradeActions({
+  tier,
+  billingFrequency = "monthly",
+}: UpgradeActionsProps) {
   const tierLabel = tier.charAt(0) + tier.slice(1).toLowerCase();
 
   const [isLoading, setIsLoading] = useState(false);
@@ -20,7 +25,7 @@ export default function UpgradeActions({ tier }: UpgradeActionsProps) {
       const response = await fetch("/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ membershipTier: tier }),
+        body: JSON.stringify({ membershipTier: tier, billingFrequency }),
       });
       const data = (await response.json().catch(() => ({}))) as { error?: string; url?: string };
 
