@@ -1,6 +1,11 @@
+"use client";
+
 import Link from "next/link";
+import { useState } from "react";
+import AnnualSavingsBadge from "@/app/AnnualSavingsBadge";
+import BillingFrequencyToggle from "@/app/BillingFrequencyToggle";
 import UpgradeActions from "@/app/upgrade/UpgradeActions";
-import { getTierPricing } from "@/lib/billing";
+import { getAnnualSavings, getTierPricing, type BillingFrequency } from "@/lib/billing";
 import {
   keyToDatabaseTier,
   membershipTiers,
@@ -21,7 +26,7 @@ type UpgradeSectionConfig = {
 
 const upgradeSectionByTier: Partial<Record<DatabaseTier, UpgradeSectionConfig>> = {
   FREE: {
-    title: "Unlock More with LCB Training",
+    title: "Ready to Level Up?",
     description:
       "Choose a paid plan to unlock the full drill library, workout programs, and coaching support.",
     upgradeTiers: ["basic", "pro", "elite"],
@@ -42,19 +47,21 @@ const upgradeSectionByTier: Partial<Record<DatabaseTier, UpgradeSectionConfig>> 
 
 function getGridClassName(count: number) {
   if (count === 1) {
-    return "mx-auto max-w-md";
+    return "mx-auto max-w-md grid grid-cols-1";
   }
   if (count === 2) {
-    return "md:grid-cols-2";
+    return "grid grid-cols-1 gap-5 md:grid-cols-2";
   }
-  return "md:grid-cols-3";
+  return "grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3";
 }
 
 export default function DashboardUpgradeSection({
   membershipTier,
   hasSubscription,
 }: DashboardUpgradeSectionProps) {
+  const [billingFrequency, setBillingFrequency] = useState<BillingFrequency>("monthly");
   const config = upgradeSectionByTier[membershipTier];
+
   if (!config) {
     return null;
   }
@@ -70,28 +77,40 @@ export default function DashboardUpgradeSection({
           {config.title}
         </h2>
         <p className="mt-2 text-zinc-300">{config.description}</p>
-        <p className="mt-3 text-sm text-zinc-400">
-          Prices shown are monthly. Annual pricing is available in Settings.
-        </p>
       </div>
 
-      <div className={`mt-8 grid gap-5 ${getGridClassName(upgradeTierCards.length)}`}>
+      <div className="mt-6 flex justify-center">
+        <BillingFrequencyToggle value={billingFrequency} onChange={setBillingFrequency} />
+      </div>
+
+      <div className={`mt-8 ${getGridClassName(upgradeTierCards.length)}`}>
         {upgradeTierCards.map((tier) => {
-          const pricing = getTierPricing(tier.key, "monthly");
+          const pricing = getTierPricing(tier.key, billingFrequency);
+          const annualSavings =
+            billingFrequency === "annual" ? getAnnualSavings(tier.key) : null;
           const databaseTier = keyToDatabaseTier[tier.key] as "BASIC" | "PRO" | "ELITE";
 
           return (
             <article
               key={tier.key}
-              className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-6 shadow-lg shadow-black/40"
+              className="relative rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-5 shadow-lg shadow-black/40 sm:p-6"
             >
-              <h3 className="text-xl font-semibold text-zinc-100">{tier.name}</h3>
+              {annualSavings ? (
+                <AnnualSavingsBadge amount={annualSavings} className="absolute right-4 top-4" />
+              ) : null}
+              <h3
+                className={`text-xl font-semibold text-zinc-100${annualSavings ? " pr-16" : ""}`}
+              >
+                {tier.name}
+              </h3>
               <p className="mt-2 text-2xl font-bold text-[#98b144]">{pricing.primary}</p>
-              <p className="mt-3 text-zinc-300">{tier.summary}</p>
+              {pricing.secondary ? (
+                <p className="mt-1 text-sm text-zinc-400">{pricing.secondary}</p>
+              ) : null}
               <ul className="mt-5 space-y-2 text-sm text-zinc-200">
                 {tier.features.map((feature) => (
                   <li key={feature} className="flex items-start gap-2">
-                    <span className="mt-1 h-2 w-2 rounded-full bg-[#22c55e]" />
+                    <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-[#22c55e]" />
                     <span>{feature}</span>
                   </li>
                 ))}
@@ -99,14 +118,14 @@ export default function DashboardUpgradeSection({
 
               {hasSubscription ? (
                 <Link
-                  href={`/settings?tier=${tier.key}`}
+                  href={`/settings?tier=${tier.key}&billing=${billingFrequency}`}
                   className="mt-6 inline-flex w-full items-center justify-center rounded-full bg-[#22c55e] px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-[#35db72]"
                 >
                   Upgrade to {tier.name}
                 </Link>
               ) : (
                 <div className="mt-6 [&_button]:w-full">
-                  <UpgradeActions tier={databaseTier} billingFrequency="monthly" />
+                  <UpgradeActions tier={databaseTier} billingFrequency={billingFrequency} />
                 </div>
               )}
             </article>

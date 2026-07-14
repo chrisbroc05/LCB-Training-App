@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import BillingFrequencyToggle from "@/app/BillingFrequencyToggle";
 import {
   formatTierPriceLabel,
+  parseBillingFrequency,
   type BillingFrequency,
 } from "@/lib/billing";
 import {
@@ -37,7 +38,9 @@ function ChangeMembershipContent({
   const searchParams = useSearchParams();
   const highlightedTierKey = searchParams.get("tier")?.toLowerCase();
   const router = useRouter();
-  const [billingFrequency, setBillingFrequency] = useState<BillingFrequency>("monthly");
+  const [billingFrequency, setBillingFrequency] = useState<BillingFrequency>(
+    parseBillingFrequency(searchParams.get("billing")),
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pendingTier, setPendingTier] = useState<DatabaseTier | null>(null);
   const [error, setError] = useState("");
