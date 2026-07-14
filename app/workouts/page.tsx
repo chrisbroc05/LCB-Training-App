@@ -27,6 +27,24 @@ type WorkoutGroup = {
   phasePrograms: PhaseProgram[];
 };
 
+const strengthPhaseDescriptions: Record<PhaseNumber, string> = {
+  1: "Foundation movement patterns, bodyweight strength, and coordination. Introduces basic pushing, pulling, and hinging movements with an emphasis on form over load.",
+  2: "Progressive resistance training with light external load. Builds on Phase 1 mechanics and introduces dumbbell and band exercises for upper and lower body strength.",
+  3: "Higher intensity strength training with barbells and heavier loads. Focuses on compound movements, progressive overload, and sport-specific power development.",
+};
+
+const speedPhaseDescriptions: Record<PhaseNumber, string> = {
+  1: "Basic acceleration, deceleration, and change of direction. Introduces footwork patterns and reaction drills using cones and ladders.",
+  2: "Intermediate speed mechanics and multi-directional agility. Builds first step quickness and sport-specific movement patterns for baserunning and fielding.",
+  3: "Advanced sprint mechanics, explosive first step, and game-speed agility. Focuses on maximum velocity development and elite change of direction.",
+};
+
+function getPhaseDescription(category: ProgramCategory, phase: PhaseNumber) {
+  return category === "strength"
+    ? strengthPhaseDescriptions[phase]
+    : speedPhaseDescriptions[phase];
+}
+
 const workoutGroups: WorkoutGroup[] = [
   {
     label: "Ages 8-11",
@@ -36,42 +54,42 @@ const workoutGroups: WorkoutGroup[] = [
     phasePrograms: [
       {
         title: "Strength Training",
-        description: "Build foundational movement strength with age-appropriate exercises.",
+        description: getPhaseDescription("strength", 1),
         category: "strength",
         phase: 1,
         pdfUrl: "/workouts/LCB_Strength_8-11_Phase1.pdf",
       },
       {
         title: "Strength Training",
-        description: "Build foundational movement strength with age-appropriate exercises.",
+        description: getPhaseDescription("strength", 2),
         category: "strength",
         phase: 2,
         pdfUrl: "/workouts/LCB_Strength_8-11_Phase2.pdf",
       },
       {
         title: "Strength Training",
-        description: "Build foundational movement strength with age-appropriate exercises.",
+        description: getPhaseDescription("strength", 3),
         category: "strength",
         phase: 3,
         pdfUrl: "/workouts/LCB_Strength_8-11_Phase3.pdf",
       },
       {
         title: "Speed & Agility",
-        description: "Improve first-step quickness, coordination, and body control.",
+        description: getPhaseDescription("speed", 1),
         category: "speed",
         phase: 1,
         pdfUrl: "/workouts/LCB_Speed-Agility_8-11_Phase1.pdf",
       },
       {
         title: "Speed & Agility",
-        description: "Improve first-step quickness, coordination, and body control.",
+        description: getPhaseDescription("speed", 2),
         category: "speed",
         phase: 2,
         pdfUrl: "/workouts/LCB_Speed-Agility_8-11_Phase2.pdf",
       },
       {
         title: "Speed & Agility",
-        description: "Improve first-step quickness, coordination, and body control.",
+        description: getPhaseDescription("speed", 3),
         category: "speed",
         phase: 3,
         pdfUrl: "/workouts/LCB_Speed-Agility_8-11_Phase3.pdf",
@@ -86,42 +104,42 @@ const workoutGroups: WorkoutGroup[] = [
     phasePrograms: [
       {
         title: "Strength Training",
-        description: "Develop total-body strength and control for game performance.",
+        description: getPhaseDescription("strength", 1),
         category: "strength",
         phase: 1,
         pdfUrl: "/workouts/LCB_Strength_12-15_Phase1.pdf",
       },
       {
         title: "Strength Training",
-        description: "Develop total-body strength and control for game performance.",
+        description: getPhaseDescription("strength", 2),
         category: "strength",
         phase: 2,
         pdfUrl: "/workouts/LCB_Strength_12-15_Phase2.pdf",
       },
       {
         title: "Strength Training",
-        description: "Develop total-body strength and control for game performance.",
+        description: getPhaseDescription("strength", 3),
         category: "strength",
         phase: 3,
         pdfUrl: "/workouts/LCB_Strength_12-15_Phase3.pdf",
       },
       {
         title: "Speed & Agility",
-        description: "Train acceleration, direction changes, and reaction speed.",
+        description: getPhaseDescription("speed", 1),
         category: "speed",
         phase: 1,
         pdfUrl: "/workouts/LCB_Speed-Agility_12-15_Phase1.pdf",
       },
       {
         title: "Speed & Agility",
-        description: "Train acceleration, direction changes, and reaction speed.",
+        description: getPhaseDescription("speed", 2),
         category: "speed",
         phase: 2,
         pdfUrl: "/workouts/LCB_Speed-Agility_12-15_Phase2.pdf",
       },
       {
         title: "Speed & Agility",
-        description: "Train acceleration, direction changes, and reaction speed.",
+        description: getPhaseDescription("speed", 3),
         category: "speed",
         phase: 3,
         pdfUrl: "/workouts/LCB_Speed-Agility_12-15_Phase3.pdf",
@@ -136,42 +154,42 @@ const workoutGroups: WorkoutGroup[] = [
     phasePrograms: [
       {
         title: "Strength Training",
-        description: "Build game-ready strength, power, and durability across the season.",
+        description: getPhaseDescription("strength", 1),
         category: "strength",
         phase: 1,
         pdfUrl: "/workouts/LCB_Strength_16-18_Phase1.pdf",
       },
       {
         title: "Strength Training",
-        description: "Build game-ready strength, power, and durability across the season.",
+        description: getPhaseDescription("strength", 2),
         category: "strength",
         phase: 2,
         pdfUrl: "/workouts/LCB_Strength_16-18_Phase2.pdf",
       },
       {
         title: "Strength Training",
-        description: "Build game-ready strength, power, and durability across the season.",
+        description: getPhaseDescription("strength", 3),
         category: "strength",
         phase: 3,
         pdfUrl: "/workouts/LCB_Strength_16-18_Phase3.pdf",
       },
       {
         title: "Speed & Agility",
-        description: "Maximize explosiveness and elite movement efficiency on the field.",
+        description: getPhaseDescription("speed", 1),
         category: "speed",
         phase: 1,
         pdfUrl: "/workouts/LCB_Speed-Agility_16-18_Phase1.pdf",
       },
       {
         title: "Speed & Agility",
-        description: "Maximize explosiveness and elite movement efficiency on the field.",
+        description: getPhaseDescription("speed", 2),
         category: "speed",
         phase: 2,
         pdfUrl: "/workouts/LCB_Speed-Agility_16-18_Phase2.pdf",
       },
       {
         title: "Speed & Agility",
-        description: "Maximize explosiveness and elite movement efficiency on the field.",
+        description: getPhaseDescription("speed", 3),
         category: "speed",
         phase: 3,
         pdfUrl: "/workouts/LCB_Speed-Agility_16-18_Phase3.pdf",

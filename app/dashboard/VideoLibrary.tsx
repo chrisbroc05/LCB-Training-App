@@ -78,12 +78,26 @@ const fieldingVideos: VideoLibraryItem[] = [
   { title: "Backhand Footwork Drill", url: "https://player.vimeo.com/video/1205924073" },
 ];
 
-function autoplayUrl(url: string) {
+const drillLibraryEmbedParams = {
+  title: "0",
+  byline: "0",
+  portrait: "0",
+  dnt: "1",
+  transparent: "0",
+  rel: "0",
+} as const;
+
+function buildDrillLibraryEmbedUrl(url: string, options?: { autoplay?: boolean }) {
   const parsedUrl = new URL(url);
-  parsedUrl.searchParams.set("autoplay", "1");
-  parsedUrl.searchParams.set("title", "0");
-  parsedUrl.searchParams.set("byline", "0");
-  parsedUrl.searchParams.set("portrait", "0");
+
+  Object.entries(drillLibraryEmbedParams).forEach(([key, value]) => {
+    parsedUrl.searchParams.set(key, value);
+  });
+
+  if (options?.autoplay) {
+    parsedUrl.searchParams.set("autoplay", "1");
+  }
+
   return parsedUrl.toString();
 }
 
@@ -110,7 +124,7 @@ function VideoSection({ heading, description, videos, onSelectVideo }: VideoSect
             <div className="relative overflow-hidden rounded-xl border border-[#2b3650] bg-black">
               <div className="aspect-video w-full">
                 <iframe
-                  src={video.url}
+                  src={buildDrillLibraryEmbedUrl(video.url)}
                   title={video.title}
                   className="h-full w-full pointer-events-none"
                   allow="autoplay; fullscreen; picture-in-picture"
@@ -150,7 +164,8 @@ export default function VideoLibrary() {
   }, [selectedVideo]);
 
   const modalUrl = useMemo(
-    () => (selectedVideo ? autoplayUrl(selectedVideo.url) : ""),
+    () =>
+      selectedVideo ? buildDrillLibraryEmbedUrl(selectedVideo.url, { autoplay: true }) : "",
     [selectedVideo],
   );
 
