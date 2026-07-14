@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useState } from "react";
 import BillingFrequencyToggle from "@/app/BillingFrequencyToggle";
-import { getTierPricing, type BillingFrequency } from "@/lib/billing";
+import AnnualSavingsBadge from "@/app/AnnualSavingsBadge";
+import { getAnnualSavings, getTierPricing, type BillingFrequency } from "@/lib/billing";
 import { membershipTiers } from "@/lib/membership";
 
 export default function LandingPricingSection() {
@@ -21,7 +22,7 @@ export default function LandingPricingSection() {
           </p>
         </div>
         <Link href="/auth" className="hidden text-sm font-medium text-[#98b144] md:block">
-          Get started now ?
+          Get started now →
         </Link>
       </div>
 
@@ -32,13 +33,20 @@ export default function LandingPricingSection() {
       <div className="grid gap-5 md:grid-cols-4">
         {membershipTiers.map((tier) => {
           const pricing = getTierPricing(tier.key, billingFrequency);
+          const annualSavings =
+            billingFrequency === "annual" ? getAnnualSavings(tier.key) : null;
 
           return (
             <article
               key={tier.key}
-              className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-6 shadow-lg shadow-black/40"
+              className="relative rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-6 shadow-lg shadow-black/40"
             >
-              <h3 className="text-xl font-semibold text-zinc-100">{tier.name}</h3>
+              {annualSavings ? (
+                <AnnualSavingsBadge amount={annualSavings} className="absolute right-4 top-4" />
+              ) : null}
+              <h3 className={`text-xl font-semibold text-zinc-100${annualSavings ? " pr-16" : ""}`}>
+                {tier.name}
+              </h3>
               <p className="mt-2 text-2xl font-bold text-[#98b144]">{pricing.primary}</p>
               {pricing.secondary ? (
                 <p className="mt-1 text-sm text-zinc-400">{pricing.secondary}</p>

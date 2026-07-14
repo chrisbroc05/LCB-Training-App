@@ -2,7 +2,9 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { hasDatabaseTierAccess, type DatabaseTier } from "@/lib/membership";
+import LockedFeaturePanel from "@/app/LockedFeaturePanel";
+import { canAccessWorkoutPrograms, type DatabaseTier } from "@/lib/membership";
+import { getWorkoutPdfUrl } from "@/lib/workouts";
 import { prisma } from "@/lib/prisma";
 import { isAdminEmail } from "@/lib/admin";
 
@@ -178,24 +180,18 @@ const workoutGroups: WorkoutGroup[] = [
   },
 ];
 
-const phaseUnlockDays: Record<PhaseNumber, number> = {
-  1: 0,
-  2: 30,
-  3: 60,
-};
-
 const phaseLabels: Record<PhaseNumber, string> = {
   1: "Phase 1 (Weeks 1-4)",
   2: "Phase 2 (Weeks 5-8)",
   3: "Phase 3 (Weeks 9-12)",
 };
 
-function formatUnlockDate(date: Date) {
-  return new Intl.DateTimeFormat("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  }).format(date);
+function toProtectedPdfUrl(publicPath: string) {
+  const filename = publicPath.split("/").pop();
+  if (!filename) {
+    return publicPath;
+  }
+  return getWorkoutPdfUrl(filename);
 }
 
 export default async function WorkoutsPage() {
@@ -207,18 +203,26 @@ export default async function WorkoutsPage() {
     redirect("/admin");
   }
 
-  const membershipTier = (session.user.membershipTier ?? "FREE") as DatabaseTier;
-  if (!hasDatabaseTierAccess(membershipTier, "basic")) {
-    redirect("/upgrade?reason=basic-required");
-  }
-
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { signupDate: true },
+    select: { membershipTier: true },
   });
 
   if (!user) {
     redirect("/auth");
+  }
+
+  const membershipTier = (user.membershipTier ?? "FREE") as DatabaseTier;
+  if (!canAccessWorkoutPrograms(membershipTier)) {
+    return (
+      <LockedFeaturePanel
+        title="Workout Library"
+        description="Download strength, speed, and mobility programs tailored by age group."
+        message="Workout programs are available on Basic, Pro, and Elite memberships. Upgrade to Basic or above to unlock all 9 downloadable workout programs."
+        upgradeLabel="Upgrade to Basic or Above"
+        upgradeHref="/upgrade?reason=basic-required"
+      />
+    );
   }
 
   return (
@@ -226,8 +230,7 @@ export default async function WorkoutsPage() {
       <section className="rounded-3xl border border-[#18243a] bg-[#0b1324]/80 p-5 sm:p-8">
         <h1 className="text-2xl font-semibold leading-tight text-zinc-100 sm:text-3xl">Workout Library</h1>
         <p className="mt-2 text-zinc-300">
-          Strength and speed & agility follow progressive phase unlocks. Mobility remains fully
-          unlocked at all times.
+          All strength, speed, and mobility programs are unlocked for your membership tier.
         </p>
       </section>
 
@@ -253,60 +256,25 @@ export default async function WorkoutsPage() {
                   </p>
 
                   <div className="mt-3 grid gap-4 md:grid-cols-3">
-                    {categoryPrograms.map((program) => {
-                      const unlockDate = new Date(user.signupDate);
-                      unlockDate.setDate(unlockDate.getDate() + phaseUnlockDays[program.phase]);
-                      const isUnlocked =
-                        program.phase === 1 || Date.now() >= unlockDate.getTime();
-
-                      if (!isUnlocked) {
-                        return (
-                          <article
-                            key={`${group.label}-${program.title}-phase-${program.phase}`}
-                            className="rounded-xl border border-[#2b3650] bg-black/30 p-4 sm:p-5"
-                          >
-                            <div className="flex items-center gap-2">
-                              <span
-                                aria-hidden="true"
-                                className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-yellow-300/70 bg-yellow-500/10 text-yellow-200"
-                              >
-                                <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 fill-none" stroke="currentColor" strokeWidth="2">
-                                  <rect x="5" y="11" width="14" height="10" rx="2" />
-                                  <path d="M8 11V8a4 4 0 0 1 8 0v3" />
-                                </svg>
-                              </span>
-                              <h4 className="text-base font-semibold text-zinc-100">
-                                {phaseLabels[program.phase]}
-                              </h4>
-                            </div>
-                            <p className="mt-2 text-sm text-zinc-300">{program.description}</p>
-                            <p className="mt-4 rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-3 py-2 text-sm text-yellow-100">
-                              Unlocks on {formatUnlockDate(unlockDate)}
-                            </p>
-                          </article>
-                        );
-                      }
-
-                      return (
-                        <article
-                          key={`${group.label}-${program.title}-phase-${program.phase}`}
-                          className="rounded-xl border border-[#2b3650] bg-black/30 p-4 sm:p-5"
+                    {categoryPrograms.map((program) => (
+                      <article
+                        key={`${group.label}-${program.title}-phase-${program.phase}`}
+                        className="rounded-xl border border-[#2b3650] bg-black/30 p-4 sm:p-5"
+                      >
+                        <h4 className="text-base font-semibold text-zinc-100">
+                          {phaseLabels[program.phase]}
+                        </h4>
+                        <p className="mt-2 text-sm text-zinc-300">{program.description}</p>
+                        <Link
+                          href={toProtectedPdfUrl(program.pdfUrl)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-4 inline-flex rounded-full bg-[#22c55e] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[#35db72]"
                         >
-                          <h4 className="text-base font-semibold text-zinc-100">
-                            {phaseLabels[program.phase]}
-                          </h4>
-                          <p className="mt-2 text-sm text-zinc-300">{program.description}</p>
-                          <Link
-                            href={program.pdfUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="mt-4 inline-flex rounded-full bg-[#22c55e] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[#35db72]"
-                          >
-                            View / Download
-                          </Link>
-                        </article>
-                      );
-                    })}
+                          View / Download
+                        </Link>
+                      </article>
+                    ))}
                   </div>
                 </div>
               );
@@ -318,7 +286,7 @@ export default async function WorkoutsPage() {
               <article className="mt-3 rounded-xl border border-[#2b3650] bg-black/30 p-4 sm:p-5 md:max-w-md">
                 <p className="text-sm text-zinc-300">{group.mobilityDescription}</p>
                 <Link
-                  href={group.mobilityPdfUrl}
+                  href={toProtectedPdfUrl(group.mobilityPdfUrl)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="mt-4 inline-flex rounded-full bg-[#22c55e] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[#35db72]"

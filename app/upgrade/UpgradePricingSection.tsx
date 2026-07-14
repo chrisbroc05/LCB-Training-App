@@ -9,11 +9,10 @@ const upgradeTiers = [
   {
     tier: "BASIC" as const,
     name: "Basic",
-    summary: "Get full access to the hitting, fielding, and mindset drill libraries.",
+    summary: "Get full access to the hitting, fielding, and mindset drill libraries plus all workout programs.",
     features: [
-      "Full hitting video library",
-      "Full fielding video library",
-      "Mindset video library",
+      "Full hitting, fielding, and mindset video library",
+      "All 9 downloadable workout programs",
     ],
     cardClassName: "rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6",
     textClassName: "text-zinc-300",

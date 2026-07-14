@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import type { DatabaseTier } from "@/lib/membership";
+import { canSubmitCoachingForms } from "@/lib/membership";
 import { prisma } from "@/lib/prisma";
 import { sendSubmissionReceivedEmail, sendSwingSubmissionNotification } from "@/lib/notifications";
 import {
@@ -37,27 +38,22 @@ export async function POST(request: Request) {
     }
     console.log(`[swing-submit:${requestId}] Session validated for ${session.user.email}`);
 
-    const membershipTier = (session.user.membershipTier ?? "FREE") as DatabaseTier;
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { freeSubmissionUsed: true },
+      select: { freeSubmissionUsed: true, membershipTier: true },
     });
+    const membershipTier = (user?.membershipTier ?? "FREE") as DatabaseTier;
+    const freeSubmissionUsed = user?.freeSubmissionUsed ?? false;
 
-    if (membershipTier === "BASIC") {
+    if (!canSubmitCoachingForms(membershipTier, freeSubmissionUsed)) {
+      const errorMessage =
+        membershipTier === "BASIC"
+          ? "Swing analysis submissions require Pro or Elite membership."
+          : "Your one free submission has already been used. Please upgrade to continue.";
       console.warn(
         `[swing-submit:${requestId}] Access denied for tier ${membershipTier} (${session.user.email})`,
       );
-      return NextResponse.json(
-        { error: "Swing analysis submissions require Free (one-time), Pro, or Elite membership." },
-        { status: 403 },
-      );
-    }
-
-    if (membershipTier === "FREE" && user?.freeSubmissionUsed) {
-      return NextResponse.json(
-        { error: "Your one free submission has already been used. Please upgrade to continue." },
-        { status: 403 },
-      );
+      return NextResponse.json({ error: errorMessage }, { status: 403 });
     }
 
     console.log(`[swing-submit:${requestId}] Parsing multipart form data`);

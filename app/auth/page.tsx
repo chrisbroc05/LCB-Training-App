@@ -7,7 +7,8 @@ import { keyToDatabaseTier, membershipTiers, type TierKey } from "@/lib/membersh
 import type { DatabaseTier } from "@/lib/membership";
 import BrandLogo from "@/app/BrandLogo";
 import BillingFrequencyToggle from "@/app/BillingFrequencyToggle";
-import { getTierPricing, parseBillingFrequency, type BillingFrequency } from "@/lib/billing";
+import AnnualSavingsBadge from "@/app/AnnualSavingsBadge";
+import { getAnnualSavings, getTierPricing, parseBillingFrequency, type BillingFrequency } from "@/lib/billing";
 
 type AuthMode = "login" | "signup";
 
@@ -21,12 +22,14 @@ const signupTierDetails: Record<
     features: [
       "1 free swing analysis OR mental game submission",
       "Personal feedback from Coach Broc",
+      "No drill library or workout program access",
     ],
   },
   basic: {
     features: [
       "Full hitting, fielding, and mindset video drill library",
-      "9 downloadable workout programs",
+      "All 9 downloadable workout programs",
+      "No swing analysis or mental game submissions",
     ],
   },
   pro: {
@@ -308,18 +311,27 @@ function AuthContent() {
                     const isSelected = selectedTier === tier.key;
                     const customTier = signupTierDetails[tier.key];
                     const pricing = getTierPricing(tier.key, billingFrequency);
+                    const annualSavings =
+                      billingFrequency === "annual" ? getAnnualSavings(tier.key) : null;
                     return (
                       <button
                         key={tier.key}
                         type="button"
                         onClick={() => setManuallySelectedTier(tier.key)}
-                        className={`h-full rounded-2xl border p-5 text-left transition ${
+                        className={`relative h-full rounded-2xl border p-5 text-left transition ${
                           isSelected
                             ? "border-[#52B788] bg-[#0f1d34]"
                             : "border-[#2b3650] bg-[#0b1324] hover:border-[#4f5f83]"
                         }`}
                       >
-                        <h2 className="text-xl font-semibold text-zinc-100">{tier.name}</h2>
+                        {annualSavings ? (
+                          <AnnualSavingsBadge amount={annualSavings} className="absolute right-3 top-3" />
+                        ) : null}
+                        <h2
+                          className={`text-xl font-semibold text-zinc-100${annualSavings ? " pr-16" : ""}`}
+                        >
+                          {tier.name}
+                        </h2>
                         <p className="mt-1 text-xl font-bold text-[#98b144]">{pricing.primary}</p>
                         {pricing.secondary ? (
                           <p className="mt-1 text-sm text-zinc-400">{pricing.secondary}</p>

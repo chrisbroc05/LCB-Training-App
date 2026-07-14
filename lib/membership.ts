@@ -18,29 +18,31 @@ export const membershipTiers: MembershipTier[] = [
     features: [
       "One total free submission (swing or mental game)",
       "No drill library access",
-      "No mindset library access",
+      "No workout program access",
     ],
   },
   {
     key: "basic",
     name: "Basic",
     priceLabel: "$5 / month",
-    summary: "Full hitting, fielding, and mindset video libraries.",
+    summary: "Full drill libraries and all downloadable workout programs.",
     features: [
-      "Full hitting video library",
-      "Full fielding video library",
-      "Mindset video library",
+      "Full hitting, fielding, and mindset video drill library",
+      "All 9 downloadable workout programs",
+      "No swing analysis submissions",
+      "No mental game support submissions",
     ],
   },
   {
     key: "pro",
     name: "Pro",
     priceLabel: "$9 / month",
-    summary: "Everything in Basic plus weekly swing analysis and mental game support.",
+    summary: "Everything in Basic plus unlimited coaching submissions.",
     features: [
       "Everything in Basic",
-      "Weekly swing analysis submission",
-      "Mental game support form",
+      "Unlimited swing analysis submissions",
+      "Unlimited mental game support submissions",
+      "48-hour response time",
     ],
   },
   {
@@ -50,9 +52,8 @@ export const membershipTiers: MembershipTier[] = [
     summary: "Everything in Pro plus priority feedback and monthly group call access.",
     features: [
       "Everything in Pro",
-      "Priority feedback on swing submissions",
-      "Priority feedback on mental game submissions",
-      "Monthly live group calls",
+      "Priority feedback",
+      "Monthly group coaching call",
     ],
   },
 ];
@@ -90,4 +91,39 @@ export function hasTierAccess(userTier: TierKey, requiredTier: TierKey) {
 
 export function hasDatabaseTierAccess(userTier: DatabaseTier, requiredTier: TierKey) {
   return hasTierAccess(databaseTierToKey[userTier], requiredTier);
+}
+
+export function canAccessDrillLibrary(userTier: DatabaseTier) {
+  return hasDatabaseTierAccess(userTier, "basic");
+}
+
+export function canAccessWorkoutPrograms(userTier: DatabaseTier) {
+  return hasDatabaseTierAccess(userTier, "basic");
+}
+
+export function canSubmitCoachingForms(userTier: DatabaseTier, freeSubmissionUsed: boolean) {
+  if (userTier === "PRO" || userTier === "ELITE") {
+    return true;
+  }
+
+  if (userTier === "FREE" && !freeSubmissionUsed) {
+    return true;
+  }
+
+  return false;
+}
+
+export function getCoachingSubmissionLockReason(
+  userTier: DatabaseTier,
+  freeSubmissionUsed: boolean,
+): "basic" | "free-used" | null {
+  if (userTier === "BASIC") {
+    return "basic";
+  }
+
+  if (userTier === "FREE" && freeSubmissionUsed) {
+    return "free-used";
+  }
+
+  return null;
 }

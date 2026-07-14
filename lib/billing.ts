@@ -40,6 +40,16 @@ export function getTierPricing(tier: TierKey, billingFrequency: BillingFrequency
   return tierPricing[tier][billingFrequency];
 }
 
+const annualSavingsByTier: Partial<Record<TierKey, number>> = {
+  basic: 10,
+  pro: 18,
+  elite: 28,
+};
+
+export function getAnnualSavings(tier: TierKey): number | null {
+  return annualSavingsByTier[tier] ?? null;
+}
+
 export function formatTierPriceLabel(tier: TierKey, billingFrequency: BillingFrequency): string {
   const pricing = getTierPricing(tier, billingFrequency);
   if (pricing.secondary) {

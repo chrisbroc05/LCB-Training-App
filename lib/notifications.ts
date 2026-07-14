@@ -580,7 +580,7 @@ export async function sendOnboardingEmail1(params: {
     params.membershipTier === "FREE"
       ? "You currently have one free submission total (swing analysis or mental game support). Use it when you are ready for focused feedback."
       : params.membershipTier === "BASIC"
-      ? "You currently have access to the hitting, fielding, and mindset libraries. Use your dashboard to build a weekly routine."
+      ? "You currently have access to the hitting, fielding, and mindset libraries plus all workout programs. Use your dashboard to build your training routine."
       : "You currently have full libraries plus coaching submission tools. Use your dashboard to access swing analysis and mental game support.";
 
   await transporter.sendMail({

@@ -169,6 +169,16 @@ export default function VideoLibrary() {
           videos={fieldingVideos}
           onSelectVideo={setSelectedVideo}
         />
+        <div>
+          <h2 className="text-xl font-semibold text-zinc-100 sm:text-2xl">Mindset Library</h2>
+          <p className="mt-2 text-zinc-300">
+            Mental performance lessons to build confidence, focus, and composure.
+          </p>
+          <div className="mt-6 rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-5 text-sm text-zinc-300 sm:p-6">
+            Mindset drill videos are included with your membership. Check back soon for new lessons
+            as they are added to the library.
+          </div>
+        </div>
       </section>
 
       {selectedVideo && (
