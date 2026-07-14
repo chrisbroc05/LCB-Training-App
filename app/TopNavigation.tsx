@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 
@@ -9,10 +9,9 @@ type TopNavigationProps = {
   isLoggedIn: boolean;
   isAdmin: boolean;
   hasBasicAccess: boolean;
+  hasProAccess: boolean;
   userDisplayName?: string;
 };
-
-type MenuKey = "training" | "coaching" | "account";
 
 type MenuLink = {
   label: string;
@@ -30,50 +29,55 @@ export default function TopNavigation({
   isLoggedIn,
   isAdmin,
   hasBasicAccess,
+  hasProAccess,
   userDisplayName,
 }: TopNavigationProps) {
   const pathname = usePathname();
-  const [openDesktopMenu, setOpenDesktopMenu] = useState<MenuKey | null>(null);
+  const [openAccountMenu, setOpenAccountMenu] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const showGreeting = Boolean(
     isLoggedIn && userDisplayName && pathname !== "/" && !pathname.startsWith("/auth"),
   );
+
   const closeMenus = () => {
-    setOpenDesktopMenu(null);
+    setOpenAccountMenu(false);
     setMobileOpen(false);
   };
 
-  const trainingLinks = useMemo<MenuLink[]>(
-    () => [
-      {
-        label: "Drill Library",
-        href: "/dashboard",
-        isActive: (path) => path === "/dashboard",
-      },
-      ...(hasBasicAccess
-        ? [
-            {
-              label: "Workouts",
-              href: "/workouts",
-              isActive: (path: string) => path.startsWith("/workouts"),
-            },
-          ]
-        : []),
-    ],
-    [hasBasicAccess],
-  );
-
-  const coachingLinks: MenuLink[] = [
+  const mainLinks: MenuLink[] = [
     {
-      label: "Swing Analysis",
-      href: "/swing-analysis",
-      isActive: (path) => path.startsWith("/swing-analysis"),
+      label: "Dashboard",
+      href: "/dashboard",
+      isActive: (path) => path === "/dashboard",
     },
-    {
-      label: "Mental Game Support",
-      href: "/mental-game",
-      isActive: (path) => path.startsWith("/mental-game"),
-    },
+    ...(hasBasicAccess
+      ? [
+          {
+            label: "Drill Library",
+            href: "/drill-library",
+            isActive: (path: string) => path.startsWith("/drill-library"),
+          },
+          {
+            label: "Workouts",
+            href: "/workouts",
+            isActive: (path: string) => path.startsWith("/workouts"),
+          },
+        ]
+      : []),
+    ...(hasProAccess
+      ? [
+          {
+            label: "Swing Analysis",
+            href: "/swing-analysis",
+            isActive: (path: string) => path.startsWith("/swing-analysis"),
+          },
+          {
+            label: "Mental Game",
+            href: "/mental-game",
+            isActive: (path: string) => path.startsWith("/mental-game"),
+          },
+        ]
+      : []),
   ];
 
   const accountLinks: MenuLink[] = [
@@ -88,52 +92,6 @@ export default function TopNavigation({
       isActive: (path) => path.startsWith("/settings"),
     },
   ];
-
-  const renderDesktopDropdown = (key: MenuKey, title: string, links: MenuLink[]) => {
-    const isOpen = openDesktopMenu === key;
-    const parentActive = links.some((link) => link.isActive(pathname));
-    return (
-      <div className="relative">
-        <button
-          type="button"
-          onClick={() => setOpenDesktopMenu((current) => (current === key ? null : key))}
-          className={
-            parentActive
-              ? "rounded-lg bg-[#22c55e]/15 px-3 py-2 text-sm font-semibold text-[#9df3bd]"
-              : "rounded-lg px-3 py-2 text-sm text-zinc-200 transition hover:bg-[#1a253a] hover:text-[#9df3bd]"
-          }
-        >
-          {title}
-        </button>
-        {isOpen && (
-          <div className="absolute right-0 z-30 mt-2 min-w-56 rounded-xl border border-[#2b3650] bg-[#0b1324] p-2 shadow-2xl shadow-black/50">
-            {links.map((link) => (
-              <Link
-                key={`${title}-${link.href}`}
-                href={link.href}
-                onClick={closeMenus}
-                className={linkClass(link.isActive(pathname))}
-              >
-                {link.label}
-              </Link>
-            ))}
-            {key === "account" && (
-              <button
-                type="button"
-                onClick={() => {
-                  closeMenus();
-                  void signOut({ callbackUrl: "/auth" });
-                }}
-                className="mt-1 w-full rounded-lg px-3 py-2 text-left text-sm text-red-200 transition hover:bg-red-500/15"
-              >
-                Logout
-              </button>
-            )}
-          </div>
-        )}
-      </div>
-    );
-  };
 
   if (isAdmin) {
     return (
@@ -161,11 +119,7 @@ export default function TopNavigation({
         <Link href="/auth" onClick={closeMenus} className={linkClass(pathname.startsWith("/auth"))}>
           Login
         </Link>
-        <Link
-          href="/auth?mode=signup"
-          onClick={closeMenus}
-          className={linkClass(false)}
-        >
+        <Link href="/auth?mode=signup" onClick={closeMenus} className={linkClass(false)}>
           Sign Up
         </Link>
       </nav>
@@ -175,13 +129,58 @@ export default function TopNavigation({
   return (
     <nav className="flex justify-end md:justify-self-end">
       <div className="hidden items-center gap-1 md:flex">
-        <Link href="/dashboard" onClick={closeMenus} className={linkClass(pathname === "/dashboard")}>
-          Dashboard
-        </Link>
+        {mainLinks.map((link) => (
+          <Link
+            key={link.href}
+            href={link.href}
+            onClick={closeMenus}
+            className={linkClass(link.isActive(pathname))}
+          >
+            {link.label}
+          </Link>
+        ))}
+
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setOpenAccountMenu((current) => !current)}
+            className={
+              accountLinks.some((link) => link.isActive(pathname))
+                ? "rounded-lg bg-[#22c55e]/15 px-3 py-2 text-sm font-semibold text-[#9df3bd]"
+                : "rounded-lg px-3 py-2 text-sm text-zinc-200 transition hover:bg-[#1a253a] hover:text-[#9df3bd]"
+            }
+          >
+            Account
+          </button>
+          {openAccountMenu ? (
+            <div className="absolute right-0 z-30 mt-2 min-w-44 rounded-xl border border-[#2b3650] bg-[#0b1324] p-2 shadow-2xl shadow-black/50">
+              {accountLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={closeMenus}
+                  className={linkClass(link.isActive(pathname))}
+                >
+                  {link.label}
+                </Link>
+              ))}
+              <button
+                type="button"
+                onClick={() => {
+                  closeMenus();
+                  void signOut({ callbackUrl: "/auth" });
+                }}
+                className="mt-1 w-full rounded-lg px-3 py-2 text-left text-sm text-red-200 transition hover:bg-red-500/15"
+              >
+                Logout
+              </button>
+            </div>
+          ) : null}
+        </div>
+
         {showGreeting ? (
           <span className="px-2 text-xs font-medium text-[#52B788]">{userDisplayName}</span>
         ) : null}
-        {renderDesktopDropdown("account", "Account", accountLinks)}
       </div>
 
       <div className="md:hidden">
@@ -206,38 +205,18 @@ export default function TopNavigation({
             <line x1="3" y1="18" x2="21" y2="18" />
           </svg>
         </button>
-        {mobileOpen && (
+        {mobileOpen ? (
           <div className="absolute left-4 right-4 top-[68px] z-30 rounded-xl border border-[#2b3650] bg-[#0b1324] p-4 shadow-2xl shadow-black/50">
             <div className="space-y-4">
               {showGreeting ? (
                 <p className="text-sm font-medium text-[#52B788]">{userDisplayName}</p>
               ) : null}
+
               <div>
                 <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-400">Main</p>
-                <Link href="/dashboard" onClick={closeMenus} className={linkClass(pathname === "/dashboard")}>
-                  Dashboard
-                </Link>
-              </div>
-
-              <div>
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-400">Training</p>
-                {trainingLinks.map((link) => (
+                {mainLinks.map((link) => (
                   <Link
-                    key={`mobile-training-${link.href}`}
-                    href={link.href}
-                    onClick={closeMenus}
-                    className={linkClass(link.isActive(pathname))}
-                  >
-                    {link.label}
-                  </Link>
-                ))}
-              </div>
-
-              <div>
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-400">Coaching</p>
-                {coachingLinks.map((link) => (
-                  <Link
-                    key={`mobile-coaching-${link.href}`}
+                    key={`mobile-${link.href}`}
                     href={link.href}
                     onClick={closeMenus}
                     className={linkClass(link.isActive(pathname))}
@@ -272,7 +251,7 @@ export default function TopNavigation({
               </div>
             </div>
           </div>
-        )}
+        ) : null}
       </div>
     </nav>
   );

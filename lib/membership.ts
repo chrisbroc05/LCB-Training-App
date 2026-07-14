@@ -101,6 +101,10 @@ export function canAccessWorkoutPrograms(userTier: DatabaseTier) {
   return hasDatabaseTierAccess(userTier, "basic");
 }
 
+export function canAccessCoachingNav(userTier: DatabaseTier) {
+  return hasDatabaseTierAccess(userTier, "pro");
+}
+
 export function canSubmitCoachingForms(userTier: DatabaseTier, freeSubmissionUsed: boolean) {
   if (userTier === "PRO" || userTier === "ELITE") {
     return true;

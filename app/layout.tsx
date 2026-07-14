@@ -3,8 +3,13 @@ import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { hasDatabaseTierAccess, type DatabaseTier } from "@/lib/membership";
+import {
+  canAccessCoachingNav,
+  hasDatabaseTierAccess,
+  type DatabaseTier,
+} from "@/lib/membership";
 import { isAdminEmail } from "@/lib/admin";
+import { prisma } from "@/lib/prisma";
 import BrandLogo from "@/app/BrandLogo";
 import TopNavigation from "@/app/TopNavigation";
 import "./globals.css";
@@ -32,8 +37,18 @@ export default async function RootLayout({
   const session = await getServerSession(authOptions);
   const gaId = process.env.NEXT_PUBLIC_GA_ID;
   const userDisplayName = session?.user?.name?.trim() ?? "";
-  const membershipTier = (session?.user?.membershipTier ?? "FREE") as DatabaseTier;
+
+  let membershipTier: DatabaseTier = "FREE";
+  if (session?.user?.id) {
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { membershipTier: true },
+    });
+    membershipTier = (user?.membershipTier ?? "FREE") as DatabaseTier;
+  }
+
   const hasBasicAccess = hasDatabaseTierAccess(membershipTier, "basic");
+  const hasProAccess = canAccessCoachingNav(membershipTier);
   const hasAdminAccess = isAdminEmail(session?.user?.email);
 
   return (
@@ -77,6 +92,7 @@ export default async function RootLayout({
               isLoggedIn={Boolean(session?.user)}
               isAdmin={hasAdminAccess}
               hasBasicAccess={hasBasicAccess}
+              hasProAccess={hasProAccess}
               userDisplayName={userDisplayName}
             />
             </div>

@@ -2,68 +2,115 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import VideoLibrary from "@/app/dashboard/VideoLibrary";
 import { prisma } from "@/lib/prisma";
 import { isAdminEmail } from "@/lib/admin";
 import {
+  canAccessCoachingNav,
   canAccessDrillLibrary,
+  canAccessWorkoutPrograms,
   canSubmitCoachingForms,
   databaseTierToKey,
-  hasTierAccess,
   membershipTiers,
   type DatabaseTier,
-  type TierKey,
 } from "@/lib/membership";
-
-type Resource = {
-  id: string;
-  title: string;
-  description: string;
-  requiredTierLabel: string;
-  isUnlocked: (userTier: TierKey, freeSubmissionUsed: boolean) => boolean;
-};
-
-const resources: Resource[] = [
-  {
-    id: "free-submission",
-    title: "One Free Submission",
-    description: "Free members can submit one swing analysis OR one mental game support request.",
-    requiredTierLabel: "Free",
-    isUnlocked: (userTier, freeSubmissionUsed) => userTier === "free" && !freeSubmissionUsed,
-  },
-  {
-    id: "drill-library",
-    title: "Hitting + Fielding + Mindset Drill Library",
-    description: "Progressive drill plans for contact, power, timing, defense, and mental performance.",
-    requiredTierLabel: "Basic",
-    isUnlocked: (userTier) => hasTierAccess(userTier, "basic"),
-  },
-  {
-    id: "workout-programs",
-    title: "Workout Programs",
-    description: "All 9 downloadable strength, speed, and mobility programs by age group.",
-    requiredTierLabel: "Basic",
-    isUnlocked: (userTier) => hasTierAccess(userTier, "basic"),
-  },
-  {
-    id: "unlimited-coaching",
-    title: "Unlimited Swing Analysis + Mental Game Support",
-    description: "Submit swing and mental game forms anytime for direct coaching support.",
-    requiredTierLabel: "Pro",
-    isUnlocked: (userTier) => hasTierAccess(userTier, "pro"),
-  },
-  {
-    id: "elite-benefits",
-    title: "Priority Feedback + Monthly Group Call",
-    description: "Get top-priority swing and mental game feedback plus monthly live group call access.",
-    requiredTierLabel: "Elite",
-    isUnlocked: (userTier) => hasTierAccess(userTier, "elite"),
-  },
-];
 
 type DashboardPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
+
+type QuickLink = {
+  href: string;
+  label: string;
+  description: string;
+};
+
+function formatTierLabel(tier: DatabaseTier) {
+  return tier.charAt(0) + tier.slice(1).toLowerCase();
+}
+
+function formatDate(date: Date | null) {
+  if (!date) {
+    return "Not available";
+  }
+
+  return new Intl.DateTimeFormat("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  }).format(date);
+}
+
+function formatDateTime(date: Date) {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function getQuickLinks(
+  membershipTier: DatabaseTier,
+  freeSubmissionUsed: boolean,
+): QuickLink[] {
+  const links: QuickLink[] = [];
+
+  if (canAccessDrillLibrary(membershipTier)) {
+    links.push({
+      href: "/drill-library",
+      label: "Drill Library",
+      description: "Hitting, fielding, and mindset drill videos.",
+    });
+  }
+
+  if (canAccessWorkoutPrograms(membershipTier)) {
+    links.push({
+      href: "/workouts",
+      label: "Workouts",
+      description: "Download strength, speed, and mobility programs.",
+    });
+  }
+
+  if (canSubmitCoachingForms(membershipTier, freeSubmissionUsed)) {
+    links.push(
+      {
+        href: "/swing-analysis",
+        label: "Swing Analysis",
+        description: "Submit a swing video for coach feedback.",
+      },
+      {
+        href: "/mental-game",
+        label: "Mental Game Support",
+        description: "Get help with confidence, focus, and mindset.",
+      },
+    );
+  }
+
+  if (canAccessCoachingNav(membershipTier)) {
+    links.push({
+      href: "/profile",
+      label: "My Submissions",
+      description: "Track coaching requests and coach responses.",
+    });
+  }
+
+  links.push({
+    href: "/settings",
+    label: "Settings",
+    description: "Manage membership, billing, and account details.",
+  });
+
+  if (membershipTier === "FREE" || membershipTier === "BASIC") {
+    links.push({
+      href: "/upgrade",
+      label: "Upgrade Membership",
+      description: "Unlock more training content and coaching support.",
+    });
+  }
+
+  return links;
+}
 
 export default async function DashboardPage({ searchParams }: DashboardPageProps) {
   const session = await getServerSession(authOptions);
@@ -73,6 +120,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   if (isAdminEmail(session.user.email)) {
     redirect("/admin");
   }
+
   const resolvedSearchParams = searchParams ? await searchParams : {};
   const checkoutStatus =
     typeof resolvedSearchParams.checkout === "string" ? resolvedSearchParams.checkout : null;
@@ -81,26 +129,119 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
   const userRecord = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { freeSubmissionUsed: true, membershipTier: true },
+    select: {
+      name: true,
+      freeSubmissionUsed: true,
+      membershipTier: true,
+      subscriptionStatus: true,
+      subscriptionCurrentPeriodEnd: true,
+      subscriptionCancelAtPeriodEnd: true,
+    },
   });
-  const membershipTier = (userRecord?.membershipTier ?? "FREE") as DatabaseTier;
-  const freeSubmissionUsed = userRecord?.freeSubmissionUsed ?? false;
+
+  if (!userRecord) {
+    redirect("/auth");
+  }
+
+  const membershipTier = userRecord.membershipTier as DatabaseTier;
+  const freeSubmissionUsed = userRecord.freeSubmissionUsed;
   const userTier = databaseTierToKey[membershipTier];
   const currentTier = membershipTiers.find((tier) => tier.key === userTier) ?? membershipTiers[0];
-  const canSubmit = canSubmitCoachingForms(membershipTier, freeSubmissionUsed);
+  const displayName = userRecord.name?.trim() || session.user.email?.split("@")[0] || "Member";
+  const quickLinks = getQuickLinks(membershipTier, freeSubmissionUsed);
+  const isPaidMember = membershipTier !== "FREE";
+  const showFreeSubmissionCard = membershipTier === "FREE";
+
+  const pendingSubmissions = canAccessCoachingNav(membershipTier)
+    ? await Promise.all([
+        prisma.swingAnalysisSubmission.findMany({
+          where: {
+            userId: session.user.id,
+            status: { in: ["PENDING", "REVIEWING"] },
+          },
+          orderBy: { createdAt: "desc" },
+          take: 5,
+          select: { id: true, createdAt: true, playerName: true },
+        }),
+        prisma.mentalGameSubmission.findMany({
+          where: {
+            userId: session.user.id,
+            status: { in: ["PENDING", "REVIEWING"] },
+          },
+          orderBy: { createdAt: "desc" },
+          take: 5,
+          select: { id: true, createdAt: true, playerName: true },
+        }),
+      ]).then(([swing, mental]) => {
+        const items = [
+          ...swing.map((item) => ({
+            id: item.id,
+            type: "swing" as const,
+            createdAt: item.createdAt,
+            playerName: item.playerName,
+          })),
+          ...mental.map((item) => ({
+            id: item.id,
+            type: "mental" as const,
+            createdAt: item.createdAt,
+            playerName: item.playerName,
+          })),
+        ];
+        return items.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()).slice(0, 5);
+      })
+    : [];
+
+  const recentResponses = canAccessCoachingNav(membershipTier)
+    ? await Promise.all([
+        prisma.swingAnalysisSubmission.findMany({
+          where: {
+            userId: session.user.id,
+            status: "COMPLETED",
+            respondedAt: { not: null },
+          },
+          orderBy: { respondedAt: "desc" },
+          take: 3,
+          select: { id: true, respondedAt: true, playerName: true },
+        }),
+        prisma.mentalGameSubmission.findMany({
+          where: {
+            userId: session.user.id,
+            status: "COMPLETED",
+            respondedAt: { not: null },
+          },
+          orderBy: { respondedAt: "desc" },
+          take: 3,
+          select: { id: true, respondedAt: true, playerName: true },
+        }),
+      ]).then(([swing, mental]) => {
+        const items = [
+          ...swing.map((item) => ({
+            id: item.id,
+            type: "swing" as const,
+            respondedAt: item.respondedAt!,
+            playerName: item.playerName,
+          })),
+          ...mental.map((item) => ({
+            id: item.id,
+            type: "mental" as const,
+            respondedAt: item.respondedAt!,
+            playerName: item.playerName,
+          })),
+        ];
+        return items.sort((a, b) => b.respondedAt.getTime() - a.respondedAt.getTime()).slice(0, 3);
+      })
+    : [];
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 sm:py-14 md:py-20">
       <section className="rounded-3xl border border-[#18243a] bg-[#0b1324]/80 p-5 sm:p-8">
-        <h1 className="text-2xl font-semibold leading-tight text-zinc-100 sm:text-3xl">Member Dashboard</h1>
+        <h1 className="text-2xl font-semibold leading-tight text-zinc-100 sm:text-3xl">
+          Welcome back, {displayName}!
+        </h1>
         <p className="mt-2 text-zinc-300">
-          You are logged in as a <span className="font-semibold text-[#98b144]">{currentTier.name}</span>{" "}
-          member. Your library and coaching tools are unlocked based on this plan.
+          Your LCB Training home base. Jump into the tools included with your{" "}
+          <span className="font-semibold text-[#98b144]">{currentTier.name}</span> membership.
         </p>
-
-        <div className="mt-5 inline-flex rounded-full border border-[#2b3650] bg-black px-4 py-2 text-sm font-medium text-[#98b144]">
-          Active membership: {currentTier.name}
-        </div>
       </section>
 
       {checkoutStatus === "success" && (
@@ -123,99 +264,178 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       )}
 
       <section className="mt-8 grid gap-4 sm:gap-5 md:grid-cols-2">
-        {resources.map((resource) => {
-          const hasAccess = resource.isUnlocked(userTier, freeSubmissionUsed);
+        <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
+          <h2 className="text-lg font-semibold text-zinc-100">Membership</h2>
+          <div className="mt-3 inline-flex rounded-full border border-[#22c55e]/40 bg-[#22c55e]/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#9df3bd]">
+            {formatTierLabel(membershipTier)}
+          </div>
+          {isPaidMember ? (
+            <div className="mt-4 space-y-2 text-sm text-zinc-300">
+              <p>
+                Next billing date:{" "}
+                {formatDate(userRecord.subscriptionCurrentPeriodEnd)}
+              </p>
+              {userRecord.subscriptionCancelAtPeriodEnd ? (
+                <p className="text-yellow-100">
+                  Your subscription is set to cancel at the end of the current billing period.
+                </p>
+              ) : null}
+            </div>
+          ) : (
+            <p className="mt-4 text-sm text-zinc-300">
+              You are on the Free plan. Upgrade anytime to unlock the full drill library, workouts,
+              and coaching support.
+            </p>
+          )}
+          <Link
+            href="/settings"
+            className="mt-4 inline-flex rounded-full border border-[#2b3650] bg-black/40 px-4 py-2 text-sm font-semibold text-zinc-200 transition hover:border-[#7f9434] hover:text-[#98b144]"
+          >
+            Manage Membership
+          </Link>
+        </article>
 
-          return (
-            <article
-              key={resource.id}
-              className={`rounded-2xl border p-4 sm:p-6 ${
-                hasAccess
-                  ? "border-[#22c55e]/50 bg-[#22c55e]/10"
-                  : "border-[#18243a] bg-[#0b1324]/80"
-              }`}
-            >
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <h2 className="text-lg font-semibold leading-tight text-zinc-100 sm:text-xl">{resource.title}</h2>
-                <span
-                  className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${
-                    hasAccess
-                      ? "bg-[#22c55e]/20 text-[#9df3bd]"
-                      : "bg-[#24314a] text-zinc-200"
-                  }`}
+        {showFreeSubmissionCard ? (
+          <article
+            className={`rounded-2xl border p-4 sm:p-6 ${
+              !freeSubmissionUsed
+                ? "border-[#22c55e]/50 bg-[#22c55e]/10"
+                : "border-[#18243a] bg-[#0b1324]/80"
+            }`}
+          >
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-lg font-semibold text-zinc-100">One Free Submission</h2>
+              <span
+                className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${
+                  !freeSubmissionUsed
+                    ? "bg-[#22c55e]/20 text-[#9df3bd]"
+                    : "bg-[#24314a] text-zinc-200"
+                }`}
+              >
+                {!freeSubmissionUsed ? "Available" : "Used"}
+              </span>
+            </div>
+            <p className="mt-3 text-sm text-zinc-300">
+              Free members can submit one swing analysis OR one mental game support request.
+            </p>
+            {!freeSubmissionUsed ? (
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Link
+                  href="/swing-analysis"
+                  className="rounded-full bg-[#22c55e] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[#35db72]"
                 >
-                  {hasAccess ? "Unlocked" : `Requires ${resource.requiredTierLabel}`}
-                </span>
+                  Swing Analysis
+                </Link>
+                <Link
+                  href="/mental-game"
+                  className="rounded-full border border-[#22c55e]/70 bg-[#22c55e]/10 px-4 py-2 text-sm font-semibold text-[#9df3bd] transition hover:bg-[#22c55e]/20"
+                >
+                  Mental Game
+                </Link>
               </div>
-              <p className="mt-3 text-zinc-300">{resource.description}</p>
-            </article>
-          );
-        })}
+            ) : (
+              <Link
+                href="/upgrade?reason=free-submission-used"
+                className="mt-4 inline-flex rounded-full border border-[#2b3650] bg-black/40 px-4 py-2 text-sm font-semibold text-zinc-300 transition hover:border-[#7f9434] hover:text-[#98b144]"
+              >
+                Upgrade to continue
+              </Link>
+            )}
+          </article>
+        ) : (
+          <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
+            <h2 className="text-lg font-semibold text-zinc-100">Quick Tip</h2>
+            <p className="mt-3 text-sm text-zinc-300">
+              {membershipTier === "BASIC"
+                ? "Start with the Drill Library and Workouts to build your weekly training plan."
+                : "Submit swing analysis and mental game requests anytime — Coach Broc typically responds within 48 hours."}
+            </p>
+          </article>
+        )}
       </section>
 
-      <section className="mt-8 rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
-        <h2 className="text-lg font-semibold text-zinc-100 sm:text-xl">Coaching Submissions</h2>
-        <p className="mt-2 text-zinc-300">
-          Free members get one total submission (swing analysis or mental game support). Basic
-          members do not include coaching submissions. Pro and Elite members get unlimited
-          submissions.
-        </p>
-        <div className="mt-5 flex flex-wrap gap-3">
-          {canSubmit ? (
-            <>
-              <Link
-                href="/swing-analysis"
-                className="w-full rounded-full bg-[#22c55e] px-5 py-2.5 text-center text-sm font-semibold text-black transition hover:bg-[#35db72] sm:w-auto"
-              >
-                Swing Analysis Form
-              </Link>
-              <Link
-                href="/mental-game"
-                className="w-full rounded-full bg-[#22c55e] px-5 py-2.5 text-center text-sm font-semibold text-black transition hover:bg-[#35db72] sm:w-auto"
-              >
-                Mental Game Support Form
-              </Link>
-            </>
-          ) : membershipTier === "BASIC" ? (
+      <section className="mt-8">
+        <h2 className="text-lg font-semibold text-zinc-100 sm:text-xl">Quick Links</h2>
+        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {quickLinks.map((link) => (
             <Link
-              href="/upgrade?reason=pro-required"
-              className="w-full rounded-full border border-[#2b3650] bg-black/40 px-5 py-2.5 text-center text-sm font-semibold text-zinc-300 transition hover:border-[#7f9434] hover:text-[#98b144] sm:w-auto"
+              key={link.href + link.label}
+              href={link.href}
+              className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 transition hover:border-[#22c55e]/40 hover:bg-[#0f1d34] sm:p-5"
             >
-              Upgrade to Pro or Elite for coaching submissions
+              <h3 className="text-base font-semibold text-zinc-100">{link.label}</h3>
+              <p className="mt-2 text-sm text-zinc-400">{link.description}</p>
             </Link>
-          ) : (
-            <Link
-              href="/upgrade?reason=free-submission-used"
-              className="w-full rounded-full border border-[#2b3650] bg-black/40 px-5 py-2.5 text-center text-sm font-semibold text-zinc-300 transition hover:border-[#7f9434] hover:text-[#98b144] sm:w-auto"
-            >
-              Upgrade to continue submissions
-            </Link>
-          )}
+          ))}
         </div>
       </section>
 
-      {canAccessDrillLibrary(membershipTier) ? (
-        <VideoLibrary />
-      ) : (
-        <section className="mt-10 rounded-2xl border border-[#2b3650] bg-[#0b1324]/80 p-5 sm:p-6">
-          <h2 className="text-xl font-semibold text-zinc-100 sm:text-2xl">Drill Libraries</h2>
-          <p className="mt-2 text-zinc-300">
-            The hitting, fielding, and mindset video libraries are locked on the Free tier.
-          </p>
-          <div className="mt-4 rounded-xl border border-yellow-500/40 bg-yellow-500/10 p-4 text-sm text-yellow-100">
-            Upgrade to <span className="font-semibold">Basic</span> or above to unlock the full drill
-            library and continue your development.
-          </div>
-          <div className="mt-5">
+      {canAccessCoachingNav(membershipTier) ? (
+        <section className="mt-8 rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-lg font-semibold text-zinc-100 sm:text-xl">Coaching Submissions</h2>
             <Link
-              href="/upgrade?reason=basic-required"
-              className="inline-flex w-full items-center justify-center rounded-full bg-[#22c55e] px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-[#35db72] sm:w-auto"
+              href="/profile"
+              className="text-sm font-medium text-[#98b144] transition hover:text-[#b5d84f]"
             >
-              Upgrade Membership
+              View all →
             </Link>
           </div>
+
+          {pendingSubmissions.length > 0 ? (
+            <div className="mt-4">
+              <p className="text-sm font-medium text-zinc-300">Awaiting coach response</p>
+              <div className="mt-3 space-y-3">
+                {pendingSubmissions.map((submission) => (
+                  <Link
+                    key={`${submission.type}-${submission.id}`}
+                    href={`/profile?type=${submission.type}&id=${submission.id}`}
+                    className="block rounded-xl border border-[#2b3650] bg-black/30 p-4 transition hover:border-[#3c4a68]"
+                  >
+                    <p className="text-sm font-semibold text-zinc-100">
+                      {submission.type === "swing" ? "Swing Analysis" : "Mental Game Support"}
+                    </p>
+                    <p className="mt-1 text-xs text-zinc-400">
+                      {submission.playerName} · Submitted {formatDateTime(submission.createdAt)}
+                    </p>
+                    <span className="mt-2 inline-flex rounded-full bg-[#24314a] px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-zinc-200">
+                      Pending Review
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <p className="mt-4 text-sm text-zinc-400">No submissions awaiting coach response.</p>
+          )}
+
+          {recentResponses.length > 0 ? (
+            <div className="mt-6">
+              <p className="text-sm font-medium text-zinc-300">Recent coach responses</p>
+              <div className="mt-3 space-y-3">
+                {recentResponses.map((submission) => (
+                  <Link
+                    key={`response-${submission.type}-${submission.id}`}
+                    href={`/profile?type=${submission.type}&id=${submission.id}`}
+                    className="block rounded-xl border border-[#22c55e]/30 bg-[#22c55e]/5 p-4 transition hover:border-[#22c55e]/50"
+                  >
+                    <p className="text-sm font-semibold text-zinc-100">
+                      {submission.type === "swing" ? "Swing Analysis" : "Mental Game Support"}
+                    </p>
+                    <p className="mt-1 text-xs text-zinc-400">
+                      {submission.playerName} · Responded{" "}
+                      {formatDateTime(submission.respondedAt)}
+                    </p>
+                    <span className="mt-2 inline-flex rounded-full bg-[#22c55e]/20 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-[#9df3bd]">
+                      Response Ready
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          ) : null}
         </section>
-      )}
+      ) : null}
     </div>
   );
 }
