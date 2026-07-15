@@ -4,16 +4,21 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isAdminEmail } from "@/lib/admin";
+import CoachingSubmissionQuota from "@/app/CoachingSubmissionQuota";
+import DashboardUpgradeSection from "@/app/dashboard/DashboardUpgradeSection";
+import {
+  ensureCoachingSubmissionPeriod,
+  getCoachingSubmissionAvailability,
+} from "@/lib/coaching-submissions";
 import {
   canAccessCoachingNav,
   canAccessDrillLibrary,
   canAccessWorkoutPrograms,
-  canSubmitCoachingForms,
   databaseTierToKey,
+  formatDatabaseTierLabel,
   membershipTiers,
   type DatabaseTier,
 } from "@/lib/membership";
-import DashboardUpgradeSection from "@/app/dashboard/DashboardUpgradeSection";
 
 type DashboardPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -26,7 +31,7 @@ type QuickLink = {
 };
 
 function formatTierLabel(tier: DatabaseTier) {
-  return tier.charAt(0) + tier.slice(1).toLowerCase();
+  return formatDatabaseTierLabel(tier);
 }
 
 function formatDate(date: Date | null) {
@@ -51,10 +56,7 @@ function formatDateTime(date: Date) {
   }).format(date);
 }
 
-function getQuickLinks(
-  membershipTier: DatabaseTier,
-  freeSubmissionUsed: boolean,
-): QuickLink[] {
+function getQuickLinks(membershipTier: DatabaseTier, hasFreeSubmissionRemaining: boolean): QuickLink[] {
   const links: QuickLink[] = [];
 
   if (canAccessDrillLibrary(membershipTier)) {
@@ -73,19 +75,20 @@ function getQuickLinks(
     });
   }
 
-  if (canSubmitCoachingForms(membershipTier, freeSubmissionUsed)) {
-    links.push(
-      {
-        href: "/swing-analysis",
-        label: "Swing Analysis",
-        description: "Submit a swing video for coach feedback.",
-      },
-      {
-        href: "/mental-game",
-        label: "Mental Game Support",
-        description: "Get help with confidence, focus, and mindset.",
-      },
-    );
+  if (membershipTier === "MEMORABLE" || membershipTier === "ELITE") {
+    links.push({
+      href: "/coaching-submissions",
+      label: "Coaching Submissions",
+      description: "Submit swing videos or mindset requests for coach feedback.",
+    });
+  }
+
+  if (membershipTier === "FREE" && hasFreeSubmissionRemaining) {
+    links.push({
+      href: "/coaching-submissions",
+      label: "Coaching Submissions",
+      description: "Use your one free submission for swing video or mindset support.",
+    });
   }
 
   if (canAccessCoachingNav(membershipTier)) {
@@ -98,7 +101,7 @@ function getQuickLinks(
 
   links.push({
     href: "/settings",
-    label: "Settings",
+    label: "Account",
     description: "Manage membership, billing, and account details.",
   });
 
@@ -133,6 +136,9 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     select: {
       name: true,
       freeSubmissionUsed: true,
+      coachingSubmissionsUsedThisMonth: true,
+      coachingSubmissionPeriod: true,
+      eliteRolloverCredits: true,
       membershipTier: true,
       subscriptionStatus: true,
       subscriptionCurrentPeriodEnd: true,
@@ -146,11 +152,18 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   }
 
   const membershipTier = userRecord.membershipTier as DatabaseTier;
+  const coachingFields = await ensureCoachingSubmissionPeriod(session.user.id);
+  const coachingAvailability = coachingFields
+    ? getCoachingSubmissionAvailability(coachingFields)
+    : null;
   const freeSubmissionUsed = userRecord.freeSubmissionUsed;
   const userTier = databaseTierToKey[membershipTier];
   const currentTier = membershipTiers.find((tier) => tier.key === userTier) ?? membershipTiers[0];
   const displayName = userRecord.name?.trim() || session.user.email?.split("@")[0] || "Member";
-  const quickLinks = getQuickLinks(membershipTier, freeSubmissionUsed);
+  const quickLinks = getQuickLinks(
+    membershipTier,
+    membershipTier === "FREE" && !freeSubmissionUsed,
+  );
   const isPaidMember = membershipTier !== "FREE";
   const hasSubscription = Boolean(userRecord.stripeSubscriptionId);
   const showFreeSubmissionCard = membershipTier === "FREE";
@@ -253,10 +266,9 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         </section>
       )}
 
-      {upgradeStatus === "pro-required" && (
+      {(upgradeStatus === "memorable-required" || upgradeStatus === "pro-required") && (
         <section className="mt-6 rounded-xl border border-yellow-500/40 bg-yellow-500/10 px-5 py-4 text-sm text-yellow-100">
-          Pro or Elite membership is required to access swing analysis and mental game support
-          forms.
+          Memorable or Elite membership is required to access coaching submission forms.
         </section>
       )}
       {upgradeStatus === "free-submission-used" && (
@@ -319,23 +331,15 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
               </span>
             </div>
             <p className="mt-3 text-sm text-zinc-300">
-              Free members can submit one swing analysis OR one mental game support request.
+              Free members can submit one coaching submission.
             </p>
             {!freeSubmissionUsed ? (
-              <div className="mt-4 flex flex-wrap gap-2">
-                <Link
-                  href="/swing-analysis"
-                  className="rounded-full bg-[#22c55e] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[#35db72]"
-                >
-                  Swing Analysis
-                </Link>
-                <Link
-                  href="/mental-game"
-                  className="rounded-full border border-[#22c55e]/70 bg-[#22c55e]/10 px-4 py-2 text-sm font-semibold text-[#9df3bd] transition hover:bg-[#22c55e]/20"
-                >
-                  Mental Game
-                </Link>
-              </div>
+              <Link
+                href="/coaching-submissions"
+                className="mt-4 inline-flex rounded-full bg-[#22c55e] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[#35db72]"
+              >
+                Submit Coaching Submission
+              </Link>
             ) : (
               <Link
                 href="/upgrade?reason=free-submission-used"
@@ -345,16 +349,49 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
               </Link>
             )}
           </article>
-        ) : (
+        ) : membershipTier === "MEMORABLE" || membershipTier === "ELITE" ? (
           <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
-            <h2 className="text-lg font-semibold text-zinc-100">Quick Tip</h2>
-            <p className="mt-3 text-sm text-zinc-300">
-              {membershipTier === "BASIC"
-                ? "Start with the Drill Library and Workouts to build your weekly training plan."
-                : "Submit swing analysis and mental game requests anytime — Coach Broc typically responds within 48 hours."}
-            </p>
+            <h2 className="text-lg font-semibold text-zinc-100">Coaching Submissions</h2>
+            {coachingAvailability ? (
+              <div className="mt-3">
+                <CoachingSubmissionQuota
+                  availability={coachingAvailability}
+                  membershipTier={membershipTier}
+                />
+              </div>
+            ) : null}
+            {coachingAvailability && coachingAvailability.canSubmit ? (
+              <Link
+                href="/coaching-submissions"
+                className="mt-4 inline-flex rounded-full bg-[#22c55e] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[#35db72]"
+              >
+                Go to Coaching Submissions
+              </Link>
+            ) : (
+              <Link
+                href={membershipTier === "MEMORABLE" ? "/upgrade" : "/settings"}
+                className="mt-4 inline-flex rounded-full border border-[#2b3650] bg-black/40 px-4 py-2 text-sm font-semibold text-zinc-300 transition hover:border-[#7f9434] hover:text-[#98b144]"
+              >
+                {membershipTier === "MEMORABLE"
+                  ? "Upgrade for more submissions"
+                  : "View membership details"}
+              </Link>
+            )}
           </article>
-        )}
+        ) : membershipTier === "BASIC" ? (
+          <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
+            <h2 className="text-lg font-semibold text-zinc-100">Unlock Coaching Submissions</h2>
+            <p className="mt-3 text-sm text-zinc-300">
+              Upgrade to Memorable to submit swing videos and mindset requests for coach feedback.
+            </p>
+            <Link
+              href="/upgrade?reason=memorable-required"
+              className="mt-4 inline-flex rounded-full bg-[#22c55e] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[#35db72]"
+            >
+              Upgrade to Memorable
+            </Link>
+          </article>
+        ) : null}
       </section>
 
       <section className="mt-8">
@@ -396,7 +433,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                     className="block rounded-xl border border-[#2b3650] bg-black/30 p-4 transition hover:border-[#3c4a68]"
                   >
                     <p className="text-sm font-semibold text-zinc-100">
-                      {submission.type === "swing" ? "Swing Analysis" : "Mental Game Support"}
+                      Coaching Submissions
                     </p>
                     <p className="mt-1 text-xs text-zinc-400">
                       {submission.playerName} · Submitted {formatDateTime(submission.createdAt)}
@@ -423,7 +460,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                     className="block rounded-xl border border-[#22c55e]/30 bg-[#22c55e]/5 p-4 transition hover:border-[#22c55e]/50"
                   >
                     <p className="text-sm font-semibold text-zinc-100">
-                      {submission.type === "swing" ? "Swing Analysis" : "Mental Game Support"}
+                      Coaching Submissions
                     </p>
                     <p className="mt-1 text-xs text-zinc-400">
                       {submission.playerName} · Responded{" "}

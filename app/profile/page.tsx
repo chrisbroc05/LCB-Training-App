@@ -240,7 +240,7 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
                   >
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <p className="text-sm font-semibold text-zinc-100">
-                        {submission.type === "SWING" ? "Swing Analysis" : "Mental Game Support"}
+                        Coaching Submissions
                       </p>
                       <span
                         className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${

@@ -17,7 +17,7 @@ export default async function AdminPage() {
       <section className="rounded-3xl border border-[#18243a] bg-[#0b1324]/80 p-5 sm:p-8">
         <h1 className="text-2xl font-semibold leading-tight text-zinc-100 sm:text-3xl">Admin Submissions Inbox</h1>
         <p className="mt-2 text-zinc-300">
-          Review swing analysis and mental game submissions, then send video or written responses.
+          Review coaching submissions, then send video or written responses.
         </p>
         <AdminPanel cloudinaryUploadEnabled={cloudinaryUploadEnabled} />
       </section>

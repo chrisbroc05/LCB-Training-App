@@ -70,7 +70,7 @@ export const authOptions: NextAuthOptions = {
       if (session.user && token.sub) {
         session.user.id = token.sub;
         session.user.membershipTier =
-          (token.membershipTier as "FREE" | "BASIC" | "PRO" | "ELITE" | undefined) ?? "FREE";
+          (token.membershipTier as "FREE" | "BASIC" | "MEMORABLE" | "ELITE" | undefined) ?? "FREE";
       }
       return session;
     },

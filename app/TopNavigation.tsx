@@ -9,7 +9,7 @@ type TopNavigationProps = {
   isLoggedIn: boolean;
   isAdmin: boolean;
   hasBasicAccess: boolean;
-  hasProAccess: boolean;
+  hasCoachingAccess: boolean;
   userDisplayName?: string;
 };
 
@@ -29,18 +29,16 @@ export default function TopNavigation({
   isLoggedIn,
   isAdmin,
   hasBasicAccess,
-  hasProAccess,
+  hasCoachingAccess,
   userDisplayName,
 }: TopNavigationProps) {
   const pathname = usePathname();
-  const [openAccountMenu, setOpenAccountMenu] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const showGreeting = Boolean(
     isLoggedIn && userDisplayName && pathname !== "/" && !pathname.startsWith("/auth"),
   );
 
   const closeMenus = () => {
-    setOpenAccountMenu(false);
     setMobileOpen(false);
   };
 
@@ -64,32 +62,22 @@ export default function TopNavigation({
           },
         ]
       : []),
-    ...(hasProAccess
+    ...(hasCoachingAccess
       ? [
           {
-            label: "Swing Analysis",
-            href: "/swing-analysis",
-            isActive: (path: string) => path.startsWith("/swing-analysis"),
-          },
-          {
-            label: "Mental Game",
-            href: "/mental-game",
-            isActive: (path: string) => path.startsWith("/mental-game"),
+            label: "Coaching Submissions",
+            href: "/coaching-submissions",
+            isActive: (path: string) =>
+              path.startsWith("/coaching-submissions") ||
+              path.startsWith("/swing-analysis") ||
+              path.startsWith("/mental-game"),
           },
         ]
       : []),
-  ];
-
-  const accountLinks: MenuLink[] = [
     {
-      label: "Profile",
-      href: "/profile",
-      isActive: (path) => path.startsWith("/profile"),
-    },
-    {
-      label: "Settings",
+      label: "Account",
       href: "/settings",
-      isActive: (path) => path.startsWith("/settings"),
+      isActive: (path) => path.startsWith("/settings") || path.startsWith("/profile"),
     },
   ];
 
@@ -140,43 +128,16 @@ export default function TopNavigation({
           </Link>
         ))}
 
-        <div className="relative">
-          <button
-            type="button"
-            onClick={() => setOpenAccountMenu((current) => !current)}
-            className={
-              accountLinks.some((link) => link.isActive(pathname))
-                ? "rounded-lg bg-[#22c55e]/15 px-3 py-2 text-sm font-semibold text-[#9df3bd]"
-                : "rounded-lg px-3 py-2 text-sm text-zinc-200 transition hover:bg-[#1a253a] hover:text-[#9df3bd]"
-            }
-          >
-            Account
-          </button>
-          {openAccountMenu ? (
-            <div className="absolute right-0 z-30 mt-2 min-w-44 rounded-xl border border-[#2b3650] bg-[#0b1324] p-2 shadow-2xl shadow-black/50">
-              {accountLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  onClick={closeMenus}
-                  className={linkClass(link.isActive(pathname))}
-                >
-                  {link.label}
-                </Link>
-              ))}
-              <button
-                type="button"
-                onClick={() => {
-                  closeMenus();
-                  void signOut({ callbackUrl: "/auth" });
-                }}
-                className="mt-1 w-full rounded-lg px-3 py-2 text-left text-sm text-red-200 transition hover:bg-red-500/15"
-              >
-                Logout
-              </button>
-            </div>
-          ) : null}
-        </div>
+        <button
+          type="button"
+          onClick={() => {
+            closeMenus();
+            void signOut({ callbackUrl: "/auth" });
+          }}
+          className="rounded-lg px-3 py-2 text-sm text-zinc-200 transition hover:bg-[#1a253a] hover:text-red-200"
+        >
+          Logout
+        </button>
 
         {showGreeting ? (
           <span className="px-2 text-xs font-medium text-[#52B788]">{userDisplayName}</span>
@@ -213,24 +174,10 @@ export default function TopNavigation({
               ) : null}
 
               <div>
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-400">Main</p>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-400">Menu</p>
                 {mainLinks.map((link) => (
                   <Link
                     key={`mobile-${link.href}`}
-                    href={link.href}
-                    onClick={closeMenus}
-                    className={linkClass(link.isActive(pathname))}
-                  >
-                    {link.label}
-                  </Link>
-                ))}
-              </div>
-
-              <div>
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-400">Account</p>
-                {accountLinks.map((link) => (
-                  <Link
-                    key={`mobile-account-${link.href}`}
                     href={link.href}
                     onClick={closeMenus}
                     className={linkClass(link.isActive(pathname))}

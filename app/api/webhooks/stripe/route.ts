@@ -18,10 +18,12 @@ function mapPriceIdToTier(priceId?: string | null) {
   }
 
   if (
+    priceId === process.env.STRIPE_MEMORABLE_PRICE_ID ||
+    priceId === process.env.STRIPE_MEMORABLE_ANNUAL_PRICE_ID ||
     priceId === process.env.STRIPE_PRO_PRICE_ID ||
     priceId === process.env.STRIPE_PRO_ANNUAL_PRICE_ID
   ) {
-    return "PRO";
+    return "MEMORABLE";
   }
 
   if (
@@ -118,7 +120,7 @@ export async function POST(request: Request) {
       subscriptionCurrentPeriodEnd: Date | null;
       subscriptionCancelAtPeriodEnd: boolean;
       subscriptionStatus: "ACTIVE" | "CANCEL_AT_PERIOD_END" | "CANCELED";
-      membershipTier?: "BASIC" | "PRO" | "ELITE";
+      membershipTier?: "BASIC" | "MEMORABLE" | "ELITE";
     } = {
       stripeSubscriptionId,
       subscriptionCurrentPeriodEnd: currentPeriodEnd,

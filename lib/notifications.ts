@@ -1,5 +1,6 @@
 import nodemailer from "nodemailer";
 import type { DatabaseTier } from "@/lib/membership";
+import { formatDatabaseTierLabel } from "@/lib/membership";
 
 function createTransporter() {
   const notificationEmail = process.env.NOTIFICATION_EMAIL;
@@ -41,7 +42,7 @@ function isHttpUrl(value: string) {
 }
 
 function getTierLabel(tier: DatabaseTier) {
-  return tier.charAt(0) + tier.slice(1).toLowerCase();
+  return formatDatabaseTierLabel(tier);
 }
 
 function getPriorityLabel(tier: DatabaseTier) {
@@ -49,7 +50,7 @@ function getPriorityLabel(tier: DatabaseTier) {
     return "High";
   }
 
-  if (tier === "PRO") {
+  if (tier === "MEMORABLE") {
     return "Standard";
   }
 
@@ -198,7 +199,7 @@ export async function sendSwingSubmissionNotification(params: {
     : "Not provided";
 
   const html = buildSubmissionNotificationHtml({
-    title: "New Swing Submission",
+    title: "New Coaching Submission",
     membershipTier: params.membershipTier,
     userEmail: params.userEmail,
     detailRows: [
@@ -223,8 +224,8 @@ export async function sendSwingSubmissionNotification(params: {
   await transporter.sendMail({
     from: process.env.NOTIFICATION_EMAIL,
     to: getNotificationRecipient(),
-    subject: "New Swing Submission",
-    text: `New Swing Submission\n\nMembership Tier: ${getTierLabel(params.membershipTier)}\nPriority: ${getPriorityLabel(params.membershipTier)}\nSubmitting User: ${params.userEmail}\nPlayer Name: ${params.playerName}\nPitch Type Focus: ${params.pitchType}\nHandedness: ${params.handedness}\nPreferred Response: ${params.responsePreference}\nSubmitted Video Reference: ${params.submittedVideo}\nAttached Video: ${attachmentSummary}\nTemporary Download Link: ${tempLinkSummary}\nTemporary Link Expires: ${tempLinkExpiry}\nNotes: ${params.notes || "No notes provided."}`,
+    subject: "New Coaching Submission",
+    text: `New Coaching Submission\n\nMembership Tier: ${getTierLabel(params.membershipTier)}\nPriority: ${getPriorityLabel(params.membershipTier)}\nSubmitting User: ${params.userEmail}\nPlayer Name: ${params.playerName}\nPitch Type Focus: ${params.pitchType}\nHandedness: ${params.handedness}\nPreferred Response: ${params.responsePreference}\nSubmitted Video Reference: ${params.submittedVideo}\nAttached Video: ${attachmentSummary}\nTemporary Download Link: ${tempLinkSummary}\nTemporary Link Expires: ${tempLinkExpiry}\nNotes: ${params.notes || "No notes provided."}`,
     html,
     attachments: params.videoAttachment
       ? [
@@ -265,7 +266,7 @@ export async function sendMentalGameSubmissionNotification(params: {
     ? params.temporaryVideoLinkExpiresAt.toLocaleString()
     : "Not provided";
   const html = buildSubmissionNotificationHtml({
-    title: "New Mental Game Submission",
+    title: "New Coaching Submission",
     membershipTier: params.membershipTier,
     userEmail: params.userEmail,
     detailRows: [
@@ -291,8 +292,8 @@ export async function sendMentalGameSubmissionNotification(params: {
   await transporter.sendMail({
     from: process.env.NOTIFICATION_EMAIL,
     to: getNotificationRecipient(),
-    subject: "New Mental Game Submission",
-    text: `New Mental Game Submission\n\nMembership Tier: ${getTierLabel(params.membershipTier)}\nPriority: ${getPriorityLabel(params.membershipTier)}\nSubmitting User: ${params.userEmail}\nPlayer Name: ${params.playerName}\nPlayer Age: ${params.playerAge}\nTopic: ${params.topic}\nMessage: ${params.message}\nVideo Reference: ${params.videoPath ?? "No video uploaded"}\nAttached Video: ${attachmentSummary}\nTemporary Download Link: ${tempLinkSummary}\nTemporary Link Expires: ${tempLinkExpiry}\nResponse Preference: ${params.responsePreference}\nStatus: ${params.status}`,
+    subject: "New Coaching Submission",
+    text: `New Coaching Submission\n\nMembership Tier: ${getTierLabel(params.membershipTier)}\nPriority: ${getPriorityLabel(params.membershipTier)}\nSubmitting User: ${params.userEmail}\nPlayer Name: ${params.playerName}\nPlayer Age: ${params.playerAge}\nTopic: ${params.topic}\nMessage: ${params.message}\nVideo Reference: ${params.videoPath ?? "No video uploaded"}\nAttached Video: ${attachmentSummary}\nTemporary Download Link: ${tempLinkSummary}\nTemporary Link Expires: ${tempLinkExpiry}\nResponse Preference: ${params.responsePreference}\nStatus: ${params.status}`,
     html,
     attachments: params.videoAttachment
       ? [
@@ -322,8 +323,7 @@ export async function sendSubmissionResponseEmail(params: {
   videoDownloadLink?: string;
 }) {
   const transporter = createTransporter();
-  const submissionLabel =
-    params.submissionType === "SWING_ANALYSIS" ? "swing analysis" : "mental game support";
+  const submissionLabel = "coaching submission";
 
   const videoBodyLines = [
     params.videoResponseUrl ? `Video response: ${params.videoResponseUrl}` : "",
@@ -369,16 +369,16 @@ export async function sendSubmissionResponseEmail(params: {
   const freeTierCtaText = isFreeTier
     ? `Want to keep progressing?
 
-Basic ($5/month) unlocks the full hitting, fielding, and mindset libraries.
-Pro ($9/month) unlocks ongoing swing analysis feedback plus mental game support.
+Basic ($39/month) unlocks the full hitting, fielding, and mindset libraries.
+Memorable ($119/month) unlocks ongoing coaching submission feedback.
 Upgrade now in Settings: ${settingsUrl}
 `
     : "";
   const freeTierCtaHtml = isFreeTier
     ? `<div style="margin-top:16px; padding:12px; border:1px solid #2b3650; border-radius:10px; background:#060b16;">
         <p style="margin:0 0 8px; font-weight:700; color:#98b144;">Keep building your progress</p>
-        <p style="margin:0 0 6px;"><strong>Basic ($5/month):</strong> Full hitting, fielding, and mindset video libraries.</p>
-        <p style="margin:0;"><strong>Pro ($9/month):</strong> Ongoing swing analysis feedback and mental game support.</p>
+        <p style="margin:0 0 6px;"><strong>Basic ($39/month):</strong> Full hitting, fielding, and mindset video libraries.</p>
+        <p style="margin:0;"><strong>Memorable ($119/month):</strong> Ongoing coaching submission feedback.</p>
         <p style="margin:8px 0 0;"><a href="${escapeHtml(
           settingsUrl,
         )}" target="_blank" rel="noopener noreferrer" style="color:#8fd7ff; text-decoration:underline;">Upgrade your membership in Settings</a></p>
@@ -542,6 +542,112 @@ function getLoginUrl() {
   return appUrl ? `${appUrl}/auth` : "http://localhost:3000/auth";
 }
 
+function getSettingsUrl() {
+  const appUrl = process.env.NEXTAUTH_URL?.replace(/\/$/, "");
+  return appUrl ? `${appUrl}/settings` : "http://localhost:3000/settings";
+}
+
+function getOnboardingWelcomeGuidance(membershipTier: DatabaseTier) {
+  switch (membershipTier) {
+    case "FREE":
+      return "You have one free coaching submission (swing analysis or mental game support) with personal feedback from Coach Broc.";
+    case "BASIC":
+      return "You have full access to the drill library, all 9 workout programs, and your Pre-Game Warmup and Nutrition & Fueling PDFs.";
+    case "MEMORABLE":
+      return "You have everything in Basic plus 2 coaching submissions each month with 48-hour video feedback, accountability check-ins, and your Mental Game Workbook and Parent Guide PDFs.";
+    case "ELITE":
+      return "You have everything in Memorable plus 4 coaching submissions per month with rollover up to 8, priority 24-hour response, monthly group coaching calls, and personalized development and training plans.";
+  }
+}
+
+function getOnboardingMembershipSummaryHtml(membershipTier: DatabaseTier) {
+  const settingsUrl = getSettingsUrl();
+
+  if (membershipTier === "FREE") {
+    return `<div style="margin-top:16px; padding:14px; border:1px solid #2b3650; border-radius:10px; background:#060b16;">
+        <p style="margin:0 0 10px; font-weight:700; color:#98b144;">Membership options</p>
+        <p style="margin:0 0 6px;"><strong>Basic ($39/month):</strong> Full drill library, all 9 workout programs, Pre-Game Warmup PDF, and Nutrition &amp; Fueling Guide PDF.</p>
+        <p style="margin:0 0 6px;"><strong>Memorable ($119/month):</strong> Everything in Basic plus 2 coaching submissions per month, accountability check-ins, and coaching PDFs.</p>
+        <p style="margin:0;"><strong>Elite ($179/month):</strong> Everything in Memorable plus 4 submissions with rollover, priority 24-hour response, group coaching calls, and personalized plans.</p>
+        <p style="margin:10px 0 0;"><a href="${escapeHtml(
+          settingsUrl,
+        )}" target="_blank" rel="noopener noreferrer" style="color:#8fd7ff; text-decoration:underline;">View plans in Account settings</a></p>
+      </div>`;
+  }
+
+  if (membershipTier === "BASIC") {
+    return `<div style="margin-top:16px; padding:14px; border:1px solid #2b3650; border-radius:10px; background:#060b16;">
+        <p style="margin:0 0 10px; font-weight:700; color:#98b144;">Want coaching submissions?</p>
+        <p style="margin:0 0 6px;"><strong>Memorable ($119/month):</strong> 2 coaching submissions per month, 48-hour feedback, accountability check-ins, and coaching PDFs.</p>
+        <p style="margin:0;"><strong>Elite ($179/month):</strong> 4 submissions with rollover, priority 24-hour response, group coaching calls, and personalized plans.</p>
+        <p style="margin:10px 0 0;"><a href="${escapeHtml(
+          settingsUrl,
+        )}" target="_blank" rel="noopener noreferrer" style="color:#8fd7ff; text-decoration:underline;">Upgrade in Account settings</a></p>
+      </div>`;
+  }
+
+  return "";
+}
+
+function getOnboardingDrillLibraryMessage(membershipTier: DatabaseTier) {
+  if (membershipTier === "FREE") {
+    return {
+      bodyText:
+        "Upgrade to Basic ($39/month) to unlock the full hitting, fielding, and mindset drill libraries, all 9 workout programs, and the Pre-Game Warmup and Nutrition & Fueling PDFs.",
+      bodyHtml: `<p style="margin: 0 0 12px;">Upgrade to <strong>Basic ($39/month)</strong> to unlock the full hitting, fielding, and mindset drill libraries, all 9 workout programs, and the Pre-Game Warmup and Nutrition &amp; Fueling PDFs.</p>
+        <p style="margin: 0;">Memorable ($119/month) and Elite ($179/month) add monthly coaching submissions, accountability support, and personalized plans from Coach Broc.</p>`,
+    };
+  }
+
+  return {
+    bodyText:
+      "Take a look at the hitting and fielding video libraries and pick one drill to focus on this week. Also explore the workout programs and mindset library to strengthen confidence and game focus.",
+    bodyHtml: `<p style="margin: 0 0 12px;">Take a look at the hitting and fielding video libraries and choose one drill to focus on this week.</p>
+      <p style="margin: 0;">Also explore your workout programs and the mindset library to strengthen confidence, focus, and in-game composure.</p>`,
+  };
+}
+
+function getOnboardingWeekOneMessage(membershipTier: DatabaseTier) {
+  const settingsUrl = getSettingsUrl();
+
+  switch (membershipTier) {
+    case "FREE":
+      return {
+        text: `You still have one free coaching submission available. When you are ready, submit a swing video or mindset question for personalized feedback from Coach Broc.
+
+Want more each month? Memorable ($119/month) includes 2 coaching submissions per month with 48-hour feedback and accountability check-ins. Elite ($179/month) includes 4 per month with rollover up to 8, priority 24-hour response, and personalized training plans.
+
+Upgrade in Account settings: ${settingsUrl}`,
+        html: `<p style="margin: 0 0 12px;">You still have one free coaching submission available. When you are ready, submit a swing video or mindset question for personalized feedback from Coach Broc.</p>
+          <p style="margin: 0 0 12px;"><strong>Memorable ($119/month)</strong> includes 2 coaching submissions per month with 48-hour feedback and accountability check-ins. <strong>Elite ($179/month)</strong> includes 4 per month with rollover up to 8, priority 24-hour response, and personalized plans.</p>
+          <p style="margin: 0;"><a href="${escapeHtml(
+            settingsUrl,
+          )}" target="_blank" rel="noopener noreferrer" style="color:#8fd7ff; text-decoration:underline;">Upgrade in Account settings</a></p>`,
+      };
+    case "BASIC":
+      return {
+        text: `Ready for personalized coach feedback? Memorable ($119/month) unlocks 2 coaching submissions per month with 48-hour feedback and accountability check-ins. Elite ($179/month) unlocks 4 per month with rollover up to 8, priority 24-hour response, and personalized plans.
+
+Upgrade in Account settings: ${settingsUrl}`,
+        html: `<p style="margin: 0 0 12px;">Ready for personalized coach feedback?</p>
+          <p style="margin: 0 0 12px;"><strong>Memorable ($119/month)</strong> unlocks 2 coaching submissions per month with 48-hour feedback and accountability check-ins. <strong>Elite ($179/month)</strong> unlocks 4 per month with rollover up to 8, priority 24-hour response, and personalized plans.</p>
+          <p style="margin: 0;"><a href="${escapeHtml(
+            settingsUrl,
+          )}" target="_blank" rel="noopener noreferrer" style="color:#8fd7ff; text-decoration:underline;">Upgrade in Account settings</a></p>`,
+      };
+    case "MEMORABLE":
+      return {
+        text: "You have 2 coaching submissions available each month with 48-hour video feedback, plus monthly goal setting and weekly accountability check-ins. Submit a swing video or mindset request this week.",
+        html: `<p style="margin: 0;">You have <strong>2 coaching submissions</strong> available each month with 48-hour video feedback, plus monthly goal setting and weekly accountability check-ins. Submit a swing video or mindset request this week.</p>`,
+      };
+    case "ELITE":
+      return {
+        text: "You have 4 coaching submissions per month with rollover up to 8, priority 24-hour response, and a weekly training plan curated by Coach Broc. Submit your first coaching request this week.",
+        html: `<p style="margin: 0;">You have <strong>4 coaching submissions per month</strong> with rollover up to 8, priority 24-hour response, and a weekly training plan curated by Coach Broc. Submit your first coaching request this week.</p>`,
+      };
+  }
+}
+
 function buildOnboardingEmailShell(params: {
   heading: string;
   intro: string;
@@ -575,13 +681,10 @@ export async function sendOnboardingEmail1(params: {
   const transporter = createTransporter();
   const tierLabel = getTierLabel(params.membershipTier);
   const loginUrl = getLoginUrl();
-  const introVideosText = "Start by watching the intro videos so you can learn the training flow.";
-  const dashboardGuidance =
-    params.membershipTier === "FREE"
-      ? "You currently have one free submission total (swing analysis or mental game support). Use it when you are ready for focused feedback."
-      : params.membershipTier === "BASIC"
-      ? "You currently have access to the hitting, fielding, and mindset libraries plus all workout programs. Use your dashboard to build your training routine."
-      : "You currently have full libraries plus coaching submission tools. Use your dashboard to access swing analysis and mental game support.";
+  const introVideosText =
+    "Start by watching the intro videos on the landing page so you understand the training flow and how coaching submissions work.";
+  const dashboardGuidance = getOnboardingWelcomeGuidance(params.membershipTier);
+  const membershipSummaryHtml = getOnboardingMembershipSummaryHtml(params.membershipTier);
 
   await transporter.sendMail({
     from: process.env.NOTIFICATION_EMAIL,
@@ -606,9 +709,10 @@ Log in: ${loginUrl}
         <p style="margin: 0 0 16px;"><strong style="color:#98b144;">Current Membership:</strong> ${escapeHtml(
           tierLabel,
         )}</p>
-        <a href="${escapeHtml(
+        ${membershipSummaryHtml}
+        <p style="margin: 16px 0 0;"><a href="${escapeHtml(
           loginUrl,
-        )}" target="_blank" rel="noopener noreferrer" style="display:inline-block; background:#22c55e; color:#0a0a0a; text-decoration:none; font-weight:700; padding:10px 16px; border-radius:999px;">Log In to Your Dashboard</a>`,
+        )}" target="_blank" rel="noopener noreferrer" style="display:inline-block; background:#22c55e; color:#0a0a0a; text-decoration:none; font-weight:700; padding:10px 16px; border-radius:999px;">Log In to Your Dashboard</a></p>`,
     }),
   });
 }
@@ -616,8 +720,10 @@ Log in: ${loginUrl}
 export async function sendOnboardingEmail2(params: {
   toEmail: string;
   displayName: string;
+  membershipTier: DatabaseTier;
 }) {
   const transporter = createTransporter();
+  const drillLibraryMessage = getOnboardingDrillLibraryMessage(params.membershipTier);
 
   await transporter.sendMail({
     from: process.env.NOTIFICATION_EMAIL,
@@ -627,15 +733,13 @@ export async function sendOnboardingEmail2(params: {
 
 Have you checked out the drill library?
 
-Take a look at the hitting and fielding video libraries and pick one drill to focus on this week.
-Also make time for the mindset library to strengthen confidence and game focus.
+${drillLibraryMessage.bodyText}
 
 -LCB Training`,
     html: buildOnboardingEmailShell({
       heading: "Have you checked out the drill library?",
       intro: `Hi ${escapeHtml(params.displayName)}, quick check-in from the LCB Training team.`,
-      bodyHtml: `<p style="margin: 0 0 12px;">Take a look at the hitting and fielding video libraries and choose one drill to focus on this week.</p>
-        <p style="margin: 0;">Also make time for the mindset library to strengthen confidence, focus, and in-game composure.</p>`,
+      bodyHtml: drillLibraryMessage.bodyHtml,
     }),
   });
 }
@@ -646,10 +750,7 @@ export async function sendOnboardingEmail3(params: {
   membershipTier: DatabaseTier;
 }) {
   const transporter = createTransporter();
-  const isAdvancedTier = params.membershipTier === "PRO" || params.membershipTier === "ELITE";
-  const message = isAdvancedTier
-    ? "You have swing analysis and mental game support available right now. Submit your first video this week and start getting personalized coaching feedback."
-    : "Ready for personalized feedback? Upgrade to Pro or Elite to unlock swing analysis and mental game support submissions.";
+  const weekOneMessage = getOnboardingWeekOneMessage(params.membershipTier);
 
   await transporter.sendMail({
     from: process.env.NOTIFICATION_EMAIL,
@@ -659,13 +760,13 @@ export async function sendOnboardingEmail3(params: {
 
 Time to put your skills to the test!
 
-${message}
+${weekOneMessage.text}
 
 -LCB Training`,
     html: buildOnboardingEmailShell({
       heading: "Time to put your skills to the test!",
       intro: `Hi ${escapeHtml(params.displayName)}, you are one week in.`,
-      bodyHtml: `<p style="margin: 0;">${escapeHtml(message)}</p>`,
+      bodyHtml: weekOneMessage.html,
     }),
   });
 }

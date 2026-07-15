@@ -3,7 +3,10 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import type { DatabaseTier } from "@/lib/membership";
-import { canSubmitCoachingForms } from "@/lib/membership";
+import {
+  consumeCoachingSubmission,
+  getCoachingSubmissionLimitError,
+} from "@/lib/coaching-submissions";
 import { prisma } from "@/lib/prisma";
 import { sendMentalGameSubmissionNotification, sendSubmissionReceivedEmail } from "@/lib/notifications";
 import {
@@ -55,23 +58,9 @@ export async function POST(request: Request) {
       console.warn(`[mental-submit:${requestId}] Unauthorized request`);
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    console.log(`[mental-submit:${requestId}] Session validated for ${session.user.email}`);
-
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { freeSubmissionUsed: true, membershipTier: true },
-    });
-    const membershipTier = (user?.membershipTier ?? "FREE") as DatabaseTier;
-    const freeSubmissionUsed = user?.freeSubmissionUsed ?? false;
-
-    if (!canSubmitCoachingForms(membershipTier, freeSubmissionUsed)) {
-      const errorMessage =
-        membershipTier === "BASIC"
-          ? "Mental game submissions require Pro or Elite membership."
-          : "Your one free submission has already been used. Please upgrade to continue.";
-      console.warn(`[mental-submit:${requestId}] Access denied for tier ${membershipTier}`);
-      return NextResponse.json({ error: errorMessage }, { status: 403 });
-    }
+    const userId = session.user.id;
+    const userEmail = session.user.email;
+    console.log(`[mental-submit:${requestId}] Session validated for ${userEmail}`);
 
     console.log(`[mental-submit:${requestId}] Parsing multipart form data`);
     const formData = await request.formData();
@@ -140,26 +129,51 @@ export async function POST(request: Request) {
       }
     }
 
-    const submission = await prisma.mentalGameSubmission.create({
-      data: {
-        userId: session.user.id,
-        userEmail: session.user.email,
-        playerName,
-        playerAge,
-        topic,
-        message,
-        videoPath,
-        responsePreference,
-        status: "PENDING",
-      },
+    const transactionResult = await prisma.$transaction(async (tx) => {
+      const consumed = await consumeCoachingSubmission(tx, userId);
+      if (!consumed.ok) {
+        return {
+          ok: false as const,
+          membershipTier: consumed.membershipTier,
+          lockReason: consumed.availability.lockReason,
+        };
+      }
+
+      const submission = await tx.mentalGameSubmission.create({
+        data: {
+          userId,
+          userEmail,
+          playerName,
+          playerAge,
+          topic,
+          message,
+          videoPath,
+          responsePreference,
+          status: "PENDING",
+        },
+      });
+
+      return {
+        ok: true as const,
+        submission,
+        membershipTier: consumed.membershipTier,
+      };
     });
 
-    if (membershipTier === "FREE") {
-      await prisma.user.update({
-        where: { id: session.user.id },
-        data: { freeSubmissionUsed: true },
-      });
+    if (!transactionResult.ok) {
+      return NextResponse.json(
+        {
+          error: getCoachingSubmissionLimitError(
+            transactionResult.membershipTier,
+            transactionResult.lockReason ?? "monthly-limit",
+          ),
+        },
+        { status: 403 },
+      );
     }
+
+    const submission = transactionResult.submission;
+    const membershipTier = transactionResult.membershipTier;
 
     try {
       await sendMentalGameSubmissionNotification({

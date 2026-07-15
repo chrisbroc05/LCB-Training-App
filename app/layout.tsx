@@ -48,7 +48,7 @@ export default async function RootLayout({
   }
 
   const hasBasicAccess = hasDatabaseTierAccess(membershipTier, "basic");
-  const hasProAccess = canAccessCoachingNav(membershipTier);
+  const hasCoachingAccess = canAccessCoachingNav(membershipTier);
   const hasAdminAccess = isAdminEmail(session?.user?.email);
 
   return (
@@ -92,7 +92,7 @@ export default async function RootLayout({
               isLoggedIn={Boolean(session?.user)}
               isAdmin={hasAdminAccess}
               hasBasicAccess={hasBasicAccess}
-              hasProAccess={hasProAccess}
+              hasCoachingAccess={hasCoachingAccess}
               userDisplayName={userDisplayName}
             />
             </div>

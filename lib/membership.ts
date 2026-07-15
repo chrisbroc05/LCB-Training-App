@@ -1,5 +1,5 @@
-export type TierKey = "free" | "basic" | "pro" | "elite";
-export type DatabaseTier = "FREE" | "BASIC" | "PRO" | "ELITE";
+export type TierKey = "free" | "basic" | "memorable" | "elite";
+export type DatabaseTier = "FREE" | "BASIC" | "MEMORABLE" | "ELITE";
 
 export type MembershipTier = {
   key: TierKey;
@@ -14,72 +14,101 @@ export const membershipTiers: MembershipTier[] = [
     key: "free",
     name: "Free",
     priceLabel: "$0 / month",
-    summary: "One free submission total: swing analysis or mental game support.",
+    summary: "Try personalized coaching with one free submission from Coach Broc.",
     features: [
-      "One total free submission (swing or mental game)",
-      "No drill library access",
-      "No workout program access",
+      "1 free coaching submission (swing analysis or mental game support)",
+      "Personal feedback from Coach Broc",
     ],
   },
   {
     key: "basic",
     name: "Basic",
-    priceLabel: "$5 / month",
-    summary: "Full drill libraries and all downloadable workout programs.",
+    priceLabel: "$39 / month",
+    summary: "Self-guided training with the full drill library, workouts, and PDF resources.",
     features: [
       "Full hitting, fielding, and mindset video drill library",
-      "All 9 downloadable workout programs",
-      "No swing analysis submissions",
-      "No mental game support submissions",
+      "All 9 workout programs (Strength, Speed-Agility, Mobility for all ages)",
+      "Pre-Game Warmup Routine PDF",
+      "Nutrition & Fueling Guide PDF",
+      "Self-guided — no coaching submissions",
     ],
   },
   {
-    key: "pro",
-    name: "Pro",
-    priceLabel: "$9 / month",
-    summary: "Everything in Basic plus unlimited coaching submissions.",
+    key: "memorable",
+    name: "Memorable",
+    priceLabel: "$119 / month",
+    summary: "Everything in Basic plus monthly coaching submissions and accountability support.",
     features: [
       "Everything in Basic",
-      "Unlimited swing analysis submissions",
-      "Unlimited mental game support submissions",
-      "48-hour response time",
+      "2 coaching submissions per month (swing analysis or mental game support)",
+      "48-hour video feedback from Coach Broc",
+      "Monthly goal setting check-in",
+      "Weekly accountability check-in",
+      "Mental Game Workbook PDF",
+      "Parent Guide PDF",
+      "1-on-1 scheduling via text or email",
     ],
   },
   {
     key: "elite",
     name: "Elite",
-    priceLabel: "$14 / month",
-    summary: "Everything in Pro plus priority feedback and monthly group call access.",
+    priceLabel: "$179 / month",
+    summary:
+      "Everything in Memorable plus priority response, group coaching, and personalized plans.",
     features: [
-      "Everything in Pro",
-      "Priority feedback",
+      "Everything in Memorable",
+      "4 coaching submissions per month with rollover up to 8 maximum",
+      "Priority 24-hour response time",
       "Monthly group coaching call",
+      "Personalized monthly development plan from Coach Broc",
+      "College Recruiting Guide PDF",
+      "Weekly training plan curated by Coach Broc",
     ],
   },
 ];
 
+export const paidMembershipTiers = membershipTiers.filter(
+  (tier): tier is MembershipTier & { key: Exclude<TierKey, "free"> } => tier.key !== "free",
+);
+
+export function getCoachingResponseTimeLabel(tier: DatabaseTier) {
+  if (tier === "ELITE") {
+    return "24 hours (priority)";
+  }
+
+  return "48 hours";
+}
+
 export const tierRank: Record<TierKey, number> = {
   free: 0,
   basic: 1,
-  pro: 2,
+  memorable: 2,
   elite: 3,
 };
 
 export const keyToDatabaseTier: Record<TierKey, DatabaseTier> = {
   free: "FREE",
   basic: "BASIC",
-  pro: "PRO",
+  memorable: "MEMORABLE",
   elite: "ELITE",
 };
 
 export const databaseTierToKey: Record<DatabaseTier, TierKey> = {
   FREE: "free",
   BASIC: "basic",
-  PRO: "pro",
+  MEMORABLE: "memorable",
   ELITE: "elite",
 };
 
-export const validDatabaseTiers: DatabaseTier[] = ["FREE", "BASIC", "PRO", "ELITE"];
+export const validDatabaseTiers: DatabaseTier[] = ["FREE", "BASIC", "MEMORABLE", "ELITE"];
+
+export function formatDatabaseTierLabel(tier: DatabaseTier): string {
+  if (tier === "MEMORABLE") {
+    return "Memorable";
+  }
+
+  return tier.charAt(0) + tier.slice(1).toLowerCase();
+}
 
 export function isDatabaseTier(value: string): value is DatabaseTier {
   return validDatabaseTiers.includes(value as DatabaseTier);
@@ -102,32 +131,5 @@ export function canAccessWorkoutPrograms(userTier: DatabaseTier) {
 }
 
 export function canAccessCoachingNav(userTier: DatabaseTier) {
-  return hasDatabaseTierAccess(userTier, "pro");
-}
-
-export function canSubmitCoachingForms(userTier: DatabaseTier, freeSubmissionUsed: boolean) {
-  if (userTier === "PRO" || userTier === "ELITE") {
-    return true;
-  }
-
-  if (userTier === "FREE" && !freeSubmissionUsed) {
-    return true;
-  }
-
-  return false;
-}
-
-export function getCoachingSubmissionLockReason(
-  userTier: DatabaseTier,
-  freeSubmissionUsed: boolean,
-): "basic" | "free-used" | null {
-  if (userTier === "BASIC") {
-    return "basic";
-  }
-
-  if (userTier === "FREE" && freeSubmissionUsed) {
-    return "free-used";
-  }
-
-  return null;
+  return hasDatabaseTierAccess(userTier, "memorable");
 }

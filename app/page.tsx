@@ -64,7 +64,8 @@ export default function Home() {
         <p className="mt-5 max-w-2xl text-base leading-relaxed text-zinc-300 sm:text-lg">
           LCB Training helps athletes grow as complete competitors through skill training,
           movement work, and accountability that carries into games, school, and everyday life.
-          New members start with one free submission (swing analysis or mental game support).
+          New members start with one free coaching submission — swing analysis or mental game
+          support with personal feedback from Coach Broc.
         </p>
         <div className="mt-8 flex flex-wrap gap-3 sm:gap-4">
           <Link

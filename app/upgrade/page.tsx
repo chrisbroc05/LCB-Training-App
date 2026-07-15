@@ -17,24 +17,29 @@ export default async function UpgradePage({ searchParams }: UpgradePageProps) {
         </p>
         {reason === "free-submission-used" && (
           <p className="mt-4 rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-100">
-            Your one free submission has been used. Choose Basic, Pro, or Elite below to continue.
+            Your one free submission has been used. Choose Basic, Memorable, or Elite below to continue.
           </p>
         )}
         {reason === "basic-required" && (
           <p className="mt-4 rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-100">
-            Basic membership unlocks the full drill library and all 9 downloadable workout programs.
+            Basic membership unlocks the full drill library, all 9 workout programs, and the
+            Pre-Game Warmup and Nutrition &amp; Fueling PDFs.
           </p>
         )}
-        {reason === "pro-required" && (
+        {(reason === "memorable-required" || reason === "pro-required") && (
           <p className="mt-4 rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-100">
-            Pro or Elite membership is required for swing analysis and mental game support submissions.
+            Memorable or Elite membership is required for coaching submissions, accountability
+            check-ins, and coaching PDF resources.
           </p>
         )}
         <p className="mt-4 text-sm text-zinc-300">
-          <span className="font-semibold text-[#9df3bd]">Basic</span> unlocks the full drill library and workout programs.
-          <span className="ml-1 font-semibold text-[#9df3bd]">Pro</span> and
-          <span className="ml-1 font-semibold text-[#9df3bd]">Elite</span> include unlimited swing
-          analysis and mental game support.
+          <span className="font-semibold text-[#9df3bd]">Basic</span> is self-guided with the full
+          drill library, workouts, and PDF guides.
+          <span className="ml-1 font-semibold text-[#9df3bd]">Memorable</span> adds 2 coaching
+          submissions per month with 48-hour feedback, accountability check-ins, and coaching PDFs.
+          <span className="ml-1 font-semibold text-[#9df3bd]">Elite</span> adds priority 24-hour
+          response, 4 submissions with rollover, group coaching calls, and personalized training
+          plans.
         </p>
       </section>
 

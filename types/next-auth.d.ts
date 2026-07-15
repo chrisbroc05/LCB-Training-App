@@ -2,19 +2,19 @@ import type { DefaultSession } from "next-auth";
 
 declare module "next-auth" {
   interface Session {
-    user: DefaultSession["user"] & {
+    user: {
       id: string;
-      membershipTier: "FREE" | "BASIC" | "PRO" | "ELITE";
-    };
+      membershipTier: "FREE" | "BASIC" | "MEMORABLE" | "ELITE";
+    } & DefaultSession["user"];
   }
 
   interface User {
-    membershipTier?: "FREE" | "BASIC" | "PRO" | "ELITE";
+    membershipTier?: "FREE" | "BASIC" | "MEMORABLE" | "ELITE";
   }
 }
 
 declare module "next-auth/jwt" {
   interface JWT {
-    membershipTier?: "FREE" | "BASIC" | "PRO" | "ELITE";
+    membershipTier?: "FREE" | "BASIC" | "MEMORABLE" | "ELITE";
   }
 }

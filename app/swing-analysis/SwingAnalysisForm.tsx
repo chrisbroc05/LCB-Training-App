@@ -236,7 +236,7 @@ export default function SwingAnalysisForm() {
         disabled={isSubmitting}
         className="w-full rounded-full bg-[#22c55e] px-6 py-3 font-semibold text-black transition hover:bg-[#35db72] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
       >
-        {isSubmitting ? "Submitting..." : "Submit Swing Analysis"}
+        {isSubmitting ? "Submitting..." : "Submit Coaching Submission"}
       </button>
 
       {showConfirmationModal && (
@@ -244,7 +244,7 @@ export default function SwingAnalysisForm() {
           <div className="w-[94vw] max-w-2xl rounded-2xl border border-[#2b3650] bg-[#0b1324] p-5 shadow-2xl sm:p-6 md:p-8">
             <h2 className="text-xl font-semibold text-zinc-100 sm:text-2xl">Submission Received</h2>
             <div className="mt-4 rounded-xl border border-[#2b3650] bg-black/40 p-4">
-              <p className="text-sm font-semibold text-zinc-200">Swing Analysis Summary</p>
+              <p className="text-sm font-semibold text-zinc-200">Coaching Submission Summary</p>
               <p className="mt-2 whitespace-pre-wrap text-sm text-zinc-300">
                 {submittedNotes || "No notes provided."}
               </p>

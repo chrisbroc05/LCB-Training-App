@@ -15,7 +15,7 @@ type TierPricing = {
   secondary?: string;
 };
 
-const paidTierKeys: TierKey[] = ["basic", "pro", "elite"];
+const paidTierKeys: TierKey[] = ["basic", "memorable", "elite"];
 
 export const tierPricing: Record<TierKey, Record<BillingFrequency, TierPricing>> = {
   free: {
@@ -23,16 +23,16 @@ export const tierPricing: Record<TierKey, Record<BillingFrequency, TierPricing>>
     annual: { primary: "$0" },
   },
   basic: {
-    monthly: { primary: "$5/month" },
-    annual: { primary: "$50/year", secondary: "just $4.17/mo" },
+    monthly: { primary: "$39/month" },
+    annual: { primary: "$390/year", secondary: "just $32.50/mo" },
   },
-  pro: {
-    monthly: { primary: "$9/month" },
-    annual: { primary: "$90/year", secondary: "just $7.50/mo" },
+  memorable: {
+    monthly: { primary: "$119/month" },
+    annual: { primary: "$1,190/year", secondary: "just $99.17/mo" },
   },
   elite: {
-    monthly: { primary: "$14/month" },
-    annual: { primary: "$140/year", secondary: "just $11.67/mo" },
+    monthly: { primary: "$179/month" },
+    annual: { primary: "$1,790/year", secondary: "just $149.17/mo" },
   },
 };
 
@@ -41,9 +41,9 @@ export function getTierPricing(tier: TierKey, billingFrequency: BillingFrequency
 }
 
 const annualSavingsByTier: Partial<Record<TierKey, number>> = {
-  basic: 10,
-  pro: 18,
-  elite: 28,
+  basic: 78,
+  memorable: 238,
+  elite: 358,
 };
 
 export function getAnnualSavings(tier: TierKey): number | null {

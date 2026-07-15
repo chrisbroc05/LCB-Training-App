@@ -2,17 +2,14 @@
 
 import Link from "next/link";
 import { signOut } from "next-auth/react";
+import { formatDatabaseTierLabel, type DatabaseTier } from "@/lib/membership";
 
 type UserAuthStatusProps = {
   isLoggedIn: boolean;
   displayName: string;
-  membershipTier: "FREE" | "BASIC" | "PRO" | "ELITE";
+  membershipTier: DatabaseTier;
   isAdminView?: boolean;
 };
-
-function formatTierLabel(tier: "FREE" | "BASIC" | "PRO" | "ELITE") {
-  return tier.charAt(0) + tier.slice(1).toLowerCase();
-}
 
 export default function UserAuthStatus({
   isLoggedIn,
@@ -50,7 +47,7 @@ export default function UserAuthStatus({
           {displayName}
         </Link>
         <span className="mx-2 text-zinc-500">|</span>
-        <span className="text-[#98b144]">{formatTierLabel(membershipTier)}</span>
+        <span className="text-[#98b144]">{formatDatabaseTierLabel(membershipTier)}</span>
       </div>
       <button
         type="button"

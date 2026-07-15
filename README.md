@@ -19,10 +19,10 @@ Required:
 - `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` - Stripe publishable key used on signup
 - `STRIPE_WEBHOOK_SECRET` - signing secret for `/api/webhooks/stripe`
 - `STRIPE_BASIC_PRICE_ID` - Stripe monthly recurring price ID for Basic membership
-- `STRIPE_PRO_PRICE_ID` - Stripe monthly recurring price ID for Pro membership
+- `STRIPE_MEMORABLE_PRICE_ID` - Stripe monthly recurring price ID for Memorable membership
 - `STRIPE_ELITE_PRICE_ID` - Stripe monthly recurring price ID for Elite membership
 - `STRIPE_BASIC_ANNUAL_PRICE_ID` - Stripe annual recurring price ID for Basic membership
-- `STRIPE_PRO_ANNUAL_PRICE_ID` - Stripe annual recurring price ID for Pro membership
+- `STRIPE_MEMORABLE_ANNUAL_PRICE_ID` - Stripe annual recurring price ID for Memorable membership
 - `STRIPE_ELITE_ANNUAL_PRICE_ID` - Stripe annual recurring price ID for Elite membership
 - `NOTIFICATION_EMAIL` - Gmail address used to send app notifications
 - `EMAIL_PASSWORD` - Gmail app password for `NOTIFICATION_EMAIL`
@@ -66,4 +66,4 @@ Open [http://localhost:3000](http://localhost:3000).
 - Email/password signup (stored with hashed passwords)
 - Email/password login via NextAuth credentials provider
 - Session-based protection for `dashboard` and `swing-analysis`
-- Membership tier stored on `User` model (`BASIC`, `PRO`, `ELITE`)
+- Membership tier stored on `User` model (`BASIC`, `MEMORABLE`, `ELITE`)

@@ -28,19 +28,19 @@ const upgradeSectionByTier: Partial<Record<DatabaseTier, UpgradeSectionConfig>> 
   FREE: {
     title: "Ready to Level Up?",
     description:
-      "Choose a paid plan to unlock the full drill library, workout programs, and coaching support.",
-    upgradeTiers: ["basic", "pro", "elite"],
+      "Choose a paid plan to unlock the full drill library, workout programs, PDF resources, and coaching support.",
+    upgradeTiers: ["basic", "memorable", "elite"],
   },
   BASIC: {
     title: "Unlock Coaching Submissions",
     description:
-      "Upgrade to Pro or Elite for unlimited swing analysis and mental game support from Coach Broc.",
-    upgradeTiers: ["pro", "elite"],
+      "Upgrade to Memorable for monthly coaching submissions, accountability check-ins, and exclusive PDFs — or Elite for priority response and personalized plans.",
+    upgradeTiers: ["memorable", "elite"],
   },
-  PRO: {
+  MEMORABLE: {
     title: "Get Priority Access",
     description:
-      "Elite adds priority feedback on every submission plus monthly group coaching call access.",
+      "Elite adds priority 24-hour response, monthly group coaching calls, a personalized development plan, and a weekly training plan from Coach Broc.",
     upgradeTiers: ["elite"],
   },
 };
@@ -88,7 +88,7 @@ export default function DashboardUpgradeSection({
           const pricing = getTierPricing(tier.key, billingFrequency);
           const annualSavings =
             billingFrequency === "annual" ? getAnnualSavings(tier.key) : null;
-          const databaseTier = keyToDatabaseTier[tier.key] as "BASIC" | "PRO" | "ELITE";
+          const databaseTier = keyToDatabaseTier[tier.key] as "BASIC" | "MEMORABLE" | "ELITE";
 
           return (
             <article
@@ -107,6 +107,7 @@ export default function DashboardUpgradeSection({
               {pricing.secondary ? (
                 <p className="mt-1 text-sm text-zinc-400">{pricing.secondary}</p>
               ) : null}
+              <p className="mt-3 text-sm text-zinc-300">{tier.summary}</p>
               <ul className="mt-5 space-y-2 text-sm text-zinc-200">
                 {tier.features.map((feature) => (
                   <li key={feature} className="flex items-start gap-2">

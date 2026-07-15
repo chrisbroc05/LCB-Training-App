@@ -14,13 +14,13 @@ type PaidDatabaseTier = Exclude<DatabaseTier, "FREE">;
 
 const stripeMonthlyPriceIds: Record<PaidDatabaseTier, string | undefined> = {
   BASIC: process.env.STRIPE_BASIC_PRICE_ID,
-  PRO: process.env.STRIPE_PRO_PRICE_ID,
+  MEMORABLE: process.env.STRIPE_MEMORABLE_PRICE_ID,
   ELITE: process.env.STRIPE_ELITE_PRICE_ID,
 };
 
 const stripeAnnualPriceIds: Record<PaidDatabaseTier, string | undefined> = {
   BASIC: process.env.STRIPE_BASIC_ANNUAL_PRICE_ID,
-  PRO: process.env.STRIPE_PRO_ANNUAL_PRICE_ID,
+  MEMORABLE: process.env.STRIPE_MEMORABLE_ANNUAL_PRICE_ID,
   ELITE: process.env.STRIPE_ELITE_ANNUAL_PRICE_ID,
 };
 

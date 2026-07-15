@@ -39,6 +39,7 @@ export async function POST(request: Request) {
       id: true,
       email: true,
       name: true,
+      membershipTier: true,
     },
     take: 200,
   });
@@ -56,6 +57,7 @@ export async function POST(request: Request) {
       await sendOnboardingEmail2({
         toEmail: user.email,
         displayName: user.name ?? user.email,
+        membershipTier: user.membershipTier,
       });
       day3Sent += 1;
     } catch (error) {

@@ -9,7 +9,7 @@ datasource db {
 enum MembershipTier {
   FREE
   BASIC
-  PRO
+  MEMORABLE
   ELITE
 }
 
@@ -51,6 +51,9 @@ model User {
   onboardingEmail2Sent   Boolean                @default(false)
   onboardingEmail3Sent   Boolean                @default(false)
   freeSubmissionUsed     Boolean                @default(false)
+  coachingSubmissionsUsedThisMonth Int          @default(0)
+  coachingSubmissionPeriod         String?
+  eliteRolloverCredits             Int          @default(0)
   membershipTier         MembershipTier         @default(FREE)
   subscriptionStatus     SubscriptionStatus     @default(ACTIVE)
   stripeCustomerId       String?                @unique

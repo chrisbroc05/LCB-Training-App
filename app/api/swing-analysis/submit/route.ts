@@ -3,7 +3,10 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import type { DatabaseTier } from "@/lib/membership";
-import { canSubmitCoachingForms } from "@/lib/membership";
+import {
+  consumeCoachingSubmission,
+  getCoachingSubmissionLimitError,
+} from "@/lib/coaching-submissions";
 import { prisma } from "@/lib/prisma";
 import { sendSubmissionReceivedEmail, sendSwingSubmissionNotification } from "@/lib/notifications";
 import {
@@ -32,29 +35,13 @@ export async function POST(request: Request) {
   try {
     console.log(`[swing-submit:${requestId}] Request received`);
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    if (!session?.user?.id || !session.user.email) {
       console.warn(`[swing-submit:${requestId}] Unauthorized request`);
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    console.log(`[swing-submit:${requestId}] Session validated for ${session.user.email}`);
-
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { freeSubmissionUsed: true, membershipTier: true },
-    });
-    const membershipTier = (user?.membershipTier ?? "FREE") as DatabaseTier;
-    const freeSubmissionUsed = user?.freeSubmissionUsed ?? false;
-
-    if (!canSubmitCoachingForms(membershipTier, freeSubmissionUsed)) {
-      const errorMessage =
-        membershipTier === "BASIC"
-          ? "Swing analysis submissions require Pro or Elite membership."
-          : "Your one free submission has already been used. Please upgrade to continue.";
-      console.warn(
-        `[swing-submit:${requestId}] Access denied for tier ${membershipTier} (${session.user.email})`,
-      );
-      return NextResponse.json({ error: errorMessage }, { status: 403 });
-    }
+    const userId = session.user.id;
+    const userEmail = session.user.email;
+    console.log(`[swing-submit:${requestId}] Session validated for ${userEmail}`);
 
     console.log(`[swing-submit:${requestId}] Parsing multipart form data`);
     const formData = await request.formData();
@@ -128,23 +115,56 @@ export async function POST(request: Request) {
     }
 
     console.log(`[swing-submit:${requestId}] Creating swing submission record`);
-    const createdSubmission = await withTimeout(
-      prisma.swingAnalysisSubmission.create({
-      data: {
-        userId: session.user.id,
-        userEmail: session.user.email,
-        playerName,
-        pitchType,
-        handedness,
-        notes,
-        submittedVideo,
-        responsePreference: responsePreference as "VIDEO_RESPONSE" | "WRITTEN_RESPONSE",
-        status: "PENDING",
-      },
-    }),
+    const transactionResult = await withTimeout(
+      prisma.$transaction(async (tx) => {
+        const consumed = await consumeCoachingSubmission(tx, userId);
+        if (!consumed.ok) {
+          return {
+            ok: false as const,
+            membershipTier: consumed.membershipTier,
+            lockReason: consumed.availability.lockReason,
+          };
+        }
+
+        const createdSubmission = await tx.swingAnalysisSubmission.create({
+          data: {
+            userId,
+            userEmail,
+            playerName,
+            pitchType,
+            handedness,
+            notes,
+            submittedVideo,
+            responsePreference: responsePreference as "VIDEO_RESPONSE" | "WRITTEN_RESPONSE",
+            status: "PENDING",
+          },
+        });
+
+        return {
+          ok: true as const,
+          createdSubmission,
+          membershipTier: consumed.membershipTier,
+        };
+      }),
       DB_TIMEOUT_MS,
       "Database insert",
     );
+
+    if (!transactionResult.ok) {
+      const membershipTier = transactionResult.membershipTier as DatabaseTier;
+      return NextResponse.json(
+        {
+          error: getCoachingSubmissionLimitError(
+            membershipTier,
+            transactionResult.lockReason ?? "monthly-limit",
+          ),
+        },
+        { status: 403 },
+      );
+    }
+
+    const createdSubmission = transactionResult.createdSubmission;
+    const membershipTier = transactionResult.membershipTier;
     console.log(
       `[swing-submit:${requestId}] Submission saved to database (id=${createdSubmission.id}, submittedVideo=${createdSubmission.submittedVideo})`,
     );
@@ -154,20 +174,13 @@ export async function POST(request: Request) {
       );
     }
 
-    if (membershipTier === "FREE") {
-      await prisma.user.update({
-        where: { id: session.user.id },
-        data: { freeSubmissionUsed: true },
-      });
-    }
-
     console.log(
       `[swing-submit:${requestId}] Sending submission notification`,
     );
     try {
       await withTimeout(
         sendSwingSubmissionNotification({
-          userEmail: session.user.email,
+          userEmail,
           membershipTier,
           playerName,
           pitchType,
@@ -192,7 +205,7 @@ export async function POST(request: Request) {
         session.user.name?.trim().split(/\s+/)[0] ?? playerName.trim().split(/\s+/)[0] ?? "there";
       await withTimeout(
         sendSubmissionReceivedEmail({
-          toEmail: session.user.email,
+          toEmail: userEmail,
           firstName,
         }),
         EMAIL_TIMEOUT_MS,

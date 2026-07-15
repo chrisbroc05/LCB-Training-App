@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import type { BillingFrequency } from "@/lib/billing";
+import { formatDatabaseTierLabel, type DatabaseTier } from "@/lib/membership";
 
 type UpgradeActionsProps = {
-  tier: "BASIC" | "PRO" | "ELITE";
+  tier: Exclude<DatabaseTier, "FREE">;
   billingFrequency?: BillingFrequency;
 };
 
@@ -12,7 +13,7 @@ export default function UpgradeActions({
   tier,
   billingFrequency = "monthly",
 }: UpgradeActionsProps) {
-  const tierLabel = tier.charAt(0) + tier.slice(1).toLowerCase();
+  const tierLabel = formatDatabaseTierLabel(tier);
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");

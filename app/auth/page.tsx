@@ -12,42 +12,6 @@ import { getAnnualSavings, getTierPricing, parseBillingFrequency, type BillingFr
 
 type AuthMode = "login" | "signup";
 
-const signupTierDetails: Record<
-  TierKey,
-  {
-    features: string[];
-  }
-> = {
-  free: {
-    features: [
-      "1 free swing analysis OR mental game submission",
-      "Personal feedback from Coach Broc",
-      "No drill library or workout program access",
-    ],
-  },
-  basic: {
-    features: [
-      "Full hitting, fielding, and mindset video drill library",
-      "All 9 downloadable workout programs",
-      "No swing analysis or mental game submissions",
-    ],
-  },
-  pro: {
-    features: [
-      "Everything in Basic",
-      "Unlimited swing analysis and mental game submissions",
-      "48-hour response time from Coach Broc",
-    ],
-  },
-  elite: {
-    features: [
-      "Everything in Pro",
-      "Priority feedback",
-      "Monthly group coaching call",
-    ],
-  },
-};
-
 export default function AuthPage() {
   return (
     <Suspense fallback={<div>Loading...</div>}>
@@ -309,7 +273,6 @@ function AuthContent() {
                 <div className="mt-4 grid gap-4 md:grid-cols-4">
                   {membershipTiers.map((tier) => {
                     const isSelected = selectedTier === tier.key;
-                    const customTier = signupTierDetails[tier.key];
                     const pricing = getTierPricing(tier.key, billingFrequency);
                     const annualSavings =
                       billingFrequency === "annual" ? getAnnualSavings(tier.key) : null;
@@ -337,7 +300,7 @@ function AuthContent() {
                           <p className="mt-1 text-sm text-zinc-400">{pricing.secondary}</p>
                         ) : null}
                         <ul className="mt-4 space-y-2 text-sm text-zinc-200">
-                          {customTier.features.map((feature) => (
+                          {tier.features.map((feature) => (
                             <li key={`${tier.key}-${feature}`} className="flex items-start gap-2">
                               <span className="mt-1 h-2 w-2 rounded-full bg-[#22c55e]" />
                               <span>{feature}</span>

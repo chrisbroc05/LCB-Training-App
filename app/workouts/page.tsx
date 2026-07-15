@@ -3,7 +3,9 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import LockedFeaturePanel from "@/app/LockedFeaturePanel";
+import WorkoutResourceCard from "@/app/workouts/WorkoutResourceCard";
 import { canAccessWorkoutPrograms, type DatabaseTier } from "@/lib/membership";
+import { workoutResourceGroups } from "@/lib/workout-resources";
 import { getWorkoutPdfUrl } from "@/lib/workouts";
 import { prisma } from "@/lib/prisma";
 import { isAdminEmail } from "@/lib/admin";
@@ -236,7 +238,7 @@ export default async function WorkoutsPage() {
       <LockedFeaturePanel
         title="Workout Library"
         description="Download strength, speed, and mobility programs tailored by age group."
-        message="Workout programs are available on Basic, Pro, and Elite memberships. Upgrade to Basic or above to unlock all 9 downloadable workout programs."
+        message="Workout programs are available on Basic, Memorable, and Elite memberships. Upgrade to Basic or above to unlock all 9 downloadable workout programs."
         upgradeLabel="Upgrade to Basic or Above"
         upgradeHref="/upgrade?reason=basic-required"
       />
@@ -316,6 +318,30 @@ export default async function WorkoutsPage() {
           </section>
         ))}
       </div>
+
+      <section className="mt-8 rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
+        <h2 className="text-xl font-semibold text-zinc-100 sm:text-2xl">Downloadable Resources</h2>
+        <p className="mt-2 text-sm text-zinc-400">
+          Additional guides and workbooks unlocked based on your membership tier.
+        </p>
+
+        <div className="mt-6 space-y-6">
+          {workoutResourceGroups.map((group) => (
+            <div key={group.heading}>
+              <h3 className="text-lg font-semibold text-zinc-100">{group.heading}</h3>
+              <div className="mt-3 grid gap-4 md:grid-cols-2">
+                {group.resources.map((resource) => (
+                  <WorkoutResourceCard
+                    key={resource.filename}
+                    resource={resource}
+                    membershipTier={membershipTier}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }

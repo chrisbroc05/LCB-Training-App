@@ -15,7 +15,7 @@ export default function TermsPage() {
           <h2 className="text-xl font-semibold text-zinc-100">1. Membership Subscriptions</h2>
           <p className="mt-3 text-zinc-300">
             Paid memberships are billed on a recurring basis through Stripe. Your access level
-            (Basic, Pro, or Elite) is based on your current subscription tier and may change if
+            (Basic, Memorable, or Elite) is based on your current subscription tier and may change if
             your subscription is upgraded, downgraded, or canceled.
           </p>
           <p className="mt-3 text-zinc-300">

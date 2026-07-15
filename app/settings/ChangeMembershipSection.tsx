@@ -9,6 +9,7 @@ import {
   type BillingFrequency,
 } from "@/lib/billing";
 import {
+  formatDatabaseTierLabel,
   keyToDatabaseTier,
   membershipTiers,
   databaseTierToKey,
@@ -52,7 +53,7 @@ function ChangeMembershipContent({
 
   async function handleTierChange(nextTier: DatabaseTier) {
     const shouldContinue = window.confirm(
-      `Switch your membership to ${nextTier.charAt(0)}${nextTier.slice(1).toLowerCase()}? Proration will be applied automatically by Stripe.`,
+      `Switch your membership to ${formatDatabaseTierLabel(nextTier)}? Proration will be applied automatically by Stripe.`,
     );
     if (!shouldContinue) {
       return;
