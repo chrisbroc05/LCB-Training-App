@@ -463,7 +463,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
               href="/profile"
               className="text-sm font-medium text-[#98b144] transition hover:text-[#b5d84f]"
             >
-              View all →
+              View all{` ->`}
             </Link>
           </div>
 
@@ -481,7 +481,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                       Coaching Submissions
                     </p>
                     <p className="mt-1 text-xs text-zinc-400">
-                      {submission.playerName} · Submitted {formatDateTime(submission.createdAt)}
+                      {submission.playerName} - Submitted {formatDateTime(submission.createdAt)}
                     </p>
                     <span className="mt-2 inline-flex rounded-full bg-[#24314a] px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-zinc-200">
                       Pending Review
@@ -508,7 +508,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                       Coaching Submissions
                     </p>
                     <p className="mt-1 text-xs text-zinc-400">
-                      {submission.playerName} · Responded{" "}
+                      {submission.playerName} - Responded{" "}
                       {formatDateTime(submission.respondedAt)}
                     </p>
                     <span className="mt-2 inline-flex rounded-full bg-[#22c55e]/20 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-[#9df3bd]">

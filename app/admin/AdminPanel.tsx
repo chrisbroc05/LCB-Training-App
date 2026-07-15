@@ -188,7 +188,7 @@ export default function AdminPanel({
                 : "border border-[#2b3650] text-zinc-200 hover:border-[#7f9434]"
             }`}
           >
-            Coaching Submissions
+            Swing Analysis
           </button>
           <button
             type="button"
@@ -199,7 +199,7 @@ export default function AdminPanel({
                 : "border border-[#2b3650] text-zinc-200 hover:border-[#7f9434]"
             }`}
           >
-            Coaching Submissions
+            Mental Game
           </button>
         </div>
 

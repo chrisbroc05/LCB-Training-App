@@ -127,7 +127,7 @@ export default function FreeMembersSection({
                       Call status:{" "}
                       {member.assessmentCallBooked && member.assessmentCallDate ? (
                         <span className="font-medium text-[#9df3bd]">
-                          Call Scheduled —{" "}
+                          Call Scheduled --{" "}
                           {formatAssessmentCallDateTime(new Date(member.assessmentCallDate))}
                         </span>
                       ) : (
