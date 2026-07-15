@@ -15,6 +15,6 @@ export const config = {
     "/mental-game/:path*",
     "/settings/:path*",
     "/profile/:path*",
-    "/workouts/:path*",
+    "/resources/:path*",
   ],
 };

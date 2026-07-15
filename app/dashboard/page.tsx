@@ -69,8 +69,8 @@ function getQuickLinks(membershipTier: DatabaseTier, hasFreeSubmissionRemaining:
 
   if (canAccessWorkoutPrograms(membershipTier)) {
     links.push({
-      href: "/workouts",
-      label: "Workouts",
+      href: "/resources",
+      label: "Resources",
       description: "Download strength, speed, and mobility programs.",
     });
   }
@@ -298,7 +298,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
             </div>
           ) : (
             <p className="mt-4 text-sm text-zinc-300">
-              You are on the Free plan. Upgrade anytime to unlock the full drill library, workouts,
+              You are on the Free plan. Upgrade anytime to unlock the full drill library, resources,
               and coaching support.
             </p>
           )}

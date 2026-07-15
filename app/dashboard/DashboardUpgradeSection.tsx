@@ -28,7 +28,7 @@ const upgradeSectionByTier: Partial<Record<DatabaseTier, UpgradeSectionConfig>> 
   FREE: {
     title: "Ready to Level Up?",
     description:
-      "Choose a paid plan to unlock the full drill library, workout programs, PDF resources, and coaching support.",
+      "Choose a paid plan to unlock the full drill library, resources, and coaching support.",
     upgradeTiers: ["basic", "memorable", "elite"],
   },
   BASIC: {

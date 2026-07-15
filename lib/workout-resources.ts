@@ -28,8 +28,8 @@ export const workoutResourceGroups: WorkoutResourceGroup[] = [
       },
       {
         filename: "LCB_Nutrition_Guide.pdf",
-        title: "Nutrition & Fueling Guide",
-        description: "Nutrition and fueling guidance built for baseball athletes.",
+        title: "Baseball Athlete Nutrition Guide",
+        description: "Fuel and recovery guidance built for baseball athletes.",
         requiredTier: "basic",
       },
     ],
@@ -40,13 +40,13 @@ export const workoutResourceGroups: WorkoutResourceGroup[] = [
     resources: [
       {
         filename: "LCB_Mental_Game_Workbook.pdf",
-        title: "The Mental Game Workbook",
+        title: "Mental Game Workbook",
         description: "Exercises and prompts to strengthen confidence, focus, and composure.",
         requiredTier: "memorable",
       },
       {
         filename: "LCB_Parent_Guide.pdf",
-        title: "The Parent Guide",
+        title: "Parent Guide",
         description: "Support strategies for parents helping athletes grow on and off the field.",
         requiredTier: "memorable",
       },

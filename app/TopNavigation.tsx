@@ -56,9 +56,9 @@ export default function TopNavigation({
             isActive: (path: string) => path.startsWith("/drill-library"),
           },
           {
-            label: "Workouts",
-            href: "/workouts",
-            isActive: (path: string) => path.startsWith("/workouts"),
+            label: "Resources",
+            href: "/resources",
+            isActive: (path: string) => path.startsWith("/resources"),
           },
         ]
       : []),

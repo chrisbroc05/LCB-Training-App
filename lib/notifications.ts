@@ -552,7 +552,7 @@ function getOnboardingWelcomeGuidance(membershipTier: DatabaseTier) {
     case "FREE":
       return "You have one free coaching submission (swing analysis or mental game support) with personal feedback from Coach Broc.";
     case "BASIC":
-      return "You have full access to the drill library, all 9 workout programs, and your Pre-Game Warmup and Nutrition & Fueling PDFs.";
+      return "You have full access to the drill library, all 7 workout programs, and your Pre-Game Warmup and Baseball Athlete Nutrition guides.";
     case "MEMORABLE":
       return "You have everything in Basic plus 2 coaching submissions each month with 48-hour video feedback, accountability check-ins, and your Mental Game Workbook and Parent Guide PDFs.";
     case "ELITE":
@@ -566,7 +566,7 @@ function getOnboardingMembershipSummaryHtml(membershipTier: DatabaseTier) {
   if (membershipTier === "FREE") {
     return `<div style="margin-top:16px; padding:14px; border:1px solid #2b3650; border-radius:10px; background:#060b16;">
         <p style="margin:0 0 10px; font-weight:700; color:#98b144;">Membership options</p>
-        <p style="margin:0 0 6px;"><strong>Basic ($39/month):</strong> Full drill library, all 9 workout programs, Pre-Game Warmup PDF, and Nutrition &amp; Fueling Guide PDF.</p>
+        <p style="margin:0 0 6px;"><strong>Basic ($39/month):</strong> Full drill library, all 7 workout programs, Pre-Game Warmup PDF, and Baseball Athlete Nutrition Guide PDF.</p>
         <p style="margin:0 0 6px;"><strong>Memorable ($119/month):</strong> Everything in Basic plus 2 coaching submissions per month, accountability check-ins, and coaching PDFs.</p>
         <p style="margin:0;"><strong>Elite ($179/month):</strong> Everything in Memorable plus 4 submissions with rollover, priority 24-hour response, group coaching calls, and personalized plans.</p>
         <p style="margin:10px 0 0;"><a href="${escapeHtml(
@@ -593,17 +593,17 @@ function getOnboardingDrillLibraryMessage(membershipTier: DatabaseTier) {
   if (membershipTier === "FREE") {
     return {
       bodyText:
-        "Upgrade to Basic ($39/month) to unlock the full hitting, fielding, and mindset drill libraries, all 9 workout programs, and the Pre-Game Warmup and Nutrition & Fueling PDFs.",
-      bodyHtml: `<p style="margin: 0 0 12px;">Upgrade to <strong>Basic ($39/month)</strong> to unlock the full hitting, fielding, and mindset drill libraries, all 9 workout programs, and the Pre-Game Warmup and Nutrition &amp; Fueling PDFs.</p>
+        "Upgrade to Basic ($39/month) to unlock the full hitting, fielding, and mindset drill libraries, all 7 workout programs, and the Pre-Game Warmup and Baseball Athlete Nutrition guides.",
+      bodyHtml: `<p style="margin: 0 0 12px;">Upgrade to <strong>Basic ($39/month)</strong> to unlock the full hitting, fielding, and mindset drill libraries, all 7 workout programs, and the Pre-Game Warmup and Baseball Athlete Nutrition guides.</p>
         <p style="margin: 0;">Memorable ($119/month) and Elite ($179/month) add monthly coaching submissions, accountability support, and personalized plans from Coach Broc.</p>`,
     };
   }
 
   return {
     bodyText:
-      "Take a look at the hitting and fielding video libraries and pick one drill to focus on this week. Also explore the workout programs and mindset library to strengthen confidence and game focus.",
-    bodyHtml: `<p style="margin: 0 0 12px;">Take a look at the hitting and fielding video libraries and choose one drill to focus on this week.</p>
-      <p style="margin: 0;">Also explore your workout programs and the mindset library to strengthen confidence, focus, and in-game composure.</p>`,
+      "Take a look at the hitting and fielding video libraries and pick one drill to focus on this week. Also explore your workout programs and bonus guides in Resources to strengthen confidence and game focus.",
+      bodyHtml: `<p style="margin: 0 0 12px;">Take a look at the hitting and fielding video libraries and choose one drill to focus on this week.</p>
+      <p style="margin: 0;">Also explore your workout programs and bonus guides in Resources, plus the mindset library, to strengthen confidence, focus, and in-game composure.</p>`,
   };
 }
 

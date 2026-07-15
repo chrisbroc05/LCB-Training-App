@@ -27,9 +27,9 @@ export const membershipTiers: MembershipTier[] = [
     summary: "Self-guided training with the full drill library, workouts, and PDF resources.",
     features: [
       "Full hitting, fielding, and mindset video drill library",
-      "All 9 workout programs (Strength, Speed-Agility, Mobility for all ages)",
+      "All 7 workout programs (Strength, Speed-Agility, Mobility for all ages)",
       "Pre-Game Warmup Routine PDF",
-      "Nutrition & Fueling Guide PDF",
+      "Baseball Athlete Nutrition Guide PDF",
       "Self-guided — no coaching submissions",
     ],
   },

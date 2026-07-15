@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import LockedFeaturePanel from "@/app/LockedFeaturePanel";
-import WorkoutResourceCard from "@/app/workouts/WorkoutResourceCard";
+import ResourceGuideCard from "@/app/resources/ResourceGuideCard";
 import { canAccessWorkoutPrograms, type DatabaseTier } from "@/lib/membership";
 import { workoutResourceGroups } from "@/lib/workout-resources";
 import { getWorkoutPdfUrl } from "@/lib/workouts";
@@ -18,14 +18,14 @@ type PhaseProgram = {
   title: string;
   description: string;
   phase: PhaseNumber;
-  pdfUrl: string;
+  filename: string;
 };
 
 type WorkoutGroup = {
   label: string;
   ageKey: "8-11" | "12-15" | "16-18";
   mobilityDescription: string;
-  mobilityPdfUrl: string;
+  mobilityFilename: string;
   phasePrograms: PhaseProgram[];
 };
 
@@ -52,49 +52,49 @@ const workoutGroups: WorkoutGroup[] = [
     label: "Ages 8-11",
     ageKey: "8-11",
     mobilityDescription: "Increase flexibility and joint range for safer athletic movement.",
-    mobilityPdfUrl: "/workouts/LCB_Mobility_8-11.pdf",
+    mobilityFilename: "LCB_Mobility_8-11.pdf",
     phasePrograms: [
       {
         title: "Strength Training",
         description: getPhaseDescription("strength", 1),
         category: "strength",
         phase: 1,
-        pdfUrl: "/workouts/LCB_Strength_8-11_Phase1.pdf",
+        filename: "LCB_Strength_8-11_Phase1.pdf",
       },
       {
         title: "Strength Training",
         description: getPhaseDescription("strength", 2),
         category: "strength",
         phase: 2,
-        pdfUrl: "/workouts/LCB_Strength_8-11_Phase2.pdf",
+        filename: "LCB_Strength_8-11_Phase2.pdf",
       },
       {
         title: "Strength Training",
         description: getPhaseDescription("strength", 3),
         category: "strength",
         phase: 3,
-        pdfUrl: "/workouts/LCB_Strength_8-11_Phase3.pdf",
+        filename: "LCB_Strength_8-11_Phase3.pdf",
       },
       {
         title: "Speed & Agility",
         description: getPhaseDescription("speed", 1),
         category: "speed",
         phase: 1,
-        pdfUrl: "/workouts/LCB_Speed-Agility_8-11_Phase1.pdf",
+        filename: "LCB_Speed-Agility_8-11_Phase1.pdf",
       },
       {
         title: "Speed & Agility",
         description: getPhaseDescription("speed", 2),
         category: "speed",
         phase: 2,
-        pdfUrl: "/workouts/LCB_Speed-Agility_8-11_Phase2.pdf",
+        filename: "LCB_Speed-Agility_8-11_Phase2.pdf",
       },
       {
         title: "Speed & Agility",
         description: getPhaseDescription("speed", 3),
         category: "speed",
         phase: 3,
-        pdfUrl: "/workouts/LCB_Speed-Agility_8-11_Phase3.pdf",
+        filename: "LCB_Speed-Agility_8-11_Phase3.pdf",
       },
     ],
   },
@@ -102,49 +102,49 @@ const workoutGroups: WorkoutGroup[] = [
     label: "Ages 12-15",
     ageKey: "12-15",
     mobilityDescription: "Improve movement quality and recovery through targeted mobility work.",
-    mobilityPdfUrl: "/workouts/LCB_Mobility_12-15.pdf",
+    mobilityFilename: "LCB_Mobility_12-15.pdf",
     phasePrograms: [
       {
         title: "Strength Training",
         description: getPhaseDescription("strength", 1),
         category: "strength",
         phase: 1,
-        pdfUrl: "/workouts/LCB_Strength_12-15_Phase1.pdf",
+        filename: "LCB_Strength_12-15_Phase1.pdf",
       },
       {
         title: "Strength Training",
         description: getPhaseDescription("strength", 2),
         category: "strength",
         phase: 2,
-        pdfUrl: "/workouts/LCB_Strength_12-15_Phase2.pdf",
+        filename: "LCB_Strength_12-15_Phase2.pdf",
       },
       {
         title: "Strength Training",
         description: getPhaseDescription("strength", 3),
         category: "strength",
         phase: 3,
-        pdfUrl: "/workouts/LCB_Strength_12-15_Phase3.pdf",
+        filename: "LCB_Strength_12-15_Phase3.pdf",
       },
       {
         title: "Speed & Agility",
         description: getPhaseDescription("speed", 1),
         category: "speed",
         phase: 1,
-        pdfUrl: "/workouts/LCB_Speed-Agility_12-15_Phase1.pdf",
+        filename: "LCB_Speed-Agility_12-15_Phase1.pdf",
       },
       {
         title: "Speed & Agility",
         description: getPhaseDescription("speed", 2),
         category: "speed",
         phase: 2,
-        pdfUrl: "/workouts/LCB_Speed-Agility_12-15_Phase2.pdf",
+        filename: "LCB_Speed-Agility_12-15_Phase2.pdf",
       },
       {
         title: "Speed & Agility",
         description: getPhaseDescription("speed", 3),
         category: "speed",
         phase: 3,
-        pdfUrl: "/workouts/LCB_Speed-Agility_12-15_Phase3.pdf",
+        filename: "LCB_Speed-Agility_12-15_Phase3.pdf",
       },
     ],
   },
@@ -152,49 +152,49 @@ const workoutGroups: WorkoutGroup[] = [
     label: "Ages 16-18",
     ageKey: "16-18",
     mobilityDescription: "Maintain hip, shoulder, and spine mobility to support performance.",
-    mobilityPdfUrl: "/workouts/LCB_Mobility_16-18.pdf",
+    mobilityFilename: "LCB_Mobility_16-18.pdf",
     phasePrograms: [
       {
         title: "Strength Training",
         description: getPhaseDescription("strength", 1),
         category: "strength",
         phase: 1,
-        pdfUrl: "/workouts/LCB_Strength_16-18_Phase1.pdf",
+        filename: "LCB_Strength_16-18_Phase1.pdf",
       },
       {
         title: "Strength Training",
         description: getPhaseDescription("strength", 2),
         category: "strength",
         phase: 2,
-        pdfUrl: "/workouts/LCB_Strength_16-18_Phase2.pdf",
+        filename: "LCB_Strength_16-18_Phase2.pdf",
       },
       {
         title: "Strength Training",
         description: getPhaseDescription("strength", 3),
         category: "strength",
         phase: 3,
-        pdfUrl: "/workouts/LCB_Strength_16-18_Phase3.pdf",
+        filename: "LCB_Strength_16-18_Phase3.pdf",
       },
       {
         title: "Speed & Agility",
         description: getPhaseDescription("speed", 1),
         category: "speed",
         phase: 1,
-        pdfUrl: "/workouts/LCB_Speed-Agility_16-18_Phase1.pdf",
+        filename: "LCB_Speed-Agility_16-18_Phase1.pdf",
       },
       {
         title: "Speed & Agility",
         description: getPhaseDescription("speed", 2),
         category: "speed",
         phase: 2,
-        pdfUrl: "/workouts/LCB_Speed-Agility_16-18_Phase2.pdf",
+        filename: "LCB_Speed-Agility_16-18_Phase2.pdf",
       },
       {
         title: "Speed & Agility",
         description: getPhaseDescription("speed", 3),
         category: "speed",
         phase: 3,
-        pdfUrl: "/workouts/LCB_Speed-Agility_16-18_Phase3.pdf",
+        filename: "LCB_Speed-Agility_16-18_Phase3.pdf",
       },
     ],
   },
@@ -206,15 +206,7 @@ const phaseLabels: Record<PhaseNumber, string> = {
   3: "Phase 3 (Weeks 9-12)",
 };
 
-function toProtectedPdfUrl(publicPath: string) {
-  const filename = publicPath.split("/").pop();
-  if (!filename) {
-    return publicPath;
-  }
-  return getWorkoutPdfUrl(filename);
-}
-
-export default async function WorkoutsPage() {
+export default async function ResourcesPage() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     redirect("/auth");
@@ -236,9 +228,9 @@ export default async function WorkoutsPage() {
   if (!canAccessWorkoutPrograms(membershipTier)) {
     return (
       <LockedFeaturePanel
-        title="Workout Library"
-        description="Download strength, speed, and mobility programs tailored by age group."
-        message="Workout programs are available on Basic, Memorable, and Elite memberships. Upgrade to Basic or above to unlock all 9 downloadable workout programs."
+        title="Resources"
+        description="Download workout programs and bonus guides tailored to your membership tier."
+        message="Resources are available on Basic, Memorable, and Elite memberships. Upgrade to Basic or above to unlock all 7 downloadable workout programs."
         upgradeLabel="Upgrade to Basic or Above"
         upgradeHref="/upgrade?reason=basic-required"
       />
@@ -248,81 +240,89 @@ export default async function WorkoutsPage() {
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 sm:py-14 md:py-20">
       <section className="rounded-3xl border border-[#18243a] bg-[#0b1324]/80 p-5 sm:p-8">
-        <h1 className="text-2xl font-semibold leading-tight text-zinc-100 sm:text-3xl">Workout Library</h1>
+        <h1 className="text-2xl font-semibold leading-tight text-zinc-100 sm:text-3xl">Resources</h1>
         <p className="mt-2 text-zinc-300">
-          All strength, speed, and mobility programs are unlocked for your membership tier.
+          Download workout programs and bonus guides included with your membership tier.
         </p>
       </section>
 
-      <div className="mt-8 space-y-6 sm:space-y-8">
-        {workoutGroups.map((group) => (
-          <section
-            key={group.label}
-            className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6"
-          >
-            <h2 className="text-xl font-semibold text-zinc-100 sm:text-2xl">{group.label}</h2>
+      <section className="mt-8 rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
+        <h2 className="text-xl font-semibold text-zinc-100 sm:text-2xl">Workout Programs</h2>
+        <p className="mt-2 text-sm text-zinc-400">
+          Strength, speed, and mobility programs organized by age group.
+        </p>
 
-            {(["strength", "speed"] as const).map((categoryKey) => {
-              const categoryPrograms = group.phasePrograms
-                .filter((program) => program.category === categoryKey)
-                .sort((a, b) => a.phase - b.phase);
-              const categoryLabel = categoryKey === "strength" ? "Strength Training" : "Speed & Agility";
+        <div className="mt-6 space-y-6 sm:space-y-8">
+          {workoutGroups.map((group) => (
+            <div
+              key={group.label}
+              className="rounded-xl border border-[#2b3650] bg-black/20 p-4 sm:p-5"
+            >
+              <h3 className="text-lg font-semibold text-zinc-100 sm:text-xl">{group.label}</h3>
 
-              return (
-                <div key={`${group.ageKey}-${categoryKey}`} className="mt-5">
-                  <h3 className="text-lg font-semibold text-zinc-100">{categoryLabel}</h3>
-                  <p className="mt-1 text-sm text-zinc-400">
-                    Progressive 12-week track split into three phases.
-                  </p>
+              {(["strength", "speed"] as const).map((categoryKey) => {
+                const categoryPrograms = group.phasePrograms
+                  .filter((program) => program.category === categoryKey)
+                  .sort((a, b) => a.phase - b.phase);
+                const categoryLabel =
+                  categoryKey === "strength" ? "Strength Training" : "Speed & Agility";
 
-                  <div className="mt-3 grid gap-4 md:grid-cols-3">
-                    {categoryPrograms.map((program) => (
-                      <article
-                        key={`${group.label}-${program.title}-phase-${program.phase}`}
-                        className="rounded-xl border border-[#2b3650] bg-black/30 p-4 sm:p-5"
-                      >
-                        <h4 className="text-base font-semibold text-zinc-100">
-                          {phaseLabels[program.phase]}
-                        </h4>
-                        <p className="mt-2 text-sm text-zinc-300">{program.description}</p>
-                        <Link
-                          href={toProtectedPdfUrl(program.pdfUrl)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="mt-4 inline-flex rounded-full bg-[#22c55e] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[#35db72]"
+                return (
+                  <div key={`${group.ageKey}-${categoryKey}`} className="mt-5">
+                    <h4 className="text-base font-semibold text-zinc-100">{categoryLabel}</h4>
+                    <p className="mt-1 text-sm text-zinc-400">
+                      Progressive 12-week track split into three phases.
+                    </p>
+
+                    <div className="mt-3 grid gap-4 md:grid-cols-3">
+                      {categoryPrograms.map((program) => (
+                        <article
+                          key={`${group.label}-${program.title}-phase-${program.phase}`}
+                          className="rounded-xl border border-[#2b3650] bg-black/30 p-4 sm:p-5"
                         >
-                          View / Download
-                        </Link>
-                      </article>
-                    ))}
+                          <h5 className="text-base font-semibold text-zinc-100">
+                            {phaseLabels[program.phase]}
+                          </h5>
+                          <p className="mt-2 text-sm text-zinc-300">{program.description}</p>
+                          <Link
+                            href={getWorkoutPdfUrl(program.filename)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-4 inline-flex rounded-full bg-[#22c55e] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[#35db72]"
+                          >
+                            Download
+                          </Link>
+                        </article>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
 
-            <div className="mt-5">
-              <h3 className="text-lg font-semibold text-zinc-100">Mobility</h3>
-              <p className="mt-1 text-sm text-zinc-400">Always unlocked for active members.</p>
-              <article className="mt-3 rounded-xl border border-[#2b3650] bg-black/30 p-4 sm:p-5 md:max-w-md">
-                <p className="text-sm text-zinc-300">{group.mobilityDescription}</p>
-                <Link
-                  href={toProtectedPdfUrl(group.mobilityPdfUrl)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-4 inline-flex rounded-full bg-[#22c55e] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[#35db72]"
-                >
-                  View / Download
-                </Link>
-              </article>
+              <div className="mt-5">
+                <h4 className="text-base font-semibold text-zinc-100">Mobility</h4>
+                <p className="mt-1 text-sm text-zinc-400">Always unlocked for active members.</p>
+                <article className="mt-3 rounded-xl border border-[#2b3650] bg-black/30 p-4 sm:p-5 md:max-w-md">
+                  <p className="text-sm text-zinc-300">{group.mobilityDescription}</p>
+                  <Link
+                    href={getWorkoutPdfUrl(group.mobilityFilename)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-4 inline-flex rounded-full bg-[#22c55e] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[#35db72]"
+                  >
+                    Download
+                  </Link>
+                </article>
+              </div>
             </div>
-          </section>
-        ))}
-      </div>
+          ))}
+        </div>
+      </section>
 
       <section className="mt-8 rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
-        <h2 className="text-xl font-semibold text-zinc-100 sm:text-2xl">Downloadable Resources</h2>
+        <h2 className="text-xl font-semibold text-zinc-100 sm:text-2xl">Guides &amp; Resources</h2>
         <p className="mt-2 text-sm text-zinc-400">
-          Additional guides and workbooks unlocked based on your membership tier.
+          Bonus PDFs unlocked based on your membership tier.
         </p>
 
         <div className="mt-6 space-y-6">
@@ -331,7 +331,7 @@ export default async function WorkoutsPage() {
               <h3 className="text-lg font-semibold text-zinc-100">{group.heading}</h3>
               <div className="mt-3 grid gap-4 md:grid-cols-2">
                 {group.resources.map((resource) => (
-                  <WorkoutResourceCard
+                  <ResourceGuideCard
                     key={resource.filename}
                     resource={resource}
                     membershipTier={membershipTier}

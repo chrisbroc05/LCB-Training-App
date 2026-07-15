@@ -9,15 +9,15 @@ import {
 } from "@/lib/workout-resources";
 import type { DatabaseTier } from "@/lib/membership";
 
-type WorkoutResourceCardProps = {
+type ResourceGuideCardProps = {
   resource: WorkoutResource;
   membershipTier: DatabaseTier;
 };
 
-export default function WorkoutResourceCard({
+export default function ResourceGuideCard({
   resource,
   membershipTier,
-}: WorkoutResourceCardProps) {
+}: ResourceGuideCardProps) {
   const hasAccess = canAccessWorkoutResource(membershipTier, resource.requiredTier);
 
   return (
@@ -32,7 +32,7 @@ export default function WorkoutResourceCard({
           rel="noopener noreferrer"
           className="mt-4 inline-flex rounded-full bg-[#22c55e] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[#35db72]"
         >
-          View / Download
+          Download
         </Link>
       ) : (
         <div className="mt-4 space-y-3">
