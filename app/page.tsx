@@ -1,6 +1,6 @@
 import Link from "next/link";
 import BrandLogo from "@/app/BrandLogo";
-import CoachBioSection from "@/app/CoachBioSection";
+import CoachBioSection from "@/components/CoachBioSection";
 import LandingPricingSection from "@/app/LandingPricingSection";
 
 const introVideos = [
@@ -24,17 +24,17 @@ const introVideos = [
 const testimonials = [
   {
     quote:
-      "What sets LCB Training apart is the intention behind the expertise. It's not just about mechanics — it's about building strength, sharpening mindset, and mastering strategy. The week-to-week data tracking keeps us motivated, and the results speak for themselves. My son's confidence — and the whole team's — has skyrocketed.",
+      "What sets LCB Training apart is the intention behind the expertise. It's not just about mechanics - it's about building strength, sharpening mindset, and mastering strategy. The week-to-week data tracking keeps us motivated, and the results speak for themselves. My son's confidence - and the whole team's - has skyrocketed.",
     attribution: "Parent of a Freshman 3rd Baseman",
   },
   {
     quote:
-      "Hey Chris, thanks for today. My son feels great and is acting more confident — so appreciate you and all the time you put in with him.",
+      "Hey Chris, thanks for today. My son feels great and is acting more confident - so appreciate you and all the time you put in with him.",
     attribution: "Parent of a 12-Year-Old Player",
   },
   {
     quote:
-      "I hit around .350 and batted leadoff for most of the season. That's way better than in the past. I'm definitely happy with the season — especially with my hitting performance.",
+      "I hit around .350 and batted leadoff for most of the season. That's way better than in the past. I'm definitely happy with the season - especially with my hitting performance.",
     attribution: "Varsity Infielder, Class of 2026",
   },
   {
@@ -65,7 +65,7 @@ export default function Home() {
         <p className="mt-5 max-w-2xl text-base leading-relaxed text-zinc-300 sm:text-lg">
           LCB Training helps athletes grow as complete competitors through skill training,
           movement work, and accountability that carries into games, school, and everyday life.
-          New members start with one free coaching submission — swing analysis or mental game
+          New members start with one free coaching submission - swing analysis or mental game
           support with personal feedback from Coach Broc.
         </p>
         <div className="mt-8 flex flex-wrap gap-3 sm:gap-4">
