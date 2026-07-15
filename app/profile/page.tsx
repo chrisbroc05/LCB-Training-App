@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import type { DatabaseTier } from "@/lib/membership";
 import { stripe } from "@/lib/stripe";
 import { isAdminEmail } from "@/lib/admin";
+import { formatAssessmentCallDateTime } from "@/lib/assessment-call";
 
 type ProfilePageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -132,6 +133,8 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
         stripeCustomerId: true,
         stripeSubscriptionId: true,
         subscriptionCurrentPeriodEnd: true,
+        assessmentCallBooked: true,
+        assessmentCallDate: true,
       },
     }),
     prisma.swingAnalysisSubmission.findMany({
@@ -201,6 +204,20 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
           <h2 className="text-lg font-semibold text-zinc-100">Account Info</h2>
           <p className="mt-3 text-sm text-zinc-300">Name: {user.name ?? "Not provided"}</p>
           <p className="mt-1 text-sm text-zinc-300">Email: {user.email}</p>
+          {user.membershipTier === "FREE" ? (
+            <p className="mt-3 text-sm text-zinc-300">
+              {user.assessmentCallBooked && user.assessmentCallDate ? (
+                <>
+                  Assessment Call Scheduled:{" "}
+                  <span className="font-medium text-[#9df3bd]">
+                    {formatAssessmentCallDateTime(user.assessmentCallDate)}
+                  </span>
+                </>
+              ) : (
+                <>Assessment Call: Not yet scheduled</>
+              )}
+            </p>
+          ) : null}
           <div className="mt-4 inline-flex rounded-full border border-[#22c55e]/40 bg-[#22c55e]/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#9df3bd]">
             {formatTierLabel(user.membershipTier)}
           </div>

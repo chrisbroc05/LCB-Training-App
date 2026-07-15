@@ -19,6 +19,7 @@ import {
   membershipTiers,
   type DatabaseTier,
 } from "@/lib/membership";
+import { formatAssessmentCallDateTime } from "@/lib/assessment-call";
 
 type DashboardPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -144,6 +145,8 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       subscriptionCurrentPeriodEnd: true,
       subscriptionCancelAtPeriodEnd: true,
       stripeSubscriptionId: true,
+      assessmentCallBooked: true,
+      assessmentCallDate: true,
     },
   });
 
@@ -351,26 +354,45 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
               )}
             </article>
 
-            <article className="rounded-2xl border border-[#22c55e]/50 bg-[#22c55e]/10 p-4 sm:p-6">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <h2 className="text-lg font-semibold text-zinc-100">Free Player Assessment Call</h2>
-                <span className="rounded-full bg-[#22c55e]/20 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#9df3bd]">
-                  Free
-                </span>
-              </div>
-              <p className="mt-3 text-sm text-zinc-300">
-                Book a free 20-minute video call with Coach Broc to discuss your player&apos;s goals
-                and find the right training plan for their development.
-              </p>
-              <a
-                href="https://calendly.com/chrisbroc05/30min"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-4 inline-flex rounded-full bg-[#22c55e] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[#35db72]"
-              >
-                Book Your Free Call
-              </a>
-            </article>
+            {userRecord.assessmentCallBooked && userRecord.assessmentCallDate ? (
+              <article className="rounded-2xl border border-[#22c55e]/40 bg-[#0A1628] p-4 sm:p-6">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <h2 className="text-lg font-semibold text-zinc-100">
+                    Your Assessment Call is Scheduled
+                  </h2>
+                  <span className="rounded-full border border-[#22c55e]/40 bg-[#22c55e]/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#9df3bd]">
+                    Scheduled
+                  </span>
+                </div>
+                <p className="mt-3 text-base font-medium text-[#9df3bd]">
+                  {formatAssessmentCallDateTime(userRecord.assessmentCallDate)}
+                </p>
+                <p className="mt-3 text-sm text-zinc-300">
+                  You will receive a Google Meet link in your Calendly confirmation email.
+                </p>
+              </article>
+            ) : (
+              <article className="rounded-2xl border border-[#22c55e]/50 bg-[#22c55e]/10 p-4 sm:p-6">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <h2 className="text-lg font-semibold text-zinc-100">Free Player Assessment Call</h2>
+                  <span className="rounded-full bg-[#22c55e]/20 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#9df3bd]">
+                    Free
+                  </span>
+                </div>
+                <p className="mt-3 text-sm text-zinc-300">
+                  Book a free 20-minute video call with Coach Broc to discuss your player&apos;s goals
+                  and find the right training plan for their development.
+                </p>
+                <a
+                  href="https://calendly.com/chrisbroc05/30min"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-4 inline-flex rounded-full bg-[#22c55e] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[#35db72]"
+                >
+                  Book Your Free Call
+                </a>
+              </article>
+            )}
           </div>
         ) : membershipTier === "MEMORABLE" || membershipTier === "ELITE" ? (
           <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">

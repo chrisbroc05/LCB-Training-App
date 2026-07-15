@@ -2,7 +2,9 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin";
+import { prisma } from "@/lib/prisma";
 import AdminPanel from "@/app/admin/AdminPanel";
+import FreeMembersSection from "@/app/admin/FreeMembersSection";
 
 export default async function AdminPage() {
   const session = await getServerSession(authOptions);
@@ -11,6 +13,19 @@ export default async function AdminPage() {
   }
   const cloudinaryUploadEnabled =
     process.env.CLOUDINARY_ADMIN_RESPONSE_UPLOAD_ENABLED?.toLowerCase() === "true";
+
+  const freeMembers = await prisma.user.findMany({
+    where: { membershipTier: "FREE" },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      signupDate: true,
+      assessmentCallBooked: true,
+      assessmentCallDate: true,
+    },
+    orderBy: { signupDate: "desc" },
+  });
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 sm:py-14 md:py-20">
@@ -21,6 +36,14 @@ export default async function AdminPage() {
         </p>
         <AdminPanel cloudinaryUploadEnabled={cloudinaryUploadEnabled} />
       </section>
+
+      <FreeMembersSection
+        initialMembers={freeMembers.map((member) => ({
+          ...member,
+          signupDate: member.signupDate.toISOString(),
+          assessmentCallDate: member.assessmentCallDate?.toISOString() ?? null,
+        }))}
+      />
     </div>
   );
 }

@@ -54,6 +54,8 @@ model User {
   coachingSubmissionsUsedThisMonth Int          @default(0)
   coachingSubmissionPeriod         String?
   eliteRolloverCredits             Int          @default(0)
+  assessmentCallBooked             Boolean      @default(false)
+  assessmentCallDate               DateTime?
   membershipTier         MembershipTier         @default(FREE)
   subscriptionStatus     SubscriptionStatus     @default(ACTIVE)
   stripeCustomerId       String?                @unique
