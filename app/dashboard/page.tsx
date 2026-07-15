@@ -367,9 +367,17 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                 <p className="mt-3 text-base font-medium text-[#9df3bd]">
                   {formatAssessmentCallDateTime(userRecord.assessmentCallDate)}
                 </p>
-                <p className="mt-3 text-sm text-zinc-300">
-                  You will receive a Google Meet link in your Calendly confirmation email.
+                <p className="mt-2 text-xs text-zinc-400">
+                  Google Meet link will be in your Calendly confirmation email
                 </p>
+                <a
+                  href="https://calendly.com/chrisbroc05/30min"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-2 inline-block text-sm font-medium text-[#98b144] transition hover:text-[#b5d84f]"
+                >
+                  Reschedule or cancel your call
+                </a>
               </article>
             ) : (
               <article className="rounded-2xl border border-[#22c55e]/50 bg-[#22c55e]/10 p-4 sm:p-6">

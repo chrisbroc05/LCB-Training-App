@@ -205,18 +205,29 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
           <p className="mt-3 text-sm text-zinc-300">Name: {user.name ?? "Not provided"}</p>
           <p className="mt-1 text-sm text-zinc-300">Email: {user.email}</p>
           {user.membershipTier === "FREE" ? (
-            <p className="mt-3 text-sm text-zinc-300">
-              {user.assessmentCallBooked && user.assessmentCallDate ? (
-                <>
+            user.assessmentCallBooked && user.assessmentCallDate ? (
+              <div className="mt-3 space-y-2">
+                <p className="text-sm text-zinc-300">
                   Assessment Call Scheduled:{" "}
                   <span className="font-medium text-[#9df3bd]">
                     {formatAssessmentCallDateTime(user.assessmentCallDate)}
                   </span>
-                </>
-              ) : (
-                <>Assessment Call: Not yet scheduled</>
-              )}
-            </p>
+                </p>
+                <p className="text-xs text-zinc-400">
+                  Google Meet link will be in your Calendly confirmation email
+                </p>
+                <a
+                  href="https://calendly.com/chrisbroc05/30min"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block text-sm font-medium text-[#98b144] transition hover:text-[#b5d84f]"
+                >
+                  Reschedule or cancel your call
+                </a>
+              </div>
+            ) : (
+              <p className="mt-3 text-sm text-zinc-300">Assessment Call: Not yet scheduled</p>
+            )
           ) : null}
           <div className="mt-4 inline-flex rounded-full border border-[#22c55e]/40 bg-[#22c55e]/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#9df3bd]">
             {formatTierLabel(user.membershipTier)}

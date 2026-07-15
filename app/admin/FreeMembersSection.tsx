@@ -1,7 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { formatAssessmentCallDateTime } from "@/lib/assessment-call";
+import {
+  formatAssessmentCallDateTime,
+  toAssessmentCallInputValues,
+} from "@/lib/assessment-call";
 
 export type FreeMemberRecord = {
   id: string;
@@ -27,6 +30,7 @@ export default function FreeMembersSection({
 }) {
   const [members, setMembers] = useState(initialMembers);
   const [activeUserId, setActiveUserId] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
   const [callDate, setCallDate] = useState("");
   const [callTime, setCallTime] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -34,13 +38,28 @@ export default function FreeMembersSection({
 
   const handleOpenForm = (userId: string) => {
     setActiveUserId(userId);
+    setIsEditing(false);
     setCallDate("");
     setCallTime("");
     setError("");
   };
 
+  const handleOpenEditForm = (member: FreeMemberRecord) => {
+    if (!member.assessmentCallDate) {
+      return;
+    }
+
+    const inputValues = toAssessmentCallInputValues(new Date(member.assessmentCallDate));
+    setActiveUserId(member.id);
+    setIsEditing(true);
+    setCallDate(inputValues.callDate);
+    setCallTime(inputValues.callTime);
+    setError("");
+  };
+
   const handleCancel = () => {
     setActiveUserId(null);
+    setIsEditing(false);
     setCallDate("");
     setCallTime("");
     setError("");
@@ -99,7 +118,8 @@ export default function FreeMembersSection({
     <section className="mt-8 rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
       <h2 className="text-xl font-semibold text-zinc-100 sm:text-2xl">Free Members</h2>
       <p className="mt-2 text-sm text-zinc-400">
-        Track free tier signups and mark Player Assessment Calls as booked.
+        Track free tier signups and mark Player Assessment Calls as booked. All call times use
+        Central Time (America/Chicago).
       </p>
 
       {members.length === 0 ? (
@@ -136,20 +156,37 @@ export default function FreeMembersSection({
                     </p>
                   </div>
 
-                  {!member.assessmentCallBooked && !isFormOpen ? (
-                    <button
-                      type="button"
-                      onClick={() => handleOpenForm(member.id)}
-                      className="inline-flex shrink-0 items-center justify-center rounded-full bg-[#22c55e] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[#35db72]"
-                    >
-                      Mark Call Booked
-                    </button>
+                  {!isFormOpen ? (
+                    <div className="flex shrink-0 flex-wrap gap-2">
+                      {!member.assessmentCallBooked ? (
+                        <button
+                          type="button"
+                          onClick={() => handleOpenForm(member.id)}
+                          className="inline-flex items-center justify-center rounded-full bg-[#22c55e] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[#35db72]"
+                        >
+                          Mark Call Booked
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEditForm(member)}
+                          className="inline-flex items-center justify-center rounded-full border border-[#2b3650] bg-black/40 px-4 py-2 text-sm font-semibold text-zinc-200 transition hover:border-[#7f9434] hover:text-[#98b144]"
+                        >
+                          Edit
+                        </button>
+                      )}
+                    </div>
                   ) : null}
                 </div>
 
                 {isFormOpen ? (
                   <div className="mt-4 rounded-xl border border-[#2b3650] bg-[#0A1628] p-4">
-                    <p className="text-sm font-medium text-zinc-200">Schedule assessment call</p>
+                    <p className="text-sm font-medium text-zinc-200">
+                      {isEditing ? "Edit assessment call" : "Schedule assessment call"}
+                    </p>
+                    <p className="mt-1 text-xs text-zinc-400">
+                      Enter the date and time in Central Time (America/Chicago).
+                    </p>
                     <div className="mt-4 grid gap-4 sm:grid-cols-2">
                       <label className="block text-sm text-zinc-300">
                         Call date
