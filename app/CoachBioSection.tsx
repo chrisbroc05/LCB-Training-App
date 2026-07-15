@@ -1,5 +1,5 @@
 const accolades = [
-  "NJCAA National Champion — Oakton Community College",
+  "NJCAA National Champion - Oakton Community College",
   "Gold Glove Award",
   "2x All-Conference College Athlete",
   "Academic All-American",
@@ -30,7 +30,7 @@ export default function CoachBioSection() {
         <div className="mx-auto mt-8 h-px w-full max-w-xl bg-[#52B788]" />
 
         <p className="mx-auto mt-8 max-w-2xl text-center text-base leading-relaxed text-[#334155] sm:text-lg">
-          I have spent 12+ years working with baseball players at every level — helping them not
+          I have spent 12+ years working with baseball players at every level - helping them not
           just become better athletes, but more confident people. As a current High School Varsity
           Coach, my goal is simple: build confidence on and off the field. Every player I work with
           gets my full attention, honest feedback, and a plan built around their individual
@@ -57,7 +57,7 @@ export default function CoachBioSection() {
         </div>
 
         <p className="mt-10 text-center text-xl font-bold italic text-[#52B788] sm:text-2xl">
-          &ldquo;Work Hard. Be Memorable.&rdquo;
+          "Work Hard. Be Memorable."
         </p>
       </div>
     </section>
