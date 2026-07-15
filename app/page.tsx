@@ -1,5 +1,6 @@
 import Link from "next/link";
 import BrandLogo from "@/app/BrandLogo";
+import CoachBioSection from "@/app/CoachBioSection";
 import LandingPricingSection from "@/app/LandingPricingSection";
 
 const introVideos = [
@@ -82,6 +83,8 @@ export default function Home() {
           </Link>
         </div>
       </section>
+
+      <CoachBioSection />
 
       <section className="mt-14">
         <h2 className="text-2xl font-semibold text-zinc-100 sm:text-3xl">What We Train</h2>

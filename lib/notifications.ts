@@ -369,16 +369,16 @@ export async function sendSubmissionResponseEmail(params: {
   const freeTierCtaText = isFreeTier
     ? `Want to keep progressing?
 
-Basic ($39/month) unlocks the full hitting, fielding, and mindset libraries.
-Memorable ($119/month) unlocks ongoing coaching submission feedback.
+Basic ($49/month) unlocks the full hitting, fielding, and mindset libraries.
+Memorable ($149/month) unlocks ongoing coaching submission feedback.
 Upgrade now in Settings: ${settingsUrl}
 `
     : "";
   const freeTierCtaHtml = isFreeTier
     ? `<div style="margin-top:16px; padding:12px; border:1px solid #2b3650; border-radius:10px; background:#060b16;">
         <p style="margin:0 0 8px; font-weight:700; color:#98b144;">Keep building your progress</p>
-        <p style="margin:0 0 6px;"><strong>Basic ($39/month):</strong> Full hitting, fielding, and mindset video libraries.</p>
-        <p style="margin:0;"><strong>Memorable ($119/month):</strong> Ongoing coaching submission feedback.</p>
+        <p style="margin:0 0 6px;"><strong>Basic ($49/month):</strong> Full hitting, fielding, and mindset video libraries.</p>
+        <p style="margin:0;"><strong>Memorable ($149/month):</strong> Ongoing coaching submission feedback.</p>
         <p style="margin:8px 0 0;"><a href="${escapeHtml(
           settingsUrl,
         )}" target="_blank" rel="noopener noreferrer" style="color:#8fd7ff; text-decoration:underline;">Upgrade your membership in Settings</a></p>
@@ -566,9 +566,9 @@ function getOnboardingMembershipSummaryHtml(membershipTier: DatabaseTier) {
   if (membershipTier === "FREE") {
     return `<div style="margin-top:16px; padding:14px; border:1px solid #2b3650; border-radius:10px; background:#060b16;">
         <p style="margin:0 0 10px; font-weight:700; color:#98b144;">Membership options</p>
-        <p style="margin:0 0 6px;"><strong>Basic ($39/month):</strong> Full drill library, all 7 workout programs, Pre-Game Warmup PDF, and Baseball Athlete Nutrition Guide PDF.</p>
-        <p style="margin:0 0 6px;"><strong>Memorable ($119/month):</strong> Everything in Basic plus 2 coaching submissions per month, accountability check-ins, and coaching PDFs.</p>
-        <p style="margin:0;"><strong>Elite ($179/month):</strong> Everything in Memorable plus 4 submissions with rollover, priority 24-hour response, group coaching calls, and personalized plans.</p>
+        <p style="margin:0 0 6px;"><strong>Basic ($49/month):</strong> Full drill library, all 7 workout programs, Pre-Game Warmup PDF, and Baseball Athlete Nutrition Guide PDF.</p>
+        <p style="margin:0 0 6px;"><strong>Memorable ($149/month):</strong> Everything in Basic plus 2 coaching submissions per month, accountability check-ins, and coaching PDFs.</p>
+        <p style="margin:0;"><strong>Elite ($249/month):</strong> Everything in Memorable plus 4 submissions with rollover, priority 24-hour response, group coaching calls, and personalized plans.</p>
         <p style="margin:10px 0 0;"><a href="${escapeHtml(
           settingsUrl,
         )}" target="_blank" rel="noopener noreferrer" style="color:#8fd7ff; text-decoration:underline;">View plans in Account settings</a></p>
@@ -578,8 +578,8 @@ function getOnboardingMembershipSummaryHtml(membershipTier: DatabaseTier) {
   if (membershipTier === "BASIC") {
     return `<div style="margin-top:16px; padding:14px; border:1px solid #2b3650; border-radius:10px; background:#060b16;">
         <p style="margin:0 0 10px; font-weight:700; color:#98b144;">Want coaching submissions?</p>
-        <p style="margin:0 0 6px;"><strong>Memorable ($119/month):</strong> 2 coaching submissions per month, 48-hour feedback, accountability check-ins, and coaching PDFs.</p>
-        <p style="margin:0;"><strong>Elite ($179/month):</strong> 4 submissions with rollover, priority 24-hour response, group coaching calls, and personalized plans.</p>
+        <p style="margin:0 0 6px;"><strong>Memorable ($149/month):</strong> 2 coaching submissions per month, 48-hour feedback, accountability check-ins, and coaching PDFs.</p>
+        <p style="margin:0;"><strong>Elite ($249/month):</strong> 4 submissions with rollover, priority 24-hour response, group coaching calls, and personalized plans.</p>
         <p style="margin:10px 0 0;"><a href="${escapeHtml(
           settingsUrl,
         )}" target="_blank" rel="noopener noreferrer" style="color:#8fd7ff; text-decoration:underline;">Upgrade in Account settings</a></p>
@@ -593,9 +593,9 @@ function getOnboardingDrillLibraryMessage(membershipTier: DatabaseTier) {
   if (membershipTier === "FREE") {
     return {
       bodyText:
-        "Upgrade to Basic ($39/month) to unlock the full hitting, fielding, and mindset drill libraries, all 7 workout programs, and the Pre-Game Warmup and Baseball Athlete Nutrition guides.",
-      bodyHtml: `<p style="margin: 0 0 12px;">Upgrade to <strong>Basic ($39/month)</strong> to unlock the full hitting, fielding, and mindset drill libraries, all 7 workout programs, and the Pre-Game Warmup and Baseball Athlete Nutrition guides.</p>
-        <p style="margin: 0;">Memorable ($119/month) and Elite ($179/month) add monthly coaching submissions, accountability support, and personalized plans from Coach Broc.</p>`,
+        "Upgrade to Basic ($49/month) to unlock the full hitting, fielding, and mindset drill libraries, all 7 workout programs, and the Pre-Game Warmup and Baseball Athlete Nutrition guides.",
+      bodyHtml: `<p style="margin: 0 0 12px;">Upgrade to <strong>Basic ($49/month)</strong> to unlock the full hitting, fielding, and mindset drill libraries, all 7 workout programs, and the Pre-Game Warmup and Baseball Athlete Nutrition guides.</p>
+        <p style="margin: 0;">Memorable ($149/month) and Elite ($249/month) add monthly coaching submissions, accountability support, and personalized plans from Coach Broc.</p>`,
     };
   }
 
@@ -615,22 +615,22 @@ function getOnboardingWeekOneMessage(membershipTier: DatabaseTier) {
       return {
         text: `You still have one free coaching submission available. When you are ready, submit a swing video or mindset question for personalized feedback from Coach Broc.
 
-Want more each month? Memorable ($119/month) includes 2 coaching submissions per month with 48-hour feedback and accountability check-ins. Elite ($179/month) includes 4 per month with rollover up to 8, priority 24-hour response, and personalized training plans.
+Want more each month? Memorable ($149/month) includes 2 coaching submissions per month with 48-hour feedback and accountability check-ins. Elite ($249/month) includes 4 per month with rollover up to 8, priority 24-hour response, and personalized training plans.
 
 Upgrade in Account settings: ${settingsUrl}`,
         html: `<p style="margin: 0 0 12px;">You still have one free coaching submission available. When you are ready, submit a swing video or mindset question for personalized feedback from Coach Broc.</p>
-          <p style="margin: 0 0 12px;"><strong>Memorable ($119/month)</strong> includes 2 coaching submissions per month with 48-hour feedback and accountability check-ins. <strong>Elite ($179/month)</strong> includes 4 per month with rollover up to 8, priority 24-hour response, and personalized plans.</p>
+          <p style="margin: 0 0 12px;"><strong>Memorable ($149/month)</strong> includes 2 coaching submissions per month with 48-hour feedback and accountability check-ins. <strong>Elite ($249/month)</strong> includes 4 per month with rollover up to 8, priority 24-hour response, and personalized plans.</p>
           <p style="margin: 0;"><a href="${escapeHtml(
             settingsUrl,
           )}" target="_blank" rel="noopener noreferrer" style="color:#8fd7ff; text-decoration:underline;">Upgrade in Account settings</a></p>`,
       };
     case "BASIC":
       return {
-        text: `Ready for personalized coach feedback? Memorable ($119/month) unlocks 2 coaching submissions per month with 48-hour feedback and accountability check-ins. Elite ($179/month) unlocks 4 per month with rollover up to 8, priority 24-hour response, and personalized plans.
+        text: `Ready for personalized coach feedback? Memorable ($149/month) unlocks 2 coaching submissions per month with 48-hour feedback and accountability check-ins. Elite ($249/month) unlocks 4 per month with rollover up to 8, priority 24-hour response, and personalized plans.
 
 Upgrade in Account settings: ${settingsUrl}`,
         html: `<p style="margin: 0 0 12px;">Ready for personalized coach feedback?</p>
-          <p style="margin: 0 0 12px;"><strong>Memorable ($119/month)</strong> unlocks 2 coaching submissions per month with 48-hour feedback and accountability check-ins. <strong>Elite ($179/month)</strong> unlocks 4 per month with rollover up to 8, priority 24-hour response, and personalized plans.</p>
+          <p style="margin: 0 0 12px;"><strong>Memorable ($149/month)</strong> unlocks 2 coaching submissions per month with 48-hour feedback and accountability check-ins. <strong>Elite ($249/month)</strong> unlocks 4 per month with rollover up to 8, priority 24-hour response, and personalized plans.</p>
           <p style="margin: 0;"><a href="${escapeHtml(
             settingsUrl,
           )}" target="_blank" rel="noopener noreferrer" style="color:#8fd7ff; text-decoration:underline;">Upgrade in Account settings</a></p>`,

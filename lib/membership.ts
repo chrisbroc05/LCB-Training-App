@@ -23,7 +23,7 @@ export const membershipTiers: MembershipTier[] = [
   {
     key: "basic",
     name: "Basic",
-    priceLabel: "$39 / month",
+    priceLabel: "$49 / month",
     summary: "Self-guided training with the full drill library, workouts, and PDF resources.",
     features: [
       "Full hitting, fielding, and mindset video drill library",
@@ -36,7 +36,7 @@ export const membershipTiers: MembershipTier[] = [
   {
     key: "memorable",
     name: "Memorable",
-    priceLabel: "$119 / month",
+    priceLabel: "$149 / month",
     summary: "Everything in Basic plus monthly coaching submissions and accountability support.",
     features: [
       "Everything in Basic",
@@ -52,7 +52,7 @@ export const membershipTiers: MembershipTier[] = [
   {
     key: "elite",
     name: "Elite",
-    priceLabel: "$179 / month",
+    priceLabel: "$249 / month",
     summary:
       "Everything in Memorable plus priority response, group coaching, and personalized plans.",
     features: [
