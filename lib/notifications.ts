@@ -550,7 +550,7 @@ function getSettingsUrl() {
 function getOnboardingWelcomeGuidance(membershipTier: DatabaseTier) {
   switch (membershipTier) {
     case "FREE":
-      return "You have one free coaching submission (swing analysis or mental game support) with personal feedback from Coach Broc.";
+      return "You have one free coaching submission (swing analysis or mental game support) with personal feedback from Coach Broc, plus a free 20-minute Player Assessment Call via Google Meet.";
     case "BASIC":
       return "You have full access to the drill library, all 7 workout programs, and your Pre-Game Warmup and Baseball Athlete Nutrition guides.";
     case "MEMORABLE":

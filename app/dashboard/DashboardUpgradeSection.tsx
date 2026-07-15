@@ -69,6 +69,7 @@ export default function DashboardUpgradeSection({
   const upgradeTierCards = membershipTiers.filter((tier) =>
     config.upgradeTiers.includes(tier.key),
   );
+  const freeTier = membershipTiers.find((tier) => tier.key === "free");
 
   return (
     <section className="mt-10 rounded-3xl border border-[#18243a] bg-[#0A1628] px-5 py-8 sm:px-8 sm:py-10">
@@ -78,6 +79,22 @@ export default function DashboardUpgradeSection({
         </h2>
         <p className="mt-2 text-zinc-300">{config.description}</p>
       </div>
+
+      {membershipTier === "FREE" && freeTier ? (
+        <article className="mx-auto mt-8 max-w-xl rounded-2xl border border-[#22c55e]/40 bg-[#22c55e]/10 p-5 sm:p-6">
+          <h3 className="text-xl font-semibold text-zinc-100">{freeTier.name}</h3>
+          <p className="mt-2 text-2xl font-bold text-[#98b144]">$0</p>
+          <p className="mt-3 text-sm text-zinc-300">{freeTier.summary}</p>
+          <ul className="mt-4 space-y-2 text-sm text-zinc-200">
+            {freeTier.features.map((feature) => (
+              <li key={feature} className="flex items-start gap-2">
+                <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-[#22c55e]" />
+                <span>{feature}</span>
+              </li>
+            ))}
+          </ul>
+        </article>
+      ) : null}
 
       <div className="mt-6 flex justify-center">
         <BillingFrequencyToggle value={billingFrequency} onChange={setBillingFrequency} />
