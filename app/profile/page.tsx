@@ -216,14 +216,10 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
                 <p className="text-xs text-zinc-400">
                   Google Meet link will be in your Calendly confirmation email
                 </p>
-                <a
-                  href="https://calendly.com/chrisbroc05/30min"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-block text-sm font-medium text-[#98b144] transition hover:text-[#b5d84f]"
-                >
-                  Reschedule or cancel your call
-                </a>
+                <p className="text-xs text-zinc-400">
+                  Need to reschedule or cancel? Use the link provided in your Calendly confirmation
+                  email
+                </p>
               </div>
             ) : (
               <p className="mt-3 text-sm text-zinc-300">Assessment Call: Not yet scheduled</p>
