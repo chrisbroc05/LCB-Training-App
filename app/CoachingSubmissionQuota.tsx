@@ -19,8 +19,8 @@ export default function CoachingSubmissionQuota({
       <div className="mt-4 rounded-xl border border-[#2b3650] bg-black/30 px-4 py-3 text-sm text-zinc-300">
         {availability.remaining > 0 ? (
           <p>
-            <span className="font-semibold text-[#9df3bd]">1 free submission</span> remaining ù use
-            it anytime for swing video or mindset support.
+            <span className="font-semibold text-[#9df3bd]">1 free submission</span> remaining -
+            use it anytime for swing video or mindset support.
           </p>
         ) : (
           <p>You have used your one free coaching submission.</p>
@@ -55,7 +55,7 @@ export default function CoachingSubmissionQuota({
         {availability.rolloverCredits
           ? ` + ${availability.rolloverCredits} rollover credit${availability.rolloverCredits === 1 ? "" : "s"}`
           : ""}
-        {" ù "}Resets on {availability.resetsOnLabel}.
+        {" - "}Resets on {availability.resetsOnLabel}.
       </p>
     </div>
   );
