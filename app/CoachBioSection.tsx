@@ -13,15 +13,15 @@ const experience = [
 
 export default function CoachBioSection() {
   return (
-    <section className="mt-14 rounded-3xl bg-[#F5F5F5] px-5 py-16 sm:px-8 sm:py-20">
-      <div className="mx-auto max-w-3xl rounded-3xl border border-[#d9e2ef] bg-white px-6 py-10 shadow-lg shadow-[#0A1628]/10 sm:px-10 sm:py-12">
+    <section className="mt-14 rounded-3xl bg-[#0A1628] px-5 py-20 sm:px-8">
+      <div className="mx-auto max-w-3xl rounded-3xl border border-[#18243a] bg-[#0b1324]/80 px-6 py-10 sm:px-10 sm:py-12">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-[#0A1628] sm:text-3xl">Meet Your Coach</h2>
+          <h2 className="text-2xl font-bold text-white sm:text-3xl">Meet Your Coach</h2>
           <div className="mx-auto mt-3 h-[2px] w-24 rounded-full bg-[#52B788]" />
         </div>
 
         <div className="mt-8 text-center">
-          <h3 className="text-3xl font-bold text-[#0A1628] sm:text-4xl">Chris Broccolino</h3>
+          <h3 className="text-3xl font-bold text-white sm:text-4xl">Chris Broccolino</h3>
           <p className="mt-2 text-base font-semibold text-[#52B788] sm:text-lg">
             Player Development Coach | LCB Training
           </p>
@@ -29,7 +29,7 @@ export default function CoachBioSection() {
 
         <div className="mx-auto mt-8 h-px w-full max-w-xl bg-[#52B788]" />
 
-        <p className="mx-auto mt-8 max-w-2xl text-center text-base leading-relaxed text-[#334155] sm:text-lg">
+        <p className="mx-auto mt-8 max-w-2xl text-center text-base leading-relaxed text-[#CCCCCC] sm:text-lg">
           I have spent 12+ years working with baseball players at every level - helping them not
           just become better athletes, but more confident people. As a current High School Varsity
           Coach, my goal is simple: build confidence on and off the field. Every player I work with
@@ -37,27 +37,27 @@ export default function CoachBioSection() {
           development.
         </p>
 
-        <div className="mt-8 grid gap-3 sm:grid-cols-2">
+        <div className="mx-auto mt-8 flex max-w-xl flex-col gap-3">
           {accolades.map((accolade) => (
-            <span
+            <div
               key={accolade}
-              className="rounded-full bg-[#0A1628] px-4 py-2.5 text-center text-sm font-medium text-white"
+              className="flex min-h-[48px] w-full items-center justify-center border-l-4 border-[#52B788] bg-[#0A1628] px-4 py-3 text-center text-sm font-medium text-white"
             >
               {accolade}
-            </span>
+            </div>
           ))}
         </div>
 
         <div className="mt-8 space-y-2 text-center">
           {experience.map((item) => (
-            <p key={item} className="text-base font-medium text-[#0A1628]">
+            <p key={item} className="text-base font-medium text-[#CCCCCC]">
               {item}
             </p>
           ))}
         </div>
 
         <p className="mt-10 text-center text-xl font-bold italic text-[#52B788] sm:text-2xl">
-          "Work Hard. Be Memorable."
+          &quot;Work Hard. Be Memorable.&quot;
         </p>
       </div>
     </section>
