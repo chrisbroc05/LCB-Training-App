@@ -75,6 +75,8 @@ export default function AdminPanel({
   const [memberVimeoLinkInput, setMemberVimeoLinkInput] = useState("");
   const [memberVimeoSaveError, setMemberVimeoSaveError] = useState("");
   const [savingMemberVimeoLink, setSavingMemberVimeoLink] = useState(false);
+  const [editingMemberVimeoLink, setEditingMemberVimeoLink] = useState(true);
+  const [editingCoachVimeoLink, setEditingCoachVimeoLink] = useState(true);
 
   useEffect(() => {
     const loadList = async () => {
@@ -115,20 +117,26 @@ export default function AdminPanel({
       setDetail(data.submission);
       setMemberVimeoLinkInput(data.submission.memberVimeoLink ?? "");
       setMemberVimeoSaveError("");
+      setEditingMemberVimeoLink(!data.submission.memberVimeoLink);
       setWrittenResponse("");
       setResponseVideo(null);
       setManualVideoUrl("");
+      setEditingCoachVimeoLink(true);
       setResponseMode("written");
       setVideoInputMode(cloudinaryUploadEnabled ? "upload" : "vimeo");
       setSendError("");
       setShowResponseModal(false);
       setResponseSummary("");
-      setMemberVimeoLinkInput("");
-      setMemberVimeoSaveError("");
     };
 
     void loadDetail();
   }, [selectedId, tab, cloudinaryUploadEnabled]);
+
+  const memberVimeoEmbedUrl = detail?.memberVimeoLink ? toVimeoEmbedUrl(detail.memberVimeoLink) : null;
+  const coachVimeoEmbedUrl =
+    responseMode === "video" && videoInputMode === "vimeo" && manualVideoUrl.trim()
+      ? toVimeoEmbedUrl(manualVideoUrl)
+      : null;
 
   const fallbackVideoUrl = useMemo(() => {
     if (!detail) {
@@ -175,6 +183,7 @@ export default function AdminPanel({
       memberVimeoLink: savedLink,
     });
     setMemberVimeoLinkInput(savedLink);
+    setEditingMemberVimeoLink(false);
     setItems((previous) =>
       previous.map((item) =>
         item.id === detail.id
@@ -406,36 +415,55 @@ export default function AdminPanel({
 
             <div className="rounded-xl border border-[#2b3650] bg-[#0b1324]/70 p-4">
               <h3 className="text-lg font-semibold text-zinc-100">Member Submission Video</h3>
-              <div className="mt-4 space-y-3">
-                <label className="block text-sm font-medium text-zinc-200" htmlFor="member-vimeo-link">
-                  Paste Member Vimeo Link
-                </label>
-                <input
-                  id="member-vimeo-link"
-                  type="url"
-                  value={memberVimeoLinkInput}
-                  onChange={(event) => setMemberVimeoLinkInput(event.target.value)}
-                  placeholder="https://vimeo.com/..."
-                  className="w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 placeholder:text-zinc-500 focus:border-[#22c55e]"
-                />
-                {memberVimeoSaveError ? (
-                  <p className="text-sm text-red-300">{memberVimeoSaveError}</p>
-                ) : null}
+
+              {detail.memberVimeoLink && !editingMemberVimeoLink ? (
                 <button
                   type="button"
-                  onClick={handleSaveMemberVimeoLink}
-                  disabled={savingMemberVimeoLink || !memberVimeoLinkInput.trim()}
-                  className="rounded-full bg-[#22c55e] px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-[#35db72] disabled:cursor-not-allowed disabled:opacity-50"
+                  onClick={() => {
+                    setEditingMemberVimeoLink(true);
+                    setMemberVimeoLinkInput(detail.memberVimeoLink ?? "");
+                    setMemberVimeoSaveError("");
+                  }}
+                  className="mt-3 text-sm font-medium text-[#52B788] underline transition hover:text-[#9df3bd]"
                 >
-                  {savingMemberVimeoLink ? "Saving..." : "Save Link"}
+                  Change Video Link
                 </button>
-              </div>
+              ) : (
+                <div className="mt-4 space-y-3">
+                  <label className="block text-sm font-medium text-zinc-200" htmlFor="member-vimeo-link">
+                    Paste Member Vimeo Link
+                  </label>
+                  <input
+                    id="member-vimeo-link"
+                    type="url"
+                    value={memberVimeoLinkInput}
+                    onChange={(event) => setMemberVimeoLinkInput(event.target.value)}
+                    placeholder="https://vimeo.com/..."
+                    className="w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 placeholder:text-zinc-500 focus:border-[#22c55e]"
+                  />
+                  <p className="text-xs text-zinc-400">
+                    Note: make sure the video is set to Unlisted on Vimeo so members can view it without
+                    signing in.
+                  </p>
+                  {memberVimeoSaveError ? (
+                    <p className="text-sm text-red-300">{memberVimeoSaveError}</p>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={handleSaveMemberVimeoLink}
+                    disabled={savingMemberVimeoLink || !memberVimeoLinkInput.trim()}
+                    className="rounded-full bg-[#22c55e] px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-[#35db72] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {savingMemberVimeoLink ? "Saving..." : "Save Link"}
+                  </button>
+                </div>
+              )}
 
-              {detail.memberVimeoLink && toVimeoEmbedUrl(detail.memberVimeoLink) ? (
+              {memberVimeoEmbedUrl ? (
                 <div className="mt-4 overflow-hidden rounded-xl border border-[#2b3650] bg-black">
                   <div className="aspect-video w-full">
                     <iframe
-                      src={toVimeoEmbedUrl(detail.memberVimeoLink) ?? undefined}
+                      src={memberVimeoEmbedUrl}
                       title="Member submission video"
                       className="h-full w-full"
                       allow="autoplay; fullscreen; picture-in-picture"
@@ -590,7 +618,10 @@ export default function AdminPanel({
                         </button>
                         <button
                           type="button"
-                          onClick={() => setVideoInputMode("vimeo")}
+                          onClick={() => {
+                            setVideoInputMode("vimeo");
+                            setEditingCoachVimeoLink(true);
+                          }}
                           className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
                             videoInputMode === "vimeo"
                               ? "bg-[#22c55e] text-black"
@@ -621,14 +652,50 @@ export default function AdminPanel({
                             download link.
                           </p>
                         </div>
+                      ) : coachVimeoEmbedUrl && !editingCoachVimeoLink ? (
+                        <div className="space-y-3">
+                          <button
+                            type="button"
+                            onClick={() => setEditingCoachVimeoLink(true)}
+                            className="text-sm font-medium text-[#52B788] underline transition hover:text-[#9df3bd]"
+                          >
+                            Change Video Link
+                          </button>
+                          <div className="overflow-hidden rounded-xl border border-[#2b3650] bg-black">
+                            <div className="aspect-video w-full">
+                              <iframe
+                                src={coachVimeoEmbedUrl}
+                                title="Coach response preview"
+                                className="h-full w-full"
+                                allow="autoplay; fullscreen; picture-in-picture"
+                                allowFullScreen
+                              />
+                            </div>
+                          </div>
+                        </div>
                       ) : (
-                        <input
-                          type="url"
-                          value={manualVideoUrl}
-                          onChange={(event) => setManualVideoUrl(event.target.value)}
-                          placeholder="https://vimeo.com/..."
-                          className="w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 placeholder:text-zinc-500 focus:border-[#22c55e]"
-                        />
+                        <div className="space-y-3">
+                          <input
+                            type="url"
+                            value={manualVideoUrl}
+                            onChange={(event) => setManualVideoUrl(event.target.value)}
+                            placeholder="https://vimeo.com/..."
+                            className="w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 placeholder:text-zinc-500 focus:border-[#22c55e]"
+                          />
+                          <p className="text-xs text-zinc-400">
+                            Note: make sure the video is set to Unlisted on Vimeo so members can view it
+                            without signing in.
+                          </p>
+                          {manualVideoUrl.trim() && coachVimeoEmbedUrl ? (
+                            <button
+                              type="button"
+                              onClick={() => setEditingCoachVimeoLink(false)}
+                              className="rounded-full border border-[#52B788]/40 px-4 py-2 text-sm font-semibold text-[#52B788] transition hover:border-[#52B788] hover:text-[#9df3bd]"
+                            >
+                              Use This Link
+                            </button>
+                          ) : null}
+                        </div>
                       )}
                     </div>
                   )}
