@@ -81,7 +81,7 @@ export default function TopNavigation({
     },
   ];
 
-  if (isAdmin) {
+  if (isAdmin && pathname.startsWith("/admin")) {
     return (
       <nav className="flex items-center justify-end gap-2 md:justify-self-end">
         <Link href="/admin" onClick={closeMenus} className={linkClass(pathname.startsWith("/admin"))}>

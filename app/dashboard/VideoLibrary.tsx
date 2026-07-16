@@ -78,6 +78,35 @@ const fieldingVideos: VideoLibraryItem[] = [
   { title: "Backhand Footwork Drill", url: "https://player.vimeo.com/video/1205924073" },
 ];
 
+const mindsetVideos: VideoLibraryItem[] = [
+  { title: "Take Your Mobility Serious", url: "https://player.vimeo.com/video/1210519237" },
+  {
+    title: "You Don't Have to Be the Biggest Player on the Team",
+    url: "https://player.vimeo.com/video/1210519236",
+  },
+  { title: "Ask Questions and Be Curious", url: "https://player.vimeo.com/video/1210519239" },
+  {
+    title: "Dominate the Level You're At Right Now",
+    url: "https://player.vimeo.com/video/1210519241",
+  },
+  { title: "Put the Work In", url: "https://player.vimeo.com/video/1210519240" },
+  {
+    title: "Don't Worry About Mechanics in the Game",
+    url: "https://player.vimeo.com/video/1210519242",
+  },
+  {
+    title: "Develop Consistency and Discipline",
+    url: "https://player.vimeo.com/video/1210519238",
+  },
+  { title: "Clear Your Mind", url: "https://player.vimeo.com/video/1210519230" },
+  { title: "Take Pride in Failure", url: "https://player.vimeo.com/video/1210521781" },
+  { title: "Trust the Training", url: "https://player.vimeo.com/video/1210521780" },
+  {
+    title: "Don't Make This Game Harder Than It Needs to Be",
+    url: "https://player.vimeo.com/video/1210521772",
+  },
+];
+
 const drillLibraryEmbedParams = {
   title: "0",
   byline: "0",
@@ -184,16 +213,12 @@ export default function VideoLibrary() {
           videos={fieldingVideos}
           onSelectVideo={setSelectedVideo}
         />
-        <div>
-          <h2 className="text-xl font-semibold text-zinc-100 sm:text-2xl">Mindset Library</h2>
-          <p className="mt-2 text-zinc-300">
-            Mental performance lessons to build confidence, focus, and composure.
-          </p>
-          <div className="mt-6 rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-5 text-sm text-zinc-300 sm:p-6">
-            Mindset drill videos are included with your membership. Check back soon for new lessons
-            as they are added to the library.
-          </div>
-        </div>
+        <VideoSection
+          heading="Mindset Library"
+          description="Mental performance lessons to build confidence, focus, and composure."
+          videos={mindsetVideos}
+          onSelectVideo={setSelectedVideo}
+        />
       </section>
 
       {selectedVideo && (

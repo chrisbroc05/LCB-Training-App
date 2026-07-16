@@ -5,15 +5,11 @@ import LockedFeaturePanel from "@/app/LockedFeaturePanel";
 import VideoLibrary from "@/app/dashboard/VideoLibrary";
 import { canAccessDrillLibrary, type DatabaseTier } from "@/lib/membership";
 import { prisma } from "@/lib/prisma";
-import { isAdminEmail } from "@/lib/admin";
 
 export default async function DrillLibraryPage() {
   const session = await getServerSession(authOptions);
   if (!session?.user) {
     redirect("/auth");
-  }
-  if (isAdminEmail(session.user.email)) {
-    redirect("/admin");
   }
 
   const user = await prisma.user.findUnique({

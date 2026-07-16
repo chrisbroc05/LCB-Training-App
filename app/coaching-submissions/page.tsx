@@ -10,15 +10,11 @@ import {
   getCoachingSubmissionLockReason,
 } from "@/lib/coaching-submissions";
 import { canAccessCoachingNav, getCoachingResponseTimeLabel, type DatabaseTier } from "@/lib/membership";
-import { isAdminEmail } from "@/lib/admin";
 
 export default async function CoachingSubmissionsPage() {
   const session = await getServerSession(authOptions);
   if (!session?.user) {
     redirect("/auth");
-  }
-  if (isAdminEmail(session.user.email)) {
-    redirect("/admin");
   }
 
   const userFields = await ensureCoachingSubmissionPeriod(session.user.id);

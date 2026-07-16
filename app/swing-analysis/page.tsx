@@ -9,15 +9,11 @@ import {
   getCoachingSubmissionAvailability,
   getCoachingSubmissionLockReason,
 } from "@/lib/coaching-submissions";
-import { isAdminEmail } from "@/lib/admin";
 
 export default async function SwingAnalysisPage() {
   const session = await getServerSession(authOptions);
   if (!session?.user) {
     redirect("/auth");
-  }
-  if (isAdminEmail(session.user.email)) {
-    redirect("/admin");
   }
 
   const userFields = await ensureCoachingSubmissionPeriod(session.user.id);

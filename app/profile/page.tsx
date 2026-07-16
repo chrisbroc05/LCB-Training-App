@@ -5,7 +5,6 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import type { DatabaseTier } from "@/lib/membership";
 import { stripe } from "@/lib/stripe";
-import { isAdminEmail } from "@/lib/admin";
 import { formatAssessmentCallDateTime } from "@/lib/assessment-call";
 
 type ProfilePageProps = {
@@ -113,9 +112,6 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     redirect("/auth");
-  }
-  if (isAdminEmail(session.user.email)) {
-    redirect("/admin");
   }
 
   const resolvedSearchParams = searchParams ? await searchParams : {};

@@ -32,10 +32,8 @@ def find_logo_path(project_root: Path) -> Path | None:
     return None
 
 
-def get_logo_or_fallback(project_root: Path):
+def get_logo_or_fallback(project_root: Path, target_w: float = 2.25 * inch, target_h: float = 0.92 * inch):
     logo_path = find_logo_path(project_root)
-    target_w = 2.75 * inch
-    target_h = 1.12 * inch
     if logo_path is not None:
         try:
             image = ImageReader(str(logo_path))
@@ -90,18 +88,48 @@ def build_section_cell(
                 ("BOX", (0, 0), (-1, -1), 0.8, LIGHT_GREEN),
                 ("BACKGROUND", (0, 0), (0, 0), NAVY),
                 ("BACKGROUND", (0, 1), (0, 1), LIGHT_GRAY),
-                ("TOPPADDING", (0, 0), (0, 0), 7),
-                ("BOTTOMPADDING", (0, 0), (0, 0), 7),
+                ("TOPPADDING", (0, 0), (0, 0), 8),
+                ("BOTTOMPADDING", (0, 0), (0, 0), 8),
                 ("LEFTPADDING", (0, 0), (0, 0), 10),
                 ("RIGHTPADDING", (0, 0), (0, 0), 10),
-                ("TOPPADDING", (0, 1), (0, 1), 11),
-                ("BOTTOMPADDING", (0, 1), (0, 1), 11),
-                ("LEFTPADDING", (0, 1), (0, 1), 11),
-                ("RIGHTPADDING", (0, 1), (0, 1), 11),
+                ("TOPPADDING", (0, 1), (0, 1), 10),
+                ("BOTTOMPADDING", (0, 1), (0, 1), 10),
+                ("LEFTPADDING", (0, 1), (0, 1), 10),
+                ("RIGHTPADDING", (0, 1), (0, 1), 10),
             ]
         )
     )
     return section_table
+
+
+def build_aligned_row(
+    left_cell: Table,
+    right_cell: Table,
+    col_widths: list[float],
+) -> Table:
+    left_width, right_width = col_widths
+    _, left_height = left_cell.wrap(left_width, 10_000)
+    _, right_height = right_cell.wrap(right_width, 10_000)
+    row_height = max(left_height, right_height)
+    stretch_section_cell_to_height(left_cell, left_width, row_height)
+    stretch_section_cell_to_height(right_cell, right_width, row_height)
+    row_table = Table(
+        [[left_cell, right_cell]],
+        colWidths=col_widths,
+        rowHeights=[row_height],
+    )
+    row_table.setStyle(
+        TableStyle(
+            [
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("TOPPADDING", (0, 0), (-1, -1), 0),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+                ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+            ]
+        )
+    )
+    return row_table
 
 
 def stretch_section_cell_to_height(section_table: Table, width: float, target_height: float) -> None:
@@ -113,7 +141,7 @@ def stretch_section_cell_to_height(section_table: Table, width: float, target_he
     section_table.setStyle(
         TableStyle(
             [
-                ("BOTTOMPADDING", (0, 1), (0, 1), 11 + extra_padding),
+                ("BOTTOMPADDING", (0, 1), (0, 1), 10 + extra_padding),
             ]
         )
     )
@@ -127,88 +155,97 @@ def main() -> None:
     doc = SimpleDocTemplate(
         str(output_path),
         pagesize=letter,
-        leftMargin=1 * inch,
-        rightMargin=1 * inch,
-        topMargin=0.45 * inch,
+        leftMargin=0.85 * inch,
+        rightMargin=0.85 * inch,
+        topMargin=0.4 * inch,
         bottomMargin=0.4 * inch,
         title="LCB Coach Bio - Chris Broccolino",
         author="LCB Training",
     )
 
-    full_width = 6.5 * inch
-    two_col_widths = [3.25 * inch, 3.25 * inch]
+    full_width = 6.8 * inch
+    two_col_widths = [3.4 * inch, 3.4 * inch]
+    about_col_widths = [5.0 * inch, 1.8 * inch]
+    section_body_inset = 20
 
     name_style = ParagraphStyle(
         "name",
         fontName="Helvetica-Bold",
-        fontSize=28,
-        leading=31,
+        fontSize=24,
+        leading=27,
         alignment=TA_CENTER,
         textColor=NAVY,
     )
     title_style = ParagraphStyle(
         "title",
         fontName="Helvetica",
-        fontSize=14,
-        leading=17,
+        fontSize=12,
+        leading=14,
         alignment=TA_CENTER,
         textColor=GREEN,
     )
     section_header_style = ParagraphStyle(
         "section-header",
         fontName="Helvetica-Bold",
-        fontSize=13,
-        leading=15.5,
+        fontSize=12,
+        leading=14,
         textColor=WHITE,
     )
     body_style = ParagraphStyle(
         "body",
         fontName="Helvetica",
-        fontSize=11,
-        leading=14,
+        fontSize=10.5,
+        leading=13,
         textColor=NAVY,
     )
     list_style = ParagraphStyle(
         "list",
         fontName="Helvetica",
-        fontSize=10,
-        leading=13,
+        fontSize=9.5,
+        leading=12,
+        textColor=NAVY,
+    )
+    section_item_style = ParagraphStyle(
+        "section-item",
+        fontName="Helvetica",
+        fontSize=9,
+        leading=11,
         textColor=NAVY,
     )
     callout_style = ParagraphStyle(
         "callout",
         fontName="Helvetica-BoldOblique",
-        fontSize=13,
-        leading=15.5,
+        fontSize=12,
+        leading=14,
         alignment=TA_CENTER,
         textColor=NAVY,
     )
     quote_style = ParagraphStyle(
         "quote",
         fontName="Helvetica-BoldOblique",
-        fontSize=16,
-        leading=20,
+        fontSize=15,
+        leading=18,
         alignment=TA_CENTER,
         textColor=WHITE,
     )
     contact_style = ParagraphStyle(
         "contact",
         fontName="Helvetica",
-        fontSize=10,
-        leading=13,
+        fontSize=9.5,
+        leading=12,
         textColor=WHITE,
     )
 
     story = []
 
-    # 1. Header
+    # 1. Header: centered logo and name
     story.append(get_logo_or_fallback(project_root))
-    story.append(Spacer(1, 7))
+    story.append(Spacer(1, 6))
     story.append(Paragraph("Chris Broccolino", name_style))
-    story.append(Spacer(1, 4))
+    story.append(Spacer(1, 3))
     story.append(Paragraph("Player Development Coach | LCB Training", title_style))
     story.append(Spacer(1, 6))
-    story.append(HRFlowable(width="100%", thickness=1.2, color=LIGHT_GREEN, lineCap="round"))
+    story.append(HRFlowable(width="100%", thickness=1.1, color=LIGHT_GREEN, lineCap="round"))
     story.append(Spacer(1, 6))
 
     # 2. About Me (full width)
@@ -222,55 +259,35 @@ def main() -> None:
     about_table = build_section_cell(
         "About Me",
         Paragraph(about_text, body_style),
-        4.75 * inch,
+        about_col_widths[0],
         section_header_style,
     )
     program_details_table = build_section_cell(
         "Program Details",
         Paragraph(
-            "&bull; Hitting<br/>"
-            "&bull; Fielding<br/>"
-            "&bull; Speed &amp; agility<br/>"
-            "&bull; Strength &amp; mobility",
-            list_style,
+            "<b>Hitting</b><br/>"
+            "<b>Fielding</b><br/>"
+            "<b>Speed &amp; agility</b><br/>"
+            "<b>Strength &amp; mobility</b><br/>"
+            "<b>Online training program</b>",
+            section_item_style,
         ),
-        1.75 * inch,
+        about_col_widths[1],
         section_header_style,
     )
-    _, about_h = about_table.wrap(4.75 * inch, 10_000)
-    _, program_h = program_details_table.wrap(1.75 * inch, 10_000)
-    about_program_height = max(about_h, program_h)
-    stretch_section_cell_to_height(about_table, 4.75 * inch, about_program_height)
-    stretch_section_cell_to_height(program_details_table, 1.75 * inch, about_program_height)
-    about_program_table = Table(
-        [[about_table, program_details_table]],
-        colWidths=[4.75 * inch, 1.75 * inch],
-        rowHeights=[about_program_height],
-    )
-    about_program_table.setStyle(
-        TableStyle(
-            [
-                ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                ("TOPPADDING", (0, 0), (-1, -1), 0),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
-                ("LEFTPADDING", (0, 0), (-1, -1), 0),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-            ]
-        )
-    )
-    story.append(about_program_table)
+    story.append(build_aligned_row(about_table, program_details_table, about_col_widths))
     story.append(Spacer(1, 5))
 
     # 3. Experience & Accolades (two columns)
     experience_bullets_para = Paragraph(
-        "&bull; 12+ years as a Player Development Coach<br/>"
-        "&bull; Current High School Varsity Coach",
-        list_style,
+        "<b>12+ years as a Player Development Coach</b><br/>"
+        "<b>Current High School Varsity Coach</b>",
+        section_item_style,
     )
     experience_callout_para = Paragraph("Trained 100+ athletes", callout_style)
     experience_para = Table(
         [[experience_bullets_para], [experience_callout_para]],
-        colWidths=[two_col_widths[0] - 22],
+        colWidths=[two_col_widths[0] - section_body_inset],
     )
     experience_para.setStyle(
         TableStyle(
@@ -280,17 +297,17 @@ def main() -> None:
                 ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
                 ("LEFTPADDING", (0, 0), (-1, -1), 0),
                 ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-                ("TOPPADDING", (0, 1), (0, 1), 18),
+                ("TOPPADDING", (0, 1), (0, 1), 16),
             ]
         )
     )
     accolades_para = Paragraph(
-        "&bull; 2x All-Conference College Athlete<br/>"
-        "&bull; Gold Glove Award<br/>"
-        "&bull; Academic All-American<br/>"
-        "&bull; NJCAA National Champion - Oakton Community College<br/>"
-        "&bull; World Series All-Tournament Team",
-        list_style,
+        "<b>2x All-Conference College Athlete</b><br/>"
+        "<b>Gold Glove Award</b><br/>"
+        "<b>Academic All-American</b><br/>"
+        "<b>NJCAA National Champion - Oakton CC</b><br/>"
+        "<b>World Series All-Tournament Team</b>",
+        section_item_style,
     )
     experience_cell = build_section_cell(
         "Experience",
@@ -304,28 +321,7 @@ def main() -> None:
         two_col_widths[1],
         section_header_style,
     )
-    _, experience_cell_height = experience_cell.wrap(two_col_widths[0], 10_000)
-    _, accolades_cell_height = accolades_cell.wrap(two_col_widths[1], 10_000)
-    exp_acc_cell_height = max(experience_cell_height, accolades_cell_height)
-    stretch_section_cell_to_height(experience_cell, two_col_widths[0], exp_acc_cell_height)
-    stretch_section_cell_to_height(accolades_cell, two_col_widths[1], exp_acc_cell_height)
-    exp_acc_table = Table(
-        [[experience_cell, accolades_cell]],
-        colWidths=[3.25 * inch, 3.25 * inch],
-        rowHeights=[exp_acc_cell_height],
-    )
-    exp_acc_table.setStyle(
-        TableStyle(
-            [
-                ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                ("TOPPADDING", (0, 0), (-1, -1), 0),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
-                ("LEFTPADDING", (0, 0), (-1, -1), 0),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-            ]
-        )
-    )
-    story.append(exp_acc_table)
+    story.append(build_aligned_row(experience_cell, accolades_cell, two_col_widths))
     story.append(Spacer(1, 5))
 
     # 4. Coaching Philosophy
@@ -338,8 +334,8 @@ def main() -> None:
             [
                 ("VALIGN", (0, 0), (-1, -1), "TOP"),
                 ("BACKGROUND", (0, 0), (-1, -1), NAVY),
-                ("TOPPADDING", (0, 0), (-1, -1), 13),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 13),
+                ("TOPPADDING", (0, 0), (-1, -1), 11),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 11),
                 ("LEFTPADDING", (0, 0), (-1, -1), 10),
                 ("RIGHTPADDING", (0, 0), (-1, -1), 10),
             ]
@@ -350,19 +346,27 @@ def main() -> None:
 
     # 5. Training Options (two columns)
     in_person_para = Paragraph(
-        "&bull; Private lesson: $60/hr<br/>"
-        "&bull; Two players: $75/hr<br/>"
-        "&bull; Group (3+): $100/hr<br/>"
-        "&bull; 30 or 60 minute sessions<br/>"
-        "&bull; Palatine facility, local fields and your local facilities (we can train at your place, mine, or meet in the middle)",
-        list_style,
+        "<b>Private lesson ($60/hr)</b><br/>"
+        "One-on-one skill development<br/><br/>"
+        "<b>Two players ($75/hr)</b><br/>"
+        "Shared session for two athletes<br/><br/>"
+        "<b>Group (3+, $100/hr)</b><br/>"
+        "Small group training<br/><br/>"
+        "<b>30 or 60 minute sessions</b><br/><br/>"
+        "<b>Training locations</b><br/>"
+        "Palatine facility, local fields and your local facilities (we can train at your place, mine, or meet in the middle)",
+        section_item_style,
     )
     online_para = Paragraph(
-        "&bull; Free - 1 free coaching submission plus free 20-minute Player Assessment Call with Coach Broc<br/>"
-        "&bull; Basic ($49/mo or $490/yr) - full video drill library plus 7 downloadable workout programs<br/>"
-        "&bull; Memorable ($149/mo or $1,490/yr) - everything in Basic plus 2 coaching submissions per month with 48-hour feedback, weekly check-ins, and goal setting<br/>"
-        "&bull; Elite ($249/mo or $2,490/yr) - everything in Memorable plus 4 submissions per month with rollover, priority 24-hour response, monthly group coaching call, and personalized development plan",
-        list_style,
+        "<b>Free</b><br/>"
+        "1 free coaching submission plus free 20-minute Player Assessment Call with Coach Broc<br/>"
+        "<b>Basic ($49/mo or $490/yr)</b><br/>"
+        "Full video drill library plus 7 downloadable workout programs<br/>"
+        "<b>Memorable ($149/mo or $1,490/yr)</b><br/>"
+        "Everything in Basic plus 2 coaching submissions per month with 48-hour feedback, weekly check-ins, and goal setting<br/>"
+        "<b>Elite ($249/mo or $2,490/yr)</b><br/>"
+        "Everything in Memorable plus 4 submissions per month with rollover, priority 24-hour response, monthly group coaching call, and personalized development plan",
+        section_item_style,
     )
     in_person_cell = build_section_cell(
         "In-Person Training",
@@ -376,29 +380,8 @@ def main() -> None:
         two_col_widths[1],
         section_header_style,
     )
-    _, in_person_cell_height = in_person_cell.wrap(two_col_widths[0], 10_000)
-    _, online_cell_height = online_cell.wrap(two_col_widths[1], 10_000)
-    training_cell_height = max(in_person_cell_height, online_cell_height)
-    stretch_section_cell_to_height(in_person_cell, two_col_widths[0], training_cell_height)
-    stretch_section_cell_to_height(online_cell, two_col_widths[1], training_cell_height)
-    training_table = Table(
-        [[in_person_cell, online_cell]],
-        colWidths=[3.25 * inch, 3.25 * inch],
-        rowHeights=[training_cell_height],
-    )
-    training_table.setStyle(
-        TableStyle(
-            [
-                ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                ("TOPPADDING", (0, 0), (-1, -1), 0),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
-                ("LEFTPADDING", (0, 0), (-1, -1), 0),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-            ]
-        )
-    )
-    story.append(training_table)
-    story.append(Spacer(1, 3))
+    story.append(build_aligned_row(in_person_cell, online_cell, two_col_widths))
+    story.append(Spacer(1, 5))
 
     # 6. Contact footer
     left_contact = Paragraph(
@@ -415,8 +398,8 @@ def main() -> None:
             [
                 ("VALIGN", (0, 0), (-1, -1), "TOP"),
                 ("BACKGROUND", (0, 0), (-1, -1), NAVY),
-                ("TOPPADDING", (0, 0), (-1, -1), 6),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+                ("TOPPADDING", (0, 0), (-1, -1), 8),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
                 ("LEFTPADDING", (0, 0), (-1, -1), 10),
                 ("RIGHTPADDING", (0, 0), (-1, -1), 10),
             ]
@@ -425,7 +408,14 @@ def main() -> None:
     story.append(contact_table)
 
     doc.build(story)
-    print(f"Created {output_path}")
+
+    try:
+        from pypdf import PdfReader
+
+        page_count = len(PdfReader(str(output_path)).pages)
+        print(f"Created {output_path} ({page_count} page{'s' if page_count != 1 else ''})")
+    except Exception:
+        print(f"Created {output_path}")
 
 
 if __name__ == "__main__":

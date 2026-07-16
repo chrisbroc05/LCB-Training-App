@@ -8,7 +8,6 @@ import { canAccessWorkoutPrograms, type DatabaseTier } from "@/lib/membership";
 import { workoutResourceGroups } from "@/lib/workout-resources";
 import { getWorkoutPdfUrl } from "@/lib/workouts";
 import { prisma } from "@/lib/prisma";
-import { isAdminEmail } from "@/lib/admin";
 
 type ProgramCategory = "strength" | "speed";
 type PhaseNumber = 1 | 2 | 3;
@@ -210,9 +209,6 @@ export default async function ResourcesPage() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     redirect("/auth");
-  }
-  if (isAdminEmail(session.user.email)) {
-    redirect("/admin");
   }
 
   const user = await prisma.user.findUnique({

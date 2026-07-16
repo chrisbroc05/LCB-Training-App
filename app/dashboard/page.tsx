@@ -3,7 +3,6 @@ import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { isAdminEmail } from "@/lib/admin";
 import CoachingSubmissionQuota from "@/app/CoachingSubmissionQuota";
 import DashboardUpgradeSection from "@/app/dashboard/DashboardUpgradeSection";
 import {
@@ -121,9 +120,6 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const session = await getServerSession(authOptions);
   if (!session?.user) {
     redirect("/auth");
-  }
-  if (isAdminEmail(session.user.email)) {
-    redirect("/admin");
   }
 
   const resolvedSearchParams = searchParams ? await searchParams : {};
