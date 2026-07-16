@@ -22,7 +22,48 @@ type SubmissionDetail = SubmissionListItem & {
   message?: string;
   videoPath?: string | null;
   responsePreference?: "VIDEO_RESPONSE" | "WRITTEN_RESPONSE";
+  responseText?: string | null;
+  responseVideoUrl?: string | null;
+  respondedAt?: string | null;
 };
+
+function toVimeoEmbedUrl(url: string | null | undefined) {
+  if (!url) {
+    return null;
+  }
+
+  if (url.includes("player.vimeo.com/video/")) {
+    return url;
+  }
+
+  const match = url.match(/vimeo\.com\/(\d+)/i);
+  if (!match) {
+    return null;
+  }
+
+  return `https://player.vimeo.com/video/${match[1]}`;
+}
+
+function formatResponseDateTime(value: string | null | undefined) {
+  if (!value) {
+    return "Not available";
+  }
+
+  return new Intl.DateTimeFormat("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
+
+function canInlineResponseVideo(url: string) {
+  return (
+    url.startsWith("/api/submission-videos/") ||
+    (url.startsWith("http") && !url.includes("vimeo.com"))
+  );
+}
 
 export default function AdminPanel({
   cloudinaryUploadEnabled,
@@ -159,6 +200,18 @@ export default function AdminPanel({
           : `Video response sent with Vimeo link: ${manualVideoUrl.trim()}`;
     setResponseSummary(summary);
     setShowResponseModal(true);
+
+    const refreshed = await fetch(`/api/admin/submissions/${tab}/${detail.id}`);
+    if (refreshed.ok) {
+      const data = (await refreshed.json()) as { submission: SubmissionDetail };
+      setDetail(data.submission);
+    } else {
+      setDetail({
+        ...detail,
+        badgeStatus: "RESPONDED",
+      });
+    }
+
     setItems((previous) =>
       previous.map((item) =>
         item.id === detail.id
@@ -169,10 +222,6 @@ export default function AdminPanel({
           : item,
       ),
     );
-    setDetail({
-      ...detail,
-      badgeStatus: "RESPONDED",
-    });
   };
 
   return (
@@ -328,113 +377,166 @@ export default function AdminPanel({
               </div>
             )}
 
-            <div className="rounded-xl border border-[#2b3650] bg-[#0b1324]/70 p-4">
-              <h3 className="text-lg font-semibold text-zinc-100">Send Response</h3>
-              <p className="mt-1 text-xs text-zinc-400">
-                For video responses, choose either device upload (camera roll supported) or a manual
-                Vimeo link.
-              </p>
-              <div className="mt-4 space-y-4">
-                <div className="flex flex-wrap gap-4">
-                  <label className="flex items-center gap-2 text-sm text-zinc-200">
-                    <input
-                      type="radio"
-                      checked={responseMode === "written"}
-                      onChange={() => setResponseMode("written")}
-                      className="h-4 w-4 accent-[#22c55e]"
-                    />
-                    Written Response
-                  </label>
-                  <label className="flex items-center gap-2 text-sm text-zinc-200">
-                    <input
-                      type="radio"
-                      checked={responseMode === "video"}
-                      onChange={() => setResponseMode("video")}
-                      className="h-4 w-4 accent-[#22c55e]"
-                    />
-                    Video Response
-                  </label>
+            {detail.badgeStatus === "RESPONDED" ? (
+              <div className="rounded-xl border border-[#2b3650] bg-[#0b1324]/70 p-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <h3 className="text-lg font-semibold text-zinc-100">Your Response</h3>
+                  <span className="rounded-full bg-[#22c55e]/20 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#9df3bd]">
+                    Responded
+                  </span>
                 </div>
+                <p className="mt-2 text-sm text-zinc-400">
+                  Sent {formatResponseDateTime(detail.respondedAt)}
+                </p>
 
-                {responseMode === "written" ? (
-                  <textarea
-                    rows={6}
-                    value={writtenResponse}
-                    onChange={(event) => setWrittenResponse(event.target.value)}
-                    placeholder="Write your response here..."
-                    className="w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 placeholder:text-zinc-500 focus:border-[#22c55e]"
-                  />
-                ) : (
-                  <div className="space-y-3">
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setVideoInputMode("upload")}
-                        disabled={!cloudinaryUploadEnabled}
-                        className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
-                          videoInputMode === "upload"
-                            ? "bg-[#22c55e] text-black"
-                            : "border border-[#2b3650] text-zinc-200 hover:border-[#7f9434]"
-                        } ${!cloudinaryUploadEnabled ? "cursor-not-allowed opacity-50" : ""}`}
-                      >
-                        Upload from Device
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setVideoInputMode("vimeo")}
-                        className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
-                          videoInputMode === "vimeo"
-                            ? "bg-[#22c55e] text-black"
-                            : "border border-[#2b3650] text-zinc-200 hover:border-[#7f9434]"
-                        }`}
-                      >
-                        Paste Vimeo Link
-                      </button>
-                    </div>
+                {detail.responseText ? (
+                  <p className="mt-4 whitespace-pre-wrap text-sm text-zinc-200">{detail.responseText}</p>
+                ) : null}
 
-                    {!cloudinaryUploadEnabled && (
-                      <p className="text-xs text-yellow-200">
-                        Device upload is currently disabled. Use a Vimeo link for now.
-                      </p>
-                    )}
-
-                    {videoInputMode === "upload" && cloudinaryUploadEnabled ? (
-                      <div className="space-y-2">
-                        <input
-                          type="file"
-                          accept="video/*"
-                          onChange={(event) => setResponseVideo(event.target.files?.[0] ?? null)}
-                          className="w-full rounded-lg border border-dashed border-[#3b4b6a] bg-black px-4 py-4 text-sm text-zinc-300 file:mr-4 file:rounded-md file:border-0 file:bg-[#22c55e] file:px-3 file:py-2 file:font-semibold file:text-black hover:file:bg-[#35db72]"
+                {detail.responseVideoUrl ? (
+                  <div className="mt-4 overflow-hidden rounded-xl border border-[#2b3650] bg-black">
+                    {toVimeoEmbedUrl(detail.responseVideoUrl) ? (
+                      <div className="aspect-video w-full">
+                        <iframe
+                          src={toVimeoEmbedUrl(detail.responseVideoUrl) ?? undefined}
+                          title="Coach response video"
+                          className="h-full w-full"
+                          allow="autoplay; fullscreen; picture-in-picture"
+                          allowFullScreen
                         />
-                        <p className="text-xs text-zinc-400">
-                          Upload from desktop or phone camera roll. Files under 10MB are attached
-                          to the member email. Larger files are stored on Cloudinary and sent as a
-                          download link.
-                        </p>
+                      </div>
+                    ) : canInlineResponseVideo(detail.responseVideoUrl) ? (
+                      <div className="aspect-video w-full">
+                        <video src={detail.responseVideoUrl} controls className="h-full w-full" />
                       </div>
                     ) : (
-                      <input
-                        type="url"
-                        value={manualVideoUrl}
-                        onChange={(event) => setManualVideoUrl(event.target.value)}
-                        placeholder="https://vimeo.com/..."
-                        className="w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 placeholder:text-zinc-500 focus:border-[#22c55e]"
-                      />
+                      <div className="px-4 py-3">
+                        <a
+                          href={detail.responseVideoUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-[#8fd7ff] underline"
+                        >
+                          Open response video
+                        </a>
+                      </div>
                     )}
                   </div>
-                )}
+                ) : null}
 
-                {sendError && <p className="text-sm text-red-300">{sendError}</p>}
-
-                <button
-                  type="button"
-                  onClick={handleSendResponse}
-                  className="w-full rounded-full bg-[#22c55e] px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-[#35db72] sm:w-auto"
-                >
-                  Send Response
-                </button>
+                {!detail.responseText && !detail.responseVideoUrl ? (
+                  <p className="mt-4 text-sm text-zinc-400">No response content saved for this submission.</p>
+                ) : null}
               </div>
-            </div>
+            ) : (
+              <div className="rounded-xl border border-[#2b3650] bg-[#0b1324]/70 p-4">
+                <h3 className="text-lg font-semibold text-zinc-100">Send Response</h3>
+                <p className="mt-1 text-xs text-zinc-400">
+                  For video responses, choose either device upload (camera roll supported) or a manual
+                  Vimeo link.
+                </p>
+                <div className="mt-4 space-y-4">
+                  <div className="flex flex-wrap gap-4">
+                    <label className="flex items-center gap-2 text-sm text-zinc-200">
+                      <input
+                        type="radio"
+                        checked={responseMode === "written"}
+                        onChange={() => setResponseMode("written")}
+                        className="h-4 w-4 accent-[#22c55e]"
+                      />
+                      Written Response
+                    </label>
+                    <label className="flex items-center gap-2 text-sm text-zinc-200">
+                      <input
+                        type="radio"
+                        checked={responseMode === "video"}
+                        onChange={() => setResponseMode("video")}
+                        className="h-4 w-4 accent-[#22c55e]"
+                      />
+                      Video Response
+                    </label>
+                  </div>
+
+                  {responseMode === "written" ? (
+                    <textarea
+                      rows={6}
+                      value={writtenResponse}
+                      onChange={(event) => setWrittenResponse(event.target.value)}
+                      placeholder="Write your response here..."
+                      className="w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 placeholder:text-zinc-500 focus:border-[#22c55e]"
+                    />
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setVideoInputMode("upload")}
+                          disabled={!cloudinaryUploadEnabled}
+                          className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
+                            videoInputMode === "upload"
+                              ? "bg-[#22c55e] text-black"
+                              : "border border-[#2b3650] text-zinc-200 hover:border-[#7f9434]"
+                          } ${!cloudinaryUploadEnabled ? "cursor-not-allowed opacity-50" : ""}`}
+                        >
+                          Upload from Device
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setVideoInputMode("vimeo")}
+                          className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
+                            videoInputMode === "vimeo"
+                              ? "bg-[#22c55e] text-black"
+                              : "border border-[#2b3650] text-zinc-200 hover:border-[#7f9434]"
+                          }`}
+                        >
+                          Paste Vimeo Link
+                        </button>
+                      </div>
+
+                      {!cloudinaryUploadEnabled && (
+                        <p className="text-xs text-yellow-200">
+                          Device upload is currently disabled. Use a Vimeo link for now.
+                        </p>
+                      )}
+
+                      {videoInputMode === "upload" && cloudinaryUploadEnabled ? (
+                        <div className="space-y-2">
+                          <input
+                            type="file"
+                            accept="video/*"
+                            onChange={(event) => setResponseVideo(event.target.files?.[0] ?? null)}
+                            className="w-full rounded-lg border border-dashed border-[#3b4b6a] bg-black px-4 py-4 text-sm text-zinc-300 file:mr-4 file:rounded-md file:border-0 file:bg-[#22c55e] file:px-3 file:py-2 file:font-semibold file:text-black hover:file:bg-[#35db72]"
+                          />
+                          <p className="text-xs text-zinc-400">
+                            Upload from desktop or phone camera roll. Files under 10MB are attached
+                            to the member email. Larger files are stored on Cloudinary and sent as a
+                            download link.
+                          </p>
+                        </div>
+                      ) : (
+                        <input
+                          type="url"
+                          value={manualVideoUrl}
+                          onChange={(event) => setManualVideoUrl(event.target.value)}
+                          placeholder="https://vimeo.com/..."
+                          className="w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 placeholder:text-zinc-500 focus:border-[#22c55e]"
+                        />
+                      )}
+                    </div>
+                  )}
+
+                  {sendError && <p className="text-sm text-red-300">{sendError}</p>}
+
+                  <button
+                    type="button"
+                    onClick={handleSendResponse}
+                    className="w-full rounded-full bg-[#22c55e] px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-[#35db72] sm:w-auto"
+                  >
+                    Send Response
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </section>
