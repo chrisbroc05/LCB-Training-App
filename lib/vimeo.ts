@@ -3,6 +3,41 @@ async function getResponseDetails(response: Response) {
   return raw.slice(0, 1000);
 }
 
+export function isValidVimeoUrl(value: string) {
+  const trimmed = value.trim();
+  return (
+    /^https?:\/\/(www\.)?vimeo\.com\/\d+/i.test(trimmed) ||
+    /^https?:\/\/player\.vimeo\.com\/video\/\d+/i.test(trimmed)
+  );
+}
+
+export function toVimeoEmbedUrl(url: string | null | undefined) {
+  if (!url) {
+    return null;
+  }
+
+  if (url.includes("player.vimeo.com/video/")) {
+    return url;
+  }
+
+  const match = url.match(/vimeo\.com\/(\d+)/i);
+  if (!match) {
+    return null;
+  }
+
+  return `https://player.vimeo.com/video/${match[1]}`;
+}
+
+export function normalizeVimeoUrl(value: string) {
+  const trimmed = value.trim();
+  const playerMatch = trimmed.match(/player\.vimeo\.com\/video\/(\d+)/i);
+  if (playerMatch) {
+    return `https://vimeo.com/${playerMatch[1]}`;
+  }
+
+  return trimmed;
+}
+
 export async function uploadVideoToVimeo(params: { fileBuffer: Buffer; fileName: string }) {
   const accessToken = process.env.VIMEO_ACCESS_TOKEN;
   const folderId = "29488403";

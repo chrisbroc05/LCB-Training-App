@@ -78,29 +78,25 @@ export default async function RootLayout({
         <header className="sticky top-0 z-20 border-b border-[#18243a] bg-black/95 backdrop-blur">
           <div className="mx-auto w-full max-w-6xl px-4 py-3 sm:px-6 sm:py-4">
             <div className="flex items-center justify-between gap-3 md:grid md:grid-cols-[1fr_auto] md:items-center">
-            <Link href="/" className="flex min-w-0 items-center gap-2 sm:gap-3">
-              <div className="relative h-10 w-28 shrink-0 sm:h-12 sm:w-32">
-                <BrandLogo className="object-contain" />
-              </div>
-              <span className="shrink-0 text-lg font-semibold tracking-tight text-zinc-100 sm:text-xl">
-                LCB <span className="text-[#22c55e]">Training</span>
-              </span>
-              <span
-                className="hidden h-4 w-px shrink-0 bg-[#2b3650] md:inline-block"
-                aria-hidden="true"
+              <Link href="/" className="flex min-w-0 items-center gap-2 sm:gap-3">
+                <div className="relative h-10 w-28 shrink-0 sm:h-12 sm:w-32">
+                  <BrandLogo className="object-contain" />
+                </div>
+                <span className="shrink-0 text-lg font-semibold tracking-tight text-zinc-100 sm:text-xl">
+                  LCB <span className="text-[#22c55e]">Training</span>
+                </span>
+              </Link>
+              <TopNavigation
+                isLoggedIn={Boolean(session?.user)}
+                isAdmin={hasAdminAccess}
+                hasBasicAccess={hasBasicAccess}
+                hasCoachingAccess={hasCoachingAccess}
+                userDisplayName={userDisplayName}
               />
-              <span className="hidden text-sm font-light italic text-[#52B788] md:inline">
-                Work Hard. Be Memorable.
-              </span>
-            </Link>
-            <TopNavigation
-              isLoggedIn={Boolean(session?.user)}
-              isAdmin={hasAdminAccess}
-              hasBasicAccess={hasBasicAccess}
-              hasCoachingAccess={hasCoachingAccess}
-              userDisplayName={userDisplayName}
-            />
             </div>
+          </div>
+          <div className="hidden w-full bg-[#0A1628] py-2 md:block">
+            <p className="text-center text-sm italic text-[#52B788]">Work Hard. Be Memorable.</p>
           </div>
         </header>
         <main className="flex-1">{children}</main>

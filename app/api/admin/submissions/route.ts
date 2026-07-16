@@ -25,6 +25,7 @@ export async function GET(request: Request) {
         createdAt: true,
         userEmail: true,
         status: true,
+        memberVimeoLink: true,
       },
     });
 
@@ -32,6 +33,7 @@ export async function GET(request: Request) {
       submissions: submissions.map((submission) => ({
         ...submission,
         badgeStatus: submission.status === "PENDING" ? "PENDING" : "RESPONDED",
+        hasMemberVimeoLink: Boolean(submission.memberVimeoLink),
       })),
     });
   }
@@ -44,6 +46,7 @@ export async function GET(request: Request) {
       createdAt: true,
       userEmail: true,
       status: true,
+      memberVimeoLink: true,
     },
   });
 
@@ -51,6 +54,7 @@ export async function GET(request: Request) {
     submissions: submissions.map((submission) => ({
       ...submission,
       badgeStatus: submission.status === "PENDING" ? "PENDING" : "RESPONDED",
+      hasMemberVimeoLink: Boolean(submission.memberVimeoLink),
     })),
   });
 }

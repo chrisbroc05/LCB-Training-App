@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import type { DatabaseTier } from "@/lib/membership";
 import { stripe } from "@/lib/stripe";
 import { formatAssessmentCallDateTime } from "@/lib/assessment-call";
+import { toVimeoEmbedUrl } from "@/lib/vimeo";
 
 type ProfilePageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -22,6 +23,7 @@ type ProfileSubmission = {
   playerName: string;
   originalMessage: string;
   originalVideoUrl: string | null;
+  memberVimeoLink: string | null;
   responseText: string | null;
   responseVideoUrl: string | null;
   extraLines: string[];
@@ -53,21 +55,76 @@ function formatDateTime(date: Date) {
   }).format(date);
 }
 
-function toVimeoEmbedUrl(url: string | null) {
-  if (!url) {
-    return null;
+function canInlineSubmissionVideo(url: string) {
+  return (
+    url.startsWith("/api/submission-videos/") ||
+    (url.startsWith("http") && !url.includes("vimeo.com"))
+  );
+}
+
+function MemberSubmissionVideo({
+  memberVimeoLink,
+  originalVideoUrl,
+}: {
+  memberVimeoLink: string | null;
+  originalVideoUrl: string | null;
+}) {
+  if (memberVimeoLink) {
+    const embedUrl = toVimeoEmbedUrl(memberVimeoLink);
+    if (embedUrl) {
+      return (
+        <div className="relative w-full overflow-hidden rounded-xl border border-[#2b3650] pt-[56.25%]">
+          <iframe
+            src={embedUrl}
+            title="Original submission video"
+            className="absolute inset-0 h-full w-full"
+            allow="autoplay; fullscreen; picture-in-picture"
+            allowFullScreen
+          />
+        </div>
+      );
+    }
   }
 
-  if (url.includes("player.vimeo.com/video/")) {
-    return url;
+  if (originalVideoUrl) {
+    const originalEmbedUrl = toVimeoEmbedUrl(originalVideoUrl);
+    if (originalEmbedUrl) {
+      return (
+        <div className="relative w-full overflow-hidden rounded-xl border border-[#2b3650] pt-[56.25%]">
+          <iframe
+            src={originalEmbedUrl}
+            title="Original submission video"
+            className="absolute inset-0 h-full w-full"
+            allow="autoplay; fullscreen; picture-in-picture"
+            allowFullScreen
+          />
+        </div>
+      );
+    }
+
+    if (canInlineSubmissionVideo(originalVideoUrl)) {
+      return (
+        <div className="overflow-hidden rounded-xl border border-[#2b3650]">
+          <video src={originalVideoUrl} controls className="w-full" />
+        </div>
+      );
+    }
+
+    return (
+      <a
+        href={originalVideoUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-sm text-[#8fd7ff] underline"
+      >
+        View Original Video
+      </a>
+    );
   }
 
-  const match = url.match(/vimeo\.com\/(\d+)/i);
-  if (!match) {
-    return null;
-  }
-
-  return `https://player.vimeo.com/video/${match[1]}`;
+  return (
+    <p className="text-sm text-zinc-400">Video unavailable -- please resubmit if needed</p>
+  );
 }
 
 async function getStripeBillingDate(params: {
@@ -156,6 +213,7 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
       playerName: item.playerName,
       originalMessage: item.notes,
       originalVideoUrl: item.submittedVideo,
+      memberVimeoLink: item.memberVimeoLink,
       responseText: item.responseText,
       responseVideoUrl: item.responseVideoUrl,
       extraLines: [`Pitch Focus: ${item.pitchType}`, `Handedness: ${item.handedness}`],
@@ -168,6 +226,7 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
       playerName: item.playerName,
       originalMessage: item.message,
       originalVideoUrl: item.videoPath,
+      memberVimeoLink: item.memberVimeoLink,
       responseText: item.responseText,
       responseVideoUrl: item.responseVideoUrl,
       extraLines: [`Topic: ${item.topic}`, `Age: ${item.playerAge}`],
@@ -297,29 +356,12 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
                 <p className="mt-3 whitespace-pre-wrap text-sm text-zinc-300">
                   {selectedSubmission.originalMessage}
                 </p>
-                {selectedSubmission.originalVideoUrl && (
-                  <div className="mt-4 space-y-2">
-                    <a
-                      href={selectedSubmission.originalVideoUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-[#8fd7ff] underline"
-                    >
-                      View Original Video
-                    </a>
-                    {toVimeoEmbedUrl(selectedSubmission.originalVideoUrl) && (
-                      <div className="relative w-full overflow-hidden rounded-xl border border-[#2b3650] pt-[56.25%]">
-                        <iframe
-                          src={toVimeoEmbedUrl(selectedSubmission.originalVideoUrl) ?? undefined}
-                          title="Original submission video"
-                          className="absolute inset-0 h-full w-full"
-                          allow="autoplay; fullscreen; picture-in-picture"
-                          allowFullScreen
-                        />
-                      </div>
-                    )}
-                  </div>
-                )}
+                <div className="mt-4 space-y-2">
+                  <MemberSubmissionVideo
+                    memberVimeoLink={selectedSubmission.memberVimeoLink}
+                    originalVideoUrl={selectedSubmission.originalVideoUrl}
+                  />
+                </div>
               </div>
 
               <div className="rounded-xl border border-[#2b3650] bg-black/30 p-4">

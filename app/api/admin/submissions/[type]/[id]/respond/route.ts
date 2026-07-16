@@ -8,6 +8,7 @@ import {
   getCloudinaryAttachmentDownloadUrl,
   uploadVideoToCloudinary,
 } from "@/lib/cloudinary";
+import { isValidVimeoUrl } from "@/lib/vimeo";
 
 const MAX_VIDEO_UPLOAD_BYTES = 100 * 1024 * 1024; // 100MB
 const EMAIL_VIDEO_ATTACHMENT_MAX_BYTES = 10 * 1024 * 1024; // 10MB
@@ -18,10 +19,6 @@ type RouteContext = {
     id: string;
   }>;
 };
-
-function isValidVimeoUrl(value: string) {
-  return /^https?:\/\/(www\.)?vimeo\.com\/\d+/i.test(value.trim());
-}
 
 function isCloudinaryAdminUploadEnabled() {
   return process.env.CLOUDINARY_ADMIN_RESPONSE_UPLOAD_ENABLED?.toLowerCase() === "true";

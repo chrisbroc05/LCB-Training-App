@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { toVimeoEmbedUrl } from "@/lib/vimeo";
 
 type TabType = "swing" | "mental";
 
@@ -11,6 +12,7 @@ type SubmissionListItem = {
   createdAt: string;
   userEmail: string;
   badgeStatus: "PENDING" | "RESPONDED";
+  hasMemberVimeoLink?: boolean;
 };
 
 type SubmissionDetail = SubmissionListItem & {
@@ -25,24 +27,8 @@ type SubmissionDetail = SubmissionListItem & {
   responseText?: string | null;
   responseVideoUrl?: string | null;
   respondedAt?: string | null;
+  memberVimeoLink?: string | null;
 };
-
-function toVimeoEmbedUrl(url: string | null | undefined) {
-  if (!url) {
-    return null;
-  }
-
-  if (url.includes("player.vimeo.com/video/")) {
-    return url;
-  }
-
-  const match = url.match(/vimeo\.com\/(\d+)/i);
-  if (!match) {
-    return null;
-  }
-
-  return `https://player.vimeo.com/video/${match[1]}`;
-}
 
 function formatResponseDateTime(value: string | null | undefined) {
   if (!value) {
@@ -86,6 +72,9 @@ export default function AdminPanel({
   const [sendError, setSendError] = useState("");
   const [showResponseModal, setShowResponseModal] = useState(false);
   const [responseSummary, setResponseSummary] = useState("");
+  const [memberVimeoLinkInput, setMemberVimeoLinkInput] = useState("");
+  const [memberVimeoSaveError, setMemberVimeoSaveError] = useState("");
+  const [savingMemberVimeoLink, setSavingMemberVimeoLink] = useState(false);
 
   useEffect(() => {
     const loadList = async () => {
@@ -124,6 +113,8 @@ export default function AdminPanel({
       }
       const data = (await response.json()) as { submission: SubmissionDetail };
       setDetail(data.submission);
+      setMemberVimeoLinkInput(data.submission.memberVimeoLink ?? "");
+      setMemberVimeoSaveError("");
       setWrittenResponse("");
       setResponseVideo(null);
       setManualVideoUrl("");
@@ -132,22 +123,69 @@ export default function AdminPanel({
       setSendError("");
       setShowResponseModal(false);
       setResponseSummary("");
+      setMemberVimeoLinkInput("");
+      setMemberVimeoSaveError("");
     };
 
     void loadDetail();
   }, [selectedId, tab, cloudinaryUploadEnabled]);
 
-  const selectedVideoUrl = useMemo(() => {
+  const fallbackVideoUrl = useMemo(() => {
     if (!detail) {
       return null;
     }
     return detail.submittedVideo || detail.videoPath || null;
   }, [detail]);
 
-  const canInlineVideo = selectedVideoUrl
-    ? selectedVideoUrl.startsWith("/api/submission-videos/") ||
-      (selectedVideoUrl.startsWith("http") && !selectedVideoUrl.includes("vimeo.com"))
+  const canInlineFallbackVideo = fallbackVideoUrl
+    ? fallbackVideoUrl.startsWith("/api/submission-videos/") ||
+      (fallbackVideoUrl.startsWith("http") && !fallbackVideoUrl.includes("vimeo.com"))
     : false;
+
+  const handleSaveMemberVimeoLink = async () => {
+    if (!detail) {
+      return;
+    }
+
+    setMemberVimeoSaveError("");
+    setSavingMemberVimeoLink(true);
+
+    const response = await fetch("/api/admin/submission-vimeo-link", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        submissionId: detail.id,
+        submissionType: tab,
+        vimeoLink: memberVimeoLinkInput.trim(),
+      }),
+    });
+
+    setSavingMemberVimeoLink(false);
+
+    if (!response.ok) {
+      const data = (await response.json().catch(() => ({}))) as { error?: string };
+      setMemberVimeoSaveError(data.error ?? "Unable to save member Vimeo link.");
+      return;
+    }
+
+    const data = (await response.json()) as { memberVimeoLink?: string };
+    const savedLink = data.memberVimeoLink ?? memberVimeoLinkInput.trim();
+    setDetail({
+      ...detail,
+      memberVimeoLink: savedLink,
+    });
+    setMemberVimeoLinkInput(savedLink);
+    setItems((previous) =>
+      previous.map((item) =>
+        item.id === detail.id
+          ? {
+              ...item,
+              hasMemberVimeoLink: true,
+            }
+          : item,
+      ),
+    );
+  };
 
   const handleSendResponse = async () => {
     if (!detail) {
@@ -270,15 +308,38 @@ export default function AdminPanel({
             >
               <div className="flex items-center justify-between gap-2">
                 <p className="text-sm font-semibold text-zinc-100">{item.playerName}</p>
-                <span
-                  className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-                    item.badgeStatus === "PENDING"
-                      ? "bg-yellow-500/20 text-yellow-200"
-                      : "bg-[#22c55e]/20 text-[#9df3bd]"
-                  }`}
-                >
-                  {item.badgeStatus === "PENDING" ? "Pending" : "Responded"}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span
+                    className="inline-flex h-5 w-5 items-center justify-center"
+                    title={item.hasMemberVimeoLink ? "Member Vimeo link saved" : "Member Vimeo link needed"}
+                  >
+                    {item.hasMemberVimeoLink ? (
+                      <svg
+                        viewBox="0 0 20 20"
+                        className="h-4 w-4 text-[#22c55e]"
+                        fill="currentColor"
+                        aria-hidden="true"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M16.707 5.293a1 1 0 0 1 0 1.414l-8 8a1 1 0 0 1-1.414 0l-4-4a1 1 0 1 1 1.414-1.414L8 12.586l7.293-7.293a1 1 0 0 1 1.414 0Z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    ) : (
+                      <span className="text-sm font-semibold text-zinc-500">-</span>
+                    )}
+                  </span>
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                      item.badgeStatus === "PENDING"
+                        ? "bg-yellow-500/20 text-yellow-200"
+                        : "bg-[#22c55e]/20 text-[#9df3bd]"
+                    }`}
+                  >
+                    {item.badgeStatus === "PENDING" ? "Pending" : "Responded"}
+                  </span>
+                </div>
               </div>
               {tab === "mental" && item.topic && (
                 <p className="mt-1 text-xs uppercase tracking-wide text-zinc-400">{item.topic}</p>
@@ -343,39 +404,86 @@ export default function AdminPanel({
               </p>
             </div>
 
-            {selectedVideoUrl && (
-              <div className="overflow-hidden rounded-xl border border-[#2b3650] bg-black">
-                <div className="border-b border-[#2b3650] px-4 py-2">
-                  <div className="flex flex-wrap gap-3">
-                    <a
-                      href={selectedVideoUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-[#8fd7ff] underline"
-                    >
-                      Open submission video link
-                    </a>
-                    <a
-                      href={`${selectedVideoUrl}${selectedVideoUrl.includes("?") ? "&" : "?"}download=1`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-[#8fd7ff] underline"
-                    >
-                      Download video
-                    </a>
+            <div className="rounded-xl border border-[#2b3650] bg-[#0b1324]/70 p-4">
+              <h3 className="text-lg font-semibold text-zinc-100">Member Submission Video</h3>
+              <div className="mt-4 space-y-3">
+                <label className="block text-sm font-medium text-zinc-200" htmlFor="member-vimeo-link">
+                  Paste Member Vimeo Link
+                </label>
+                <input
+                  id="member-vimeo-link"
+                  type="url"
+                  value={memberVimeoLinkInput}
+                  onChange={(event) => setMemberVimeoLinkInput(event.target.value)}
+                  placeholder="https://vimeo.com/..."
+                  className="w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 placeholder:text-zinc-500 focus:border-[#22c55e]"
+                />
+                {memberVimeoSaveError ? (
+                  <p className="text-sm text-red-300">{memberVimeoSaveError}</p>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={handleSaveMemberVimeoLink}
+                  disabled={savingMemberVimeoLink || !memberVimeoLinkInput.trim()}
+                  className="rounded-full bg-[#22c55e] px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-[#35db72] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {savingMemberVimeoLink ? "Saving..." : "Save Link"}
+                </button>
+              </div>
+
+              {detail.memberVimeoLink && toVimeoEmbedUrl(detail.memberVimeoLink) ? (
+                <div className="mt-4 overflow-hidden rounded-xl border border-[#2b3650] bg-black">
+                  <div className="aspect-video w-full">
+                    <iframe
+                      src={toVimeoEmbedUrl(detail.memberVimeoLink) ?? undefined}
+                      title="Member submission video"
+                      className="h-full w-full"
+                      allow="autoplay; fullscreen; picture-in-picture"
+                      allowFullScreen
+                    />
                   </div>
                 </div>
-                <div className="aspect-video w-full">
-                  {canInlineVideo ? (
-                    <video src={selectedVideoUrl} controls className="h-full w-full" />
-                  ) : (
-                    <div className="flex h-full items-center justify-center px-4 text-center text-sm text-zinc-400">
-                      Use the links above to open or download this submission video.
+              ) : fallbackVideoUrl ? (
+                <div className="mt-4 space-y-3">
+                  <p className="text-xs text-zinc-400">
+                    Temporary link -- upload to Vimeo and paste link above for permanent access
+                  </p>
+                  <div className="overflow-hidden rounded-xl border border-[#2b3650] bg-black">
+                    <div className="border-b border-[#2b3650] px-4 py-2">
+                      <div className="flex flex-wrap gap-3">
+                        <a
+                          href={fallbackVideoUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-[#8fd7ff] underline"
+                        >
+                          Open submission video link
+                        </a>
+                        <a
+                          href={`${fallbackVideoUrl}${fallbackVideoUrl.includes("?") ? "&" : "?"}download=1`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-[#8fd7ff] underline"
+                        >
+                          Download video
+                        </a>
+                      </div>
                     </div>
-                  )}
+                    <div className="aspect-video w-full">
+                      {canInlineFallbackVideo ? (
+                        <video src={fallbackVideoUrl} controls className="h-full w-full" />
+                      ) : (
+                        <div className="flex h-full items-center justify-center px-4 text-center text-sm text-zinc-400">
+                          Use the links above to open or download this submission video.
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            )}
+              ) : (
+                <p className="mt-4 text-sm text-zinc-400">No member submission video available.</p>
+              )}
+            </div>
 
             {detail.badgeStatus === "RESPONDED" ? (
               <div className="rounded-xl border border-[#2b3650] bg-[#0b1324]/70 p-4">
