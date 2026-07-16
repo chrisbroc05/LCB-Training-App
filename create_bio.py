@@ -358,10 +358,10 @@ def main() -> None:
         list_style,
     )
     online_para = Paragraph(
-        "&bull; Free - 1 free swing or mental game submission<br/>"
-        "&bull; Basic ($5/mo) - full video drill library + workout programs<br/>"
-        "&bull; Pro ($9/mo) - unlimited swing analysis + mental game support<br/>"
-        "&bull; Elite ($14/mo) - priority feedback + monthly group coaching call",
+        "&bull; Free - 1 free coaching submission plus free 20-minute Player Assessment Call with Coach Broc<br/>"
+        "&bull; Basic ($49/mo or $490/yr) - full video drill library plus 7 downloadable workout programs<br/>"
+        "&bull; Memorable ($149/mo or $1,490/yr) - everything in Basic plus 2 coaching submissions per month with 48-hour feedback, weekly check-ins, and goal setting<br/>"
+        "&bull; Elite ($249/mo or $2,490/yr) - everything in Memorable plus 4 submissions per month with rollover, priority 24-hour response, monthly group coaching call, and personalized development plan",
         list_style,
     )
     in_person_cell = build_section_cell(
