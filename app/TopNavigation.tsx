@@ -84,12 +84,6 @@ export default function TopNavigation({
   if (isAdmin && pathname.startsWith("/admin")) {
     return (
       <nav className="flex items-center justify-end gap-2 md:justify-self-end">
-        <Link href="/dashboard" onClick={closeMenus} className={linkClass(false)}>
-          Member View
-        </Link>
-        <Link href="/admin" onClick={closeMenus} className={linkClass(pathname.startsWith("/admin"))}>
-          Admin Dashboard
-        </Link>
         <button
           type="button"
           onClick={() => {
@@ -130,16 +124,6 @@ export default function TopNavigation({
             {link.label}
           </Link>
         ))}
-
-        {isAdmin ? (
-          <Link
-            href="/admin"
-            onClick={closeMenus}
-            className={linkClass(pathname.startsWith("/admin"))}
-          >
-            Admin Dashboard
-          </Link>
-        ) : null}
 
         <button
           type="button"
@@ -198,15 +182,6 @@ export default function TopNavigation({
                     {link.label}
                   </Link>
                 ))}
-                {isAdmin ? (
-                  <Link
-                    href="/admin"
-                    onClick={closeMenus}
-                    className={linkClass(pathname.startsWith("/admin"))}
-                  >
-                    Admin Dashboard
-                  </Link>
-                ) : null}
                 <button
                   type="button"
                   onClick={() => {

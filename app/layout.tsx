@@ -12,6 +12,7 @@ import { isAdminEmail } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
 import BrandLogo from "@/app/BrandLogo";
 import TopNavigation from "@/app/TopNavigation";
+import AdminViewToggle from "@/app/AdminViewToggle";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -103,6 +104,7 @@ export default async function RootLayout({
           </div>
         </header>
         <main className="flex-1">{children}</main>
+        <AdminViewToggle isAdmin={hasAdminAccess} />
         <footer className="border-t border-[#18243a] py-6 text-center text-sm text-zinc-400">
           <div className="mx-auto flex w-full max-w-6xl flex-col items-center justify-center gap-2 px-4 sm:px-6 md:flex-row md:gap-4">
             <span>© {new Date().getFullYear()} LCB Training. All rights reserved.</span>
