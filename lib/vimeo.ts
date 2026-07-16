@@ -3,50 +3,79 @@ async function getResponseDetails(response: Response) {
   return raw.slice(0, 1000);
 }
 
-export function isValidVimeoUrl(value: string) {
-  const trimmed = value.trim();
-  return (
-    /^https?:\/\/(www\.)?vimeo\.com\/\d+/i.test(trimmed) ||
-    /^https?:\/\/player\.vimeo\.com\/video\/\d+/i.test(trimmed)
-  );
-}
+export type ParsedVimeoUrl = {
+  videoId: string;
+  hash: string | null;
+};
 
-export function extractVimeoVideoId(url: string | null | undefined) {
+export function parseVimeoUrl(url: string | null | undefined): ParsedVimeoUrl | null {
   if (!url) {
     return null;
   }
 
   const trimmed = url.trim();
-  const playerMatch = trimmed.match(/player\.vimeo\.com\/video\/(\d+)/i);
+
+  const playerMatch = trimmed.match(/player\.vimeo\.com\/video\/(\d+)(?:\?([^#]*))?/i);
   if (playerMatch) {
-    return playerMatch[1];
+    const query = playerMatch[2] ?? "";
+    const hashParam = query.match(/(?:^|&)h=([^&]+)/i);
+    return {
+      videoId: playerMatch[1],
+      hash: hashParam ? decodeURIComponent(hashParam[1]) : null,
+    };
   }
 
-  const standardMatch = trimmed.match(/vimeo\.com\/(\d+)/i);
+  const pathOnly = trimmed.split("?")[0].split("#")[0];
+  const standardMatch = pathOnly.match(/(?:www\.)?vimeo\.com\/(\d+)(?:\/([a-zA-Z0-9]+))?\/?$/i);
   if (standardMatch) {
-    return standardMatch[1];
+    return {
+      videoId: standardMatch[1],
+      hash: standardMatch[2] ?? null,
+    };
   }
 
   return null;
 }
 
+export function isValidVimeoUrl(value: string) {
+  return parseVimeoUrl(value) !== null;
+}
+
+export function extractVimeoVideoId(url: string | null | undefined) {
+  return parseVimeoUrl(url)?.videoId ?? null;
+}
+
 export function toVimeoEmbedUrl(url: string | null | undefined) {
-  const videoId = extractVimeoVideoId(url);
-  if (!videoId) {
+  const parsed = parseVimeoUrl(url);
+  if (!parsed) {
     return null;
   }
 
-  return `https://player.vimeo.com/video/${videoId}?title=0&byline=0&portrait=0&dnt=1`;
+  const params = new URLSearchParams({
+    title: "0",
+    byline: "0",
+    portrait: "0",
+    dnt: "1",
+  });
+
+  if (parsed.hash) {
+    params.set("h", parsed.hash);
+  }
+
+  return `https://player.vimeo.com/video/${parsed.videoId}?${params.toString()}`;
 }
 
 export function normalizeVimeoUrl(value: string) {
-  const trimmed = value.trim();
-  const videoId = extractVimeoVideoId(trimmed);
-  if (videoId) {
-    return `https://vimeo.com/${videoId}`;
+  const parsed = parseVimeoUrl(value);
+  if (!parsed) {
+    return value.trim();
   }
 
-  return trimmed;
+  if (parsed.hash) {
+    return `https://vimeo.com/${parsed.videoId}/${parsed.hash}`;
+  }
+
+  return `https://vimeo.com/${parsed.videoId}`;
 }
 
 export async function uploadVideoToVimeo(params: { fileBuffer: Buffer; fileName: string }) {

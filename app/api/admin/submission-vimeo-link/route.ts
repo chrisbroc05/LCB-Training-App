@@ -22,7 +22,10 @@ export async function POST(request: Request) {
   let body: RequestBody;
   try {
     body = (await request.json()) as RequestBody;
-  } catch {
+  } catch (error) {
+    console.error("[submission-vimeo-link] Invalid request body", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   }
 
@@ -43,48 +46,82 @@ export async function POST(request: Request) {
   }
 
   if (!isValidVimeoUrl(vimeoLink)) {
+    console.error("[submission-vimeo-link] Invalid Vimeo URL", {
+      submissionId,
+      submissionType,
+      vimeoLink,
+    });
     return NextResponse.json({ error: "Please provide a valid Vimeo video link." }, { status: 400 });
   }
 
   const normalizedLink = normalizeVimeoUrl(vimeoLink);
 
-  if (submissionType === "mental") {
-    const existing = await prisma.mentalGameSubmission.findUnique({
+  try {
+    if (submissionType === "mental") {
+      const existing = await prisma.mentalGameSubmission.findUnique({
+        where: { id: submissionId },
+        select: { id: true, memberVimeoLink: true },
+      });
+
+      if (!existing) {
+        console.error("[submission-vimeo-link] Mental submission not found", {
+          submissionId,
+        });
+        return NextResponse.json({ error: "Submission not found." }, { status: 404 });
+      }
+
+      const updated = await prisma.mentalGameSubmission.update({
+        where: { id: submissionId },
+        data: { memberVimeoLink: normalizedLink },
+      });
+
+      console.info("[submission-vimeo-link] Saved mental submission Vimeo link", {
+        submissionId,
+        previousLink: existing.memberVimeoLink,
+        memberVimeoLink: updated.memberVimeoLink,
+      });
+
+      return NextResponse.json({
+        success: true,
+        memberVimeoLink: updated.memberVimeoLink,
+      });
+    }
+
+    const existing = await prisma.swingAnalysisSubmission.findUnique({
       where: { id: submissionId },
-      select: { id: true },
+      select: { id: true, memberVimeoLink: true },
     });
 
     if (!existing) {
+      console.error("[submission-vimeo-link] Swing submission not found", {
+        submissionId,
+      });
       return NextResponse.json({ error: "Submission not found." }, { status: 404 });
     }
 
-    const updated = await prisma.mentalGameSubmission.update({
+    const updated = await prisma.swingAnalysisSubmission.update({
       where: { id: submissionId },
       data: { memberVimeoLink: normalizedLink },
+    });
+
+    console.info("[submission-vimeo-link] Saved swing submission Vimeo link", {
+      submissionId,
+      previousLink: existing.memberVimeoLink,
+      memberVimeoLink: updated.memberVimeoLink,
     });
 
     return NextResponse.json({
       success: true,
       memberVimeoLink: updated.memberVimeoLink,
     });
+  } catch (error) {
+    console.error("[submission-vimeo-link] Failed to save member Vimeo link", {
+      submissionId,
+      submissionType,
+      vimeoLink,
+      normalizedLink,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return NextResponse.json({ error: "Unable to save video link." }, { status: 500 });
   }
-
-  const existing = await prisma.swingAnalysisSubmission.findUnique({
-    where: { id: submissionId },
-    select: { id: true },
-  });
-
-  if (!existing) {
-    return NextResponse.json({ error: "Submission not found." }, { status: 404 });
-  }
-
-  const updated = await prisma.swingAnalysisSubmission.update({
-    where: { id: submissionId },
-    data: { memberVimeoLink: normalizedLink },
-  });
-
-  return NextResponse.json({
-    success: true,
-    memberVimeoLink: updated.memberVimeoLink,
-  });
 }

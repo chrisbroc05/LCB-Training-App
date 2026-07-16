@@ -74,7 +74,9 @@ export default function AdminPanel({
   const [responseSummary, setResponseSummary] = useState("");
   const [memberVimeoLinkInput, setMemberVimeoLinkInput] = useState("");
   const [memberVimeoSaveError, setMemberVimeoSaveError] = useState("");
+  const [memberVimeoSaveSuccess, setMemberVimeoSaveSuccess] = useState(false);
   const [savingMemberVimeoLink, setSavingMemberVimeoLink] = useState(false);
+  const [memberVimeoPlayerKey, setMemberVimeoPlayerKey] = useState(0);
   const [editingMemberVimeoLink, setEditingMemberVimeoLink] = useState(true);
   const [editingCoachVimeoLink, setEditingCoachVimeoLink] = useState(true);
 
@@ -117,6 +119,7 @@ export default function AdminPanel({
       setDetail(data.submission);
       setMemberVimeoLinkInput(data.submission.memberVimeoLink ?? "");
       setMemberVimeoSaveError("");
+      setMemberVimeoSaveSuccess(false);
       setEditingMemberVimeoLink(!data.submission.memberVimeoLink);
       setWrittenResponse("");
       setResponseVideo(null);
@@ -156,6 +159,7 @@ export default function AdminPanel({
     }
 
     setMemberVimeoSaveError("");
+    setMemberVimeoSaveSuccess(false);
     setSavingMemberVimeoLink(true);
 
     const response = await fetch("/api/admin/submission-vimeo-link", {
@@ -168,9 +172,8 @@ export default function AdminPanel({
       }),
     });
 
-    setSavingMemberVimeoLink(false);
-
     if (!response.ok) {
+      setSavingMemberVimeoLink(false);
       const data = (await response.json().catch(() => ({}))) as { error?: string };
       setMemberVimeoSaveError(data.error ?? "Unable to save member Vimeo link.");
       return;
@@ -178,12 +181,24 @@ export default function AdminPanel({
 
     const data = (await response.json()) as { memberVimeoLink?: string };
     const savedLink = data.memberVimeoLink ?? memberVimeoLinkInput.trim();
-    setDetail({
-      ...detail,
-      memberVimeoLink: savedLink,
-    });
-    setMemberVimeoLinkInput(savedLink);
+
+    const refreshed = await fetch(`/api/admin/submissions/${tab}/${detail.id}`);
+    if (refreshed.ok) {
+      const refreshData = (await refreshed.json()) as { submission: SubmissionDetail };
+      setDetail(refreshData.submission);
+      setMemberVimeoLinkInput(refreshData.submission.memberVimeoLink ?? savedLink);
+    } else {
+      setDetail({
+        ...detail,
+        memberVimeoLink: savedLink,
+      });
+      setMemberVimeoLinkInput(savedLink);
+    }
+
+    setSavingMemberVimeoLink(false);
     setEditingMemberVimeoLink(false);
+    setMemberVimeoSaveSuccess(true);
+    setMemberVimeoPlayerKey((current) => current + 1);
     setItems((previous) =>
       previous.map((item) =>
         item.id === detail.id
@@ -417,17 +432,23 @@ export default function AdminPanel({
               <h3 className="text-lg font-semibold text-zinc-100">Member Submission Video</h3>
 
               {detail.memberVimeoLink && !editingMemberVimeoLink ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditingMemberVimeoLink(true);
-                    setMemberVimeoLinkInput(detail.memberVimeoLink ?? "");
-                    setMemberVimeoSaveError("");
-                  }}
-                  className="mt-3 text-sm font-medium text-[#52B788] underline transition hover:text-[#9df3bd]"
-                >
-                  Change Video Link
-                </button>
+                <div className="mt-3 space-y-2">
+                  {memberVimeoSaveSuccess ? (
+                    <p className="text-sm font-medium text-[#9df3bd]">Video link saved</p>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingMemberVimeoLink(true);
+                      setMemberVimeoLinkInput(detail.memberVimeoLink ?? "");
+                      setMemberVimeoSaveError("");
+                      setMemberVimeoSaveSuccess(false);
+                    }}
+                    className="text-sm font-medium text-[#52B788] underline transition hover:text-[#9df3bd]"
+                  >
+                    Change Video Link
+                  </button>
+                </div>
               ) : (
                 <div className="mt-4 space-y-3">
                   <label className="block text-sm font-medium text-zinc-200" htmlFor="member-vimeo-link">
@@ -448,6 +469,9 @@ export default function AdminPanel({
                   {memberVimeoSaveError ? (
                     <p className="text-sm text-red-300">{memberVimeoSaveError}</p>
                   ) : null}
+                  {memberVimeoSaveSuccess ? (
+                    <p className="text-sm font-medium text-[#9df3bd]">Video link saved</p>
+                  ) : null}
                   <button
                     type="button"
                     onClick={handleSaveMemberVimeoLink}
@@ -463,6 +487,7 @@ export default function AdminPanel({
                 <div className="mt-4 overflow-hidden rounded-xl border border-[#2b3650] bg-black">
                   <div className="aspect-video w-full">
                     <iframe
+                      key={`${memberVimeoPlayerKey}-${memberVimeoEmbedUrl}`}
                       src={memberVimeoEmbedUrl}
                       title="Member submission video"
                       className="h-full w-full"
