@@ -25,25 +25,30 @@ export default async function UpgradePage({ searchParams }: UpgradePageProps) {
         )}
         {reason === "basic-required" && (
           <p className="mt-4 rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-100">
-            Basic membership unlocks the full drill library, all 7 workout programs, and the
-            Pre-Game Warmup and Baseball Athlete Nutrition guides.
+            Basic membership ($59 one-time) unlocks lifetime access to the full drill library, all 7
+            workout programs, and the core training PDFs.
           </p>
         )}
         {(reason === "memorable-required" || reason === "pro-required") && (
           <p className="mt-4 rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-100">
-            Memorable or Elite membership is required for coaching submissions, accountability
-            check-ins, and coaching PDF resources.
+            Memorable or Elite membership is required for coaching submissions and accountability
+            check-ins with Coach Broc.
+          </p>
+        )}
+        {(reason === "elite-required") && (
+          <p className="mt-4 rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-100">
+            Elite membership is required for the College Recruiting Guide and priority coaching support.
           </p>
         )}
         <p className="mt-4 text-sm text-zinc-300">
-          <span className="font-semibold text-[#9df3bd]">Free</span> includes one coaching
-          submission, a 20-minute Player Assessment Call, and personal feedback from Coach Broc.
-          <span className="ml-1 font-semibold text-[#9df3bd]">Basic</span> is self-guided with the full
-          drill library, resources, and PDF guides.
+          <span className="font-semibold text-[#9df3bd]">Free</span> includes one coaching submission,
+          a 20-minute Player Assessment Call, and personal feedback from Coach Broc.
+          <span className="ml-1 font-semibold text-[#9df3bd]">Basic</span> is a $59 one-time purchase
+          with lifetime access to the drill library, workout programs, and core training PDFs.
           <span className="ml-1 font-semibold text-[#9df3bd]">Memorable</span> adds 2 coaching
-          submissions per month with 48-hour feedback, accountability check-ins, and coaching PDFs.
+          submissions per month with 48-hour feedback and accountability check-ins.
           <span className="ml-1 font-semibold text-[#9df3bd]">Elite</span> adds priority 24-hour
-          response, 4 submissions with rollover, group coaching calls, and personalized training
+          response, 4 submissions with rollover, group coaching calls, and personalized development
           plans.
         </p>
       </section>

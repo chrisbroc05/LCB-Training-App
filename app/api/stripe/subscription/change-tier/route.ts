@@ -45,6 +45,13 @@ export async function POST(request: Request) {
       );
     }
 
+    if (requestedTier === "BASIC") {
+      return NextResponse.json(
+        { error: "Basic is a lifetime one-time purchase and cannot be selected as a subscription tier." },
+        { status: 400 },
+      );
+    }
+
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: {

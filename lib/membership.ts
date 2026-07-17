@@ -13,25 +13,28 @@ export const membershipTiers: MembershipTier[] = [
   {
     key: "free",
     name: "Free",
-    priceLabel: "$0 / month",
-    summary: "Start with a free coaching submission and player assessment call from Coach Broc.",
+    priceLabel: "$0",
+    summary: "Start with a free assessment call and one coaching submission from Coach Broc.",
     features: [
-      "1 free coaching submission (swing analysis or mental game support) with personal feedback from Coach Broc",
-      "Free 20-minute Player Assessment Call with Coach Broc via Google Meet",
-      "Personal feedback from Coach Broc",
+      "Free 20-minute Player Assessment Call with Coach Broc",
+      "1 free coaching submission with personal feedback from Coach Broc",
+      "No credit card required",
     ],
   },
   {
     key: "basic",
     name: "Basic",
-    priceLabel: "$49 / month",
-    summary: "Self-guided training with the full drill library, workouts, and PDF resources.",
+    priceLabel: "$59 one-time",
+    summary: "Lifetime access to the full drill library, workouts, and core training PDFs.",
     features: [
+      "Lifetime access -- pay once, access forever",
       "Full hitting, fielding, and mindset video drill library",
-      "All 7 workout programs (Strength, Speed-Agility, Mobility for all ages)",
+      "7 downloadable workout programs (Strength, Speed-Agility, and Mobility)",
       "Pre-Game Warmup Routine PDF",
-      "Baseball Athlete Nutrition Guide PDF",
-      "Self-guided — no coaching submissions",
+      "Nutrition and Fueling Guide PDF",
+      "Mental Game Workbook PDF",
+      "Parent Guide PDF",
+      "New content added regularly",
     ],
   },
   {
@@ -41,13 +44,12 @@ export const membershipTiers: MembershipTier[] = [
     summary: "Everything in Basic plus monthly coaching submissions and accountability support.",
     features: [
       "Everything in Basic",
-      "2 coaching submissions per month (swing analysis or mental game support)",
-      "48-hour video feedback from Coach Broc",
-      "Monthly goal setting check-in",
-      "Weekly accountability check-in",
-      "Mental Game Workbook PDF",
-      "Parent Guide PDF",
-      "1-on-1 scheduling via text or email",
+      "2 coaching submissions per month",
+      "Personal video feedback from Coach Broc within 48 hours",
+      "1-on-1 Coaching right in your pocket",
+      "Monthly goal setting check-in with Coach Broc",
+      "Weekly accountability check-ins",
+      "Direct access to Coach Broc between submissions",
     ],
   },
   {
@@ -58,12 +60,11 @@ export const membershipTiers: MembershipTier[] = [
       "Everything in Memorable plus priority response, group coaching, and personalized plans.",
     features: [
       "Everything in Memorable",
-      "4 coaching submissions per month with rollover up to 8 maximum",
-      "Priority 24-hour response time",
-      "Monthly group coaching call",
+      "4 coaching submissions per month with rollover up to 8",
+      "Priority 24-hour response from Coach Broc",
       "Personalized monthly development plan from Coach Broc",
+      "Monthly group coaching call with Coach Broc",
       "College Recruiting Guide PDF",
-      "Weekly training plan curated by Coach Broc",
     ],
   },
 ];
@@ -133,4 +134,11 @@ export function canAccessWorkoutPrograms(userTier: DatabaseTier) {
 
 export function canAccessCoachingNav(userTier: DatabaseTier) {
   return hasDatabaseTierAccess(userTier, "memorable");
+}
+
+export function isLifetimeBasicMember(
+  membershipTier: DatabaseTier,
+  stripeSubscriptionId: string | null | undefined,
+) {
+  return membershipTier === "BASIC" && !stripeSubscriptionId;
 }

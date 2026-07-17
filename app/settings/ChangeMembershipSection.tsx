@@ -3,9 +3,15 @@
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import BillingFrequencyToggle from "@/app/BillingFrequencyToggle";
+import AnnualSavingsBadge from "@/app/AnnualSavingsBadge";
+import OneTimePaymentBadge from "@/app/OneTimePaymentBadge";
 import {
   formatTierPriceLabel,
+  getAnnualSavings,
+  getTierPricing,
+  isOneTimeTier,
   parseBillingFrequency,
+  usesBillingFrequencyToggle,
   type BillingFrequency,
 } from "@/lib/billing";
 import {
@@ -19,15 +25,21 @@ import {
 type ChangeMembershipSectionProps = {
   currentTier: DatabaseTier;
   hasSubscription: boolean;
+  isLifetimeBasic?: boolean;
 };
 
 export default function ChangeMembershipSection({
   currentTier,
   hasSubscription,
+  isLifetimeBasic = false,
 }: ChangeMembershipSectionProps) {
   return (
     <Suspense fallback={null}>
-      <ChangeMembershipContent currentTier={currentTier} hasSubscription={hasSubscription} />
+      <ChangeMembershipContent
+        currentTier={currentTier}
+        hasSubscription={hasSubscription}
+        isLifetimeBasic={isLifetimeBasic}
+      />
     </Suspense>
   );
 }
@@ -35,6 +47,7 @@ export default function ChangeMembershipSection({
 function ChangeMembershipContent({
   currentTier,
   hasSubscription,
+  isLifetimeBasic,
 }: ChangeMembershipSectionProps) {
   const searchParams = useSearchParams();
   const highlightedTierKey = searchParams.get("tier")?.toLowerCase();
@@ -53,7 +66,9 @@ function ChangeMembershipContent({
 
   async function handleTierChange(nextTier: DatabaseTier) {
     const shouldContinue = window.confirm(
-      `Switch your membership to ${formatDatabaseTierLabel(nextTier)}? Proration will be applied automatically by Stripe.`,
+      hasSubscription
+        ? `Switch your membership to ${formatDatabaseTierLabel(nextTier)}? Proration will be applied automatically by Stripe.`
+        : `Continue to checkout for ${formatDatabaseTierLabel(nextTier)}?`,
     );
     if (!shouldContinue) {
       return;
@@ -111,33 +126,52 @@ function ChangeMembershipContent({
     <section className="mt-8 rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
       <h2 className="text-lg font-semibold text-zinc-100">Upgrade Membership</h2>
       <p className="mt-2 text-zinc-300">
-        {hasSubscription
-          ? "Switch to another membership tier anytime. Stripe will automatically apply prorated charges or credits."
-          : "Choose a paid tier to start your subscription through Stripe checkout."}
+        {isLifetimeBasic
+          ? "Upgrade to Memorable or Elite for monthly coaching submissions, accountability support, and priority access to Coach Broc."
+          : hasSubscription
+            ? "Switch to another membership tier anytime. Stripe will automatically apply prorated charges or credits."
+            : "Choose a paid tier to unlock more training content and coaching support."}
       </p>
-      <div className="mt-5 flex justify-center">
+      <div className="mt-5 flex flex-col items-center gap-2">
         <BillingFrequencyToggle value={billingFrequency} onChange={setBillingFrequency} />
+        <p className="text-xs text-zinc-400">
+          Monthly and annual pricing applies to Memorable and Elite only.
+        </p>
       </div>
       <div className="mt-5 grid gap-4">
         {availableTiers.map((tier) => {
           const nextTier = keyToDatabaseTier[tier.key];
           const isPending = pendingTier === nextTier;
+          const pricing = getTierPricing(tier.key, billingFrequency);
           const priceLabel = formatTierPriceLabel(tier.key, billingFrequency);
           const isHighlighted = highlightedTierKey === tier.key;
+          const oneTimeTier = isOneTimeTier(tier.key);
+          const annualSavings =
+            usesBillingFrequencyToggle(tier.key) && billingFrequency === "annual"
+              ? getAnnualSavings(tier.key)
+              : null;
 
           return (
             <article
               key={tier.key}
-              className={`rounded-xl border bg-black/30 p-4 sm:p-5 ${
+              className={`relative rounded-xl border bg-black/30 p-4 sm:p-5 ${
                 isHighlighted
                   ? "border-[#52B788] bg-[#0f1d34]"
                   : "border-[#2b3650]"
               }`}
             >
+              {oneTimeTier ? (
+                <OneTimePaymentBadge className="absolute right-4 top-4" />
+              ) : annualSavings ? (
+                <AnnualSavingsBadge amount={annualSavings} className="absolute right-4 top-4" />
+              ) : null}
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
+                <div className={oneTimeTier || annualSavings ? "pr-24" : undefined}>
                   <h3 className="text-base font-semibold text-zinc-100">{tier.name}</h3>
                   <p className="text-sm text-[#9df3bd]">{priceLabel}</p>
+                  {!oneTimeTier && pricing.secondary ? (
+                    <p className="text-xs text-zinc-400">{pricing.secondary}</p>
+                  ) : null}
                 </div>
                 <button
                   type="button"

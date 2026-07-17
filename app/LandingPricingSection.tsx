@@ -4,7 +4,14 @@ import Link from "next/link";
 import { useState } from "react";
 import BillingFrequencyToggle from "@/app/BillingFrequencyToggle";
 import AnnualSavingsBadge from "@/app/AnnualSavingsBadge";
-import { getAnnualSavings, getTierPricing, type BillingFrequency } from "@/lib/billing";
+import OneTimePaymentBadge from "@/app/OneTimePaymentBadge";
+import {
+  getAnnualSavings,
+  getTierPricing,
+  isOneTimeTier,
+  usesBillingFrequencyToggle,
+  type BillingFrequency,
+} from "@/lib/billing";
 import { membershipTiers } from "@/lib/membership";
 
 export default function LandingPricingSection() {
@@ -22,29 +29,41 @@ export default function LandingPricingSection() {
           </p>
         </div>
         <Link href="/auth" className="hidden text-sm font-medium text-[#98b144] md:block">
-          Get started now →
+          Get started now -&gt;
         </Link>
       </div>
 
-      <div className="mb-8 flex justify-center">
+      <div className="mb-3 flex justify-center">
         <BillingFrequencyToggle value={billingFrequency} onChange={setBillingFrequency} />
       </div>
+      <p className="mb-8 text-center text-xs text-zinc-400">
+        Monthly and annual pricing applies to Memorable and Elite only.
+      </p>
 
       <div className="grid gap-5 md:grid-cols-4">
         {membershipTiers.map((tier) => {
           const pricing = getTierPricing(tier.key, billingFrequency);
           const annualSavings =
-            billingFrequency === "annual" ? getAnnualSavings(tier.key) : null;
+            usesBillingFrequencyToggle(tier.key) && billingFrequency === "annual"
+              ? getAnnualSavings(tier.key)
+              : null;
+          const oneTimeTier = isOneTimeTier(tier.key);
 
           return (
             <article
               key={tier.key}
               className="relative rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-6 shadow-lg shadow-black/40"
             >
-              {annualSavings ? (
+              {oneTimeTier ? (
+                <OneTimePaymentBadge className="absolute right-4 top-4" />
+              ) : annualSavings ? (
                 <AnnualSavingsBadge amount={annualSavings} className="absolute right-4 top-4" />
               ) : null}
-              <h3 className={`text-xl font-semibold text-zinc-100${annualSavings ? " pr-16" : ""}`}>
+              <h3
+                className={`text-xl font-semibold text-zinc-100${
+                  oneTimeTier || annualSavings ? " pr-16" : ""
+                }`}
+              >
                 {tier.name}
               </h3>
               <p className="mt-2 text-2xl font-bold text-[#98b144]">{pricing.primary}</p>
@@ -64,7 +83,9 @@ export default function LandingPricingSection() {
                 href={
                   tier.key === "free"
                     ? `/auth?tier=${tier.key}&mode=signup`
-                    : `/auth?tier=${tier.key}&mode=signup&billing=${billingFrequency}`
+                    : tier.key === "basic"
+                      ? `/auth?tier=${tier.key}&mode=signup`
+                      : `/auth?tier=${tier.key}&mode=signup&billing=${billingFrequency}`
                 }
                 className="mt-6 inline-flex w-full items-center justify-center rounded-full bg-[#22c55e] px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-[#35db72]"
               >

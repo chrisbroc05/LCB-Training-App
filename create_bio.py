@@ -360,7 +360,7 @@ def main() -> None:
     online_para = Paragraph(
         "<b>Free</b><br/>"
         "1 free coaching submission plus free 20-minute Player Assessment Call with Coach Broc<br/>"
-        "<b>Basic ($49/mo or $490/yr)</b><br/>"
+        "<b>Basic ($59 one-time)</b><br/>"
         "Full video drill library plus 7 downloadable workout programs<br/>"
         "<b>Memorable ($149/mo or $1,490/yr)</b><br/>"
         "Everything in Basic plus 2 coaching submissions per month with 48-hour feedback, weekly check-ins, and goal setting<br/>"

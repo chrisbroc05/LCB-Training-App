@@ -80,16 +80,31 @@ export async function POST(request: Request) {
       membershipTier &&
       isDatabaseTier(membershipTier)
     ) {
-      await prisma.user.updateMany({
-        where: { id: userId },
-        data: {
-          membershipTier,
-          subscriptionStatus: "ACTIVE",
-          stripeCustomerId,
-          stripeSubscriptionId,
-          subscriptionCancelAtPeriodEnd: false,
-        },
-      });
+      if (checkoutSession.mode === "payment" && membershipTier === "BASIC") {
+        await prisma.user.updateMany({
+          where: { id: userId },
+          data: {
+            membershipTier: "BASIC",
+            subscriptionStatus: "NONE",
+            stripeCustomerId,
+            stripeSubscriptionId: null,
+            stripePriceId: process.env.STRIPE_BASIC_PRICE_ID ?? null,
+            subscriptionCurrentPeriodEnd: null,
+            subscriptionCancelAtPeriodEnd: false,
+          },
+        });
+      } else if (checkoutSession.mode === "subscription") {
+        await prisma.user.updateMany({
+          where: { id: userId },
+          data: {
+            membershipTier,
+            subscriptionStatus: "ACTIVE",
+            stripeCustomerId,
+            stripeSubscriptionId,
+            subscriptionCancelAtPeriodEnd: false,
+          },
+        });
+      }
     }
   }
 
@@ -115,11 +130,11 @@ export async function POST(request: Request) {
 
     const data: {
       stripeCustomerId?: string;
-      stripeSubscriptionId: string;
-      stripePriceId?: string;
+      stripeSubscriptionId: string | null;
+      stripePriceId?: string | null;
       subscriptionCurrentPeriodEnd: Date | null;
       subscriptionCancelAtPeriodEnd: boolean;
-      subscriptionStatus: "ACTIVE" | "CANCEL_AT_PERIOD_END" | "CANCELED";
+      subscriptionStatus: "ACTIVE" | "CANCEL_AT_PERIOD_END" | "CANCELED" | "NONE";
       membershipTier?: "BASIC" | "MEMORABLE" | "ELITE";
     } = {
       stripeSubscriptionId,
@@ -142,6 +157,11 @@ export async function POST(request: Request) {
 
     if (status === "CANCELED") {
       data.membershipTier = "BASIC";
+      data.subscriptionStatus = "NONE";
+      data.stripeSubscriptionId = null;
+      data.subscriptionCurrentPeriodEnd = null;
+      data.subscriptionCancelAtPeriodEnd = false;
+      data.stripePriceId = null;
     }
 
     await prisma.user.updateMany({

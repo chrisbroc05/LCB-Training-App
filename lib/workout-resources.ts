@@ -28,27 +28,21 @@ export const workoutResourceGroups: WorkoutResourceGroup[] = [
       },
       {
         filename: "LCB_Nutrition_Guide.pdf",
-        title: "Baseball Athlete Nutrition Guide",
+        title: "Nutrition and Fueling Guide",
         description: "Fuel and recovery guidance built for baseball athletes.",
         requiredTier: "basic",
       },
-    ],
-  },
-  {
-    heading: "Memorable and Above",
-    requiredTier: "memorable",
-    resources: [
       {
         filename: "LCB_Mental_Game_Workbook.pdf",
         title: "Mental Game Workbook",
         description: "Exercises and prompts to strengthen confidence, focus, and composure.",
-        requiredTier: "memorable",
+        requiredTier: "basic",
       },
       {
         filename: "LCB_Parent_Guide.pdf",
         title: "Parent Guide",
         description: "Support strategies for parents helping athletes grow on and off the field.",
-        requiredTier: "memorable",
+        requiredTier: "basic",
       },
     ],
   },
@@ -88,16 +82,16 @@ export function canAccessWorkoutResource(
 }
 
 export function getWorkoutResourceUpgradeLabel(requiredTier: WorkoutResourceTier) {
-  if (requiredTier === "memorable") {
-    return "Upgrade to Memorable";
+  if (requiredTier === "basic") {
+    return "Upgrade to Basic";
   }
 
   return "Upgrade to Elite";
 }
 
 export function getWorkoutResourceUpgradeHref(requiredTier: WorkoutResourceTier) {
-  if (requiredTier === "memorable") {
-    return "/upgrade?reason=memorable-required";
+  if (requiredTier === "basic") {
+    return "/upgrade?reason=basic-required";
   }
 
   return "/upgrade";
@@ -107,8 +101,8 @@ export function getWorkoutResourceLockMessage(
   requiredTier: WorkoutResourceTier,
   title: string,
 ) {
-  if (requiredTier === "memorable") {
-    return `${title} is available on Memorable and Elite memberships. Upgrade to Memorable to unlock this resource.`;
+  if (requiredTier === "basic") {
+    return `${title} is available on Basic and above. Upgrade to Basic to unlock this resource.`;
   }
 
   return `${title} is available on Elite memberships only. Upgrade to Elite to unlock this resource.`;

@@ -10,19 +10,26 @@ if (!stripeSecretKey) {
 
 export const stripe = new Stripe(stripeSecretKey);
 
-type PaidDatabaseTier = Exclude<DatabaseTier, "FREE">;
+type SubscriptionDatabaseTier = Exclude<DatabaseTier, "FREE" | "BASIC">;
 
-const stripeMonthlyPriceIds: Record<PaidDatabaseTier, string | undefined> = {
-  BASIC: process.env.STRIPE_BASIC_PRICE_ID,
+const stripeMonthlyPriceIds: Record<SubscriptionDatabaseTier, string | undefined> = {
   MEMORABLE: process.env.STRIPE_MEMORABLE_PRICE_ID,
   ELITE: process.env.STRIPE_ELITE_PRICE_ID,
 };
 
-const stripeAnnualPriceIds: Record<PaidDatabaseTier, string | undefined> = {
-  BASIC: process.env.STRIPE_BASIC_ANNUAL_PRICE_ID,
+const stripeAnnualPriceIds: Record<SubscriptionDatabaseTier, string | undefined> = {
   MEMORABLE: process.env.STRIPE_MEMORABLE_ANNUAL_PRICE_ID,
   ELITE: process.env.STRIPE_ELITE_ANNUAL_PRICE_ID,
 };
+
+export function getBasicOneTimePriceId() {
+  const priceId = process.env.STRIPE_BASIC_PRICE_ID;
+  if (!priceId) {
+    throw new Error("Missing Stripe price ID for Basic. Configure STRIPE_BASIC_PRICE_ID.");
+  }
+
+  return priceId;
+}
 
 export function getSubscriptionPriceId(
   tier: DatabaseTier,
@@ -30,6 +37,10 @@ export function getSubscriptionPriceId(
 ) {
   if (tier === "FREE") {
     throw new Error("Free tier does not have a Stripe price ID.");
+  }
+
+  if (tier === "BASIC") {
+    throw new Error("Basic tier uses a one-time payment price ID.");
   }
 
   const priceId =

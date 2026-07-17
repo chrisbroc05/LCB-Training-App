@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { parseBillingFrequency } from "@/lib/billing";
-import { getSubscriptionPriceId, stripe } from "@/lib/stripe";
+import { getBasicOneTimePriceId, getSubscriptionPriceId, stripe } from "@/lib/stripe";
 import { isDatabaseTier } from "@/lib/membership";
 
 type CheckoutBody = {
@@ -45,9 +45,34 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
+
+    const baseUrl = getBaseUrl(request);
+
+    if (membershipTier === "BASIC") {
+      const priceId = getBasicOneTimePriceId();
+      const checkoutSession = await stripe.checkout.sessions.create({
+        mode: "payment",
+        customer_email: session.user.email,
+        line_items: [{ price: priceId, quantity: 1 }],
+        success_url: `${baseUrl}/dashboard?checkout=success`,
+        cancel_url: `${baseUrl}/auth?checkout=cancelled`,
+        client_reference_id: session.user.id,
+        metadata: {
+          userId: session.user.id,
+          membershipTier,
+          purchaseType: "one_time_basic",
+        },
+      });
+
+      if (!checkoutSession.url) {
+        return NextResponse.json({ error: "Unable to create checkout session." }, { status: 500 });
+      }
+
+      return NextResponse.json({ url: checkoutSession.url });
+    }
+
     const billingFrequency = parseBillingFrequency(body.billingFrequency);
     const priceId = getSubscriptionPriceId(membershipTier, billingFrequency);
-    const baseUrl = getBaseUrl(request);
 
     const checkoutSession = await stripe.checkout.sessions.create({
       mode: "subscription",
@@ -59,11 +84,13 @@ export async function POST(request: Request) {
       metadata: {
         userId: session.user.id,
         membershipTier,
+        billingFrequency,
       },
       subscription_data: {
         metadata: {
           userId: session.user.id,
           membershipTier,
+          billingFrequency,
         },
       },
     });
@@ -73,7 +100,10 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ url: checkoutSession.url });
-  } catch {
+  } catch (error) {
+    console.error("[stripe-checkout] Failed to create checkout session", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json({ error: "Unable to start Stripe checkout." }, { status: 500 });
   }
 }

@@ -3,11 +3,16 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import type { DatabaseTier } from "@/lib/membership";
+import { isLifetimeBasicMember } from "@/lib/membership";
 import { stripe } from "@/lib/stripe";
 import CancelSubscriptionButton from "@/app/settings/CancelSubscriptionButton";
 import ChangeMembershipSection from "@/app/settings/ChangeMembershipSection";
 
 function formatTierLabel(tier: DatabaseTier) {
+  if (tier === "MEMORABLE") {
+    return "Memorable";
+  }
+
   return tier.charAt(0) + tier.slice(1).toLowerCase();
 }
 
@@ -84,10 +89,14 @@ export default async function SettingsPage() {
     redirect("/auth");
   }
 
-  const stripeBillingDate = await getStripeBillingDate({
-    stripeSubscriptionId: user.stripeSubscriptionId,
-    stripeCustomerId: user.stripeCustomerId,
-  });
+  const membershipTier = user.membershipTier as DatabaseTier;
+  const lifetimeBasic = isLifetimeBasicMember(membershipTier, user.stripeSubscriptionId);
+  const stripeBillingDate = lifetimeBasic
+    ? null
+    : await getStripeBillingDate({
+        stripeSubscriptionId: user.stripeSubscriptionId,
+        stripeCustomerId: user.stripeCustomerId,
+      });
   const nextBillingDate = stripeBillingDate ?? user.subscriptionCurrentPeriodEnd;
   const hasSubscription = Boolean(user.stripeSubscriptionId);
   const isCancelScheduled = user.subscriptionCancelAtPeriodEnd;
@@ -97,54 +106,73 @@ export default async function SettingsPage() {
       <section className="rounded-3xl border border-[#18243a] bg-[#0b1324]/80 p-5 sm:p-8">
         <h1 className="text-2xl font-semibold leading-tight text-zinc-100 sm:text-3xl">Account Settings</h1>
         <p className="mt-2 text-zinc-300">
-          Review your current membership details and manage your Stripe subscription.
+          {lifetimeBasic
+            ? "Review your lifetime Basic membership and explore upgrade options."
+            : "Review your current membership details and manage your Stripe subscription."}
         </p>
       </section>
 
       <section className="mt-8 grid gap-4 sm:gap-5 md:grid-cols-2">
         <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
           <h2 className="text-lg font-semibold text-zinc-100">Membership Tier</h2>
-          <p className="mt-3 text-zinc-300">
-            Current plan:{" "}
-            <span className="font-semibold text-[#98b144]">
-              {formatTierLabel(user.membershipTier as DatabaseTier)}
-            </span>
-          </p>
-          <p className="mt-2 text-sm text-zinc-400">
-            Subscription status: {user.subscriptionStatus.replaceAll("_", " ")}
-          </p>
-        </article>
-
-        <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
-          <h2 className="text-lg font-semibold text-zinc-100">Next Billing Date</h2>
-          <p className="mt-3 text-zinc-300">{formatDate(nextBillingDate)}</p>
-          {isCancelScheduled && (
-            <p className="mt-2 text-sm text-yellow-200">
-              Your subscription is set to cancel at period end.
-            </p>
+          {lifetimeBasic ? (
+            <p className="mt-3 font-semibold text-[#98b144]">Basic Plan -- Lifetime Access</p>
+          ) : (
+            <>
+              <p className="mt-3 text-zinc-300">
+                Current plan:{" "}
+                <span className="font-semibold text-[#98b144]">{formatTierLabel(membershipTier)}</span>
+              </p>
+              <p className="mt-2 text-sm text-zinc-400">
+                Subscription status: {user.subscriptionStatus.replaceAll("_", " ")}
+              </p>
+            </>
           )}
         </article>
-      </section>
 
-      <section className="mt-8 rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
-        <h2 className="text-lg font-semibold text-zinc-100">Subscription Management</h2>
-        <p className="mt-2 text-zinc-300">
-          Canceling stops future billing and keeps your access active through the current cycle.
-        </p>
-        {!hasSubscription ? (
-          <p className="mt-4 text-sm text-zinc-400">
-            No active Stripe subscription was found for this account.
-          </p>
+        {lifetimeBasic ? (
+          <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
+            <h2 className="text-lg font-semibold text-zinc-100">Access</h2>
+            <p className="mt-3 text-zinc-300">
+              Your Basic membership is a one-time purchase with lifetime access to the drill library,
+              workout programs, and core training PDFs.
+            </p>
+          </article>
         ) : (
-          <div className="mt-4">
-            <CancelSubscriptionButton disabled={isCancelScheduled} />
-          </div>
+          <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
+            <h2 className="text-lg font-semibold text-zinc-100">Next Billing Date</h2>
+            <p className="mt-3 text-zinc-300">{formatDate(nextBillingDate)}</p>
+            {isCancelScheduled && (
+              <p className="mt-2 text-sm text-yellow-200">
+                Your subscription is set to cancel at period end.
+              </p>
+            )}
+          </article>
         )}
       </section>
 
+      {!lifetimeBasic ? (
+        <section className="mt-8 rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
+          <h2 className="text-lg font-semibold text-zinc-100">Subscription Management</h2>
+          <p className="mt-2 text-zinc-300">
+            Canceling stops future billing and keeps your access active through the current cycle.
+          </p>
+          {!hasSubscription ? (
+            <p className="mt-4 text-sm text-zinc-400">
+              No active Stripe subscription was found for this account.
+            </p>
+          ) : (
+            <div className="mt-4">
+              <CancelSubscriptionButton disabled={isCancelScheduled} />
+            </div>
+          )}
+        </section>
+      ) : null}
+
       <ChangeMembershipSection
-        currentTier={user.membershipTier as DatabaseTier}
+        currentTier={membershipTier}
         hasSubscription={hasSubscription}
+        isLifetimeBasic={lifetimeBasic}
       />
     </div>
   );

@@ -17,14 +17,18 @@ type TierPricing = {
 
 const paidTierKeys: TierKey[] = ["basic", "memorable", "elite"];
 
+export const basicOneTimePricing: TierPricing = {
+  primary: "$59 one-time",
+};
+
 export const tierPricing: Record<TierKey, Record<BillingFrequency, TierPricing>> = {
   free: {
     monthly: { primary: "$0" },
     annual: { primary: "$0" },
   },
   basic: {
-    monthly: { primary: "$49/month" },
-    annual: { primary: "$490/year", secondary: "just $40.83/mo" },
+    monthly: basicOneTimePricing,
+    annual: basicOneTimePricing,
   },
   memorable: {
     monthly: { primary: "$149/month" },
@@ -36,12 +40,23 @@ export const tierPricing: Record<TierKey, Record<BillingFrequency, TierPricing>>
   },
 };
 
+export function isOneTimeTier(tier: TierKey) {
+  return tier === "basic";
+}
+
+export function usesBillingFrequencyToggle(tier: TierKey) {
+  return tier === "memorable" || tier === "elite";
+}
+
 export function getTierPricing(tier: TierKey, billingFrequency: BillingFrequency): TierPricing {
+  if (isOneTimeTier(tier)) {
+    return basicOneTimePricing;
+  }
+
   return tierPricing[tier][billingFrequency];
 }
 
 const annualSavingsByTier: Partial<Record<TierKey, number>> = {
-  basic: 98,
   memorable: 298,
   elite: 498,
 };

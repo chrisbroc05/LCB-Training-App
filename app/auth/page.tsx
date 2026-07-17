@@ -8,7 +8,8 @@ import type { DatabaseTier } from "@/lib/membership";
 import BrandLogo from "@/app/BrandLogo";
 import BillingFrequencyToggle from "@/app/BillingFrequencyToggle";
 import AnnualSavingsBadge from "@/app/AnnualSavingsBadge";
-import { getAnnualSavings, getTierPricing, parseBillingFrequency, type BillingFrequency } from "@/lib/billing";
+import OneTimePaymentBadge from "@/app/OneTimePaymentBadge";
+import { getAnnualSavings, getTierPricing, isOneTimeTier, usesBillingFrequencyToggle, type BillingFrequency } from "@/lib/billing";
 
 type AuthMode = "login" | "signup";
 
@@ -264,18 +265,24 @@ function AuthContent() {
 
               <div className="pt-2">
                 <p className="text-sm font-medium text-zinc-300">Select your membership tier</p>
-                <div className="mt-4 flex justify-center">
+                <div className="mt-4 flex flex-col items-center gap-2">
                   <BillingFrequencyToggle
                     value={billingFrequency}
                     onChange={setBillingFrequency}
                   />
+                  <p className="text-xs text-zinc-400">
+                    Monthly and annual pricing applies to Memorable and Elite only.
+                  </p>
                 </div>
                 <div className="mt-4 grid gap-4 md:grid-cols-4">
                   {membershipTiers.map((tier) => {
                     const isSelected = selectedTier === tier.key;
                     const pricing = getTierPricing(tier.key, billingFrequency);
+                    const oneTimeTier = isOneTimeTier(tier.key);
                     const annualSavings =
-                      billingFrequency === "annual" ? getAnnualSavings(tier.key) : null;
+                      usesBillingFrequencyToggle(tier.key) && billingFrequency === "annual"
+                        ? getAnnualSavings(tier.key)
+                        : null;
                     return (
                       <button
                         key={tier.key}
@@ -287,11 +294,15 @@ function AuthContent() {
                             : "border-[#2b3650] bg-[#0b1324] hover:border-[#4f5f83]"
                         }`}
                       >
-                        {annualSavings ? (
+                        {oneTimeTier ? (
+                          <OneTimePaymentBadge className="absolute right-3 top-3" />
+                        ) : annualSavings ? (
                           <AnnualSavingsBadge amount={annualSavings} className="absolute right-3 top-3" />
                         ) : null}
                         <h2
-                          className={`text-xl font-semibold text-zinc-100${annualSavings ? " pr-16" : ""}`}
+                          className={`text-xl font-semibold text-zinc-100${
+                            oneTimeTier || annualSavings ? " pr-16" : ""
+                          }`}
                         >
                           {tier.name}
                         </h2>

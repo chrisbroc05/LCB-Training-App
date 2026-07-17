@@ -26,7 +26,10 @@ export default function UpgradeActions({
       const response = await fetch("/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ membershipTier: tier, billingFrequency }),
+        body: JSON.stringify({
+          membershipTier: tier,
+          billingFrequency: tier === "BASIC" ? undefined : billingFrequency,
+        }),
       });
       const data = (await response.json().catch(() => ({}))) as { error?: string; url?: string };
 
@@ -51,7 +54,7 @@ export default function UpgradeActions({
         disabled={isLoading}
         className="w-full rounded-full bg-[#22c55e] px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-[#35db72] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
       >
-        {isLoading ? "Redirecting..." : `Upgrade to ${tierLabel}`}
+        {isLoading ? "Redirecting..." : tier === "BASIC" ? "Get Basic -- $59 one-time" : `Upgrade to ${tierLabel}`}
       </button>
       {error && <p className="mt-2 text-sm text-red-300">{error}</p>}
     </div>

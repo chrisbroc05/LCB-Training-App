@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { useState } from "react";
 import AnnualSavingsBadge from "@/app/AnnualSavingsBadge";
+import OneTimePaymentBadge from "@/app/OneTimePaymentBadge";
 import BillingFrequencyToggle from "@/app/BillingFrequencyToggle";
 import UpgradeActions from "@/app/upgrade/UpgradeActions";
-import { getAnnualSavings, getTierPricing, type BillingFrequency } from "@/lib/billing";
+import { getAnnualSavings, getTierPricing, isOneTimeTier, usesBillingFrequencyToggle, type BillingFrequency } from "@/lib/billing";
 import {
   keyToDatabaseTier,
   membershipTiers,
@@ -34,7 +35,7 @@ const upgradeSectionByTier: Partial<Record<DatabaseTier, UpgradeSectionConfig>> 
   BASIC: {
     title: "Unlock Coaching Submissions",
     description:
-      "Upgrade to Memorable for monthly coaching submissions, accountability check-ins, and exclusive PDFs — or Elite for priority response and personalized plans.",
+      "Upgrade to Memorable for monthly coaching submissions and accountability check-ins, or Elite for priority response and personalized plans.",
     upgradeTiers: ["memorable", "elite"],
   },
   MEMORABLE: {
@@ -96,15 +97,21 @@ export default function DashboardUpgradeSection({
         </article>
       ) : null}
 
-      <div className="mt-6 flex justify-center">
+      <div className="mt-6 flex flex-col items-center gap-2">
         <BillingFrequencyToggle value={billingFrequency} onChange={setBillingFrequency} />
+        <p className="text-xs text-zinc-400">
+          Monthly and annual pricing applies to Memorable and Elite only.
+        </p>
       </div>
 
       <div className={`mt-8 ${getGridClassName(upgradeTierCards.length)}`}>
         {upgradeTierCards.map((tier) => {
           const pricing = getTierPricing(tier.key, billingFrequency);
+          const oneTimeTier = isOneTimeTier(tier.key);
           const annualSavings =
-            billingFrequency === "annual" ? getAnnualSavings(tier.key) : null;
+            usesBillingFrequencyToggle(tier.key) && billingFrequency === "annual"
+              ? getAnnualSavings(tier.key)
+              : null;
           const databaseTier = keyToDatabaseTier[tier.key] as "BASIC" | "MEMORABLE" | "ELITE";
 
           return (
@@ -112,11 +119,15 @@ export default function DashboardUpgradeSection({
               key={tier.key}
               className="relative rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-5 shadow-lg shadow-black/40 sm:p-6"
             >
-              {annualSavings ? (
+              {oneTimeTier ? (
+                <OneTimePaymentBadge className="absolute right-4 top-4" />
+              ) : annualSavings ? (
                 <AnnualSavingsBadge amount={annualSavings} className="absolute right-4 top-4" />
               ) : null}
               <h3
-                className={`text-xl font-semibold text-zinc-100${annualSavings ? " pr-16" : ""}`}
+                className={`text-xl font-semibold text-zinc-100${
+                  oneTimeTier || annualSavings ? " pr-16" : ""
+                }`}
               >
                 {tier.name}
               </h3>
