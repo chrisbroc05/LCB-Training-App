@@ -9,7 +9,7 @@ import BrandLogo from "@/app/BrandLogo";
 import BillingFrequencyToggle from "@/app/BillingFrequencyToggle";
 import AnnualSavingsBadge from "@/app/AnnualSavingsBadge";
 import OneTimePaymentBadge from "@/app/OneTimePaymentBadge";
-import { getAnnualSavings, getTierPricing, isOneTimeTier, usesBillingFrequencyToggle, type BillingFrequency } from "@/lib/billing";
+import { getAnnualSavings, getTierPricing, isOneTimeTier, parseBillingFrequency, usesBillingFrequencyToggle, type BillingFrequency } from "@/lib/billing";
 
 type AuthMode = "login" | "signup";
 
