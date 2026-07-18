@@ -29,13 +29,25 @@ export default function CoachBioSection() {
 
         <div className="mx-auto mt-8 h-px w-full max-w-xl bg-[#52B788]" />
 
-        <p className="mx-auto mt-8 max-w-2xl text-center text-base leading-relaxed text-[#CCCCCC] sm:text-lg">
-          I have spent 12+ years working with baseball players at every level - helping them not
-          just become better athletes, but more confident people. As a current High School Varsity
-          Coach, my goal is simple: build confidence on and off the field. Every player I work with
-          gets my full attention, honest feedback, and a plan built around their individual
-          development.
-        </p>
+        <div className="mx-auto mt-8 max-w-2xl space-y-5 text-center text-base leading-relaxed text-[#CCCCCC] sm:text-lg">
+          <p>
+            I was a 120 lb sophomore in high school that nobody recruited. I was overlooked,
+            undersized, and written off before I ever got started. But I refused to let that be my
+            story.
+          </p>
+          <p>
+            Through relentless work, an unshakeable mindset, and a commitment to getting better every
+            single day, I went on to become a 2x All-Conference college athlete, earn multiple Gold
+            Glove nominations, and win a NJCAA National Championship at Oakton Community College.
+          </p>
+          <p>
+            That journey taught me everything I know about player development -- and it is exactly why
+            I coach the way I do. I do not just train athletes. I build confident, resilient players
+            who know how to compete when it matters most. My goal is simple: help every player I work
+            with prove the doubters wrong and become the best version of themselves on and off the
+            field.
+          </p>
+        </div>
 
         <div className="mx-auto mt-8 flex max-w-xl flex-col gap-3">
           {accolades.map((accolade) => (

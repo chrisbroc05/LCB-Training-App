@@ -49,6 +49,50 @@ const testimonials = [
   },
 ];
 
+const trainingPillars = [
+  {
+    title: "Hitting",
+    description: "Better approach, timing, and plate confidence in pressure moments.",
+  },
+  {
+    title: "Fielding",
+    description: "Sharper defensive fundamentals, range, and game-ready instincts.",
+  },
+  {
+    title: "Speed & Agility",
+    description: "Faster first steps, cleaner movement patterns, and stronger base running.",
+  },
+  {
+    title: "Strength Workouts",
+    description: "Athlete-focused strength plans to build power, durability, and resilience.",
+  },
+  {
+    title: "Mental Game",
+    description:
+      "Confidence, focus, and resilience are skills -- not traits you are born with. We train the mental side of baseball just as hard as the physical, helping players develop the mindset to compete under pressure, bounce back from failure, and perform at their best when it matters most.",
+    icon: true,
+  },
+];
+
+function MentalGameIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="h-8 w-8 text-[#52B788]"
+      aria-hidden="true"
+    >
+      <path d="M9 18h6" />
+      <path d="M10 22h4" />
+      <path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2Z" />
+    </svg>
+  );
+}
+
 export default function Home() {
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 sm:py-14 md:py-20">
@@ -93,29 +137,17 @@ export default function Home() {
           Every membership is built to improve game performance while developing discipline,
           confidence, and leadership habits beyond baseball.
         </p>
-        <div className="mt-6 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-          {[
-            {
-              title: "Hitting",
-              description: "Better approach, timing, and plate confidence in pressure moments.",
-            },
-            {
-              title: "Fielding",
-              description: "Sharper defensive fundamentals, range, and game-ready instincts.",
-            },
-            {
-              title: "Speed & Agility",
-              description: "Faster first steps, cleaner movement patterns, and stronger base running.",
-            },
-            {
-              title: "Strength Workouts",
-              description: "Athlete-focused strength plans to build power, durability, and resilience.",
-            },
-          ].map((pillar) => (
+        <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {trainingPillars.map((pillar) => (
             <article
               key={pillar.title}
               className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-5 shadow-lg shadow-black/40"
             >
+              {pillar.icon ? (
+                <div className="mb-3">
+                  <MentalGameIcon />
+                </div>
+              ) : null}
               <h3 className="text-lg font-semibold text-zinc-100">{pillar.title}</h3>
               <p className="mt-2 text-sm leading-relaxed text-zinc-300">{pillar.description}</p>
             </article>
