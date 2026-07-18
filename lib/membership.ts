@@ -41,7 +41,8 @@ export const membershipTiers: MembershipTier[] = [
     key: "memorable",
     name: "Memorable",
     priceLabel: "$149 / month",
-    summary: "Everything in Basic plus monthly coaching submissions and accountability support.",
+    summary:
+      "Everything in Basic plus 1-on-1 coaching, monthly swing analysis and mental game support submissions, and accountability support.",
     features: [
       "Everything in Basic",
       "2 coaching submissions per month",

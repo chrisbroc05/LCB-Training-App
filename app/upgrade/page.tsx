@@ -45,8 +45,9 @@ export default async function UpgradePage({ searchParams }: UpgradePageProps) {
           a 20-minute Player Assessment Call, and personal feedback from Coach Broc.
           <span className="ml-1 font-semibold text-[#9df3bd]">Basic</span> is a $59 one-time purchase
           with lifetime access to the drill library, workout programs, and core training PDFs.
-          <span className="ml-1 font-semibold text-[#9df3bd]">Memorable</span> adds 2 coaching
-          submissions per month with 48-hour feedback and accountability check-ins.
+          <span className="ml-1 font-semibold text-[#9df3bd]">Memorable</span> includes everything
+          in Basic plus 1-on-1 coaching, monthly swing analysis and mental game support submissions,
+          and accountability support.
           <span className="ml-1 font-semibold text-[#9df3bd]">Elite</span> adds priority 24-hour
           response, 4 submissions with rollover, group coaching calls, and personalized development
           plans.

@@ -127,7 +127,7 @@ function ChangeMembershipContent({
       <h2 className="text-lg font-semibold text-zinc-100">Upgrade Membership</h2>
       <p className="mt-2 text-zinc-300">
         {isLifetimeBasic
-          ? "Upgrade to Memorable or Elite for monthly coaching submissions, accountability support, and priority access to Coach Broc."
+          ? "Upgrade to Memorable or Elite for 1-on-1 coaching, monthly swing analysis and mental game support submissions, accountability support, and priority access to Coach Broc."
           : hasSubscription
             ? "Switch to another membership tier anytime. Stripe will automatically apply prorated charges or credits."
             : "Choose a paid tier to unlock more training content and coaching support."}
@@ -154,21 +154,25 @@ function ChangeMembershipContent({
           return (
             <article
               key={tier.key}
-              className={`relative rounded-xl border bg-black/30 p-4 sm:p-5 ${
+              className={`rounded-xl border bg-black/30 p-4 sm:p-5 ${
                 isHighlighted
                   ? "border-[#52B788] bg-[#0f1d34]"
                   : "border-[#2b3650]"
               }`}
             >
-              {oneTimeTier ? (
-                <OneTimePaymentBadge className="absolute right-4 top-4" />
-              ) : annualSavings ? (
-                <AnnualSavingsBadge amount={annualSavings} className="absolute right-4 top-4" />
-              ) : null}
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className={oneTimeTier || annualSavings ? "pr-24" : undefined}>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
                   <h3 className="text-base font-semibold text-zinc-100">{tier.name}</h3>
-                  <p className="text-sm text-[#9df3bd]">{priceLabel}</p>
+                  {oneTimeTier ? (
+                    <div className="mt-2">
+                      <OneTimePaymentBadge />
+                    </div>
+                  ) : annualSavings ? (
+                    <div className="mt-2">
+                      <AnnualSavingsBadge amount={annualSavings} />
+                    </div>
+                  ) : null}
+                  <p className="mt-2 text-sm text-[#9df3bd]">{priceLabel}</p>
                   {!oneTimeTier && pricing.secondary ? (
                     <p className="text-xs text-zinc-400">{pricing.secondary}</p>
                   ) : null}

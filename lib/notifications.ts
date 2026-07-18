@@ -370,7 +370,7 @@ export async function sendSubmissionResponseEmail(params: {
     ? `Want to keep progressing?
 
 Basic ($59 one-time) unlocks lifetime access to the full drill library, workout programs, and core training PDFs.
-Memorable ($149/month or $1,490/year) unlocks ongoing coaching submission feedback.
+Memorable ($149/month or $1,490/year): Everything in Basic plus 1-on-1 coaching, monthly swing analysis and mental game support submissions, and accountability support.
 Upgrade now in Settings: ${settingsUrl}
 `
     : "";
@@ -378,7 +378,7 @@ Upgrade now in Settings: ${settingsUrl}
     ? `<div style="margin-top:16px; padding:12px; border:1px solid #2b3650; border-radius:10px; background:#060b16;">
         <p style="margin:0 0 8px; font-weight:700; color:#98b144;">Keep building your progress</p>
         <p style="margin:0 0 6px;"><strong>Basic ($59 one-time):</strong> Lifetime access to the full drill library, workout programs, and core training PDFs.</p>
-        <p style="margin:0;"><strong>Memorable ($149/month or $1,490/year):</strong> Ongoing coaching submission feedback.</p>
+        <p style="margin:0;"><strong>Memorable ($149/month or $1,490/year):</strong> Everything in Basic plus 1-on-1 coaching, monthly swing analysis and mental game support submissions, and accountability support.</p>
         <p style="margin:8px 0 0;"><a href="${escapeHtml(
           settingsUrl,
         )}" target="_blank" rel="noopener noreferrer" style="color:#8fd7ff; text-decoration:underline;">Upgrade your membership in Settings</a></p>
@@ -554,7 +554,7 @@ function getOnboardingWelcomeGuidance(membershipTier: DatabaseTier) {
     case "BASIC":
       return "You have lifetime Basic access to the drill library, all 7 workout programs, and your Pre-Game Warmup, Nutrition, Mental Game Workbook, and Parent Guide PDFs.";
     case "MEMORABLE":
-      return "You have everything in Basic plus 2 coaching submissions each month with 48-hour video feedback, accountability check-ins, and direct access to Coach Broc.";
+      return "You have everything in Basic plus 1-on-1 coaching, monthly swing analysis and mental game support submissions, and accountability support.";
     case "ELITE":
       return "You have everything in Memorable plus 4 coaching submissions per month with rollover up to 8, priority 24-hour response, monthly group coaching calls, and personalized development and training plans.";
   }
@@ -567,7 +567,7 @@ function getOnboardingMembershipSummaryHtml(membershipTier: DatabaseTier) {
     return `<div style="margin-top:16px; padding:14px; border:1px solid #2b3650; border-radius:10px; background:#060b16;">
         <p style="margin:0 0 10px; font-weight:700; color:#98b144;">Membership options</p>
         <p style="margin:0 0 6px;"><strong>Basic ($59 one-time):</strong> Lifetime access to the full drill library, all 7 workout programs, and core training PDFs.</p>
-        <p style="margin:0 0 6px;"><strong>Memorable ($149/month or $1,490/year):</strong> Everything in Basic plus 2 coaching submissions per month and accountability check-ins.</p>
+        <p style="margin:0 0 6px;"><strong>Memorable ($149/month or $1,490/year):</strong> Everything in Basic plus 1-on-1 coaching, monthly swing analysis and mental game support submissions, and accountability support.</p>
         <p style="margin:0;"><strong>Elite ($249/month or $2,490/year):</strong> Everything in Memorable plus 4 submissions with rollover, priority 24-hour response, group coaching calls, and personalized plans.</p>
         <p style="margin:10px 0 0;"><a href="${escapeHtml(
           settingsUrl,
@@ -578,7 +578,7 @@ function getOnboardingMembershipSummaryHtml(membershipTier: DatabaseTier) {
   if (membershipTier === "BASIC") {
     return `<div style="margin-top:16px; padding:14px; border:1px solid #2b3650; border-radius:10px; background:#060b16;">
         <p style="margin:0 0 10px; font-weight:700; color:#98b144;">Want coaching submissions?</p>
-        <p style="margin:0 0 6px;"><strong>Memorable ($149/month or $1,490/year):</strong> 2 coaching submissions per month, 48-hour feedback, and accountability check-ins.</p>
+        <p style="margin:0 0 6px;"><strong>Memorable ($149/month or $1,490/year):</strong> Everything in Basic plus 1-on-1 coaching, monthly swing analysis and mental game support submissions, and accountability support.</p>
         <p style="margin:0;"><strong>Elite ($249/month or $2,490/year):</strong> 4 submissions with rollover, priority 24-hour response, group coaching calls, and personalized plans.</p>
         <p style="margin:10px 0 0;"><a href="${escapeHtml(
           settingsUrl,
@@ -595,7 +595,7 @@ function getOnboardingDrillLibraryMessage(membershipTier: DatabaseTier) {
       bodyText:
         "Upgrade to Basic ($59 one-time) to unlock lifetime access to the full hitting, fielding, and mindset drill libraries, all 7 workout programs, and the Pre-Game Warmup, Nutrition, Mental Game Workbook, and Parent Guide PDFs.",
       bodyHtml: `<p style="margin: 0 0 12px;">Upgrade to <strong>Basic ($59 one-time)</strong> to unlock lifetime access to the full hitting, fielding, and mindset drill libraries, all 7 workout programs, and the core training PDFs.</p>
-        <p style="margin: 0;">Memorable ($149/month or $1,490/year) and Elite ($249/month or $2,490/year) add monthly coaching submissions, accountability support, and personalized plans from Coach Broc.</p>`,
+        <p style="margin: 0;">Memorable ($149/month or $1,490/year) includes everything in Basic plus 1-on-1 coaching, monthly swing analysis and mental game support submissions, and accountability support. Elite ($249/month or $2,490/year) adds priority response, group coaching calls, and personalized plans from Coach Broc.</p>`,
     };
   }
 
@@ -615,22 +615,22 @@ function getOnboardingWeekOneMessage(membershipTier: DatabaseTier) {
       return {
         text: `You still have one free coaching submission available. When you are ready, submit a swing video or mindset question for personalized feedback from Coach Broc.
 
-Want more each month? Memorable ($149/month or $1,490/year) includes 2 coaching submissions per month with 48-hour feedback and accountability check-ins. Elite ($249/month or $2,490/year) includes 4 per month with rollover up to 8, priority 24-hour response, and personalized training plans.
+Want more each month? Memorable ($149/month or $1,490/year) includes everything in Basic plus 1-on-1 coaching, monthly swing analysis and mental game support submissions, and accountability support. Elite ($249/month or $2,490/year) includes 4 per month with rollover up to 8, priority 24-hour response, and personalized training plans.
 
 Upgrade in Account settings: ${settingsUrl}`,
         html: `<p style="margin: 0 0 12px;">You still have one free coaching submission available. When you are ready, submit a swing video or mindset question for personalized feedback from Coach Broc.</p>
-          <p style="margin: 0 0 12px;"><strong>Memorable ($149/month or $1,490/year)</strong> includes 2 coaching submissions per month with 48-hour feedback and accountability check-ins. <strong>Elite ($249/month or $2,490/year)</strong> includes 4 per month with rollover up to 8, priority 24-hour response, and personalized plans.</p>
+          <p style="margin: 0 0 12px;"><strong>Memorable ($149/month or $1,490/year)</strong> includes everything in Basic plus 1-on-1 coaching, monthly swing analysis and mental game support submissions, and accountability support. <strong>Elite ($249/month or $2,490/year)</strong> includes 4 per month with rollover up to 8, priority 24-hour response, and personalized plans.</p>
           <p style="margin: 0;"><a href="${escapeHtml(
             settingsUrl,
           )}" target="_blank" rel="noopener noreferrer" style="color:#8fd7ff; text-decoration:underline;">Upgrade in Account settings</a></p>`,
       };
     case "BASIC":
       return {
-        text: `Ready for personalized coach feedback? Memorable ($149/month or $1,490/year) unlocks 2 coaching submissions per month with 48-hour feedback and accountability check-ins. Elite ($249/month or $2,490/year) unlocks 4 per month with rollover up to 8, priority 24-hour response, and personalized plans.
+        text: `Ready for personalized coach feedback? Memorable ($149/month or $1,490/year) includes everything in Basic plus 1-on-1 coaching, monthly swing analysis and mental game support submissions, and accountability support. Elite ($249/month or $2,490/year) unlocks 4 per month with rollover up to 8, priority 24-hour response, and personalized plans.
 
 Upgrade in Account settings: ${settingsUrl}`,
         html: `<p style="margin: 0 0 12px;">Ready for personalized coach feedback?</p>
-          <p style="margin: 0 0 12px;"><strong>Memorable ($149/month)</strong> unlocks 2 coaching submissions per month with 48-hour feedback and accountability check-ins. <strong>Elite ($249/month)</strong> unlocks 4 per month with rollover up to 8, priority 24-hour response, and personalized plans.</p>
+          <p style="margin: 0 0 12px;"><strong>Memorable ($149/month)</strong> includes everything in Basic plus 1-on-1 coaching, monthly swing analysis and mental game support submissions, and accountability support. <strong>Elite ($249/month)</strong> unlocks 4 per month with rollover up to 8, priority 24-hour response, and personalized plans.</p>
           <p style="margin: 0;"><a href="${escapeHtml(
             settingsUrl,
           )}" target="_blank" rel="noopener noreferrer" style="color:#8fd7ff; text-decoration:underline;">Upgrade in Account settings</a></p>`,

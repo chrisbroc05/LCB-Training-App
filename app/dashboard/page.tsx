@@ -427,7 +427,8 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
             <h2 className="text-lg font-semibold text-zinc-100">Unlock Coaching Submissions</h2>
             <p className="mt-3 text-sm text-zinc-300">
-              Upgrade to Memorable to submit swing videos and mindset requests for coach feedback.
+              Upgrade to Memorable for everything in Basic plus 1-on-1 coaching, monthly swing
+              analysis and mental game support submissions, and accountability support.
             </p>
             <Link
               href="/upgrade?reason=memorable-required"

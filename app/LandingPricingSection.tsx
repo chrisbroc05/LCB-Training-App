@@ -52,20 +52,18 @@ export default function LandingPricingSection() {
           return (
             <article
               key={tier.key}
-              className="relative rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-6 shadow-lg shadow-black/40"
+              className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-6 shadow-lg shadow-black/40"
             >
+              <h3 className="text-xl font-semibold text-zinc-100">{tier.name}</h3>
               {oneTimeTier ? (
-                <OneTimePaymentBadge className="absolute right-4 top-4" />
+                <div className="mt-2">
+                  <OneTimePaymentBadge />
+                </div>
               ) : annualSavings ? (
-                <AnnualSavingsBadge amount={annualSavings} className="absolute right-4 top-4" />
+                <div className="mt-2">
+                  <AnnualSavingsBadge amount={annualSavings} />
+                </div>
               ) : null}
-              <h3
-                className={`text-xl font-semibold text-zinc-100${
-                  oneTimeTier || annualSavings ? " pr-16" : ""
-                }`}
-              >
-                {tier.name}
-              </h3>
               <p className="mt-2 text-2xl font-bold text-[#98b144]">{pricing.primary}</p>
               {pricing.secondary ? (
                 <p className="mt-1 text-sm text-zinc-400">{pricing.secondary}</p>

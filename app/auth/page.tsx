@@ -288,28 +288,27 @@ function AuthContent() {
                         key={tier.key}
                         type="button"
                         onClick={() => setManuallySelectedTier(tier.key)}
-                        className={`relative h-full rounded-2xl border p-5 text-left transition ${
+                        className={`h-full rounded-2xl border p-5 text-left transition ${
                           isSelected
                             ? "border-[#52B788] bg-[#0f1d34]"
                             : "border-[#2b3650] bg-[#0b1324] hover:border-[#4f5f83]"
                         }`}
                       >
+                        <h2 className="text-xl font-semibold text-zinc-100">{tier.name}</h2>
                         {oneTimeTier ? (
-                          <OneTimePaymentBadge className="absolute right-3 top-3" />
+                          <div className="mt-2">
+                            <OneTimePaymentBadge />
+                          </div>
                         ) : annualSavings ? (
-                          <AnnualSavingsBadge amount={annualSavings} className="absolute right-3 top-3" />
+                          <div className="mt-2">
+                            <AnnualSavingsBadge amount={annualSavings} />
+                          </div>
                         ) : null}
-                        <h2
-                          className={`text-xl font-semibold text-zinc-100${
-                            oneTimeTier || annualSavings ? " pr-16" : ""
-                          }`}
-                        >
-                          {tier.name}
-                        </h2>
-                        <p className="mt-1 text-xl font-bold text-[#98b144]">{pricing.primary}</p>
+                        <p className="mt-2 text-xl font-bold text-[#98b144]">{pricing.primary}</p>
                         {pricing.secondary ? (
                           <p className="mt-1 text-sm text-zinc-400">{pricing.secondary}</p>
                         ) : null}
+                        <p className="mt-3 text-sm text-zinc-300">{tier.summary}</p>
                         <ul className="mt-4 space-y-2 text-sm text-zinc-200">
                           {tier.features.map((feature) => (
                             <li key={`${tier.key}-${feature}`} className="flex items-start gap-2">

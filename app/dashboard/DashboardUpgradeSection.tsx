@@ -35,7 +35,7 @@ const upgradeSectionByTier: Partial<Record<DatabaseTier, UpgradeSectionConfig>> 
   BASIC: {
     title: "Unlock Coaching Submissions",
     description:
-      "Upgrade to Memorable for monthly coaching submissions and accountability check-ins, or Elite for priority response and personalized plans.",
+      "Upgrade to Memorable for 1-on-1 coaching, monthly swing analysis and mental game support submissions, and accountability support, or Elite for priority response and personalized plans.",
     upgradeTiers: ["memorable", "elite"],
   },
   MEMORABLE: {
@@ -117,20 +117,18 @@ export default function DashboardUpgradeSection({
           return (
             <article
               key={tier.key}
-              className="relative rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-5 shadow-lg shadow-black/40 sm:p-6"
+              className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-5 shadow-lg shadow-black/40 sm:p-6"
             >
+              <h3 className="text-xl font-semibold text-zinc-100">{tier.name}</h3>
               {oneTimeTier ? (
-                <OneTimePaymentBadge className="absolute right-4 top-4" />
+                <div className="mt-2">
+                  <OneTimePaymentBadge />
+                </div>
               ) : annualSavings ? (
-                <AnnualSavingsBadge amount={annualSavings} className="absolute right-4 top-4" />
+                <div className="mt-2">
+                  <AnnualSavingsBadge amount={annualSavings} />
+                </div>
               ) : null}
-              <h3
-                className={`text-xl font-semibold text-zinc-100${
-                  oneTimeTier || annualSavings ? " pr-16" : ""
-                }`}
-              >
-                {tier.name}
-              </h3>
               <p className="mt-2 text-2xl font-bold text-[#98b144]">{pricing.primary}</p>
               {pricing.secondary ? (
                 <p className="mt-1 text-sm text-zinc-400">{pricing.secondary}</p>

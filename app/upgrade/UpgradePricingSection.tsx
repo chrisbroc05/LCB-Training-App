@@ -27,17 +27,17 @@ const paidTierCardStyles: Record<
   }
 > = {
   basic: {
-    cardClassName: "relative rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6",
+    cardClassName: "rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6",
     textClassName: "text-zinc-300",
     listClassName: "text-zinc-200",
   },
   memorable: {
-    cardClassName: "relative rounded-2xl border border-[#22c55e]/40 bg-[#22c55e]/10 p-4 sm:p-6",
+    cardClassName: "rounded-2xl border border-[#22c55e]/40 bg-[#22c55e]/10 p-4 sm:p-6",
     textClassName: "text-zinc-200",
     listClassName: "text-zinc-100",
   },
   elite: {
-    cardClassName: "relative rounded-2xl border border-[#7f9434]/40 bg-[#7f9434]/10 p-4 sm:p-6",
+    cardClassName: "rounded-2xl border border-[#7f9434]/40 bg-[#7f9434]/10 p-4 sm:p-6",
     textClassName: "text-zinc-200",
     listClassName: "text-zinc-100",
   },
@@ -68,18 +68,16 @@ export default function UpgradePricingSection() {
 
           return (
             <article key={tier.key} className={styles.cardClassName}>
+              <h2 className="text-xl font-semibold text-zinc-100 sm:text-2xl">{tier.name}</h2>
               {oneTimeTier ? (
-                <OneTimePaymentBadge className="absolute right-4 top-4" />
+                <div className="mt-2">
+                  <OneTimePaymentBadge />
+                </div>
               ) : annualSavings ? (
-                <AnnualSavingsBadge amount={annualSavings} className="absolute right-4 top-4" />
+                <div className="mt-2">
+                  <AnnualSavingsBadge amount={annualSavings} />
+                </div>
               ) : null}
-              <h2
-                className={`text-xl font-semibold text-zinc-100 sm:text-2xl${
-                  oneTimeTier || annualSavings ? " pr-24" : ""
-                }`}
-              >
-                {tier.name}
-              </h2>
               <p className="mt-2 text-2xl font-bold text-[#98b144]">{pricing.primary}</p>
               {pricing.secondary ? (
                 <p className="mt-1 text-sm text-zinc-400">{pricing.secondary}</p>
