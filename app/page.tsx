@@ -49,7 +49,7 @@ const testimonials = [
   },
 ];
 
-const trainingPillars = [
+const physicalTrainingPillars = [
   {
     title: "Hitting",
     description: "Better approach, timing, and plate confidence in pressure moments.",
@@ -59,37 +59,39 @@ const trainingPillars = [
     description: "Sharper defensive fundamentals, range, and game-ready instincts.",
   },
   {
-    title: "Speed & Agility",
+    title: "Speed and Agility",
     description: "Faster first steps, cleaner movement patterns, and stronger base running.",
   },
   {
-    title: "Strength Workouts",
+    title: "Strength and Conditioning",
     description: "Athlete-focused strength plans to build power, durability, and resilience.",
-  },
-  {
-    title: "Mental Game",
-    description:
-      "Confidence, focus, and resilience are skills -- not traits you are born with. We train the mental side of baseball just as hard as the physical, helping players develop the mindset to compete under pressure, bounce back from failure, and perform at their best when it matters most.",
-    icon: true,
   },
 ];
 
-function MentalGameIcon() {
+const mentalEdgePillars = [
+  {
+    title: "Confidence and Self Belief",
+    description:
+      "We help players build genuine confidence through repetition, positive reinforcement, and learning to trust their training when the game is on the line.",
+  },
+  {
+    title: "Resilience and Adversity",
+    description:
+      "Failure is part of the game. We teach players how to reset after a bad at-bat, bounce back from a slump, and use adversity as fuel instead of letting it derail their season.",
+  },
+  {
+    title: "Focus and Routine",
+    description:
+      "Elite performance starts with elite preparation. We help players build pre-game routines, develop focus under pressure, and stay locked in from first pitch to last out.",
+  },
+];
+
+function TrainingPillarCard({ title, description }: { title: string; description: string }) {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="h-8 w-8 text-[#52B788]"
-      aria-hidden="true"
-    >
-      <path d="M9 18h6" />
-      <path d="M10 22h4" />
-      <path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2Z" />
-    </svg>
+    <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-5 shadow-lg shadow-black/40">
+      <h3 className="text-lg font-semibold text-zinc-100">{title}</h3>
+      <p className="mt-2 text-sm leading-relaxed text-zinc-300">{description}</p>
+    </article>
   );
 }
 
@@ -137,20 +139,27 @@ export default function Home() {
           Every membership is built to improve game performance while developing discipline,
           confidence, and leadership habits beyond baseball.
         </p>
-        <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {trainingPillars.map((pillar) => (
-            <article
-              key={pillar.title}
-              className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-5 shadow-lg shadow-black/40"
-            >
-              {pillar.icon ? (
-                <div className="mb-3">
-                  <MentalGameIcon />
-                </div>
-              ) : null}
-              <h3 className="text-lg font-semibold text-zinc-100">{pillar.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-zinc-300">{pillar.description}</p>
-            </article>
+        <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {physicalTrainingPillars.map((pillar) => (
+            <TrainingPillarCard key={pillar.title} title={pillar.title} description={pillar.description} />
+          ))}
+        </div>
+
+        <div className="mt-10 text-center">
+          <div className="mx-auto mb-6 h-px w-24 bg-[#52B788]" />
+          <p className="mx-auto max-w-3xl text-lg leading-relaxed text-zinc-200 sm:text-xl">
+            But training the body is only half the equation. The players who make it to the next
+            level are the ones who have mastered what happens between the ears.
+          </p>
+        </div>
+
+        <p className="mt-10 text-center text-sm font-semibold uppercase tracking-wide text-[#52B788]">
+          The Mental Edge
+        </p>
+
+        <div className="mt-4 grid grid-cols-1 gap-5 md:grid-cols-3">
+          {mentalEdgePillars.map((pillar) => (
+            <TrainingPillarCard key={pillar.title} title={pillar.title} description={pillar.description} />
           ))}
         </div>
       </section>
