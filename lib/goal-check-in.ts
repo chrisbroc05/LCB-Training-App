@@ -33,15 +33,22 @@ export async function getGoalCheckinAvailability(userId: string) {
   const currentSubmission = await getCurrentMonthGoalCheckin(userId);
 
   if (currentSubmission) {
+    const canEdit =
+      currentSubmission.status === "pending" && !currentSubmission.coachResponse;
+
     return {
       canSubmit: false,
+      canEdit,
       currentSubmission,
-      message: "You have already submitted your goals for this month. Check back next month.",
+      message: canEdit
+        ? "You have already submitted your goals for this month. You can edit your submission below until Coach Broc responds."
+        : "You have already submitted your goals for this month. Check back next month.",
     };
   }
 
   return {
     canSubmit: true,
+    canEdit: false,
     currentSubmission: null,
     message: null,
   };

@@ -40,6 +40,9 @@ export type GoalItemCategory = (typeof GOAL_ITEM_CATEGORIES)[number]["value"];
 
 export const MAX_GOAL_ITEMS = 5;
 
+export const GOAL_CHECKIN_SUBMITTED_MESSAGE =
+  "Your goals have been submitted. Coach Broc will review them and get back to you within 48 hours. Keep track of your progress below and reach out with any questions.";
+
 export function isGoalFocusArea(value: string): value is GoalFocusArea {
   return GOAL_FOCUS_AREAS.includes(value as GoalFocusArea);
 }

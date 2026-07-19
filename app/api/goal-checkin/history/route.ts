@@ -25,6 +25,7 @@ export async function GET() {
       createdAt: submission.createdAt.toISOString(),
       monthlyFocus: submission.monthlyFocus,
       lastMonthReview: submission.lastMonthReview,
+      focusArea: submission.focusArea,
       focusAreaLabel: formatGoalFocusAreaLabel(submission.focusArea),
       additionalNotes: submission.additionalNotes,
       coachResponse: submission.coachResponse,

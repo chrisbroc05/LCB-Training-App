@@ -3,7 +3,8 @@ import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import CoachingSubmissionQuota from "@/app/CoachingSubmissionQuota";
+import DashboardCoachingCard from "@/app/dashboard/DashboardCoachingCard";
+import DashboardMembershipCard from "@/app/dashboard/DashboardMembershipCard";
 import DashboardUpgradeSection from "@/app/dashboard/DashboardUpgradeSection";
 import MonthlyGoalProgressCard from "@/app/dashboard/MonthlyGoalProgressCard";
 import {
@@ -16,12 +17,9 @@ import {
   canAccessDrillLibrary,
   canAccessWorkoutPrograms,
   databaseTierToKey,
-  formatDatabaseTierLabel,
   membershipTiers,
   type DatabaseTier,
 } from "@/lib/membership";
-import { formatAssessmentCallDateTime } from "@/lib/assessment-call";
-
 type DashboardPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
@@ -32,20 +30,13 @@ type QuickLink = {
   description: string;
 };
 
-function formatTierLabel(tier: DatabaseTier) {
-  return formatDatabaseTierLabel(tier);
-}
-
-function formatDate(date: Date | null) {
-  if (!date) {
-    return "Not available";
+function getFirstName(name: string | null | undefined, email: string | null | undefined) {
+  const trimmedName = name?.trim();
+  if (trimmedName) {
+    return trimmedName.split(/\s+/)[0];
   }
 
-  return new Intl.DateTimeFormat("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  }).format(date);
+  return email?.split("@")[0] || "Member";
 }
 
 function formatDateTime(date: Date) {
@@ -165,14 +156,13 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const freeSubmissionUsed = userRecord.freeSubmissionUsed;
   const userTier = databaseTierToKey[membershipTier];
   const currentTier = membershipTiers.find((tier) => tier.key === userTier) ?? membershipTiers[0];
-  const displayName = userRecord.name?.trim() || session.user.email?.split("@")[0] || "Member";
+  const firstName = getFirstName(userRecord.name, session.user.email);
   const quickLinks = getQuickLinks(
     membershipTier,
     membershipTier === "FREE" && !freeSubmissionUsed,
   );
   const isPaidMember = membershipTier !== "FREE";
   const hasSubscription = Boolean(userRecord.stripeSubscriptionId);
-  const showFreeSubmissionCard = membershipTier === "FREE";
   const currentMonthGoalCheckin = canAccessCoachingNav(membershipTier)
     ? await getCurrentMonthGoalCheckin(session.user.id)
     : null;
@@ -261,7 +251,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     <div className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 sm:py-14 md:py-20">
       <section className="rounded-3xl border border-[#18243a] bg-[#0b1324]/80 p-5 sm:p-8">
         <h1 className="text-2xl font-semibold leading-tight text-zinc-100 sm:text-3xl">
-          Welcome back, {displayName}!
+          Hey {firstName}, welcome back
         </h1>
         <p className="mt-2 text-zinc-300">
           Your LCB Training home base. Jump into the tools included with your{" "}
@@ -287,219 +277,37 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         </section>
       )}
 
-      <section className="mt-8 grid gap-4 sm:gap-5 md:grid-cols-2">
-        <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
-          <h2 className="text-lg font-semibold text-zinc-100">Membership</h2>
-          <div className="mt-3 inline-flex rounded-full border border-[#22c55e]/40 bg-[#22c55e]/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#9df3bd]">
-            {formatTierLabel(membershipTier)}
-          </div>
-          {isPaidMember ? (
-            <div className="mt-4 space-y-2 text-sm text-zinc-300">
-              <p>
-                Next billing date:{" "}
-                {formatDate(userRecord.subscriptionCurrentPeriodEnd)}
-              </p>
-              {userRecord.subscriptionCancelAtPeriodEnd ? (
-                <p className="text-yellow-100">
-                  Your subscription is set to cancel at the end of the current billing period.
-                </p>
-              ) : null}
-            </div>
-          ) : (
-            <p className="mt-4 text-sm text-zinc-300">
-              You are on the Free plan. Upgrade anytime to unlock the full drill library, resources,
-              and coaching support.
+      <div className="mt-8 space-y-4 sm:space-y-5">
+        <DashboardMembershipCard
+          membershipTier={membershipTier}
+          isPaidMember={isPaidMember}
+          subscriptionCurrentPeriodEnd={userRecord.subscriptionCurrentPeriodEnd}
+          subscriptionCancelAtPeriodEnd={userRecord.subscriptionCancelAtPeriodEnd}
+        />
+
+        <DashboardCoachingCard
+          membershipTier={membershipTier}
+          coachingAvailability={coachingAvailability}
+          freeSubmissionUsed={freeSubmissionUsed}
+          assessmentCallBooked={userRecord.assessmentCallBooked}
+          assessmentCallDate={userRecord.assessmentCallDate}
+        />
+      </div>
+
+      {canAccessCoachingNav(membershipTier) ? (
+        <section className="mt-10 border-t border-[#18243a] pt-10 sm:mt-12 sm:pt-12">
+          <div className="mb-5 sm:mb-6">
+            <h2 className="text-xl font-semibold text-zinc-100 sm:text-2xl">Monthly Goal Progress</h2>
+            <p className="mt-2 text-sm text-zinc-400">
+              Track and complete your goals for this month without leaving the dashboard.
             </p>
-          )}
-          <Link
-            href="/settings"
-            className="mt-4 inline-flex rounded-full border border-[#2b3650] bg-black/40 px-4 py-2 text-sm font-semibold text-zinc-200 transition hover:border-[#7f9434] hover:text-[#98b144]"
-          >
-            Manage Membership
-          </Link>
-        </article>
-
-        {showFreeSubmissionCard ? (
-          <div className="grid gap-4 sm:gap-5">
-            <article
-              className={`rounded-2xl border p-4 sm:p-6 ${
-                !freeSubmissionUsed
-                  ? "border-[#22c55e]/50 bg-[#22c55e]/10"
-                  : "border-[#18243a] bg-[#0b1324]/80"
-              }`}
-            >
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <h2 className="text-lg font-semibold text-zinc-100">One Free Submission</h2>
-                <span
-                  className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${
-                    !freeSubmissionUsed
-                      ? "bg-[#22c55e]/20 text-[#9df3bd]"
-                      : "bg-[#24314a] text-zinc-200"
-                  }`}
-                >
-                  {!freeSubmissionUsed ? "Available" : "Used"}
-                </span>
-              </div>
-              <p className="mt-3 text-sm text-zinc-300">
-                Free members can submit one coaching submission.
-              </p>
-              {!freeSubmissionUsed ? (
-                <Link
-                  href="/coaching-submissions"
-                  className="mt-4 inline-flex rounded-full bg-[#22c55e] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[#35db72]"
-                >
-                  Submit Coaching Submission
-                </Link>
-              ) : (
-                <Link
-                  href="/upgrade?reason=free-submission-used"
-                  className="mt-4 inline-flex rounded-full border border-[#2b3650] bg-black/40 px-4 py-2 text-sm font-semibold text-zinc-300 transition hover:border-[#7f9434] hover:text-[#98b144]"
-                >
-                  Upgrade to continue
-                </Link>
-              )}
-            </article>
-
-            {userRecord.assessmentCallBooked && userRecord.assessmentCallDate ? (
-              <article className="rounded-2xl border border-[#22c55e]/40 bg-[#0A1628] p-4 sm:p-6">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <h2 className="text-lg font-semibold text-zinc-100">
-                    Your Assessment Call is Scheduled
-                  </h2>
-                  <span className="rounded-full border border-[#22c55e]/40 bg-[#22c55e]/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#9df3bd]">
-                    Scheduled
-                  </span>
-                </div>
-                <p className="mt-3 text-base font-medium text-[#9df3bd]">
-                  {formatAssessmentCallDateTime(userRecord.assessmentCallDate)}
-                </p>
-                <p className="mt-2 text-xs text-zinc-400">
-                  Google Meet link will be in your Calendly confirmation email
-                </p>
-                <p className="mt-2 text-xs text-zinc-400">
-                  Need to reschedule or cancel? Use the link provided in your Calendly confirmation
-                  email
-                </p>
-              </article>
-            ) : (
-              <article className="rounded-2xl border border-[#22c55e]/50 bg-[#22c55e]/10 p-4 sm:p-6">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <h2 className="text-lg font-semibold text-zinc-100">Free Player Assessment Call</h2>
-                  <span className="rounded-full bg-[#22c55e]/20 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#9df3bd]">
-                    Free
-                  </span>
-                </div>
-                <p className="mt-3 text-sm text-zinc-300">
-                  Book a free 20-minute video call with Coach Broc to discuss your player&apos;s goals
-                  and find the right training plan for their development.
-                </p>
-                <a
-                  href="https://calendly.com/chrisbroc05/30min"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-4 inline-flex rounded-full bg-[#22c55e] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[#35db72]"
-                >
-                  Book Your Free Call
-                </a>
-              </article>
-            )}
           </div>
-        ) : membershipTier === "MEMORABLE" || membershipTier === "ELITE" ? (
-          <div className="space-y-4">
-            <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
-              <h2 className="text-lg font-semibold text-zinc-100">Coaching Submissions</h2>
-              {coachingAvailability ? (
-                <div className="mt-3">
-                  <CoachingSubmissionQuota
-                    availability={coachingAvailability}
-                    membershipTier={membershipTier}
-                  />
-                </div>
-              ) : null}
-              {coachingAvailability && coachingAvailability.canSubmit ? (
-                <Link
-                  href="/coaching-submissions"
-                  className="mt-4 inline-flex rounded-full bg-[#22c55e] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[#35db72]"
-                >
-                  Go to Coaching Submissions
-                </Link>
-              ) : (
-                <Link
-                  href={membershipTier === "MEMORABLE" ? "/upgrade" : "/settings"}
-                  className="mt-4 inline-flex rounded-full border border-[#2b3650] bg-black/40 px-4 py-2 text-sm font-semibold text-zinc-300 transition hover:border-[#7f9434] hover:text-[#98b144]"
-                >
-                  {membershipTier === "MEMORABLE"
-                    ? "Upgrade for more submissions"
-                    : "View membership details"}
-                </Link>
-              )}
-            </article>
-
-            <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
-              <h2 className="text-lg font-semibold text-zinc-100">Goal Check-In</h2>
-              {!currentMonthGoalCheckin ? (
-                <>
-                  <p className="mt-3 text-sm text-zinc-300">
-                    Submit your monthly goals and Coach Broc will personally review them.
-                  </p>
-                  <Link
-                    href="/goal-setting"
-                    className="mt-4 inline-flex rounded-full bg-[#22c55e] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[#35db72]"
-                  >
-                    Submit Your Monthly Goals
-                  </Link>
-                </>
-              ) : currentMonthGoalCheckin.status === "pending" ? (
-                <>
-                  <p className="mt-3 text-sm text-zinc-300">
-                    Goals submitted -- Coach Broc is reviewing
-                  </p>
-                  <p className="mt-2 text-xs text-zinc-400">
-                    Submitted {formatDateTime(currentMonthGoalCheckin.createdAt)}
-                  </p>
-                  <Link
-                    href="/goal-setting"
-                    className="mt-4 inline-flex rounded-full border border-[#2b3650] bg-black/40 px-4 py-2 text-sm font-semibold text-zinc-300 transition hover:border-[#7f9434] hover:text-[#98b144]"
-                  >
-                    View Submission
-                  </Link>
-                </>
-              ) : (
-                <>
-                  <p className="mt-3 text-sm text-[#9df3bd]">
-                    Coach Broc responded to your goals
-                  </p>
-                  <Link
-                    href="/goal-setting"
-                    className="mt-4 inline-flex rounded-full border border-[#52B788]/40 bg-[#52B788]/10 px-4 py-2 text-sm font-semibold text-[#9df3bd] transition hover:bg-[#52B788]/20"
-                  >
-                    View Response
-                  </Link>
-                </>
-              )}
-            </article>
-
-            <MonthlyGoalProgressCard
-              hasCheckin={Boolean(currentMonthGoalCheckin)}
-              goals={currentMonthGoalCheckin?.goals ?? []}
-            />
-          </div>
-        ) : membershipTier === "BASIC" ? (
-          <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
-            <h2 className="text-lg font-semibold text-zinc-100">Unlock Coaching Submissions</h2>
-            <p className="mt-3 text-sm text-zinc-300">
-              Upgrade to Memorable for everything in Basic plus 1-on-1 coaching, monthly swing
-              analysis and mental game support submissions, and accountability support.
-            </p>
-            <Link
-              href="/upgrade?reason=memorable-required"
-              className="mt-4 inline-flex rounded-full bg-[#22c55e] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[#35db72]"
-            >
-              Upgrade to Memorable
-            </Link>
-          </article>
-        ) : null}
-      </section>
+          <MonthlyGoalProgressCard
+            hasCheckin={Boolean(currentMonthGoalCheckin)}
+            goals={currentMonthGoalCheckin?.goals ?? []}
+          />
+        </section>
+      ) : null}
 
       <section className="mt-8">
         <h2 className="text-lg font-semibold text-zinc-100 sm:text-xl">Quick Links</h2>

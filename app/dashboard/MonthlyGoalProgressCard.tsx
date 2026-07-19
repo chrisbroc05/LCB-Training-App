@@ -1,6 +1,12 @@
+"use client";
+
 import Link from "next/link";
+import { useState } from "react";
 import GoalTrackerList from "@/app/goal-setting/GoalTrackerList";
-import { serializeGoalItem } from "@/lib/goal-check-in-constants";
+import {
+  serializeGoalItem,
+  type SerializedGoalItem,
+} from "@/lib/goal-check-in-constants";
 
 type MonthlyGoalProgressCardProps = {
   hasCheckin: boolean;
@@ -16,13 +22,59 @@ type MonthlyGoalProgressCardProps = {
 
 export default function MonthlyGoalProgressCard({
   hasCheckin,
-  goals,
+  goals: initialGoals,
 }: MonthlyGoalProgressCardProps) {
-  const serializedGoals = goals.map(serializeGoalItem);
-  const completedCount = serializedGoals.filter((goal) => goal.completed).length;
-  const totalCount = serializedGoals.length;
+  const [goals, setGoals] = useState<SerializedGoalItem[]>(() =>
+    initialGoals.map(serializeGoalItem),
+  );
+  const [togglingGoalId, setTogglingGoalId] = useState<number | null>(null);
+
+  const completedCount = goals.filter((goal) => goal.completed).length;
+  const totalCount = goals.length;
   const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
   const allCompleted = totalCount > 0 && completedCount === totalCount;
+
+  const handleToggleGoal = async (goalId: number) => {
+    setTogglingGoalId(goalId);
+
+    const response = await fetch("/api/goal-checkin/complete-goal", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ goalItemId: goalId }),
+    });
+
+    setTogglingGoalId(null);
+
+    if (!response.ok) {
+      return;
+    }
+
+    const data = (await response.json()) as {
+      goal?: {
+        id: number;
+        completed: boolean;
+        completedAt: string | null;
+      };
+    };
+
+    if (!data.goal) {
+      return;
+    }
+
+    setGoals((previous) =>
+      previous.map((goal) =>
+        goal.id === data.goal!.id
+          ? {
+              ...goal,
+              completed: data.goal!.completed,
+              completedAt: data.goal!.completedAt,
+            }
+          : goal,
+      ),
+    );
+  };
 
   if (!hasCheckin || totalCount === 0) {
     return (
@@ -65,7 +117,12 @@ export default function MonthlyGoalProgressCard({
       ) : null}
 
       <div className="mt-4">
-        <GoalTrackerList goals={serializedGoals} linkToGoalSetting />
+        <GoalTrackerList
+          goals={goals}
+          interactive
+          togglingGoalId={togglingGoalId}
+          onToggleGoal={(goalId) => void handleToggleGoal(goalId)}
+        />
       </div>
     </article>
   );

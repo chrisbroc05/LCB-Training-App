@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 
 type CompleteGoalBody = {
   goalItemId?: number;
+  completed?: boolean;
 };
 
 export async function POST(request: Request) {
@@ -48,7 +49,8 @@ export async function POST(request: Request) {
     );
   }
 
-  const nextCompleted = !goalItem.completed;
+  const nextCompleted =
+    typeof body.completed === "boolean" ? body.completed : !goalItem.completed;
 
   const updated = await prisma.goalItem.update({
     where: { id: goalItem.id },

@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { GOAL_FOCUS_AREAS, GOAL_ITEM_CATEGORIES, MAX_GOAL_ITEMS } from "@/lib/goal-check-in-constants";
+import {
+  GOAL_CHECKIN_SUBMITTED_MESSAGE,
+  GOAL_FOCUS_AREAS,
+  GOAL_ITEM_CATEGORIES,
+  MAX_GOAL_ITEMS,
+} from "@/lib/goal-check-in-constants";
 
 type GoalRow = {
   category: string;
@@ -9,7 +14,22 @@ type GoalRow = {
   targetValue: string;
 };
 
+export type EditSubmissionData = {
+  id: number;
+  monthlyFocus: string;
+  lastMonthReview: string;
+  focusArea: string;
+  additionalNotes: string | null;
+  goals: Array<{
+    category: string;
+    description: string;
+    targetValue: string | null;
+  }>;
+};
+
 type GoalSettingFormProps = {
+  editSubmission?: EditSubmissionData | null;
+  onCancelEdit?: () => void;
   onSubmitted?: () => void;
 };
 
@@ -21,7 +41,23 @@ function createEmptyGoalRow(): GoalRow {
   };
 }
 
-export default function GoalSettingForm({ onSubmitted }: GoalSettingFormProps) {
+function buildGoalRowsFromSubmission(goals: EditSubmissionData["goals"]): GoalRow[] {
+  if (goals.length === 0) {
+    return [createEmptyGoalRow()];
+  }
+
+  return goals.map((goal) => ({
+    category: goal.category,
+    description: goal.description,
+    targetValue: goal.targetValue ?? "",
+  }));
+}
+
+export default function GoalSettingForm({
+  editSubmission = null,
+  onCancelEdit,
+  onSubmitted,
+}: GoalSettingFormProps) {
   const [monthlyFocus, setMonthlyFocus] = useState("");
   const [lastMonthReview, setLastMonthReview] = useState("");
   const [focusArea, setFocusArea] = useState("");
@@ -34,8 +70,22 @@ export default function GoalSettingForm({ onSubmitted }: GoalSettingFormProps) {
   const [blockedMessage, setBlockedMessage] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState("");
   const [confirmationMessage, setConfirmationMessage] = useState("");
+  const isEditing = Boolean(editSubmission);
 
   useEffect(() => {
+    if (editSubmission) {
+      setMonthlyFocus(editSubmission.monthlyFocus);
+      setLastMonthReview(editSubmission.lastMonthReview);
+      setFocusArea(editSubmission.focusArea);
+      setAdditionalNotes(editSubmission.additionalNotes ?? "");
+      const nextGoalRows = buildGoalRowsFromSubmission(editSubmission.goals);
+      setGoalRows(nextGoalRows);
+      setVisibleGoalCount(nextGoalRows.length);
+      setSubmitError("");
+      setConfirmationMessage("");
+      return;
+    }
+
     const loadAvailability = async () => {
       setIsLoadingAvailability(true);
       const response = await fetch("/api/goal-checkin/current-month");
@@ -58,7 +108,7 @@ export default function GoalSettingForm({ onSubmitted }: GoalSettingFormProps) {
     };
 
     void loadAvailability();
-  }, [confirmationMessage]);
+  }, [editSubmission, confirmationMessage]);
 
   const updateGoalRow = (index: number, field: keyof GoalRow, value: string) => {
     setGoalRows((previous) =>
@@ -71,7 +121,7 @@ export default function GoalSettingForm({ onSubmitted }: GoalSettingFormProps) {
     setSubmitError("");
     setConfirmationMessage("");
 
-    if (!canSubmit) {
+    if (!canSubmit && !isEditing) {
       return;
     }
 
@@ -106,6 +156,7 @@ export default function GoalSettingForm({ onSubmitted }: GoalSettingFormProps) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
+        submissionId: editSubmission?.id,
         monthlyFocus: monthlyFocus.trim(),
         lastMonthReview: lastMonthReview.trim(),
         focusArea,
@@ -129,10 +180,7 @@ export default function GoalSettingForm({ onSubmitted }: GoalSettingFormProps) {
       return;
     }
 
-    setConfirmationMessage(
-      data.message ??
-        "Your goals have been submitted. Coach Broc will review them and get back to you within 48 hours.",
-    );
+    setConfirmationMessage(data.message ?? GOAL_CHECKIN_SUBMITTED_MESSAGE);
     setMonthlyFocus("");
     setLastMonthReview("");
     setFocusArea("");
@@ -146,7 +194,7 @@ export default function GoalSettingForm({ onSubmitted }: GoalSettingFormProps) {
     onSubmitted?.();
   };
 
-  if (isLoadingAvailability) {
+  if (isLoadingAvailability && !isEditing) {
     return <p className="mt-6 text-sm text-zinc-400">Loading goal check-in status...</p>;
   }
 
@@ -158,7 +206,7 @@ export default function GoalSettingForm({ onSubmitted }: GoalSettingFormProps) {
     );
   }
 
-  if (!canSubmit && blockedMessage) {
+  if (!canSubmit && blockedMessage && !isEditing) {
     return (
       <p className="mt-6 rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-100">
         {blockedMessage}
@@ -168,6 +216,19 @@ export default function GoalSettingForm({ onSubmitted }: GoalSettingFormProps) {
 
   return (
     <form className="mt-6 space-y-5 sm:mt-8" onSubmit={handleSubmit}>
+      {isEditing ? (
+        <div className="rounded-lg border border-[#2b3650] bg-black/30 px-4 py-3 text-sm text-zinc-300">
+          <p>You are editing your current monthly submission.</p>
+          <button
+            type="button"
+            onClick={() => onCancelEdit?.()}
+            className="mt-2 text-sm font-semibold text-[#98b144] underline-offset-2 hover:underline"
+          >
+            Cancel Edit
+          </button>
+        </div>
+      ) : null}
+
       <label className="block">
         <span className="text-sm text-zinc-300">What is your main focus and goal this month?</span>
         <textarea
@@ -318,7 +379,13 @@ export default function GoalSettingForm({ onSubmitted }: GoalSettingFormProps) {
         disabled={isSubmitting}
         className="rounded-full bg-[#22c55e] px-5 py-3 text-sm font-semibold text-black transition hover:bg-[#35db72] disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {isSubmitting ? "Submitting..." : "Submit My Goals"}
+        {isSubmitting
+          ? isEditing
+            ? "Updating..."
+            : "Submitting..."
+          : isEditing
+            ? "Update My Goals"
+            : "Submit My Goals"}
       </button>
     </form>
   );

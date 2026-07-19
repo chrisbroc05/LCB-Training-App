@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import GoalHistorySection from "@/app/goal-setting/GoalHistorySection";
-import GoalSettingForm from "@/app/goal-setting/GoalSettingForm";
+import GoalSettingForm, { type EditSubmissionData } from "@/app/goal-setting/GoalSettingForm";
 
 export default function GoalSettingPageBody() {
   const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
+  const [editSubmission, setEditSubmission] = useState<EditSubmissionData | null>(null);
 
   return (
     <div className="mx-auto w-full max-w-4xl px-4 py-10 sm:px-6 sm:py-14 md:py-20">
@@ -18,10 +19,20 @@ export default function GoalSettingPageBody() {
           hours.
         </p>
 
-        <GoalSettingForm onSubmitted={() => setHistoryRefreshKey((current) => current + 1)} />
+        <GoalSettingForm
+          editSubmission={editSubmission}
+          onCancelEdit={() => setEditSubmission(null)}
+          onSubmitted={() => {
+            setEditSubmission(null);
+            setHistoryRefreshKey((current) => current + 1);
+          }}
+        />
       </section>
 
-      <GoalHistorySection refreshKey={historyRefreshKey} />
+      <GoalHistorySection
+        refreshKey={historyRefreshKey}
+        onEditSubmission={setEditSubmission}
+      />
     </div>
   );
 }

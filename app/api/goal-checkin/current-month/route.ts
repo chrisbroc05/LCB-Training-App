@@ -13,6 +13,7 @@ export async function GET() {
 
   return NextResponse.json({
     canSubmit: availability.canSubmit,
+    canEdit: availability.canEdit,
     message: availability.message,
     currentSubmission: availability.currentSubmission
       ? {
