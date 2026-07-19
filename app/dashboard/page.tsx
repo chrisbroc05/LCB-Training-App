@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import CoachingSubmissionQuota from "@/app/CoachingSubmissionQuota";
 import DashboardUpgradeSection from "@/app/dashboard/DashboardUpgradeSection";
+import MonthlyGoalProgressCard from "@/app/dashboard/MonthlyGoalProgressCard";
 import {
   ensureCoachingSubmissionPeriod,
   getCoachingSubmissionAvailability,
@@ -477,6 +478,11 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                 </>
               )}
             </article>
+
+            <MonthlyGoalProgressCard
+              hasCheckin={Boolean(currentMonthGoalCheckin)}
+              goals={currentMonthGoalCheckin?.goals ?? []}
+            />
           </div>
         ) : membershipTier === "BASIC" ? (
           <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">

@@ -1,49 +1,53 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import {
-  getGoalCheckinAvailability,
   isGoalFocusArea,
-} from "@/lib/goal-check-in";
-import { canAccessCoachingNav } from "@/lib/membership";
+  isGoalItemCategory,
+  MAX_GOAL_ITEMS,
+} from "@/lib/goal-check-in-constants";
+import { getGoalCheckinAvailability } from "@/lib/goal-check-in";
+import { requireGoalCheckinMember } from "@/lib/goal-checkin-api";
 import {
   sendGoalCheckinReceivedEmail,
   sendGoalCheckinSubmissionNotification,
 } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 
+type GoalItemInput = {
+  category?: string;
+  description?: string;
+  targetValue?: string;
+};
+
 type SubmitBody = {
   monthlyFocus?: string;
   lastMonthReview?: string;
   focusArea?: string;
   additionalNotes?: string;
+  goals?: GoalItemInput[];
 };
 
+function normalizeGoalItems(goals: GoalItemInput[] | undefined) {
+  if (!Array.isArray(goals)) {
+    return [];
+  }
+
+  return goals
+    .map((goal) => ({
+      category: goal.category?.trim() ?? "",
+      description: goal.description?.trim() ?? "",
+      targetValue: goal.targetValue?.trim() || null,
+    }))
+    .filter((goal) => goal.category || goal.description || goal.targetValue)
+    .slice(0, MAX_GOAL_ITEMS);
+}
+
 export async function POST(request: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id || !session.user.email) {
-    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  const access = await requireGoalCheckinMember();
+  if (access.error) {
+    return access.error;
   }
 
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: {
-      membershipTier: true,
-      name: true,
-      email: true,
-    },
-  });
-
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
-  }
-
-  if (!canAccessCoachingNav(user.membershipTier)) {
-    return NextResponse.json(
-      { error: "Goal check-ins are available on Memorable and Elite memberships." },
-      { status: 403 },
-    );
-  }
+  const { session, user } = access;
 
   const availability = await getGoalCheckinAvailability(session.user.id);
   if (!availability.canSubmit) {
@@ -64,6 +68,7 @@ export async function POST(request: Request) {
   const lastMonthReview = body.lastMonthReview?.trim() ?? "";
   const focusArea = body.focusArea?.trim() ?? "";
   const additionalNotes = body.additionalNotes?.trim() || null;
+  const normalizedGoals = normalizeGoalItems(body.goals);
 
   if (!monthlyFocus || !lastMonthReview || !focusArea) {
     return NextResponse.json({ error: "Please complete all required fields." }, { status: 400 });
@@ -71,6 +76,23 @@ export async function POST(request: Request) {
 
   if (!isGoalFocusArea(focusArea)) {
     return NextResponse.json({ error: "Please select a valid focus area." }, { status: 400 });
+  }
+
+  if (normalizedGoals.length === 0) {
+    return NextResponse.json({ error: "Please add at least one monthly goal." }, { status: 400 });
+  }
+
+  for (const goal of normalizedGoals) {
+    if (!goal.category || !goal.description) {
+      return NextResponse.json(
+        { error: "Each monthly goal needs a category and description." },
+        { status: 400 },
+      );
+    }
+
+    if (!isGoalItemCategory(goal.category)) {
+      return NextResponse.json({ error: "Please select a valid goal category." }, { status: 400 });
+    }
   }
 
   const memberName = user.name?.trim() || user.email;
@@ -83,6 +105,16 @@ export async function POST(request: Request) {
       focusArea,
       additionalNotes,
       status: "pending",
+      goals: {
+        create: normalizedGoals.map((goal) => ({
+          category: goal.category,
+          description: goal.description,
+          targetValue: goal.targetValue,
+        })),
+      },
+    },
+    include: {
+      goals: true,
     },
   });
 
@@ -95,6 +127,11 @@ export async function POST(request: Request) {
       lastMonthReview,
       focusArea,
       additionalNotes,
+      goals: created.goals.map((goal) => ({
+        category: goal.category,
+        description: goal.description,
+        targetValue: goal.targetValue,
+      })),
     });
   } catch (error) {
     console.error("Failed to send goal check-in admin notification", error);

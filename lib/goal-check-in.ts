@@ -1,33 +1,13 @@
+import { getCurrentMonthBoundsUtc } from "@/lib/goal-check-in-constants";
 import { prisma } from "@/lib/prisma";
 
-export const GOAL_FOCUS_AREAS = [
-  "hitting",
-  "fielding",
-  "speed",
-  "strength",
-  "mental game",
-] as const;
-
-export type GoalFocusArea = (typeof GOAL_FOCUS_AREAS)[number];
-
-export function isGoalFocusArea(value: string): value is GoalFocusArea {
-  return GOAL_FOCUS_AREAS.includes(value as GoalFocusArea);
-}
-
-export function getCurrentMonthBoundsUtc() {
-  const now = new Date();
-  const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
-  const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
-  return { start, end };
-}
-
-export function formatGoalFocusAreaLabel(focusArea: string) {
-  if (focusArea === "mental game") {
-    return "Mental Game";
-  }
-
-  return focusArea.charAt(0).toUpperCase() + focusArea.slice(1);
-}
+export {
+  GOAL_FOCUS_AREAS,
+  formatGoalFocusAreaLabel,
+  getCurrentMonthBoundsUtc,
+  isGoalFocusArea,
+  type GoalFocusArea,
+} from "@/lib/goal-check-in-constants";
 
 export async function getCurrentMonthGoalCheckin(userId: string) {
   const { start, end } = getCurrentMonthBoundsUtc();
@@ -38,6 +18,11 @@ export async function getCurrentMonthGoalCheckin(userId: string) {
       createdAt: {
         gte: start,
         lt: end,
+      },
+    },
+    include: {
+      goals: {
+        orderBy: { createdAt: "asc" },
       },
     },
     orderBy: { createdAt: "desc" },

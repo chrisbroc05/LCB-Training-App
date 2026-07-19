@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin";
-import { formatGoalFocusAreaLabel } from "@/lib/goal-check-in";
+import { formatGoalFocusAreaLabel, serializeGoalItem } from "@/lib/goal-check-in-constants";
 import { prisma } from "@/lib/prisma";
 
 type RouteContext = {
@@ -33,6 +33,9 @@ export async function GET(_request: Request, context: RouteContext) {
           membershipTier: true,
         },
       },
+      goals: {
+        orderBy: { createdAt: "asc" },
+      },
     },
   });
 
@@ -56,6 +59,7 @@ export async function GET(_request: Request, context: RouteContext) {
       badgeStatus: submission.status === "pending" ? "PENDING" : "RESPONDED",
       createdAt: submission.createdAt.toISOString(),
       respondedAt: submission.respondedAt?.toISOString() ?? null,
+      goals: submission.goals.map(serializeGoalItem),
     },
   });
 }

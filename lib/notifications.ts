@@ -784,8 +784,21 @@ export async function sendGoalCheckinSubmissionNotification(params: {
   lastMonthReview: string;
   focusArea: string;
   additionalNotes: string | null;
+  goals?: Array<{
+    category: string;
+    description: string;
+    targetValue: string | null;
+  }>;
 }) {
   const transporter = createTransporter();
+  const goalRows =
+    params.goals?.map((goal, index) => ({
+      label: `Goal ${index + 1}`,
+      value: `${goal.category}: ${goal.description}${
+        goal.targetValue ? ` (Target: ${goal.targetValue})` : ""
+      }`,
+    })) ?? [];
+
   const html = buildSubmissionNotificationHtml({
     title: "New Monthly Goal Check-In",
     membershipTier: params.membershipTier,
@@ -799,9 +812,20 @@ export async function sendGoalCheckinSubmissionNotification(params: {
         label: "Additional Notes",
         value: params.additionalNotes ?? "None provided",
       },
+      ...goalRows,
       { label: "Status", value: "pending" },
     ],
   });
+
+  const goalText =
+    params.goals
+      ?.map(
+        (goal, index) =>
+          `Goal ${index + 1}: ${goal.category} - ${goal.description}${
+            goal.targetValue ? ` (Target: ${goal.targetValue})` : ""
+          }`,
+      )
+      .join("\n") ?? "";
 
   await transporter.sendMail({
     from: process.env.NOTIFICATION_EMAIL,
@@ -815,7 +839,8 @@ Membership Tier: ${getTierLabel(params.membershipTier)}
 Main Focus: ${params.monthlyFocus}
 Last Month Review: ${params.lastMonthReview}
 Focus Area: ${params.focusArea}
-Additional Notes: ${params.additionalNotes ?? "None provided"}`,
+Additional Notes: ${params.additionalNotes ?? "None provided"}
+${goalText ? `\nMonthly Goals:\n${goalText}` : ""}`,
     html,
   });
 }

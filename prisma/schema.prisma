@@ -153,19 +153,34 @@ model SwingAnalysisSubmission {
 }
 
 model GoalCheckin {
-  id                Int       @id @default(autoincrement())
+  id                Int        @id @default(autoincrement())
   userId            String
-  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   monthlyFocus      String
   lastMonthReview   String
   focusArea         String
   additionalNotes   String?
   coachResponse     String?
-  status            String    @default("pending")
-  createdAt         DateTime  @default(now())
+  status            String     @default("pending")
+  createdAt         DateTime   @default(now())
   respondedAt       DateTime?
+  goals             GoalItem[]
 
   @@index([userId])
   @@index([userId, createdAt])
+}
+
+model GoalItem {
+  id           Int         @id @default(autoincrement())
+  checkinId    Int
+  checkin      GoalCheckin @relation(fields: [checkinId], references: [id], onDelete: Cascade)
+  category     String
+  description  String
+  targetValue  String?
+  completed    Boolean     @default(false)
+  completedAt  DateTime?
+  createdAt    DateTime    @default(now())
+
+  @@index([checkinId])
 }
 

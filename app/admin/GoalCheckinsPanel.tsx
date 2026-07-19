@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { GoalItemCategoryBadge } from "@/app/goal-setting/GoalTrackerList";
+import type { SerializedGoalItem } from "@/lib/goal-check-in-constants";
 
 type GoalCheckinListItem = {
   id: number;
@@ -18,6 +20,7 @@ type GoalCheckinDetail = GoalCheckinListItem & {
   additionalNotes: string | null;
   coachResponse: string | null;
   respondedAt: string | null;
+  goals: SerializedGoalItem[];
 };
 
 function formatResponseDateTime(value: string | null | undefined) {
@@ -221,6 +224,48 @@ export default function GoalCheckinsPanel() {
                 ) : null}
               </div>
             </div>
+
+            {detail.goals.length > 0 ? (
+              <div className="rounded-xl border border-[#2b3650] bg-[#0b1324]/70 p-4">
+                <h3 className="text-lg font-semibold text-zinc-100">Monthly Goal Tracker</h3>
+                <p className="mt-1 text-xs text-zinc-400">
+                  Trackable goals the member set for this month and their completion progress.
+                </p>
+                <div className="mt-4 space-y-3">
+                  {detail.goals.map((goal) => (
+                    <div
+                      key={goal.id}
+                      className="rounded-xl border border-[#2b3650] bg-black/30 p-4 text-sm text-zinc-200"
+                    >
+                      <div className="flex flex-wrap items-center gap-2">
+                        <GoalItemCategoryBadge
+                          label={goal.categoryLabel}
+                          badgeClassName={goal.badgeClassName}
+                        />
+                        <span
+                          className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${
+                            goal.completed
+                              ? "bg-[#22c55e]/20 text-[#9df3bd]"
+                              : "bg-[#24314a] text-zinc-200"
+                          }`}
+                        >
+                          {goal.completed ? "Completed" : "In Progress"}
+                        </span>
+                      </div>
+                      <p className="mt-3 text-zinc-100">{goal.description}</p>
+                      {goal.targetValue ? (
+                        <p className="mt-1 text-xs text-zinc-400">Target: {goal.targetValue}</p>
+                      ) : null}
+                      {goal.completed && goal.completedAt ? (
+                        <p className="mt-2 text-xs text-[#9df3bd]">
+                          Completed {formatResponseDateTime(goal.completedAt)}
+                        </p>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
 
             {detail.badgeStatus === "RESPONDED" ? (
               <div className="rounded-xl border border-[#22c55e]/30 bg-[#22c55e]/10 p-4">
