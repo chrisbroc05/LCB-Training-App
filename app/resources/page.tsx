@@ -233,7 +233,7 @@ export default async function ResourcesPage() {
       <LockedFeaturePanel
         title="Resources"
         description="Download workout programs and bonus guides tailored to your membership tier."
-        message="Resources are available on Basic, Memorable, and Elite memberships. Upgrade to Basic or above to unlock all 7 downloadable workout programs."
+        message="Resources are available on Basic, Memorable, and Elite memberships. Upgrade to Basic or above to unlock all 8 downloadable workout programs."
         upgradeLabel="Upgrade to Basic or Above"
         upgradeHref="/upgrade?reason=basic-required"
       />

@@ -25,7 +25,7 @@ export default async function UpgradePage({ searchParams }: UpgradePageProps) {
         )}
         {reason === "basic-required" && (
           <p className="mt-4 rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-100">
-            Basic membership ($59 one-time) unlocks lifetime access to the full drill library, all 7
+            Basic membership ($59 one-time) unlocks lifetime access to the full drill library, all 8
             workout programs, and the core training PDFs.
           </p>
         )}

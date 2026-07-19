@@ -11,6 +11,33 @@ const experience = [
   "Current High School Varsity Coach",
 ];
 
+const onlineMembershipTiers = [
+  {
+    name: "Free",
+    price: "$0",
+    description:
+      "1 free coaching submission plus free 20-minute Player Assessment Call with Coach Broc",
+  },
+  {
+    name: "Basic",
+    price: "$59 one-time",
+    description:
+      "Lifetime access to the full video drill library plus 8 downloadable workout programs",
+  },
+  {
+    name: "Memorable",
+    price: "$149/mo or $1,490/yr",
+    description:
+      "Everything in Basic plus 2 coaching submissions per month with 48-hour feedback, weekly check-ins, and goal setting",
+  },
+  {
+    name: "Elite",
+    price: "$249/mo or $2,490/yr",
+    description:
+      "Everything in Memorable plus 4 submissions per month with rollover, priority 24-hour response, monthly group coaching call, and personalized development plan",
+  },
+];
+
 export default function CoachBioSection() {
   return (
     <section className="mt-14 rounded-3xl bg-[#0A1628] px-5 py-20 sm:px-8">
@@ -66,6 +93,26 @@ export default function CoachBioSection() {
               {item}
             </p>
           ))}
+        </div>
+
+        <div className="mt-10">
+          <h3 className="text-center text-lg font-semibold text-white sm:text-xl">
+            Online Membership
+          </h3>
+          <div className="mx-auto mt-5 grid max-w-3xl gap-4 sm:grid-cols-2">
+            {onlineMembershipTiers.map((tier) => (
+              <article
+                key={tier.name}
+                className="rounded-xl border border-[#2b3650] bg-[#0A1628] p-4 text-left sm:p-5"
+              >
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <h4 className="text-base font-semibold text-white">{tier.name}</h4>
+                  <p className="text-sm font-semibold text-[#52B788]">{tier.price}</p>
+                </div>
+                <p className="mt-3 text-sm leading-relaxed text-[#CCCCCC]">{tier.description}</p>
+              </article>
+            ))}
+          </div>
         </div>
 
         <p className="mt-10 text-center text-xl font-bold italic text-[#52B788] sm:text-2xl">

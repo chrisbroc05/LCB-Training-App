@@ -29,7 +29,7 @@ export const membershipTiers: MembershipTier[] = [
     features: [
       "Lifetime access -- pay once, access forever",
       "Full hitting, fielding, and mindset video drill library",
-      "7 downloadable workout programs (Strength, Speed-Agility, and Mobility)",
+      "8 downloadable workout programs (Strength, Speed-Agility, Mobility, and Rotational Power)",
       "Pre-Game Warmup Routine PDF",
       "Nutrition and Fueling Guide PDF",
       "Mental Game Workbook PDF",

@@ -552,7 +552,7 @@ function getOnboardingWelcomeGuidance(membershipTier: DatabaseTier) {
     case "FREE":
       return "You have one free coaching submission (swing analysis or mental game support) with personal feedback from Coach Broc, plus a free 20-minute Player Assessment Call via Google Meet.";
     case "BASIC":
-      return "You have lifetime Basic access to the drill library, all 7 workout programs, and your Pre-Game Warmup, Nutrition, Mental Game Workbook, and Parent Guide PDFs.";
+      return "You have lifetime Basic access to the drill library, all 8 workout programs, and your Pre-Game Warmup, Nutrition, Mental Game Workbook, and Parent Guide PDFs.";
     case "MEMORABLE":
       return "You have everything in Basic plus 1-on-1 coaching, monthly swing analysis and mental game support submissions, and accountability support.";
     case "ELITE":
@@ -566,7 +566,7 @@ function getOnboardingMembershipSummaryHtml(membershipTier: DatabaseTier) {
   if (membershipTier === "FREE") {
     return `<div style="margin-top:16px; padding:14px; border:1px solid #2b3650; border-radius:10px; background:#060b16;">
         <p style="margin:0 0 10px; font-weight:700; color:#98b144;">Membership options</p>
-        <p style="margin:0 0 6px;"><strong>Basic ($59 one-time):</strong> Lifetime access to the full drill library, all 7 workout programs, and core training PDFs.</p>
+        <p style="margin:0 0 6px;"><strong>Basic ($59 one-time):</strong> Lifetime access to the full drill library, all 8 workout programs, and core training PDFs.</p>
         <p style="margin:0 0 6px;"><strong>Memorable ($149/month or $1,490/year):</strong> Everything in Basic plus 1-on-1 coaching, monthly swing analysis and mental game support submissions, and accountability support.</p>
         <p style="margin:0;"><strong>Elite ($249/month or $2,490/year):</strong> Everything in Memorable plus 4 submissions with rollover, priority 24-hour response, group coaching calls, and personalized plans.</p>
         <p style="margin:10px 0 0;"><a href="${escapeHtml(
@@ -593,8 +593,8 @@ function getOnboardingDrillLibraryMessage(membershipTier: DatabaseTier) {
   if (membershipTier === "FREE") {
     return {
       bodyText:
-        "Upgrade to Basic ($59 one-time) to unlock lifetime access to the full hitting, fielding, and mindset drill libraries, all 7 workout programs, and the Pre-Game Warmup, Nutrition, Mental Game Workbook, and Parent Guide PDFs.",
-      bodyHtml: `<p style="margin: 0 0 12px;">Upgrade to <strong>Basic ($59 one-time)</strong> to unlock lifetime access to the full hitting, fielding, and mindset drill libraries, all 7 workout programs, and the core training PDFs.</p>
+        "Upgrade to Basic ($59 one-time) to unlock lifetime access to the full hitting, fielding, and mindset drill libraries, all 8 workout programs, and the Pre-Game Warmup, Nutrition, Mental Game Workbook, and Parent Guide PDFs.",
+      bodyHtml: `<p style="margin: 0 0 12px;">Upgrade to <strong>Basic ($59 one-time)</strong> to unlock lifetime access to the full hitting, fielding, and mindset drill libraries, all 8 workout programs, and the core training PDFs.</p>
         <p style="margin: 0;">Memorable ($149/month or $1,490/year) includes everything in Basic plus 1-on-1 coaching, monthly swing analysis and mental game support submissions, and accountability support. Elite ($249/month or $2,490/year) adds priority response, group coaching calls, and personalized plans from Coach Broc.</p>`,
     };
   }
