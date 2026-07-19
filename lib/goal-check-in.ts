@@ -1,4 +1,4 @@
-import { getCurrentMonthBoundsUtc } from "@/lib/goal-check-in-constants";
+import { getCurrentMonthBoundsUtc, GOAL_CHECKIN_ALREADY_SUBMITTED_MESSAGE } from "@/lib/goal-check-in-constants";
 import { prisma } from "@/lib/prisma";
 
 export {
@@ -42,7 +42,7 @@ export async function getGoalCheckinAvailability(userId: string) {
       currentSubmission,
       message: canEdit
         ? "You have already submitted your goals for this month. You can edit your submission below until Coach Broc responds."
-        : "You have already submitted your goals for this month. Check back next month.",
+        : GOAL_CHECKIN_ALREADY_SUBMITTED_MESSAGE,
     };
   }
 

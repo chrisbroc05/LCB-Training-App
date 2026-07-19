@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import GoalTrackerList from "@/app/goal-setting/GoalTrackerList";
 import {
   serializeGoalItem,
@@ -20,6 +20,14 @@ type MonthlyGoalProgressCardProps = {
   }>;
 };
 
+function buildSavedCompletionMap(goals: SerializedGoalItem[]) {
+  const saved: Record<number, boolean> = {};
+  goals.forEach((goal) => {
+    saved[goal.id] = goal.completed;
+  });
+  return saved;
+}
+
 export default function MonthlyGoalProgressCard({
   hasCheckin,
   goals: initialGoals,
@@ -27,60 +35,133 @@ export default function MonthlyGoalProgressCard({
   const [goals, setGoals] = useState<SerializedGoalItem[]>(() =>
     initialGoals.map(serializeGoalItem),
   );
-  const [togglingGoalId, setTogglingGoalId] = useState<number | null>(null);
+  const [savedCompletionByGoalId, setSavedCompletionByGoalId] = useState<Record<number, boolean>>(
+    () => buildSavedCompletionMap(initialGoals.map(serializeGoalItem)),
+  );
+  const [hasUnsavedGoalChanges, setHasUnsavedGoalChanges] = useState(false);
+  const [isSavingGoals, setIsSavingGoals] = useState(false);
+  const [saveProgressMessage, setSaveProgressMessage] = useState("");
+  const [saveMessageVisible, setSaveMessageVisible] = useState(false);
+  const [saveProgressError, setSaveProgressError] = useState("");
 
   const completedCount = goals.filter((goal) => goal.completed).length;
   const totalCount = goals.length;
   const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
   const allCompleted = totalCount > 0 && completedCount === totalCount;
 
-  const handleToggleGoal = async (goalId: number) => {
-    setTogglingGoalId(goalId);
-
-    const response = await fetch("/api/goal-checkin/complete-goal", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ goalItemId: goalId }),
-    });
-
-    setTogglingGoalId(null);
-
-    if (!response.ok) {
+  useEffect(() => {
+    if (!saveProgressMessage) {
       return;
     }
 
-    const data = (await response.json()) as {
-      goal?: {
-        id: number;
-        completed: boolean;
-        completedAt: string | null;
-      };
+    setSaveMessageVisible(true);
+    const fadeTimer = window.setTimeout(() => setSaveMessageVisible(false), 2500);
+    const clearTimer = window.setTimeout(() => setSaveProgressMessage(""), 3000);
+
+    return () => {
+      window.clearTimeout(fadeTimer);
+      window.clearTimeout(clearTimer);
     };
+  }, [saveProgressMessage]);
 
-    if (!data.goal) {
-      return;
-    }
+  const handleToggleGoalLocal = (goalId: number) => {
+    setSaveProgressMessage("");
+    setSaveProgressError("");
+    setSaveMessageVisible(false);
 
     setGoals((previous) =>
-      previous.map((goal) =>
-        goal.id === data.goal!.id
-          ? {
-              ...goal,
-              completed: data.goal!.completed,
-              completedAt: data.goal!.completedAt,
-            }
-          : goal,
-      ),
+      previous.map((goal) => {
+        if (goal.id !== goalId) {
+          return goal;
+        }
+
+        const nextCompleted = !goal.completed;
+        return {
+          ...goal,
+          completed: nextCompleted,
+          completedAt: nextCompleted ? new Date().toISOString() : null,
+        };
+      }),
     );
+    setHasUnsavedGoalChanges(true);
+  };
+
+  const handleSaveGoalProgress = async () => {
+    const changedGoals = goals.filter(
+      (goal) => goal.completed !== savedCompletionByGoalId[goal.id],
+    );
+
+    if (changedGoals.length === 0) {
+      setHasUnsavedGoalChanges(false);
+      return;
+    }
+
+    setIsSavingGoals(true);
+    setSaveProgressMessage("");
+    setSaveProgressError("");
+    setSaveMessageVisible(false);
+
+    for (const goal of changedGoals) {
+      const response = await fetch("/api/goal-checkin/complete-goal", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          goalItemId: goal.id,
+          completed: goal.completed,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = (await response.json().catch(() => ({}))) as { error?: string };
+        setIsSavingGoals(false);
+        setSaveProgressError(data.error ?? "Unable to save goal progress right now.");
+        return;
+      }
+
+      const data = (await response.json()) as {
+        goal?: {
+          id: number;
+          completed: boolean;
+          completedAt: string | null;
+        };
+      };
+
+      if (data.goal) {
+        setGoals((previous) =>
+          previous.map((currentGoal) =>
+            currentGoal.id === data.goal!.id
+              ? {
+                  ...currentGoal,
+                  completed: data.goal!.completed,
+                  completedAt: data.goal!.completedAt,
+                }
+              : currentGoal,
+          ),
+        );
+      }
+    }
+
+    setSavedCompletionByGoalId((previous) => {
+      const next = { ...previous };
+      changedGoals.forEach((goal) => {
+        next[goal.id] = goal.completed;
+      });
+      return next;
+    });
+    setHasUnsavedGoalChanges(false);
+    setIsSavingGoals(false);
+    setSaveProgressMessage("Progress saved");
   };
 
   if (!hasCheckin || totalCount === 0) {
     return (
       <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
         <h2 className="text-lg font-semibold text-zinc-100">This Month's Goals</h2>
-        <p className="mt-3 text-sm text-zinc-300">No goals set this month</p>
+        <p className="mt-3 text-sm text-zinc-300">
+          You have not set your goals for this month yet.
+        </p>
         <Link
           href="/goal-setting"
           className="mt-4 inline-flex rounded-full bg-[#22c55e] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[#35db72]"
@@ -120,10 +201,43 @@ export default function MonthlyGoalProgressCard({
         <GoalTrackerList
           goals={goals}
           interactive
-          togglingGoalId={togglingGoalId}
-          onToggleGoal={(goalId) => void handleToggleGoal(goalId)}
+          onToggleGoal={handleToggleGoalLocal}
         />
       </div>
+
+      {hasUnsavedGoalChanges ? (
+        <div className="mt-4">
+          <button
+            type="button"
+            onClick={() => void handleSaveGoalProgress()}
+            disabled={isSavingGoals}
+            className="rounded-full bg-[#22c55e] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[#35db72] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isSavingGoals ? "Saving..." : "Save Changes"}
+          </button>
+        </div>
+      ) : null}
+
+      {saveProgressMessage ? (
+        <p
+          className={`mt-3 text-sm text-[#9df3bd] transition-opacity duration-500 ${
+            saveMessageVisible ? "opacity-100" : "opacity-0"
+          }`}
+        >
+          {saveProgressMessage}
+        </p>
+      ) : null}
+
+      {saveProgressError ? (
+        <p className="mt-3 text-sm text-red-300">{saveProgressError}</p>
+      ) : null}
+
+      <Link
+        href="/goal-setting"
+        className="mt-4 inline-flex rounded-full border border-[#2b3650] bg-black/40 px-4 py-2 text-sm font-semibold text-zinc-200 transition hover:border-[#7f9434] hover:text-[#98b144]"
+      >
+        View Full Check-In
+      </Link>
     </article>
   );
 }

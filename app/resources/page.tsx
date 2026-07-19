@@ -205,6 +205,13 @@ const phaseLabels: Record<PhaseNumber, string> = {
   3: "Phase 3 (Weeks 9-12)",
 };
 
+const rotationalPowerProgram = {
+  title: "Rotational Power Program",
+  description:
+    "3 complete rotational workouts with PVC pipe mechanics, med ball circuits, and a full exercise glossary -- specifically designed for baseball athletes to develop explosive bat speed and throwing power.",
+  downloadHref: "/LCB_Rotational_Sample.pdf",
+};
+
 export default async function ResourcesPage() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
@@ -295,20 +302,39 @@ export default async function ResourcesPage() {
                 );
               })}
 
-              <div className="mt-5">
-                <h4 className="text-base font-semibold text-zinc-100">Mobility</h4>
-                <p className="mt-1 text-sm text-zinc-400">Always unlocked for active members.</p>
-                <article className="mt-3 rounded-xl border border-[#2b3650] bg-black/30 p-4 sm:p-5 md:max-w-md">
-                  <p className="text-sm text-zinc-300">{group.mobilityDescription}</p>
-                  <Link
-                    href={getWorkoutPdfUrl(group.mobilityFilename)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-4 inline-flex rounded-full bg-[#22c55e] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[#35db72]"
-                  >
-                    Download
-                  </Link>
-                </article>
+              <div className="mt-5 grid gap-5 md:grid-cols-2">
+                <div>
+                  <h4 className="text-base font-semibold text-zinc-100">Mobility</h4>
+                  <p className="mt-1 text-sm text-zinc-400">Always unlocked for active members.</p>
+                  <article className="mt-3 rounded-xl border border-[#2b3650] bg-black/30 p-4 sm:p-5">
+                    <p className="text-sm text-zinc-300">{group.mobilityDescription}</p>
+                    <Link
+                      href={getWorkoutPdfUrl(group.mobilityFilename)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-4 inline-flex rounded-full bg-[#22c55e] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[#35db72]"
+                    >
+                      Download
+                    </Link>
+                  </article>
+                </div>
+
+                <div>
+                  <h4 className="text-base font-semibold text-zinc-100">
+                    {rotationalPowerProgram.title}
+                  </h4>
+                  <article className="mt-3 rounded-xl border border-[#2b3650] bg-black/30 p-4 sm:p-5">
+                    <p className="text-sm text-zinc-300">{rotationalPowerProgram.description}</p>
+                    <Link
+                      href={rotationalPowerProgram.downloadHref}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-4 inline-flex rounded-full bg-[#22c55e] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[#35db72]"
+                    >
+                      Download
+                    </Link>
+                  </article>
+                </div>
               </div>
             </div>
           ))}

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import {
+  GOAL_CHECKIN_ALREADY_SUBMITTED_MESSAGE,
   GOAL_CHECKIN_SUBMITTED_MESSAGE,
   GOAL_FOCUS_AREAS,
   GOAL_ITEM_CATEGORIES,
@@ -188,9 +189,7 @@ export default function GoalSettingForm({
     setGoalRows([createEmptyGoalRow()]);
     setVisibleGoalCount(1);
     setCanSubmit(false);
-    setBlockedMessage(
-      "You have already submitted your goals for this month. Check back next month.",
-    );
+    setBlockedMessage(GOAL_CHECKIN_ALREADY_SUBMITTED_MESSAGE);
     onSubmitted?.();
   };
 
