@@ -71,6 +71,7 @@ model User {
   sessions               Session[]
   mentalGameSubmissions  MentalGameSubmission[]
   swingAnalysisSubmissions SwingAnalysisSubmission[]
+  goalCheckins           GoalCheckin[]
 }
 
 model Account {
@@ -149,5 +150,22 @@ model SwingAnalysisSubmission {
   user               User                         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+model GoalCheckin {
+  id                Int       @id @default(autoincrement())
+  userId            String
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  monthlyFocus      String
+  lastMonthReview   String
+  focusArea         String
+  additionalNotes   String?
+  coachResponse     String?
+  status            String    @default("pending")
+  createdAt         DateTime  @default(now())
+  respondedAt       DateTime?
+
+  @@index([userId])
+  @@index([userId, createdAt])
 }
 

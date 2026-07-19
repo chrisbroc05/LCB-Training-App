@@ -72,6 +72,11 @@ export default function TopNavigation({
               path.startsWith("/swing-analysis") ||
               path.startsWith("/mental-game"),
           },
+          {
+            label: "Goal Check-In",
+            href: "/goal-setting",
+            isActive: (path: string) => path.startsWith("/goal-setting"),
+          },
         ]
       : []),
     {

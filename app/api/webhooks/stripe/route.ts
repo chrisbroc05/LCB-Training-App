@@ -3,7 +3,7 @@ import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 import { isDatabaseTier } from "@/lib/membership";
 import { stripe } from "@/lib/stripe";
-import { sendPaymentFailedEmail } from "@/lib/notifications";
+import { sendPaymentFailedEmail, sendEliteWelcomeEmail, sendMemorableWelcomeEmail } from "@/lib/notifications";
 
 function mapPriceIdToTier(priceId?: string | null) {
   if (!priceId) {
@@ -104,6 +104,34 @@ export async function POST(request: Request) {
             subscriptionCancelAtPeriodEnd: false,
           },
         });
+
+        if (membershipTier === "MEMORABLE" || membershipTier === "ELITE") {
+          const user = await prisma.user.findUnique({
+            where: { id: userId },
+            select: {
+              email: true,
+              name: true,
+            },
+          });
+
+          if (user?.email) {
+            try {
+              if (membershipTier === "MEMORABLE") {
+                await sendMemorableWelcomeEmail({
+                  toEmail: user.email,
+                  displayName: user.name?.trim() || user.email,
+                });
+              } else {
+                await sendEliteWelcomeEmail({
+                  toEmail: user.email,
+                  displayName: user.name?.trim() || user.email,
+                });
+              }
+            } catch (error) {
+              console.error("Failed to send tier welcome email", error);
+            }
+          }
+        }
       }
     }
   }

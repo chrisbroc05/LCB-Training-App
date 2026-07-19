@@ -9,6 +9,7 @@ import {
   ensureCoachingSubmissionPeriod,
   getCoachingSubmissionAvailability,
 } from "@/lib/coaching-submissions";
+import { getCurrentMonthGoalCheckin } from "@/lib/goal-check-in";
 import {
   canAccessCoachingNav,
   canAccessDrillLibrary,
@@ -80,6 +81,11 @@ function getQuickLinks(membershipTier: DatabaseTier, hasFreeSubmissionRemaining:
       href: "/coaching-submissions",
       label: "Coaching Submissions",
       description: "Submit swing videos or mindset requests for coach feedback.",
+    });
+    links.push({
+      href: "/goal-setting",
+      label: "Goal Check-In",
+      description: "Submit your monthly goals for personal review from Coach Broc.",
     });
   }
 
@@ -166,6 +172,9 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const isPaidMember = membershipTier !== "FREE";
   const hasSubscription = Boolean(userRecord.stripeSubscriptionId);
   const showFreeSubmissionCard = membershipTier === "FREE";
+  const currentMonthGoalCheckin = canAccessCoachingNav(membershipTier)
+    ? await getCurrentMonthGoalCheckin(session.user.id)
+    : null;
 
   const pendingSubmissions = canAccessCoachingNav(membershipTier)
     ? await Promise.all([
@@ -395,34 +404,80 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
             )}
           </div>
         ) : membershipTier === "MEMORABLE" || membershipTier === "ELITE" ? (
-          <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
-            <h2 className="text-lg font-semibold text-zinc-100">Coaching Submissions</h2>
-            {coachingAvailability ? (
-              <div className="mt-3">
-                <CoachingSubmissionQuota
-                  availability={coachingAvailability}
-                  membershipTier={membershipTier}
-                />
-              </div>
-            ) : null}
-            {coachingAvailability && coachingAvailability.canSubmit ? (
-              <Link
-                href="/coaching-submissions"
-                className="mt-4 inline-flex rounded-full bg-[#22c55e] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[#35db72]"
-              >
-                Go to Coaching Submissions
-              </Link>
-            ) : (
-              <Link
-                href={membershipTier === "MEMORABLE" ? "/upgrade" : "/settings"}
-                className="mt-4 inline-flex rounded-full border border-[#2b3650] bg-black/40 px-4 py-2 text-sm font-semibold text-zinc-300 transition hover:border-[#7f9434] hover:text-[#98b144]"
-              >
-                {membershipTier === "MEMORABLE"
-                  ? "Upgrade for more submissions"
-                  : "View membership details"}
-              </Link>
-            )}
-          </article>
+          <div className="space-y-4">
+            <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
+              <h2 className="text-lg font-semibold text-zinc-100">Coaching Submissions</h2>
+              {coachingAvailability ? (
+                <div className="mt-3">
+                  <CoachingSubmissionQuota
+                    availability={coachingAvailability}
+                    membershipTier={membershipTier}
+                  />
+                </div>
+              ) : null}
+              {coachingAvailability && coachingAvailability.canSubmit ? (
+                <Link
+                  href="/coaching-submissions"
+                  className="mt-4 inline-flex rounded-full bg-[#22c55e] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[#35db72]"
+                >
+                  Go to Coaching Submissions
+                </Link>
+              ) : (
+                <Link
+                  href={membershipTier === "MEMORABLE" ? "/upgrade" : "/settings"}
+                  className="mt-4 inline-flex rounded-full border border-[#2b3650] bg-black/40 px-4 py-2 text-sm font-semibold text-zinc-300 transition hover:border-[#7f9434] hover:text-[#98b144]"
+                >
+                  {membershipTier === "MEMORABLE"
+                    ? "Upgrade for more submissions"
+                    : "View membership details"}
+                </Link>
+              )}
+            </article>
+
+            <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
+              <h2 className="text-lg font-semibold text-zinc-100">Goal Check-In</h2>
+              {!currentMonthGoalCheckin ? (
+                <>
+                  <p className="mt-3 text-sm text-zinc-300">
+                    Submit your monthly goals and Coach Broc will personally review them.
+                  </p>
+                  <Link
+                    href="/goal-setting"
+                    className="mt-4 inline-flex rounded-full bg-[#22c55e] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[#35db72]"
+                  >
+                    Submit Your Monthly Goals
+                  </Link>
+                </>
+              ) : currentMonthGoalCheckin.status === "pending" ? (
+                <>
+                  <p className="mt-3 text-sm text-zinc-300">
+                    Goals submitted -- Coach Broc is reviewing
+                  </p>
+                  <p className="mt-2 text-xs text-zinc-400">
+                    Submitted {formatDateTime(currentMonthGoalCheckin.createdAt)}
+                  </p>
+                  <Link
+                    href="/goal-setting"
+                    className="mt-4 inline-flex rounded-full border border-[#2b3650] bg-black/40 px-4 py-2 text-sm font-semibold text-zinc-300 transition hover:border-[#7f9434] hover:text-[#98b144]"
+                  >
+                    View Submission
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <p className="mt-3 text-sm text-[#9df3bd]">
+                    Coach Broc responded to your goals
+                  </p>
+                  <Link
+                    href="/goal-setting"
+                    className="mt-4 inline-flex rounded-full border border-[#52B788]/40 bg-[#52B788]/10 px-4 py-2 text-sm font-semibold text-[#9df3bd] transition hover:bg-[#52B788]/20"
+                  >
+                    View Response
+                  </Link>
+                </>
+              )}
+            </article>
+          </div>
         ) : membershipTier === "BASIC" ? (
           <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
             <h2 className="text-lg font-semibold text-zinc-100">Unlock Coaching Submissions</h2>

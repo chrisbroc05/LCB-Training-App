@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import GoalCheckinsPanel from "@/app/admin/GoalCheckinsPanel";
 import { toVimeoEmbedUrl } from "@/lib/vimeo";
 
-type TabType = "swing" | "mental";
+type TabType = "swing" | "mental" | "goal";
 
 type SubmissionListItem = {
   id: string;
@@ -81,6 +82,10 @@ export default function AdminPanel({
   const [editingCoachVimeoLink, setEditingCoachVimeoLink] = useState(true);
 
   useEffect(() => {
+    if (tab === "goal") {
+      return;
+    }
+
     const loadList = async () => {
       setLoadingList(true);
       const response = await fetch(`/api/admin/submissions?type=${tab}`);
@@ -103,7 +108,7 @@ export default function AdminPanel({
   }, [tab]);
 
   useEffect(() => {
-    if (!selectedId) {
+    if (tab === "goal" || !selectedId) {
       return;
     }
 
@@ -287,33 +292,48 @@ export default function AdminPanel({
   };
 
   return (
-    <div className="mt-6 grid gap-4 sm:mt-8 sm:gap-6 lg:grid-cols-[360px_1fr]">
-      <aside className="rounded-2xl border border-[#18243a] bg-black/30 p-3 sm:p-4">
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => setTab("swing")}
-            className={`rounded-full px-3 py-1.5 text-xs font-semibold sm:px-4 sm:py-2 sm:text-sm ${
-              tab === "swing"
-                ? "bg-[#22c55e] text-black"
-                : "border border-[#2b3650] text-zinc-200 hover:border-[#7f9434]"
-            }`}
-          >
-            Swing Analysis
-          </button>
-          <button
-            type="button"
-            onClick={() => setTab("mental")}
-            className={`rounded-full px-3 py-1.5 text-xs font-semibold sm:px-4 sm:py-2 sm:text-sm ${
-              tab === "mental"
-                ? "bg-[#22c55e] text-black"
-                : "border border-[#2b3650] text-zinc-200 hover:border-[#7f9434]"
-            }`}
-          >
-            Mental Game
-          </button>
-        </div>
+    <div className="mt-6">
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => setTab("swing")}
+          className={`rounded-full px-3 py-1.5 text-xs font-semibold sm:px-4 sm:py-2 sm:text-sm ${
+            tab === "swing"
+              ? "bg-[#22c55e] text-black"
+              : "border border-[#2b3650] text-zinc-200 hover:border-[#7f9434]"
+          }`}
+        >
+          Swing Analysis
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab("mental")}
+          className={`rounded-full px-3 py-1.5 text-xs font-semibold sm:px-4 sm:py-2 sm:text-sm ${
+            tab === "mental"
+              ? "bg-[#22c55e] text-black"
+              : "border border-[#2b3650] text-zinc-200 hover:border-[#7f9434]"
+          }`}
+        >
+          Mental Game
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab("goal")}
+          className={`rounded-full px-3 py-1.5 text-xs font-semibold sm:px-4 sm:py-2 sm:text-sm ${
+            tab === "goal"
+              ? "bg-[#22c55e] text-black"
+              : "border border-[#2b3650] text-zinc-200 hover:border-[#7f9434]"
+          }`}
+        >
+          Goal Check-Ins
+        </button>
+      </div>
 
+      {tab === "goal" ? (
+        <GoalCheckinsPanel />
+      ) : (
+    <div className="mt-6 grid gap-4 sm:gap-6 lg:grid-cols-[360px_1fr]">
+      <aside className="rounded-2xl border border-[#18243a] bg-black/30 p-3 sm:p-4">
         <div className="mt-4 space-y-3">
           {loadingList && <p className="text-sm text-zinc-400">Loading submissions...</p>}
           {!loadingList && items.length === 0 && (
@@ -768,6 +788,8 @@ export default function AdminPanel({
             </div>
           </div>
         </div>
+      )}
+    </div>
       )}
     </div>
   );

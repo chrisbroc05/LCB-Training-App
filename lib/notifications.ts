@@ -770,3 +770,228 @@ ${weekOneMessage.text}
     }),
   });
 }
+
+function getPublicAppUrl() {
+  const appUrl = process.env.NEXTAUTH_URL?.replace(/\/$/, "");
+  return appUrl && !appUrl.includes("localhost") ? appUrl : "https://lcbtraining.com";
+}
+
+export async function sendGoalCheckinSubmissionNotification(params: {
+  memberName: string;
+  memberEmail: string;
+  membershipTier: DatabaseTier;
+  monthlyFocus: string;
+  lastMonthReview: string;
+  focusArea: string;
+  additionalNotes: string | null;
+}) {
+  const transporter = createTransporter();
+  const html = buildSubmissionNotificationHtml({
+    title: "New Monthly Goal Check-In",
+    membershipTier: params.membershipTier,
+    userEmail: params.memberEmail,
+    detailRows: [
+      { label: "Member Name", value: params.memberName },
+      { label: "Main Focus This Month", value: params.monthlyFocus },
+      { label: "Last Month Review", value: params.lastMonthReview },
+      { label: "Focus Area", value: params.focusArea },
+      {
+        label: "Additional Notes",
+        value: params.additionalNotes ?? "None provided",
+      },
+      { label: "Status", value: "pending" },
+    ],
+  });
+
+  await transporter.sendMail({
+    from: process.env.NOTIFICATION_EMAIL,
+    to: getNotificationRecipient(),
+    subject: "New Monthly Goal Check-In Submission",
+    text: `New Monthly Goal Check-In
+
+Member: ${params.memberName}
+Email: ${params.memberEmail}
+Membership Tier: ${getTierLabel(params.membershipTier)}
+Main Focus: ${params.monthlyFocus}
+Last Month Review: ${params.lastMonthReview}
+Focus Area: ${params.focusArea}
+Additional Notes: ${params.additionalNotes ?? "None provided"}`,
+    html,
+  });
+}
+
+export async function sendGoalCheckinReceivedEmail(params: {
+  toEmail: string;
+  displayName: string;
+}) {
+  const transporter = createTransporter();
+  const goalSettingUrl = `${getPublicAppUrl()}/goal-setting`;
+
+  await transporter.sendMail({
+    from: process.env.NOTIFICATION_EMAIL,
+    to: params.toEmail,
+    subject: "Your Monthly Goals Were Received",
+    text: `Hi ${params.displayName},
+
+Your monthly goal check-in was received. Coach Broc will review your goals and respond within 48 hours.
+
+View your submission: ${goalSettingUrl}
+
+-LCB Training`,
+    html: buildOnboardingEmailShell({
+      heading: "Goals Received",
+      intro: `Hi ${escapeHtml(params.displayName)}, your monthly goal check-in was received.`,
+      bodyHtml: `<p style="margin: 0 0 12px;">Coach Broc will review your goals and respond within 48 hours.</p>
+        <p style="margin: 0;"><a href="${escapeHtml(
+          goalSettingUrl,
+        )}" target="_blank" rel="noopener noreferrer" style="color:#8fd7ff; text-decoration:underline;">View your submission</a></p>`,
+    }),
+  });
+}
+
+export async function sendGoalCheckinResponseEmail(params: {
+  toEmail: string;
+  displayName: string;
+  coachResponse: string;
+}) {
+  const transporter = createTransporter();
+  const goalSettingUrl = `${getPublicAppUrl()}/goal-setting`;
+
+  await transporter.sendMail({
+    from: process.env.NOTIFICATION_EMAIL,
+    to: params.toEmail,
+    subject: "Coach Broc Responded to Your Monthly Goals",
+    text: `Hi ${params.displayName},
+
+Coach Broc reviewed your monthly goals and sent a personal response:
+
+${params.coachResponse}
+
+View the full response on your goal setting page: ${goalSettingUrl}
+
+-LCB Training`,
+    html: buildOnboardingEmailShell({
+      heading: "Coach Broc Responded to Your Goals",
+      intro: `Hi ${escapeHtml(params.displayName)}, Coach Broc reviewed your monthly goals.`,
+      bodyHtml: `<p style="margin: 0 0 12px; white-space: pre-wrap;">${escapeHtml(
+        params.coachResponse,
+      )}</p>
+        <p style="margin: 0;"><a href="${escapeHtml(
+          goalSettingUrl,
+        )}" target="_blank" rel="noopener noreferrer" style="color:#8fd7ff; text-decoration:underline;">View on your goal setting page</a></p>`,
+    }),
+  });
+}
+
+export async function sendMemorableWelcomeEmail(params: {
+  toEmail: string;
+  displayName: string;
+}) {
+  const transporter = createTransporter();
+  const goalSettingUrl = `${getPublicAppUrl()}/goal-setting`;
+  const coachingUrl = `${getPublicAppUrl()}/coaching-submissions`;
+
+  await transporter.sendMail({
+    from: process.env.NOTIFICATION_EMAIL,
+    to: params.toEmail,
+    subject: "Welcome to LCB Training Memorable -- Let's Get to Work",
+    text: `Hi ${params.displayName},
+
+Welcome to LCB Training Memorable. I am excited to coach you personally this month.
+
+You now have access to:
+- 2 coaching submissions per month
+- Personal video feedback within 48 hours
+- Monthly goal check-in
+- Weekly accountability check-ins
+- Direct access to Coach Broc
+
+You now have direct access to me between submissions. Reach me anytime at chrisbroc05@gmail.com -- I am here to help.
+
+Start with your first monthly goals: ${goalSettingUrl}
+Submit your first coaching submission: ${coachingUrl}
+
+-Coach Broc
+LCB Training`,
+    html: buildOnboardingEmailShell({
+      heading: "Welcome to LCB Training Memorable",
+      intro: `Hi ${escapeHtml(params.displayName)}, welcome aboard. I am excited to coach you personally this month.`,
+      bodyHtml: `<p style="margin: 0 0 12px;">You now have access to:</p>
+        <ul style="margin: 0 0 12px; padding-left: 20px;">
+          <li>2 coaching submissions per month</li>
+          <li>Personal video feedback within 48 hours</li>
+          <li>Monthly goal check-in</li>
+          <li>Weekly accountability check-ins</li>
+          <li>Direct access to Coach Broc</li>
+        </ul>
+        <p style="margin: 0 0 12px;">You now have direct access to me between submissions. Reach me anytime at <a href="mailto:chrisbroc05@gmail.com" style="color:#8fd7ff; text-decoration:underline;">chrisbroc05@gmail.com</a> -- I am here to help.</p>
+        <p style="margin: 0 0 8px;"><a href="${escapeHtml(
+          goalSettingUrl,
+        )}" target="_blank" rel="noopener noreferrer" style="color:#8fd7ff; text-decoration:underline;">Submit your first monthly goals</a></p>
+        <p style="margin: 0 0 16px;"><a href="${escapeHtml(
+          coachingUrl,
+        )}" target="_blank" rel="noopener noreferrer" style="color:#8fd7ff; text-decoration:underline;">Submit your first coaching submission</a></p>
+        <p style="margin: 0;">-Coach Broc<br/>LCB Training</p>`,
+    }),
+  });
+}
+
+export async function sendEliteWelcomeEmail(params: {
+  toEmail: string;
+  displayName: string;
+}) {
+  const transporter = createTransporter();
+  const goalSettingUrl = `${getPublicAppUrl()}/goal-setting`;
+  const coachingUrl = `${getPublicAppUrl()}/coaching-submissions`;
+
+  await transporter.sendMail({
+    from: process.env.NOTIFICATION_EMAIL,
+    to: params.toEmail,
+    subject: "Welcome to LCB Training Elite -- You Are All In",
+    text: `Hi ${params.displayName},
+
+Welcome to LCB Training Elite. Thank you for choosing the highest level of coaching.
+
+You now have access to:
+- 4 coaching submissions per month with rollover up to 8
+- Priority 24-hour response
+- Monthly group coaching call
+- Personalized development plan
+- Goal check-ins
+- Weekly check-ins
+- Direct access to Coach Broc
+
+As an Elite member you are my top priority. Reach me anytime at chrisbroc05@gmail.com -- you will always hear back from me first.
+
+Start with your first monthly goals: ${goalSettingUrl}
+Book your first coaching submission: ${coachingUrl}
+
+Details about the monthly group coaching call will be sent to you separately -- stay tuned.
+
+-Coach Broc
+LCB Training`,
+    html: buildOnboardingEmailShell({
+      heading: "Welcome to LCB Training Elite",
+      intro: `Hi ${escapeHtml(params.displayName)}, welcome aboard. Thank you for choosing the highest level of coaching.`,
+      bodyHtml: `<p style="margin: 0 0 12px;">You now have access to:</p>
+        <ul style="margin: 0 0 12px; padding-left: 20px;">
+          <li>4 coaching submissions per month with rollover up to 8</li>
+          <li>Priority 24-hour response</li>
+          <li>Monthly group coaching call</li>
+          <li>Personalized development plan</li>
+          <li>Goal check-ins</li>
+          <li>Weekly check-ins</li>
+          <li>Direct access to Coach Broc</li>
+        </ul>
+        <p style="margin: 0 0 12px;">As an Elite member you are my top priority. Reach me anytime at <a href="mailto:chrisbroc05@gmail.com" style="color:#8fd7ff; text-decoration:underline;">chrisbroc05@gmail.com</a> -- you will always hear back from me first.</p>
+        <p style="margin: 0 0 8px;"><a href="${escapeHtml(
+          goalSettingUrl,
+        )}" target="_blank" rel="noopener noreferrer" style="color:#8fd7ff; text-decoration:underline;">Submit your first monthly goals</a></p>
+        <p style="margin: 0 0 12px;"><a href="${escapeHtml(
+          coachingUrl,
+        )}" target="_blank" rel="noopener noreferrer" style="color:#8fd7ff; text-decoration:underline;">Book your first coaching submission</a></p>
+        <p style="margin: 0 0 16px;">Details about the monthly group coaching call will be sent to you separately -- stay tuned.</p>
+        <p style="margin: 0;">-Coach Broc<br/>LCB Training</p>`,
+    }),
+  });
+}
