@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 
@@ -107,25 +107,76 @@ function HamburgerIcon() {
   );
 }
 
-function DesktopDropdown({
-  group,
-  pathname,
-  onNavigate,
+const DROPDOWN_CLOSE_DELAY_MS = 150;
+
+function useDropdownHover() {
+  const [isOpen, setIsOpen] = useState(false);
+  const closeTimeoutRef = useRef<number | null>(null);
+
+  const openDropdown = () => {
+    if (closeTimeoutRef.current !== null) {
+      window.clearTimeout(closeTimeoutRef.current);
+      closeTimeoutRef.current = null;
+    }
+    setIsOpen(true);
+  };
+
+  const scheduleCloseDropdown = () => {
+    if (closeTimeoutRef.current !== null) {
+      window.clearTimeout(closeTimeoutRef.current);
+    }
+
+    closeTimeoutRef.current = window.setTimeout(() => {
+      setIsOpen(false);
+      closeTimeoutRef.current = null;
+    }, DROPDOWN_CLOSE_DELAY_MS);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (closeTimeoutRef.current !== null) {
+        window.clearTimeout(closeTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  return { isOpen, openDropdown, scheduleCloseDropdown };
+}
+
+function DesktopHoverDropdown({
+  label,
+  isActive,
+  align = "left",
+  children,
 }: {
-  group: NavGroup;
-  pathname: string;
-  onNavigate?: () => void;
+  label: string;
+  isActive: boolean;
+  align?: "left" | "right";
+  children: React.ReactNode;
 }) {
-  const isActive = isAnyLinkActive(group.links, pathname);
+  const { isOpen, openDropdown, scheduleCloseDropdown } = useDropdownHover();
+
+  const handleBlur = (event: React.FocusEvent<HTMLDivElement>) => {
+    if (!event.currentTarget.contains(event.relatedTarget as Node)) {
+      scheduleCloseDropdown();
+    }
+  };
 
   return (
-    <div className="group relative">
+    <div
+      className="relative pb-1"
+      onMouseEnter={openDropdown}
+      onMouseLeave={scheduleCloseDropdown}
+      onFocus={openDropdown}
+      onBlur={handleBlur}
+    >
       <button
         type="button"
         className={`${linkClass(isActive)} inline-flex items-center gap-1`}
         aria-haspopup="true"
+        aria-expanded={isOpen}
       >
-        {group.label}
+        {label}
         <svg
           width="12"
           height="12"
@@ -140,19 +191,48 @@ function DesktopDropdown({
           <path d="M2 4 L6 8 L10 4" />
         </svg>
       </button>
-      <div className="invisible absolute left-0 top-full z-40 mt-1 min-w-[220px] rounded-xl border border-[#2b3650] bg-[#0b1324] p-2 opacity-0 shadow-2xl shadow-black/50 transition group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
-        {group.links.map((link) => (
-          <Link
-            key={link.href}
-            href={link.href}
-            onClick={onNavigate}
-            className={dropdownItemClass(link.isActive(pathname))}
-          >
-            {link.label}
-          </Link>
-        ))}
+      <div
+        className={`absolute top-full z-40 min-w-[220px] pt-1 ${
+          align === "right" ? "right-0" : "left-0"
+        }`}
+      >
+        <div className="absolute left-0 right-0 top-0 h-1" aria-hidden="true" />
+        <div
+          className={`rounded-xl border border-[#2b3650] bg-[#0b1324] p-2 shadow-2xl shadow-black/50 transition ${
+            isOpen ? "visible opacity-100" : "invisible opacity-0"
+          }`}
+        >
+          {children}
+        </div>
       </div>
     </div>
+  );
+}
+
+function DesktopDropdown({
+  group,
+  pathname,
+  onNavigate,
+}: {
+  group: NavGroup;
+  pathname: string;
+  onNavigate?: () => void;
+}) {
+  const isActive = isAnyLinkActive(group.links, pathname);
+
+  return (
+    <DesktopHoverDropdown label={group.label} isActive={isActive}>
+      {group.links.map((link) => (
+        <Link
+          key={link.href}
+          href={link.href}
+          onClick={onNavigate}
+          className={dropdownItemClass(link.isActive(pathname))}
+        >
+          {link.label}
+        </Link>
+      ))}
+    </DesktopHoverDropdown>
   );
 }
 
@@ -167,46 +247,24 @@ function DesktopAccountDropdown({
   const isActive = isAnyLinkActive(accountLinks, pathname);
 
   return (
-    <div className="group relative">
+    <DesktopHoverDropdown label="Account" isActive={isActive} align="right">
+      {accountLinks.map((link) => (
+        <Link
+          key={link.href}
+          href={link.href}
+          className={dropdownItemClass(link.isActive(pathname))}
+        >
+          {link.label}
+        </Link>
+      ))}
       <button
         type="button"
-        className={`${linkClass(isActive)} inline-flex items-center gap-1`}
-        aria-haspopup="true"
+        onClick={onLogout}
+        className="mt-1 block w-full rounded-lg px-3 py-2 text-left text-sm text-red-200 transition hover:bg-red-500/15"
       >
-        Account
-        <svg
-          width="12"
-          height="12"
-          viewBox="0 0 12 12"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          aria-hidden="true"
-          className="opacity-70"
-        >
-          <path d="M2 4 L6 8 L10 4" />
-        </svg>
+        Logout
       </button>
-      <div className="invisible absolute right-0 top-full z-40 mt-1 min-w-[220px] rounded-xl border border-[#2b3650] bg-[#0b1324] p-2 opacity-0 shadow-2xl shadow-black/50 transition group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
-        {accountLinks.map((link) => (
-          <Link
-            key={link.href}
-            href={link.href}
-            className={dropdownItemClass(link.isActive(pathname))}
-          >
-            {link.label}
-          </Link>
-        ))}
-        <button
-          type="button"
-          onClick={onLogout}
-          className="mt-1 block w-full rounded-lg px-3 py-2 text-left text-sm text-red-200 transition hover:bg-red-500/15"
-        >
-          Logout
-        </button>
-      </div>
-    </div>
+    </DesktopHoverDropdown>
   );
 }
 

@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin";
 import { formatGoalFocusAreaLabel, serializeGoalItem } from "@/lib/goal-check-in-constants";
+import { memberProfileSelect, serializeMemberProfile } from "@/lib/player-profile";
 import { prisma } from "@/lib/prisma";
 
 type RouteContext = {
@@ -31,6 +32,7 @@ export async function GET(_request: Request, context: RouteContext) {
           name: true,
           email: true,
           membershipTier: true,
+          ...memberProfileSelect,
         },
       },
       goals: {
@@ -60,6 +62,7 @@ export async function GET(_request: Request, context: RouteContext) {
       createdAt: submission.createdAt.toISOString(),
       respondedAt: submission.respondedAt?.toISOString() ?? null,
       goals: submission.goals.map(serializeGoalItem),
+      memberProfile: serializeMemberProfile(submission.user),
     },
   });
 }

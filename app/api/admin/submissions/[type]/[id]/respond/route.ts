@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin";
 import { sendSubmissionResponseEmail } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
+import { shouldSendNotificationEmail } from "@/lib/user-notification-preferences";
 import {
   getCloudinaryAttachmentDownloadUrl,
   uploadVideoToCloudinary,
@@ -152,17 +153,24 @@ export async function POST(request: Request, context: RouteContext) {
       select: { membershipTier: true },
     });
 
-    await sendSubmissionResponseEmail({
-      toEmail: updated.userEmail,
-      playerName: updated.playerName,
-      submissionType: "MENTAL_GAME",
-      responseMode: responseMode === "video" ? "VIDEO" : "WRITTEN",
-      membershipTier: user?.membershipTier,
-      writtenResponse: responseMode === "written" ? writtenResponse : undefined,
-      videoResponseUrl: responseMode === "video" ? videoResponseUrl : undefined,
-      videoAttachment: responseMode === "video" ? videoResponseAttachment : undefined,
-      videoDownloadLink: responseMode === "video" ? videoResponseDownloadLink : undefined,
-    });
+    const shouldSendEmail = await shouldSendNotificationEmail(
+      updated.userId,
+      "notifySubmissionResponse",
+    );
+
+    if (shouldSendEmail) {
+      await sendSubmissionResponseEmail({
+        toEmail: updated.userEmail,
+        playerName: updated.playerName,
+        submissionType: "MENTAL_GAME",
+        responseMode: responseMode === "video" ? "VIDEO" : "WRITTEN",
+        membershipTier: user?.membershipTier,
+        writtenResponse: responseMode === "written" ? writtenResponse : undefined,
+        videoResponseUrl: responseMode === "video" ? videoResponseUrl : undefined,
+        videoAttachment: responseMode === "video" ? videoResponseAttachment : undefined,
+        videoDownloadLink: responseMode === "video" ? videoResponseDownloadLink : undefined,
+      });
+    }
 
     return NextResponse.json({ success: true });
   }
@@ -190,17 +198,24 @@ export async function POST(request: Request, context: RouteContext) {
     select: { membershipTier: true },
   });
 
-  await sendSubmissionResponseEmail({
-    toEmail: updated.userEmail,
-    playerName: updated.playerName,
-    submissionType: "SWING_ANALYSIS",
-    responseMode: responseMode === "video" ? "VIDEO" : "WRITTEN",
-    membershipTier: user?.membershipTier,
-    writtenResponse: responseMode === "written" ? writtenResponse : undefined,
-    videoResponseUrl: responseMode === "video" ? videoResponseUrl : undefined,
-    videoAttachment: responseMode === "video" ? videoResponseAttachment : undefined,
-    videoDownloadLink: responseMode === "video" ? videoResponseDownloadLink : undefined,
-  });
+  const shouldSendEmail = await shouldSendNotificationEmail(
+    updated.userId,
+    "notifySubmissionResponse",
+  );
+
+  if (shouldSendEmail) {
+    await sendSubmissionResponseEmail({
+      toEmail: updated.userEmail,
+      playerName: updated.playerName,
+      submissionType: "SWING_ANALYSIS",
+      responseMode: responseMode === "video" ? "VIDEO" : "WRITTEN",
+      membershipTier: user?.membershipTier,
+      writtenResponse: responseMode === "written" ? writtenResponse : undefined,
+      videoResponseUrl: responseMode === "video" ? videoResponseUrl : undefined,
+      videoAttachment: responseMode === "video" ? videoResponseAttachment : undefined,
+      videoDownloadLink: responseMode === "video" ? videoResponseDownloadLink : undefined,
+    });
+  }
 
   return NextResponse.json({ success: true });
 }

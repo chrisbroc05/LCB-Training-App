@@ -63,6 +63,16 @@ model User {
   stripePriceId          String?
   subscriptionCurrentPeriodEnd DateTime?
   subscriptionCancelAtPeriodEnd Boolean         @default(false)
+  position               String?
+  age                    Int?
+  graduationYear         Int?
+  currentTeam            String?
+  level                  String?
+  playerBio              String?
+  notifySubmissionResponse Boolean              @default(true)
+  notifyGoalResponse       Boolean              @default(true)
+  notifyWeeklyCheckin      Boolean              @default(true)
+  notifyAnnouncements      Boolean              @default(true)
   emailVerified          DateTime?
   image                  String?
   createdAt              DateTime               @default(now())

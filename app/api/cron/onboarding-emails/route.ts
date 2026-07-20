@@ -4,6 +4,7 @@ import {
   sendOnboardingEmail2,
   sendOnboardingEmail3,
 } from "@/lib/notifications";
+import { shouldSendNotificationEmail } from "@/lib/user-notification-preferences";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -54,11 +55,19 @@ export async function POST(request: Request) {
     }
 
     try {
-      await sendOnboardingEmail2({
-        toEmail: user.email,
-        displayName: user.name ?? user.email,
-        membershipTier: user.membershipTier,
-      });
+      const shouldSendEmail = await shouldSendNotificationEmail(
+        user.id,
+        "notifyAnnouncements",
+      );
+
+      if (shouldSendEmail) {
+        await sendOnboardingEmail2({
+          toEmail: user.email,
+          displayName: user.name ?? user.email,
+          membershipTier: user.membershipTier,
+        });
+      }
+
       day3Sent += 1;
     } catch (error) {
       console.error("Failed to send onboarding day 3 email", error);
@@ -93,11 +102,19 @@ export async function POST(request: Request) {
     }
 
     try {
-      await sendOnboardingEmail3({
-        toEmail: user.email,
-        displayName: user.name ?? user.email,
-        membershipTier: user.membershipTier,
-      });
+      const shouldSendEmail = await shouldSendNotificationEmail(
+        user.id,
+        "notifyAnnouncements",
+      );
+
+      if (shouldSendEmail) {
+        await sendOnboardingEmail3({
+          toEmail: user.email,
+          displayName: user.name ?? user.email,
+          membershipTier: user.membershipTier,
+        });
+      }
+
       day7Sent += 1;
     } catch (error) {
       console.error("Failed to send onboarding day 7 email", error);

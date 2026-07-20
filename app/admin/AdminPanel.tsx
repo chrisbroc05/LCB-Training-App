@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import GoalCheckinsPanel from "@/app/admin/GoalCheckinsPanel";
+import MemberProfileCard from "@/app/admin/MemberProfileCard";
 import { toVimeoEmbedUrl } from "@/lib/vimeo";
 
 type TabType = "swing" | "mental" | "goal";
@@ -14,6 +15,16 @@ type SubmissionListItem = {
   userEmail: string;
   badgeStatus: "PENDING" | "RESPONDED";
   hasMemberVimeoLink?: boolean;
+};
+
+type MemberProfileSummary = {
+  hasProfile: boolean;
+  position: string | null;
+  age: number | null;
+  graduationYear: number | null;
+  currentTeam: string | null;
+  level: string | null;
+  playerBio: string | null;
 };
 
 type SubmissionDetail = SubmissionListItem & {
@@ -29,6 +40,7 @@ type SubmissionDetail = SubmissionListItem & {
   responseVideoUrl?: string | null;
   respondedAt?: string | null;
   memberVimeoLink?: string | null;
+  memberProfile?: MemberProfileSummary;
 };
 
 function formatResponseDateTime(value: string | null | undefined) {
@@ -410,6 +422,10 @@ export default function AdminPanel({
                 {detail.badgeStatus === "PENDING" ? "Pending" : "Responded"}
               </p>
             </div>
+
+            {detail.memberProfile ? (
+              <MemberProfileCard profile={detail.memberProfile} />
+            ) : null}
 
             <div className="rounded-xl border border-[#2b3650] bg-[#0b1324]/70 p-4 text-sm text-zinc-200">
               {tab === "mental" ? (

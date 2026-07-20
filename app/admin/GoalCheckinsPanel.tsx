@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { GoalItemCategoryBadge } from "@/app/goal-setting/GoalTrackerList";
+import MemberProfileCard from "@/app/admin/MemberProfileCard";
 import type { SerializedGoalItem } from "@/lib/goal-check-in-constants";
 
 type GoalCheckinListItem = {
@@ -21,6 +22,15 @@ type GoalCheckinDetail = GoalCheckinListItem & {
   coachResponse: string | null;
   respondedAt: string | null;
   goals: SerializedGoalItem[];
+  memberProfile?: {
+    hasProfile: boolean;
+    position: string | null;
+    age: number | null;
+    graduationYear: number | null;
+    currentTeam: string | null;
+    level: string | null;
+    playerBio: string | null;
+  };
 };
 
 function formatResponseDateTime(value: string | null | undefined) {
@@ -201,6 +211,10 @@ export default function GoalCheckinsPanel() {
                 {detail.badgeStatus === "PENDING" ? "Pending" : "Responded"}
               </p>
             </div>
+
+            {detail.memberProfile ? (
+              <MemberProfileCard profile={detail.memberProfile} />
+            ) : null}
 
             <div className="rounded-xl border border-[#2b3650] bg-[#0b1324]/70 p-4 text-sm text-zinc-200">
               <div className="space-y-3">

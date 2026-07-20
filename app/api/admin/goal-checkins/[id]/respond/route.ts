@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin";
 import { sendGoalCheckinResponseEmail } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
+import { shouldSendNotificationEmail } from "@/lib/user-notification-preferences";
 
 type RouteContext = {
   params: Promise<{
@@ -67,11 +68,18 @@ export async function POST(request: Request, context: RouteContext) {
   const memberName = existing.user.name?.trim() || existing.user.email;
 
   try {
-    await sendGoalCheckinResponseEmail({
-      toEmail: existing.user.email,
-      displayName: memberName,
-      coachResponse,
-    });
+    const shouldSendEmail = await shouldSendNotificationEmail(
+      existing.userId,
+      "notifyGoalResponse",
+    );
+
+    if (shouldSendEmail) {
+      await sendGoalCheckinResponseEmail({
+        toEmail: existing.user.email,
+        displayName: memberName,
+        coachResponse,
+      });
+    }
   } catch (error) {
     console.error("Failed to send goal check-in response email", error);
   }
