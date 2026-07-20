@@ -9,6 +9,8 @@ import SettingsCard from "@/app/settings/SettingsCard";
 import {
   settingsBodyTextClass,
   settingsErrorMessageClass,
+  settingsInnerCardClass,
+  settingsInnerCardHighlightedClass,
   settingsMutedTextClass,
   settingsPrimaryButtonClass,
   settingsSectionTitleClass,
@@ -164,9 +166,9 @@ function ChangeMembershipContent({
           return (
             <article
               key={tier.key}
-              className={`rounded-lg border bg-gray-50 p-5 ${
-                isHighlighted ? "border-[#22c55e] bg-green-50/40" : "border-gray-200"
-              }`}
+              className={
+                isHighlighted ? settingsInnerCardHighlightedClass : settingsInnerCardClass
+              }
             >
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>

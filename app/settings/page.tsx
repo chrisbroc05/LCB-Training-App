@@ -11,6 +11,7 @@ import PlayerProfileSection from "@/app/settings/PlayerProfileSection";
 import SettingsCard from "@/app/settings/SettingsCard";
 import SettingsStatsSummary from "@/app/settings/SettingsStatsSummary";
 import {
+  settingsAccentTextClass,
   settingsBodyTextClass,
   settingsCardClass,
   settingsMutedTextClass,
@@ -18,6 +19,7 @@ import {
   settingsPageTitleClass,
   settingsPrimaryButtonClass,
   settingsSectionDescriptionClass,
+  settingsWarningTextClass,
 } from "@/app/settings/settings-styles";
 import {
   ensureCoachingSubmissionPeriod,
@@ -217,7 +219,7 @@ export default async function SettingsPage() {
           {isFreeMember ? (
             <div className="space-y-4">
               <p className={settingsBodyTextClass}>
-                Current plan: <span className="font-semibold text-[#0A1628]">Free Plan</span>
+                Current plan: <span className={settingsAccentTextClass}>Free Plan</span>
               </p>
               <p className={settingsMutedTextClass}>
                 Upgrade to unlock the full drill library, workout programs, and coaching support.
@@ -228,7 +230,7 @@ export default async function SettingsPage() {
             </div>
           ) : lifetimeBasic ? (
             <div className="space-y-3">
-              <p className="font-semibold text-[#0A1628]">Basic Plan -- Lifetime Access</p>
+              <p className={settingsAccentTextClass}>Basic Plan -- Lifetime Access</p>
               <p className={settingsMutedTextClass}>
                 Your Basic membership is a one-time purchase with lifetime access to the drill
                 library, workout programs, and core training PDFs.
@@ -238,7 +240,7 @@ export default async function SettingsPage() {
             <div className="space-y-4">
               <p className={settingsBodyTextClass}>
                 Current plan:{" "}
-                <span className="font-semibold text-[#0A1628]">
+                <span className={settingsAccentTextClass}>
                   {formatDatabaseTierLabel(membershipTier)}
                 </span>
               </p>
@@ -249,7 +251,7 @@ export default async function SettingsPage() {
                 Next billing date: {formatDate(nextBillingDate)}
               </p>
               {isCancelScheduled ? (
-                <p className="text-sm font-medium text-amber-700">
+                <p className={settingsWarningTextClass}>
                   Your subscription is set to cancel at period end.
                 </p>
               ) : null}

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  settingsDangerButtonClass,
   settingsErrorMessageClass,
   settingsSuccessMessageClass,
 } from "@/app/settings/settings-styles";
@@ -58,7 +59,7 @@ export default function CancelSubscriptionButton({ disabled = false }: CancelSub
         type="button"
         onClick={handleCancel}
         disabled={disabled || isSubmitting}
-        className="rounded-lg border border-red-600 bg-white px-5 py-2.5 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+        className={settingsDangerButtonClass}
       >
         {isSubmitting ? "Cancelling..." : "Cancel Subscription"}
       </button>
