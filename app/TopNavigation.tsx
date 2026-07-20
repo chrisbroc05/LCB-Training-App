@@ -107,68 +107,98 @@ function HamburgerIcon() {
   );
 }
 
-const DROPDOWN_CLOSE_DELAY_MS = 150;
+const DROPDOWN_CLOSE_DELAY_MS = 200;
 
-function useDropdownHover() {
-  const [isOpen, setIsOpen] = useState(false);
+type DesktopDropdownId = "train" | "coaching" | "account";
+
+function useNavDropdowns() {
+  const [openDropdownId, setOpenDropdownId] = useState<DesktopDropdownId | null>(null);
   const closeTimeoutRef = useRef<number | null>(null);
+  const navRef = useRef<HTMLElement | null>(null);
 
-  const openDropdown = () => {
+  const cancelScheduledClose = () => {
     if (closeTimeoutRef.current !== null) {
       window.clearTimeout(closeTimeoutRef.current);
       closeTimeoutRef.current = null;
     }
-    setIsOpen(true);
   };
 
-  const scheduleCloseDropdown = () => {
-    if (closeTimeoutRef.current !== null) {
-      window.clearTimeout(closeTimeoutRef.current);
-    }
+  const openDropdown = (dropdownId: DesktopDropdownId) => {
+    cancelScheduledClose();
+    setOpenDropdownId(dropdownId);
+  };
 
+  const scheduleCloseDropdown = (dropdownId: DesktopDropdownId) => {
+    cancelScheduledClose();
     closeTimeoutRef.current = window.setTimeout(() => {
-      setIsOpen(false);
+      setOpenDropdownId((current) => (current === dropdownId ? null : current));
       closeTimeoutRef.current = null;
     }, DROPDOWN_CLOSE_DELAY_MS);
   };
 
+  const closeAllDropdowns = () => {
+    cancelScheduledClose();
+    setOpenDropdownId(null);
+  };
+
   useEffect(() => {
-    return () => {
-      if (closeTimeoutRef.current !== null) {
-        window.clearTimeout(closeTimeoutRef.current);
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        closeAllDropdowns();
       }
+    };
+
+    const handlePointerDown = (event: MouseEvent) => {
+      if (navRef.current && !navRef.current.contains(event.target as Node)) {
+        closeAllDropdowns();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("mousedown", handlePointerDown);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("mousedown", handlePointerDown);
+      cancelScheduledClose();
     };
   }, []);
 
-  return { isOpen, openDropdown, scheduleCloseDropdown };
+  return {
+    navRef,
+    openDropdownId,
+    openDropdown,
+    scheduleCloseDropdown,
+    closeAllDropdowns,
+  };
 }
 
 function DesktopHoverDropdown({
+  dropdownId,
   label,
   isActive,
   align = "left",
+  openDropdownId,
+  openDropdown,
+  scheduleCloseDropdown,
   children,
 }: {
+  dropdownId: DesktopDropdownId;
   label: string;
   isActive: boolean;
   align?: "left" | "right";
+  openDropdownId: DesktopDropdownId | null;
+  openDropdown: (dropdownId: DesktopDropdownId) => void;
+  scheduleCloseDropdown: (dropdownId: DesktopDropdownId) => void;
   children: React.ReactNode;
 }) {
-  const { isOpen, openDropdown, scheduleCloseDropdown } = useDropdownHover();
-
-  const handleBlur = (event: React.FocusEvent<HTMLDivElement>) => {
-    if (!event.currentTarget.contains(event.relatedTarget as Node)) {
-      scheduleCloseDropdown();
-    }
-  };
+  const isOpen = openDropdownId === dropdownId;
 
   return (
     <div
-      className="relative pb-1"
-      onMouseEnter={openDropdown}
-      onMouseLeave={scheduleCloseDropdown}
-      onFocus={openDropdown}
-      onBlur={handleBlur}
+      className="relative"
+      onMouseEnter={() => openDropdown(dropdownId)}
+      onMouseLeave={() => scheduleCloseDropdown(dropdownId)}
     >
       <button
         type="button"
@@ -192,11 +222,11 @@ function DesktopHoverDropdown({
         </svg>
       </button>
       <div
-        className={`absolute top-full z-40 min-w-[220px] pt-1 ${
+        className={`absolute top-full z-40 min-w-[220px] ${
           align === "right" ? "right-0" : "left-0"
-        }`}
+        } ${isOpen ? "pointer-events-auto" : "pointer-events-none"}`}
       >
-        <div className="absolute left-0 right-0 top-0 h-1" aria-hidden="true" />
+        <div className="-mt-2 h-2" aria-hidden="true" />
         <div
           className={`rounded-xl border border-[#2b3650] bg-[#0b1324] p-2 shadow-2xl shadow-black/50 transition ${
             isOpen ? "visible opacity-100" : "invisible opacity-0"
@@ -210,18 +240,33 @@ function DesktopHoverDropdown({
 }
 
 function DesktopDropdown({
+  dropdownId,
   group,
   pathname,
+  openDropdownId,
+  openDropdown,
+  scheduleCloseDropdown,
   onNavigate,
 }: {
+  dropdownId: DesktopDropdownId;
   group: NavGroup;
   pathname: string;
+  openDropdownId: DesktopDropdownId | null;
+  openDropdown: (dropdownId: DesktopDropdownId) => void;
+  scheduleCloseDropdown: (dropdownId: DesktopDropdownId) => void;
   onNavigate?: () => void;
 }) {
   const isActive = isAnyLinkActive(group.links, pathname);
 
   return (
-    <DesktopHoverDropdown label={group.label} isActive={isActive}>
+    <DesktopHoverDropdown
+      dropdownId={dropdownId}
+      label={group.label}
+      isActive={isActive}
+      openDropdownId={openDropdownId}
+      openDropdown={openDropdown}
+      scheduleCloseDropdown={scheduleCloseDropdown}
+    >
       {group.links.map((link) => (
         <Link
           key={link.href}
@@ -237,17 +282,33 @@ function DesktopDropdown({
 }
 
 function DesktopAccountDropdown({
+  dropdownId,
   pathname,
+  openDropdownId,
+  openDropdown,
+  scheduleCloseDropdown,
   onLogout,
 }: {
+  dropdownId: DesktopDropdownId;
   pathname: string;
+  openDropdownId: DesktopDropdownId | null;
+  openDropdown: (dropdownId: DesktopDropdownId) => void;
+  scheduleCloseDropdown: (dropdownId: DesktopDropdownId) => void;
   onLogout: () => void;
 }) {
   const accountLinks = buildAccountLinks();
   const isActive = isAnyLinkActive(accountLinks, pathname);
 
   return (
-    <DesktopHoverDropdown label="Account" isActive={isActive} align="right">
+    <DesktopHoverDropdown
+      dropdownId={dropdownId}
+      label="Account"
+      isActive={isActive}
+      align="right"
+      openDropdownId={openDropdownId}
+      openDropdown={openDropdown}
+      scheduleCloseDropdown={scheduleCloseDropdown}
+    >
       {accountLinks.map((link) => (
         <Link
           key={link.href}
@@ -307,9 +368,12 @@ export default function TopNavigation({
 }: TopNavigationProps) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { navRef, openDropdownId, openDropdown, scheduleCloseDropdown, closeAllDropdowns } =
+    useNavDropdowns();
 
   const closeMenus = () => {
     setMobileOpen(false);
+    closeAllDropdowns();
   };
 
   const handleLogout = () => {
@@ -348,7 +412,7 @@ export default function TopNavigation({
   const coachingGroup: NavGroup = { label: "Coaching", links: buildCoachingLinks() };
 
   return (
-    <nav className="flex justify-end md:justify-self-end">
+    <nav ref={navRef} className="flex justify-end md:justify-self-end">
       <div className="hidden items-center gap-1 md:flex">
         <Link
           href="/dashboard"
@@ -359,14 +423,37 @@ export default function TopNavigation({
         </Link>
 
         {hasBasicAccess ? (
-          <DesktopDropdown group={trainGroup} pathname={pathname} onNavigate={closeMenus} />
+          <DesktopDropdown
+            dropdownId="train"
+            group={trainGroup}
+            pathname={pathname}
+            openDropdownId={openDropdownId}
+            openDropdown={openDropdown}
+            scheduleCloseDropdown={scheduleCloseDropdown}
+            onNavigate={closeMenus}
+          />
         ) : null}
 
         {hasCoachingAccess ? (
-          <DesktopDropdown group={coachingGroup} pathname={pathname} onNavigate={closeMenus} />
+          <DesktopDropdown
+            dropdownId="coaching"
+            group={coachingGroup}
+            pathname={pathname}
+            openDropdownId={openDropdownId}
+            openDropdown={openDropdown}
+            scheduleCloseDropdown={scheduleCloseDropdown}
+            onNavigate={closeMenus}
+          />
         ) : null}
 
-        <DesktopAccountDropdown pathname={pathname} onLogout={handleLogout} />
+        <DesktopAccountDropdown
+          dropdownId="account"
+          pathname={pathname}
+          openDropdownId={openDropdownId}
+          openDropdown={openDropdown}
+          scheduleCloseDropdown={scheduleCloseDropdown}
+          onLogout={handleLogout}
+        />
 
         {userDisplayName ? (
           <span className="ml-2 border-l border-[#2b3650] pl-3 text-xs font-medium text-[#52B788]">

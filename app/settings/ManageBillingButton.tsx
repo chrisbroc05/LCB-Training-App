@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { settingsErrorMessageClass, settingsSecondaryButtonClass } from "@/app/settings/settings-styles";
 
 export default function ManageBillingButton() {
   const [isLoading, setIsLoading] = useState(false);
@@ -32,11 +33,11 @@ export default function ManageBillingButton() {
         type="button"
         onClick={() => void handleClick()}
         disabled={isLoading}
-        className="rounded-full border border-[#2b3650] bg-black/40 px-4 py-2 text-sm font-semibold text-zinc-200 transition hover:border-[#7f9434] hover:text-[#98b144] disabled:cursor-not-allowed disabled:opacity-60"
+        className={settingsSecondaryButtonClass}
       >
         {isLoading ? "Opening..." : "Manage Billing"}
       </button>
-      {errorMessage ? <p className="mt-3 text-sm text-red-300">{errorMessage}</p> : null}
+      {errorMessage ? <p className={`mt-3 ${settingsErrorMessageClass}`}>{errorMessage}</p> : null}
     </div>
   );
 }

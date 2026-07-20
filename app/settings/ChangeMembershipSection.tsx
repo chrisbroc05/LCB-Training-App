@@ -5,6 +5,15 @@ import { useRouter, useSearchParams } from "next/navigation";
 import BillingFrequencyToggle from "@/app/BillingFrequencyToggle";
 import AnnualSavingsBadge from "@/app/AnnualSavingsBadge";
 import OneTimePaymentBadge from "@/app/OneTimePaymentBadge";
+import SettingsCard from "@/app/settings/SettingsCard";
+import {
+  settingsBodyTextClass,
+  settingsErrorMessageClass,
+  settingsMutedTextClass,
+  settingsPrimaryButtonClass,
+  settingsSectionTitleClass,
+  settingsSuccessMessageClass,
+} from "@/app/settings/settings-styles";
 import {
   formatTierPriceLabel,
   getAnnualSavings,
@@ -123,18 +132,19 @@ function ChangeMembershipContent({
   }
 
   return (
-    <section className="mt-8 rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
-      <h2 className="text-lg font-semibold text-zinc-100">Upgrade Membership</h2>
-      <p className="mt-2 text-zinc-300">
-        {isLifetimeBasic
+    <SettingsCard
+      title="Upgrade Membership"
+      description={
+        isLifetimeBasic
           ? "Upgrade to Memorable or Elite for 1-on-1 coaching, monthly swing analysis and mental game support submissions, accountability support, and priority access to Coach Broc."
           : hasSubscription
             ? "Switch to another membership tier anytime. Stripe will automatically apply prorated charges or credits."
-            : "Choose a paid tier to unlock more training content and coaching support."}
-      </p>
-      <div className="mt-5 flex flex-col items-center gap-2">
+            : "Choose a paid tier to unlock more training content and coaching support."
+      }
+    >
+      <div className="flex flex-col items-center gap-2">
         <BillingFrequencyToggle value={billingFrequency} onChange={setBillingFrequency} />
-        <p className="text-xs text-zinc-400">
+        <p className={settingsMutedTextClass}>
           Monthly and annual pricing applies to Memorable and Elite only.
         </p>
       </div>
@@ -154,15 +164,13 @@ function ChangeMembershipContent({
           return (
             <article
               key={tier.key}
-              className={`rounded-xl border bg-black/30 p-4 sm:p-5 ${
-                isHighlighted
-                  ? "border-[#52B788] bg-[#0f1d34]"
-                  : "border-[#2b3650]"
+              className={`rounded-lg border bg-gray-50 p-5 ${
+                isHighlighted ? "border-[#22c55e] bg-green-50/40" : "border-gray-200"
               }`}
             >
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <h3 className="text-base font-semibold text-zinc-100">{tier.name}</h3>
+                  <h3 className={`text-base ${settingsSectionTitleClass}`}>{tier.name}</h3>
                   {oneTimeTier ? (
                     <div className="mt-2">
                       <OneTimePaymentBadge />
@@ -172,16 +180,16 @@ function ChangeMembershipContent({
                       <AnnualSavingsBadge amount={annualSavings} />
                     </div>
                   ) : null}
-                  <p className="mt-2 text-sm text-[#9df3bd]">{priceLabel}</p>
+                  <p className={`mt-2 font-semibold ${settingsBodyTextClass}`}>{priceLabel}</p>
                   {!oneTimeTier && pricing.secondary ? (
-                    <p className="text-xs text-zinc-400">{pricing.secondary}</p>
+                    <p className={settingsMutedTextClass}>{pricing.secondary}</p>
                   ) : null}
                 </div>
                 <button
                   type="button"
                   onClick={() => handleTierChange(nextTier)}
                   disabled={isSubmitting}
-                  className="w-full rounded-full border border-[#22c55e]/70 bg-[#22c55e]/10 px-4 py-2 text-sm font-semibold text-[#8df0b1] transition hover:bg-[#22c55e]/20 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                  className={`w-full sm:w-auto ${settingsPrimaryButtonClass}`}
                 >
                   {isPending
                     ? "Updating..."
@@ -190,8 +198,8 @@ function ChangeMembershipContent({
                       : `Upgrade to ${tier.name}`}
                 </button>
               </div>
-              <p className="mt-3 text-sm text-zinc-300">{tier.summary}</p>
-              <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-zinc-300">
+              <p className={`mt-3 ${settingsBodyTextClass}`}>{tier.summary}</p>
+              <ul className={`mt-3 list-disc space-y-1 pl-5 ${settingsBodyTextClass}`}>
                 {tier.features.map((feature) => (
                   <li key={feature}>{feature}</li>
                 ))}
@@ -201,8 +209,8 @@ function ChangeMembershipContent({
         })}
       </div>
 
-      {error && <p className="mt-4 text-sm text-red-300">{error}</p>}
-      {success && <p className="mt-4 text-sm text-[#9df3bd]">{success}</p>}
-    </section>
+      {error ? <p className={`mt-4 ${settingsErrorMessageClass}`}>{error}</p> : null}
+      {success ? <p className={`mt-4 ${settingsSuccessMessageClass}`}>{success}</p> : null}
+    </SettingsCard>
   );
 }

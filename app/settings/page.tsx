@@ -8,7 +8,17 @@ import CancelSubscriptionButton from "@/app/settings/CancelSubscriptionButton";
 import ManageBillingButton from "@/app/settings/ManageBillingButton";
 import NotificationPreferencesSection from "@/app/settings/NotificationPreferencesSection";
 import PlayerProfileSection from "@/app/settings/PlayerProfileSection";
+import SettingsCard from "@/app/settings/SettingsCard";
 import SettingsStatsSummary from "@/app/settings/SettingsStatsSummary";
+import {
+  settingsBodyTextClass,
+  settingsCardClass,
+  settingsMutedTextClass,
+  settingsPageStackClass,
+  settingsPageTitleClass,
+  settingsPrimaryButtonClass,
+  settingsSectionDescriptionClass,
+} from "@/app/settings/settings-styles";
 import {
   ensureCoachingSubmissionPeriod,
   getCoachingSubmissionAvailability,
@@ -78,7 +88,14 @@ async function buildSettingsStats(userId: string, membershipTier: DatabaseTier) 
     select: { signupDate: true },
   });
 
-  const stats = [
+  type SettingsStat = {
+    label: string;
+    value: string;
+    subValue?: string;
+    variant?: "default" | "badge";
+  };
+
+  const stats: SettingsStat[] = [
     {
       label: "Member since",
       value: formatDate(user?.signupDate ?? null),
@@ -115,10 +132,11 @@ async function buildSettingsStats(userId: string, membershipTier: DatabaseTier) 
   ]);
 
   const availability = coachingFields ? getCoachingSubmissionAvailability(coachingFields) : null;
-  const remainingLabel =
+  const remainingCount = String(availability?.remaining ?? 0);
+  const rolloverSubValue =
     membershipTier === "ELITE" && availability?.rolloverCredits
-      ? `${availability.remaining} (${availability.rolloverCredits} rollover)`
-      : String(availability?.remaining ?? 0);
+      ? `includes ${availability.rolloverCredits} rollover`
+      : undefined;
 
   stats.push(
     {
@@ -131,7 +149,8 @@ async function buildSettingsStats(userId: string, membershipTier: DatabaseTier) 
     },
     {
       label: "Submissions remaining this month",
-      value: remainingLabel,
+      value: remainingCount,
+      subValue: rolloverSubValue,
     },
     {
       label: "Goal check-ins submitted",
@@ -181,92 +200,87 @@ export default async function SettingsPage() {
 
   return (
     <div className="mx-auto w-full max-w-4xl px-4 py-10 sm:px-6 sm:py-14 md:py-20">
-      <section className="rounded-3xl border border-[#18243a] bg-[#0b1324]/80 p-5 sm:p-8">
-        <h1 className="text-2xl font-semibold leading-tight text-zinc-100 sm:text-3xl">
-          Account Settings
-        </h1>
-        <p className="mt-2 text-zinc-300">
-          Manage your player profile, notifications, membership, and account security.
-        </p>
-      </section>
+      <div className={settingsPageStackClass}>
+        <section className={settingsCardClass}>
+          <h1 className={settingsPageTitleClass}>Account Settings</h1>
+          <p className={settingsSectionDescriptionClass}>
+            Manage your player profile, notifications, membership, and account security.
+          </p>
+        </section>
 
-      <SettingsStatsSummary stats={stats} />
+        <SettingsStatsSummary stats={stats} />
 
-      <PlayerProfileSection />
-      <NotificationPreferencesSection />
+        <PlayerProfileSection />
+        <NotificationPreferencesSection />
 
-      <section className="mt-8 rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
-        <h2 className="text-lg font-semibold text-zinc-100">Membership and Billing</h2>
-
-        {isFreeMember ? (
-          <div className="mt-4 space-y-4">
-            <p className="text-zinc-300">
-              Current plan: <span className="font-semibold text-[#98b144]">Free Plan</span>
-            </p>
-            <p className="text-sm text-zinc-400">
-              Upgrade to unlock the full drill library, workout programs, and coaching support.
-            </p>
-            <Link
-              href="/upgrade"
-              className="inline-flex rounded-full bg-[#22c55e] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[#35db72]"
-            >
-              Upgrade Membership
-            </Link>
-          </div>
-        ) : lifetimeBasic ? (
-          <div className="mt-4 space-y-3">
-            <p className="font-semibold text-[#98b144]">Basic Plan -- Lifetime Access</p>
-            <p className="text-sm text-zinc-300">
-              Your Basic membership is a one-time purchase with lifetime access to the drill library,
-              workout programs, and core training PDFs.
-            </p>
-          </div>
-        ) : (
-          <div className="mt-4 space-y-4">
-            <p className="text-zinc-300">
-              Current plan:{" "}
-              <span className="font-semibold text-[#98b144]">
-                {formatDatabaseTierLabel(membershipTier)}
-              </span>
-            </p>
-            <p className="text-sm text-zinc-400">
-              Subscription status: {user.subscriptionStatus.replaceAll("_", " ")}
-            </p>
-            <p className="text-sm text-zinc-400">Next billing date: {formatDate(nextBillingDate)}</p>
-            {isCancelScheduled ? (
-              <p className="text-sm text-yellow-200">
-                Your subscription is set to cancel at period end.
+        <SettingsCard title="Membership and Billing">
+          {isFreeMember ? (
+            <div className="space-y-4">
+              <p className={settingsBodyTextClass}>
+                Current plan: <span className="font-semibold text-[#0A1628]">Free Plan</span>
               </p>
-            ) : null}
-            {isPaidSubscriptionTier && user.stripeCustomerId ? (
-              <ManageBillingButton />
-            ) : null}
-            {!hasSubscription ? (
-              <p className="text-sm text-zinc-400">
-                No active Stripe subscription was found for this account.
+              <p className={settingsMutedTextClass}>
+                Upgrade to unlock the full drill library, workout programs, and coaching support.
               </p>
-            ) : (
-              <div>
-                <p className="mb-3 text-sm text-zinc-400">
-                  Canceling stops future billing and keeps your access active through the current
-                  cycle.
+              <Link href="/upgrade" className={`inline-flex ${settingsPrimaryButtonClass}`}>
+                Upgrade Membership
+              </Link>
+            </div>
+          ) : lifetimeBasic ? (
+            <div className="space-y-3">
+              <p className="font-semibold text-[#0A1628]">Basic Plan -- Lifetime Access</p>
+              <p className={settingsMutedTextClass}>
+                Your Basic membership is a one-time purchase with lifetime access to the drill
+                library, workout programs, and core training PDFs.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <p className={settingsBodyTextClass}>
+                Current plan:{" "}
+                <span className="font-semibold text-[#0A1628]">
+                  {formatDatabaseTierLabel(membershipTier)}
+                </span>
+              </p>
+              <p className={settingsMutedTextClass}>
+                Subscription status: {user.subscriptionStatus.replaceAll("_", " ")}
+              </p>
+              <p className={settingsMutedTextClass}>
+                Next billing date: {formatDate(nextBillingDate)}
+              </p>
+              {isCancelScheduled ? (
+                <p className="text-sm font-medium text-amber-700">
+                  Your subscription is set to cancel at period end.
                 </p>
-                <CancelSubscriptionButton disabled={isCancelScheduled} />
-              </div>
-            )}
-          </div>
-        )}
-      </section>
+              ) : null}
+              {isPaidSubscriptionTier && user.stripeCustomerId ? <ManageBillingButton /> : null}
+              {!hasSubscription ? (
+                <p className={settingsMutedTextClass}>
+                  No active Stripe subscription was found for this account.
+                </p>
+              ) : (
+                <div>
+                  <p className={`mb-3 ${settingsMutedTextClass}`}>
+                    Canceling stops future billing and keeps your access active through the current
+                    cycle.
+                  </p>
+                  <CancelSubscriptionButton disabled={isCancelScheduled} />
+                </div>
+              )}
+            </div>
+          )}
+        </SettingsCard>
 
-      <ChangePasswordSection />
+        <ChangePasswordSection />
 
-      {!isFreeMember ? (
-        <ChangeMembershipSection
-          currentTier={membershipTier}
-          hasSubscription={hasSubscription}
-          isLifetimeBasic={lifetimeBasic}
-        />
-      ) : null}
+        {!isFreeMember ? (
+          <ChangeMembershipSection
+            currentTier={membershipTier}
+            hasSubscription={hasSubscription}
+            isLifetimeBasic={lifetimeBasic}
+          />
+        ) : null}
+      </div>
     </div>
   );
 }

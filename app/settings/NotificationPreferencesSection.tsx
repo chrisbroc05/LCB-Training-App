@@ -1,6 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import SettingsCard from "@/app/settings/SettingsCard";
+import {
+  settingsCheckboxLabelClass,
+  settingsCheckboxOptionClass,
+  settingsErrorMessageClass,
+  settingsMutedTextClass,
+  settingsPrimaryButtonClass,
+  settingsSuccessMessageClass,
+} from "@/app/settings/settings-styles";
 
 type NotificationPreferences = {
   notifySubmissionResponse: boolean;
@@ -80,82 +89,73 @@ export default function NotificationPreferencesSection() {
 
   if (isLoading) {
     return (
-      <section className="mt-8 rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
-        <h2 className="text-lg font-semibold text-zinc-100">Notification Preferences</h2>
-        <p className="mt-4 text-sm text-zinc-400">Loading preferences...</p>
-      </section>
+      <SettingsCard title="Notification Preferences">
+        <p className={settingsMutedTextClass}>Loading preferences...</p>
+      </SettingsCard>
     );
   }
 
   return (
-    <section className="mt-8 rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
-      <h2 className="text-lg font-semibold text-zinc-100">Notification Preferences</h2>
-      <p className="mt-2 text-sm text-zinc-400">
-        Choose which email updates you want to receive from LCB Training.
-      </p>
-
-      <form className="mt-5 space-y-4" onSubmit={handleSubmit}>
-        <label className="flex items-start gap-3 rounded-xl border border-[#2b3650] bg-black/30 p-4">
+    <SettingsCard
+      title="Notification Preferences"
+      description="Choose which email updates you want to receive from LCB Training."
+    >
+      <form className="space-y-4" onSubmit={handleSubmit}>
+        <label className={settingsCheckboxOptionClass}>
           <input
             type="checkbox"
             checked={preferences.notifySubmissionResponse}
             onChange={() => togglePreference("notifySubmissionResponse")}
             className="mt-1 h-4 w-4 accent-[#22c55e]"
           />
-          <span className="text-sm text-zinc-200">
+          <span className={settingsCheckboxLabelClass}>
             Receive email when Coach Broc responds to a coaching submission
           </span>
         </label>
 
-        <label className="flex items-start gap-3 rounded-xl border border-[#2b3650] bg-black/30 p-4">
+        <label className={settingsCheckboxOptionClass}>
           <input
             type="checkbox"
             checked={preferences.notifyGoalResponse}
             onChange={() => togglePreference("notifyGoalResponse")}
             className="mt-1 h-4 w-4 accent-[#22c55e]"
           />
-          <span className="text-sm text-zinc-200">
+          <span className={settingsCheckboxLabelClass}>
             Receive email when Coach Broc responds to a goal check-in
           </span>
         </label>
 
-        <label className="flex items-start gap-3 rounded-xl border border-[#2b3650] bg-black/30 p-4">
+        <label className={settingsCheckboxOptionClass}>
           <input
             type="checkbox"
             checked={preferences.notifyWeeklyCheckin}
             onChange={() => togglePreference("notifyWeeklyCheckin")}
             className="mt-1 h-4 w-4 accent-[#22c55e]"
           />
-          <span className="text-sm text-zinc-200">
+          <span className={settingsCheckboxLabelClass}>
             Receive weekly accountability check-in emails from Coach Broc
           </span>
         </label>
 
-        <label className="flex items-start gap-3 rounded-xl border border-[#2b3650] bg-black/30 p-4">
+        <label className={settingsCheckboxOptionClass}>
           <input
             type="checkbox"
             checked={preferences.notifyAnnouncements}
             onChange={() => togglePreference("notifyAnnouncements")}
             className="mt-1 h-4 w-4 accent-[#22c55e]"
           />
-          <span className="text-sm text-zinc-200">
+          <span className={settingsCheckboxLabelClass}>
             Receive announcements about new content and features
           </span>
         </label>
 
-        {errorMessage ? <p className="text-sm text-red-300">{errorMessage}</p> : null}
-        {successMessage ? (
-          <p className="text-sm text-[#9df3bd]">{successMessage}</p>
-        ) : null}
+        {errorMessage ? <p className={settingsErrorMessageClass}>{errorMessage}</p> : null}
+        {successMessage ? <p className={settingsSuccessMessageClass}>{successMessage}</p> : null}
 
-        <button
-          type="submit"
-          disabled={isSaving}
-          className="rounded-full bg-[#22c55e] px-5 py-3 text-sm font-semibold text-black transition hover:bg-[#35db72] disabled:cursor-not-allowed disabled:opacity-60"
-        >
+        <button type="submit" disabled={isSaving} className={settingsPrimaryButtonClass}>
           {isSaving ? "Saving..." : "Save Preferences"}
         </button>
       </form>
-    </section>
+    </SettingsCard>
   );
 }

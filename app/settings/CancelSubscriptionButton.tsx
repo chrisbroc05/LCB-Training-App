@@ -2,6 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import {
+  settingsErrorMessageClass,
+  settingsSuccessMessageClass,
+} from "@/app/settings/settings-styles";
 
 type CancelSubscriptionButtonProps = {
   disabled?: boolean;
@@ -54,12 +58,12 @@ export default function CancelSubscriptionButton({ disabled = false }: CancelSub
         type="button"
         onClick={handleCancel}
         disabled={disabled || isSubmitting}
-        className="w-full rounded-full border border-red-500/70 bg-red-500/10 px-5 py-2.5 text-sm font-semibold text-red-200 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+        className="rounded-lg border border-red-600 bg-white px-5 py-2.5 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {isSubmitting ? "Cancelling..." : "Cancel Subscription"}
       </button>
-      {error && <p className="text-sm text-red-300">{error}</p>}
-      {success && <p className="text-sm text-[#9df3bd]">{success}</p>}
+      {error ? <p className={settingsErrorMessageClass}>{error}</p> : null}
+      {success ? <p className={settingsSuccessMessageClass}>{success}</p> : null}
     </div>
   );
 }

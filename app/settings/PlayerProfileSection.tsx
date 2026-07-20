@@ -1,11 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import SettingsCard from "@/app/settings/SettingsCard";
 import {
   getGraduationYearOptions,
   PLAYER_LEVELS,
   PLAYER_POSITIONS,
 } from "@/lib/player-profile";
+import {
+  settingsErrorMessageClass,
+  settingsInputClass,
+  settingsLabelClass,
+  settingsMutedTextClass,
+  settingsPrimaryButtonClass,
+  settingsSuccessMessageClass,
+  settingsTextareaClass,
+} from "@/app/settings/settings-styles";
 
 type ProfileFormState = {
   firstName: string;
@@ -119,49 +129,46 @@ export default function PlayerProfileSection() {
 
   if (isLoading) {
     return (
-      <section className="mt-8 rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
-        <h2 className="text-lg font-semibold text-zinc-100">Player Profile</h2>
-        <p className="mt-4 text-sm text-zinc-400">Loading profile...</p>
-      </section>
+      <SettingsCard title="Player Profile">
+        <p className={settingsMutedTextClass}>Loading profile...</p>
+      </SettingsCard>
     );
   }
 
   return (
-    <section className="mt-8 rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
-      <h2 className="text-lg font-semibold text-zinc-100">Player Profile</h2>
-      <p className="mt-2 text-sm text-zinc-400">
-        Share your player details so Coach Broc has context on every submission.
-      </p>
-
-      <form className="mt-5 space-y-4" onSubmit={handleSubmit}>
+    <SettingsCard
+      title="Player Profile"
+      description="Share your player details so Coach Broc has context on every submission."
+    >
+      <form className="space-y-4" onSubmit={handleSubmit}>
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="block">
-            <span className="text-sm text-zinc-300">First name</span>
+            <span className={settingsLabelClass}>First name</span>
             <input
               type="text"
               value={form.firstName}
               onChange={(event) => updateField("firstName", event.target.value)}
-              className="mt-2 w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 focus:border-[#22c55e]"
+              className={settingsInputClass}
             />
           </label>
           <label className="block">
-            <span className="text-sm text-zinc-300">Last name</span>
+            <span className={settingsLabelClass}>Last name</span>
             <input
               type="text"
               value={form.lastName}
               onChange={(event) => updateField("lastName", event.target.value)}
-              className="mt-2 w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 focus:border-[#22c55e]"
+              className={settingsInputClass}
             />
           </label>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="block">
-            <span className="text-sm text-zinc-300">Position</span>
+            <span className={settingsLabelClass}>Position</span>
             <select
               value={form.position}
               onChange={(event) => updateField("position", event.target.value)}
-              className="mt-2 w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 focus:border-[#22c55e]"
+              className={settingsInputClass}
             >
               <option value="">Select a position</option>
               {PLAYER_POSITIONS.map((position) => (
@@ -172,25 +179,25 @@ export default function PlayerProfileSection() {
             </select>
           </label>
           <label className="block">
-            <span className="text-sm text-zinc-300">Age</span>
+            <span className={settingsLabelClass}>Age</span>
             <input
               type="number"
               min={1}
               max={99}
               value={form.age}
               onChange={(event) => updateField("age", event.target.value)}
-              className="mt-2 w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 focus:border-[#22c55e]"
+              className={settingsInputClass}
             />
           </label>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="block">
-            <span className="text-sm text-zinc-300">Graduation year</span>
+            <span className={settingsLabelClass}>Graduation year</span>
             <select
               value={form.graduationYear}
               onChange={(event) => updateField("graduationYear", event.target.value)}
-              className="mt-2 w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 focus:border-[#22c55e]"
+              className={settingsInputClass}
             >
               <option value="">Select a year</option>
               {graduationYearOptions.map((year) => (
@@ -201,11 +208,11 @@ export default function PlayerProfileSection() {
             </select>
           </label>
           <label className="block">
-            <span className="text-sm text-zinc-300">Current level</span>
+            <span className={settingsLabelClass}>Current level</span>
             <select
               value={form.level}
               onChange={(event) => updateField("level", event.target.value)}
-              className="mt-2 w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 focus:border-[#22c55e]"
+              className={settingsInputClass}
             >
               <option value="">Select a level</option>
               {PLAYER_LEVELS.map((level) => (
@@ -218,40 +225,34 @@ export default function PlayerProfileSection() {
         </div>
 
         <label className="block">
-          <span className="text-sm text-zinc-300">Current team or school</span>
+          <span className={settingsLabelClass}>Current team or school</span>
           <input
             type="text"
             value={form.currentTeam}
             onChange={(event) => updateField("currentTeam", event.target.value)}
-            className="mt-2 w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 focus:border-[#22c55e]"
+            className={settingsInputClass}
           />
         </label>
 
         <label className="block">
-          <span className="text-sm text-zinc-300">
+          <span className={settingsLabelClass}>
             Anything else you want Coach Broc to know about you (optional)
           </span>
           <textarea
             value={form.playerBio}
             onChange={(event) => updateField("playerBio", event.target.value)}
             rows={4}
-            className="mt-2 w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 focus:border-[#22c55e]"
+            className={settingsTextareaClass}
           />
         </label>
 
-        {errorMessage ? <p className="text-sm text-red-300">{errorMessage}</p> : null}
-        {successMessage ? (
-          <p className="text-sm text-[#9df3bd]">{successMessage}</p>
-        ) : null}
+        {errorMessage ? <p className={settingsErrorMessageClass}>{errorMessage}</p> : null}
+        {successMessage ? <p className={settingsSuccessMessageClass}>{successMessage}</p> : null}
 
-        <button
-          type="submit"
-          disabled={isSaving}
-          className="rounded-full bg-[#22c55e] px-5 py-3 text-sm font-semibold text-black transition hover:bg-[#35db72] disabled:cursor-not-allowed disabled:opacity-60"
-        >
+        <button type="submit" disabled={isSaving} className={settingsPrimaryButtonClass}>
           {isSaving ? "Saving..." : "Save Profile"}
         </button>
       </form>
-    </section>
+    </SettingsCard>
   );
 }

@@ -1,14 +1,85 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import SettingsCard from "@/app/settings/SettingsCard";
+import {
+  settingsCardClass,
+  settingsErrorMessageClass,
+  settingsInputClass,
+  settingsLabelClass,
+  settingsMutedTextClass,
+  settingsPrimaryButtonClass,
+  settingsSectionTitleClass,
+  settingsSecondaryButtonClass,
+  settingsSuccessMessageClass,
+  settingsTextareaClass,
+} from "@/app/settings/settings-styles";
 
-export default function ChangePasswordSection() {
+function ChangePasswordModal({
+  isOpen,
+  onClose,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+}) {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const modalRef = useRef<HTMLDivElement | null>(null);
+
+  const resetForm = () => {
+    setCurrentPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+    setErrorMessage("");
+    setSuccessMessage("");
+    setIsSaving(false);
+  };
+
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        handleClose();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!successMessage) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      handleClose();
+    }, 2000);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [successMessage]);
+
+  const handleOverlayClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (event.target === event.currentTarget) {
+      handleClose();
+    }
+  };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -40,58 +111,100 @@ export default function ChangePasswordSection() {
     setCurrentPassword("");
     setNewPassword("");
     setConfirmPassword("");
-    setSuccessMessage(data.message ?? "Password updated successfully.");
+    setSuccessMessage("Password updated successfully");
   };
 
+  if (!isOpen) {
+    return null;
+  }
+
   return (
-    <section className="mt-8 rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
-      <h2 className="text-lg font-semibold text-zinc-100">Change Password</h2>
-      <p className="mt-2 text-sm text-zinc-400">Update your account password.</p>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4"
+      onClick={handleOverlayClick}
+      role="presentation"
+    >
+      <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="change-password-title"
+        className={`${settingsCardClass} shadow-2xl`}
+        onClick={(event) => event.stopPropagation()}
+      >
+        <h3 id="change-password-title" className={settingsSectionTitleClass}>
+          Change Password
+        </h3>
 
-      <form className="mt-5 space-y-4" onSubmit={handleSubmit}>
-        <label className="block">
-          <span className="text-sm text-zinc-300">Current password</span>
-          <input
-            type="password"
-            value={currentPassword}
-            onChange={(event) => setCurrentPassword(event.target.value)}
-            className="mt-2 w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 focus:border-[#22c55e]"
-          />
-        </label>
+        <form className="mt-5 space-y-4" onSubmit={handleSubmit}>
+          <label className="block">
+            <span className={settingsLabelClass}>Current password</span>
+            <input
+              type="password"
+              value={currentPassword}
+              onChange={(event) => setCurrentPassword(event.target.value)}
+              className={settingsInputClass}
+            />
+          </label>
 
-        <label className="block">
-          <span className="text-sm text-zinc-300">New password</span>
-          <input
-            type="password"
-            value={newPassword}
-            onChange={(event) => setNewPassword(event.target.value)}
-            className="mt-2 w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 focus:border-[#22c55e]"
-          />
-        </label>
+          <label className="block">
+            <span className={settingsLabelClass}>New password</span>
+            <input
+              type="password"
+              value={newPassword}
+              onChange={(event) => setNewPassword(event.target.value)}
+              className={settingsInputClass}
+            />
+          </label>
 
-        <label className="block">
-          <span className="text-sm text-zinc-300">Confirm new password</span>
-          <input
-            type="password"
-            value={confirmPassword}
-            onChange={(event) => setConfirmPassword(event.target.value)}
-            className="mt-2 w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 focus:border-[#22c55e]"
-          />
-        </label>
+          <label className="block">
+            <span className={settingsLabelClass}>Confirm new password</span>
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(event) => setConfirmPassword(event.target.value)}
+              className={settingsInputClass}
+            />
+          </label>
 
-        {errorMessage ? <p className="text-sm text-red-300">{errorMessage}</p> : null}
-        {successMessage ? (
-          <p className="text-sm text-[#9df3bd]">{successMessage}</p>
-        ) : null}
+          {errorMessage ? <p className={settingsErrorMessageClass}>{errorMessage}</p> : null}
+          {successMessage ? (
+            <p className={settingsSuccessMessageClass}>{successMessage}</p>
+          ) : null}
 
+          <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
+            <button type="button" onClick={handleClose} className={settingsSecondaryButtonClass}>
+              Cancel
+            </button>
+            <button type="submit" disabled={isSaving} className={settingsPrimaryButtonClass}>
+              {isSaving ? "Saving..." : "Save New Password"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+export default function ChangePasswordSection() {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  return (
+    <>
+      <SettingsCard
+        title="Change Password"
+        description="Update your password to keep your account secure."
+      >
         <button
-          type="submit"
-          disabled={isSaving}
-          className="rounded-full bg-[#22c55e] px-5 py-3 text-sm font-semibold text-black transition hover:bg-[#35db72] disabled:cursor-not-allowed disabled:opacity-60"
+          type="button"
+          onClick={() => setIsModalOpen(true)}
+          className={settingsSecondaryButtonClass}
         >
-          {isSaving ? "Saving..." : "Save Password"}
+          Change Password
         </button>
-      </form>
-    </section>
+      </SettingsCard>
+
+      <ChangePasswordModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+    </>
   );
 }
