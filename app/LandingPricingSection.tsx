@@ -68,7 +68,6 @@ export default function LandingPricingSection() {
               {pricing.secondary ? (
                 <p className="mt-1 text-sm text-zinc-400">{pricing.secondary}</p>
               ) : null}
-              <p className="mt-3 text-zinc-300">{tier.summary}</p>
               <ul className="mt-5 space-y-2 text-sm text-zinc-200">
                 {tier.features.map((feature) => (
                   <li key={feature} className="flex items-start gap-2">

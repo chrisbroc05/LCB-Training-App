@@ -308,7 +308,6 @@ function AuthContent() {
                         {pricing.secondary ? (
                           <p className="mt-1 text-sm text-zinc-400">{pricing.secondary}</p>
                         ) : null}
-                        <p className="mt-3 text-sm text-zinc-300">{tier.summary}</p>
                         <ul className="mt-4 space-y-2 text-sm text-zinc-200">
                           {tier.features.map((feature) => (
                             <li key={`${tier.key}-${feature}`} className="flex items-start gap-2">
