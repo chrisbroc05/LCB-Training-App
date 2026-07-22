@@ -8,8 +8,10 @@ import BillingFrequencyToggle from "@/app/BillingFrequencyToggle";
 import UpgradeActions from "@/app/upgrade/UpgradeActions";
 import { getAnnualSavings, getTierPricing, isOneTimeTier, usesBillingFrequencyToggle, type BillingFrequency } from "@/lib/billing";
 import {
+  eliteUpgradePitch,
   keyToDatabaseTier,
   membershipTiers,
+  memorableUpgradePitch,
   type DatabaseTier,
   type TierKey,
 } from "@/lib/membership";
@@ -34,14 +36,12 @@ const upgradeSectionByTier: Partial<Record<DatabaseTier, UpgradeSectionConfig>> 
   },
   BASIC: {
     title: "Unlock Coaching Submissions",
-    description:
-      "Upgrade to Memorable for 1-on-1 coaching, monthly swing analysis and mental game support submissions, and accountability support, or Elite for priority response and personalized plans.",
+    description: `Upgrade to Memorable for ${memorableUpgradePitch} Or choose Elite for ${eliteUpgradePitch}`,
     upgradeTiers: ["memorable", "elite"],
   },
   MEMORABLE: {
     title: "Get Priority Access",
-    description:
-      "Elite adds priority 24-hour response, monthly group coaching calls, a personalized development plan, and a weekly training plan from Coach Broc.",
+    description: `Elite includes ${eliteUpgradePitch}`,
     upgradeTiers: ["elite"],
   },
 };

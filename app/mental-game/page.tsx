@@ -9,6 +9,7 @@ import {
   getCoachingSubmissionAvailability,
   getCoachingSubmissionLockReason,
 } from "@/lib/coaching-submissions";
+import { freeSubmissionUsedUpgradeMessage, memorableRequiredMessage } from "@/lib/membership";
 
 export default async function MentalGamePage() {
   const session = await getServerSession(authOptions);
@@ -29,7 +30,7 @@ export default async function MentalGamePage() {
       <LockedFeaturePanel
         title="Coaching Submissions"
         description="Submit what you are dealing with mentally so your coach can send support and adjustments."
-        message="Coaching submissions are available on Memorable and Elite memberships. Upgrade to Memorable for 1-on-1 coaching, monthly swing analysis and mental game support submissions, and accountability support."
+        message={memorableRequiredMessage}
         upgradeLabel="Upgrade to Memorable"
         upgradeHref="/upgrade?reason=memorable-required"
       />
@@ -43,7 +44,7 @@ export default async function MentalGamePage() {
       <LockedFeaturePanel
         title="Coaching Submissions"
         description="Submit what you are dealing with mentally so your coach can send support and adjustments."
-        message="Your one free submission has already been used. Upgrade to Memorable or Elite for 1-on-1 coaching, monthly swing analysis and mental game support submissions, and accountability support."
+        message={freeSubmissionUsedUpgradeMessage}
         upgradeLabel="Upgrade to Memorable or Elite"
         upgradeHref="/upgrade?reason=free-submission-used"
       />

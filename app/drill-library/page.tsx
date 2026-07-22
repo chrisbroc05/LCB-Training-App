@@ -23,7 +23,7 @@ export default async function DrillLibraryPage() {
       <LockedFeaturePanel
         title="Drill Library"
         description="Hitting, fielding, and mindset drill videos to support your training routine."
-        message="The drill library is available on Basic, Memorable, and Elite memberships. Upgrade to unlock the full hitting, fielding, and mindset video libraries."
+        message="The drill library is available on Basic, Memorable, and Elite memberships. Upgrade to Basic or above to unlock the full hitting, fielding, and mindset drill library built around real game situations."
         upgradeLabel="Upgrade to Basic or Above"
         upgradeHref="/upgrade?reason=basic-required"
       />

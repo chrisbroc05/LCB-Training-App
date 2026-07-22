@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { memorableUpgradePitch } from "@/lib/membership";
 import CoachingSubmissionQuota from "@/app/CoachingSubmissionQuota";
 import type { CoachingSubmissionAvailability } from "@/lib/coaching-submissions";
 import { formatAssessmentCallDateTime } from "@/lib/assessment-call";
@@ -154,8 +155,7 @@ export default function DashboardCoachingCard({
     <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
       <h2 className="text-lg font-semibold text-zinc-100">Coaching Submissions</h2>
       <p className="mt-3 text-sm text-zinc-300">
-        Upgrade to Memorable for everything in Basic plus 1-on-1 coaching, monthly swing analysis
-        and mental game support submissions, and accountability support.
+        Upgrade to Memorable for {memorableUpgradePitch}
       </p>
       <Link
         href="/upgrade?reason=memorable-required"

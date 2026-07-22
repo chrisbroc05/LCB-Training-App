@@ -29,6 +29,7 @@ import {
   formatDatabaseTierLabel,
   keyToDatabaseTier,
   membershipTiers,
+  memorableUpgradePitch,
   databaseTierToKey,
   type DatabaseTier,
 } from "@/lib/membership";
@@ -138,7 +139,7 @@ function ChangeMembershipContent({
       title="Upgrade Membership"
       description={
         isLifetimeBasic
-          ? "Upgrade to Memorable or Elite for 1-on-1 coaching, monthly swing analysis and mental game support submissions, accountability support, and priority access to Coach Broc."
+          ? `Upgrade to Memorable or Elite for ${memorableUpgradePitch}`
           : hasSubscription
             ? "Switch to another membership tier anytime. Stripe will automatically apply prorated charges or credits."
             : "Choose a paid tier to unlock more training content and coaching support."

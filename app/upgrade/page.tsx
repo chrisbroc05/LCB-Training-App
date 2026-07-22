@@ -1,5 +1,5 @@
 import UpgradePricingSection from "@/app/upgrade/UpgradePricingSection";
-import { membershipTiers } from "@/lib/membership";
+import { eliteUpgradePitch, membershipTiers, memorableUpgradePitch } from "@/lib/membership";
 
 const freeTier = membershipTiers.find((tier) => tier.key === "free")!;
 
@@ -25,8 +25,8 @@ export default async function UpgradePage({ searchParams }: UpgradePageProps) {
         )}
         {reason === "basic-required" && (
           <p className="mt-4 rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-100">
-            Basic membership ($59 one-time) unlocks lifetime access to the full drill library, all 8
-            workout programs, and the core training PDFs.
+            Basic membership ($59 one-time) unlocks lifetime access to the full LCB Training content
+            library, drill library, 8 workout programs, and bonus resources.
           </p>
         )}
         {(reason === "memorable-required" || reason === "pro-required") && (
@@ -41,16 +41,13 @@ export default async function UpgradePage({ searchParams }: UpgradePageProps) {
           </p>
         )}
         <p className="mt-4 text-sm text-zinc-300">
-          <span className="font-semibold text-[#9df3bd]">Free</span> includes one coaching submission,
-          a 20-minute Player Assessment Call, and personal feedback from Coach Broc.
-          <span className="ml-1 font-semibold text-[#9df3bd]">Basic</span> is a $59 one-time purchase
-          with lifetime access to the drill library, workout programs, and core training PDFs.
-          <span className="ml-1 font-semibold text-[#9df3bd]">Memorable</span> includes everything
-          in Basic plus 1-on-1 coaching, monthly swing analysis and mental game support submissions,
-          and accountability support.
-          <span className="ml-1 font-semibold text-[#9df3bd]">Elite</span> adds priority 24-hour
-          response, 4 submissions with rollover, group coaching calls, and personalized development
-          plans.
+          <span className="font-semibold text-[#9df3bd]">Free</span> includes a Player Assessment
+          Call, one coaching submission with personal feedback, and no credit card required.{" "}
+          <span className="font-semibold text-[#9df3bd]">Basic</span> is a $59 one-time purchase with
+          lifetime access to the full content library, drill library, workout programs, and bonus
+          resources. <span className="font-semibold text-[#9df3bd]">Memorable</span> includes{" "}
+          {memorableUpgradePitch}{" "}
+          <span className="font-semibold text-[#9df3bd]">Elite</span> includes {eliteUpgradePitch}
         </p>
       </section>
 
