@@ -37,10 +37,10 @@ export default function CoachBioSection() {
           </p>
           <p>
             I have spent 12+ years in player development and I am currently a High School Varsity
-            Coach. In that time I have worked with players at every level -- from youth rec ball all
-            the way up -- and I know what it takes to help a player physically get to the next level.
-            The mechanics, the strength, the speed, the fielding -- I know this game and I know how
-            to develop players.
+            Coach. In that time I have worked with players at every level, from youth rec ball all
+            the way up. I know what it takes to help a player physically get to the next level. The
+            mechanics, the strength, the speed, the fielding. I know this game and I know how to
+            develop players.
           </p>
           <p>
             But I also know that the physical tools only go so far. The players who truly make it are

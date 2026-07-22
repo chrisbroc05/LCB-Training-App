@@ -52,19 +52,23 @@ const testimonials = [
 const physicalTrainingPillars = [
   {
     title: "Hitting",
-    description: "Better approach, timing, and plate confidence in pressure moments.",
+    description:
+      "Better mechanics, sharper timing, and the plate confidence to compete in pressure moments.",
   },
   {
     title: "Fielding",
-    description: "Sharper defensive fundamentals, range, and game-ready instincts.",
+    description:
+      "Stronger fundamentals, better range, and the instincts to make plays when it matters most.",
   },
   {
     title: "Speed and Agility",
-    description: "Faster first steps, cleaner movement patterns, and stronger base running.",
+    description:
+      "Faster first steps, cleaner movement patterns, and the athleticism to impact the game on the bases and in the field.",
   },
   {
     title: "Strength and Conditioning",
-    description: "Athlete-focused strength plans to build power, durability, and resilience.",
+    description:
+      "Athlete-focused strength programs built to add power, build durability, and keep you healthy all season long.",
   },
 ];
 
@@ -72,12 +76,12 @@ const mentalEdgePillars = [
   {
     title: "Confidence and Self Belief",
     description:
-      "We help players build genuine confidence through repetition, positive reinforcement, and learning to trust their training when the game is on the line.",
+      "Confidence is a skill. It is not something you are born with. We help players build genuine belief in themselves through repetition, positive reinforcement, and learning to trust their training when the game is on the line.",
   },
   {
     title: "Resilience and Adversity",
     description:
-      "Failure is part of the game. We teach players how to reset after a bad at-bat, bounce back from a slump, and use adversity as fuel instead of letting it derail their season.",
+      "Every player fails. Every player goes through slumps. What separates the good ones from the great ones is how they respond. We teach players to reset, bounce back, and use adversity as fuel.",
   },
   {
     title: "Focus and Routine",
@@ -106,14 +110,15 @@ export default function Home() {
           LCB Training Membership
         </p>
         <h1 className="mt-4 max-w-3xl text-3xl font-bold tracking-tight text-zinc-100 sm:text-4xl md:text-6xl">
-          Build confidence on and off the field with complete player development.
+          Build Confidence On and Off the Field.
         </h1>
         <p className="mt-5 max-w-2xl text-base leading-relaxed text-zinc-300 sm:text-lg">
-          LCB Training helps athletes grow as complete competitors through skill training,
-          movement work, and accountability that carries into games, school, and everyday life.
-          New members start with one free coaching submission and a free 20-minute Player
-          Assessment Call with Coach Broc - swing analysis or mental game support with personal
-          feedback included.
+          I started LCB Training because I believe the best coaches develop the whole player, not
+          just the athlete. Whether it is your swing, your mindset, your strength, or your love for
+          the game, everything we do here is built around helping you become the best version of
+          yourself. New members start with a free 20-minute Player Assessment Call with Coach Broc
+          and one free coaching submission. That means swing analysis or mental game support with
+          personal feedback from me included.
         </p>
         <div className="mt-8 flex flex-wrap gap-3 sm:gap-4">
           <Link
@@ -136,8 +141,8 @@ export default function Home() {
       <section className="mt-14">
         <h2 className="text-2xl font-semibold text-zinc-100 sm:text-3xl">What We Train</h2>
         <p className="mt-2 max-w-3xl text-zinc-300">
-          Every membership is built to improve game performance while developing discipline,
-          confidence, and leadership habits beyond baseball.
+          Everything we work on is designed to make you better on the field. The habits, the
+          discipline, and the confidence you build here will carry into every part of your life.
         </p>
         <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {physicalTrainingPillars.map((pillar) => (
@@ -148,8 +153,8 @@ export default function Home() {
         <div className="mt-10 text-center">
           <div className="mx-auto mb-6 h-px w-24 bg-[#52B788]" />
           <p className="mx-auto max-w-3xl text-lg leading-relaxed text-zinc-200 sm:text-xl">
-            But training the body is only half the equation. The players who make it to the next
-            level are the ones who have mastered what happens between the ears.
+            But the physical tools only go so far. The players who truly make it are the ones who
+            have mastered what happens between the ears.
           </p>
         </div>
 

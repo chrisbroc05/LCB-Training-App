@@ -27,7 +27,7 @@ export const membershipTiers: MembershipTier[] = [
     priceLabel: "$59 one-time",
     summary: "Lifetime access to the full drill library, workouts, and core training PDFs.",
     features: [
-      "Lifetime access -- pay once, access forever",
+      "Lifetime access. Pay once, access forever.",
       "Full hitting, fielding, and mindset video drill library",
       "8 downloadable workout programs (Strength, Speed-Agility, Mobility, and Rotational Power)",
       "Pre-Game Warmup Routine PDF",
