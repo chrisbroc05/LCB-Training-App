@@ -31,21 +31,28 @@ export default function CoachBioSection() {
 
         <div className="mx-auto mt-8 max-w-2xl space-y-5 text-center text-base leading-relaxed text-[#CCCCCC] sm:text-lg">
           <p>
-            I was a 120 lb sophomore in high school that nobody recruited. I was overlooked,
-            undersized, and written off before I ever got started. But I refused to let that be my
-            story.
+            I became a coach because I genuinely love this game and I love working with kids. There
+            is nothing better than watching a player put in the work, feel it click, and walk off the
+            field with a little more confidence than they had before. That is why I do this.
           </p>
           <p>
-            Through relentless work, an unshakeable mindset, and a commitment to getting better every
-            single day, I went on to become a 2x All-Conference college athlete, earn multiple Gold
-            Glove nominations, and win a NJCAA National Championship at Oakton Community College.
+            I have spent 12+ years in player development and I am currently a High School Varsity
+            Coach. In that time I have worked with players at every level -- from youth rec ball all
+            the way up -- and I know what it takes to help a player physically get to the next level.
+            The mechanics, the strength, the speed, the fielding -- I know this game and I know how
+            to develop players.
           </p>
           <p>
-            That journey taught me everything I know about player development -- and it is exactly why
-            I coach the way I do. I do not just train athletes. I build confident, resilient players
-            who know how to compete when it matters most. My goal is simple: help every player I work
-            with prove the doubters wrong and become the best version of themselves on and off the
-            field.
+            But I also know that the physical tools only go so far. The players who truly make it are
+            the ones who believe in themselves, love what they are doing, and have someone in their
+            corner pushing them to be better every single day. That is what I bring to every player I
+            work with.
+          </p>
+          <p>
+            The stats will come. The exit velocity will go up. The batting average will improve. But
+            what I am really building is a confident, coachable, hungry player who loves this game and
+            wants to keep playing it for as long as possible. That is the foundation of everything I
+            do at LCB Training.
           </p>
         </div>
 
