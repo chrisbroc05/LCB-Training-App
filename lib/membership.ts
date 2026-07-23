@@ -58,9 +58,9 @@ export const membershipTiers: MembershipTier[] = [
       "Everything in Memorable plus priority response, personalized plans, group coaching, and recruiting guidance.",
     features: [
       "Everything in Memorable plus the highest level of personal coaching available",
-      "4 coaching submissions per month and unused submissions carry over so you never lose coaching time, up to 8 total",
-      "Priority response. Coach Broc reviews your submissions first and responds within 24 hours",
-      "A personalized monthly development plan covering hitting, fielding, strength, and mental game",
+      "4 coaching submissions per month with rollover up to 8",
+      "Priority 24-hour response from Coach Broc",
+      "Personalized monthly development plan from Coach Broc",
       "Monthly group coaching call including live film breakdown and Q and A",
       "College recruiting guidance and the College Baseball Recruiting Guide",
     ],
