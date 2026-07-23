@@ -7,17 +7,17 @@ const introVideos = [
   {
     title: "Welcome to LCB Training",
     embedUrl:
-      "https://player.vimeo.com/video/1199103395?title=0&byline=0&portrait=0&dnt=1&transparent=0&rel=0",
+      "https://player.vimeo.com/video/1212337613?title=0&byline=0&portrait=0&dnt=1",
   },
   {
     title: "How the program works and what to expect",
     embedUrl:
-      "https://player.vimeo.com/video/1199103402?title=0&byline=0&portrait=0&dnt=1&transparent=0&rel=0",
+      "https://player.vimeo.com/video/1212338023?title=0&byline=0&portrait=0&dnt=1",
   },
   {
     title: "How to submit your swing for analysis",
     embedUrl:
-      "https://player.vimeo.com/video/1199103401?title=0&byline=0&portrait=0&dnt=1&transparent=0&rel=0",
+      "https://player.vimeo.com/video/1212339260?title=0&byline=0&portrait=0&dnt=1",
   },
 ];
 
