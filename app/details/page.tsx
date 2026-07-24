@@ -67,7 +67,7 @@ function CoverageCard({ title, description }: { title: string; description: stri
 
 export default function InPersonDetailsPage() {
   // TODO: Replace with in-person booking Calendly link once created
-  const bookingUrl = "https://calendly.com/chrisbroc05/30min";
+  const bookingUrl = "https://calendly.com/chrisbroc05/in-person-lesson";
   const coachEmail = "chrisbroc05@gmail.com";
   const coachPhone = "847-208-9661";
 
