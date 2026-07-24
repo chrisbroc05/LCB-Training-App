@@ -13,6 +13,7 @@ import { prisma } from "@/lib/prisma";
 import BrandLogo from "@/app/BrandLogo";
 import TopNavigation from "@/app/TopNavigation";
 import AdminViewToggle from "@/app/AdminViewToggle";
+import SiteShell from "@/app/SiteShell";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -75,46 +76,53 @@ export default async function RootLayout({
         ) : null}
       </head>
       <body className="min-h-full flex flex-col bg-black text-zinc-100">
-        <header className="sticky top-0 z-20 border-b border-[#18243a] bg-black/95 backdrop-blur">
-          <div className="mx-auto w-full max-w-6xl px-4 py-3 sm:px-6 sm:py-4">
-            <div className="flex items-center justify-between gap-3 md:grid md:grid-cols-[1fr_auto] md:items-center">
-              <Link href="/" className="flex min-w-0 items-center gap-2 sm:gap-3">
-                <div className="relative h-10 w-28 shrink-0 sm:h-12 sm:w-32">
-                  <BrandLogo className="object-contain" />
+        <SiteShell
+          header={
+            <header className="sticky top-0 z-20 border-b border-[#18243a] bg-black/95 backdrop-blur">
+              <div className="mx-auto w-full max-w-6xl px-4 py-3 sm:px-6 sm:py-4">
+                <div className="flex items-center justify-between gap-3 md:grid md:grid-cols-[1fr_auto] md:items-center">
+                  <Link href="/" className="flex min-w-0 items-center gap-2 sm:gap-3">
+                    <div className="relative h-10 w-28 shrink-0 sm:h-12 sm:w-32">
+                      <BrandLogo className="object-contain" />
+                    </div>
+                    <span className="shrink-0 text-lg font-semibold tracking-tight text-zinc-100 sm:text-xl">
+                      LCB <span className="text-[#22c55e]">Training</span>
+                    </span>
+                  </Link>
+                  <TopNavigation
+                    isLoggedIn={Boolean(session?.user)}
+                    isAdmin={hasAdminAccess}
+                    hasBasicAccess={hasBasicAccess}
+                    hasCoachingAccess={hasCoachingAccess}
+                    userDisplayName={userDisplayName}
+                  />
                 </div>
-                <span className="shrink-0 text-lg font-semibold tracking-tight text-zinc-100 sm:text-xl">
-                  LCB <span className="text-[#22c55e]">Training</span>
-                </span>
-              </Link>
-              <TopNavigation
-                isLoggedIn={Boolean(session?.user)}
-                isAdmin={hasAdminAccess}
-                hasBasicAccess={hasBasicAccess}
-                hasCoachingAccess={hasCoachingAccess}
-                userDisplayName={userDisplayName}
-              />
-            </div>
-          </div>
-          <div className="hidden w-full bg-[#0A1628] py-2 md:block">
-            <p className="text-center text-sm italic text-[#52B788]">Work Hard. Be Memorable.</p>
-          </div>
-        </header>
-        <main className="flex-1">{children}</main>
-        <AdminViewToggle isAdmin={hasAdminAccess} />
-        <footer className="border-t border-[#18243a] py-6 text-center text-sm text-zinc-400">
-          <div className="mx-auto flex w-full max-w-6xl flex-col items-center justify-center gap-2 px-4 sm:px-6 md:flex-row md:gap-4">
-            <span>© {new Date().getFullYear()} LCB Training. All rights reserved.</span>
-            <span className="hidden text-zinc-600 md:inline">|</span>
-            <div className="flex items-center gap-4">
-              <Link href="/terms" className="transition hover:text-[#98b144]">
-                Terms of Service
-              </Link>
-              <Link href="/privacy" className="transition hover:text-[#98b144]">
-                Privacy Policy
-              </Link>
-            </div>
-          </div>
-        </footer>
+              </div>
+              <div className="hidden w-full bg-[#0A1628] py-2 md:block">
+                <p className="text-center text-sm italic text-[#52B788]">Work Hard. Be Memorable.</p>
+              </div>
+            </header>
+          }
+          adminToggle={<AdminViewToggle isAdmin={hasAdminAccess} />}
+          footer={
+            <footer className="border-t border-[#18243a] py-6 text-center text-sm text-zinc-400">
+              <div className="mx-auto flex w-full max-w-6xl flex-col items-center justify-center gap-2 px-4 sm:px-6 md:flex-row md:gap-4">
+                <span>&copy; {new Date().getFullYear()} LCB Training. All rights reserved.</span>
+                <span className="hidden text-zinc-600 md:inline">|</span>
+                <div className="flex items-center gap-4">
+                  <Link href="/terms" className="transition hover:text-[#98b144]">
+                    Terms of Service
+                  </Link>
+                  <Link href="/privacy" className="transition hover:text-[#98b144]">
+                    Privacy Policy
+                  </Link>
+                </div>
+              </div>
+            </footer>
+          }
+        >
+          {children}
+        </SiteShell>
       </body>
     </html>
   );
