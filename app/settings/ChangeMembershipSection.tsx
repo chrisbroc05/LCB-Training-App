@@ -38,12 +38,14 @@ type ChangeMembershipSectionProps = {
   currentTier: DatabaseTier;
   hasSubscription: boolean;
   isLifetimeBasic?: boolean;
+  isManualMembership?: boolean;
 };
 
 export default function ChangeMembershipSection({
   currentTier,
   hasSubscription,
   isLifetimeBasic = false,
+  isManualMembership = false,
 }: ChangeMembershipSectionProps) {
   return (
     <Suspense fallback={null}>
@@ -51,6 +53,7 @@ export default function ChangeMembershipSection({
         currentTier={currentTier}
         hasSubscription={hasSubscription}
         isLifetimeBasic={isLifetimeBasic}
+        isManualMembership={isManualMembership}
       />
     </Suspense>
   );
@@ -60,6 +63,7 @@ function ChangeMembershipContent({
   currentTier,
   hasSubscription,
   isLifetimeBasic,
+  isManualMembership = false,
 }: ChangeMembershipSectionProps) {
   const searchParams = useSearchParams();
   const highlightedTierKey = searchParams.get("tier")?.toLowerCase();
@@ -140,9 +144,11 @@ function ChangeMembershipContent({
       description={
         isLifetimeBasic
           ? `Upgrade to Memorable or Elite for ${memorableUpgradePitch}`
-          : hasSubscription
-            ? "Switch to another membership tier anytime. Stripe will automatically apply prorated charges or credits."
-            : "Choose a paid tier to unlock more training content and coaching support."
+          : isManualMembership
+            ? "Upgrade to Elite for additional coaching submissions, priority response, and recruiting support."
+            : hasSubscription
+              ? "Switch to another membership tier anytime. Stripe will automatically apply prorated charges or credits."
+              : "Choose a paid tier to unlock more training content and coaching support."
       }
     >
       <div className="flex flex-col items-center gap-2">

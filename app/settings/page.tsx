@@ -28,6 +28,7 @@ import {
 import {
   formatDatabaseTierLabel,
   isLifetimeBasicMember,
+  isManualMembershipMember,
   type DatabaseTier,
 } from "@/lib/membership";
 import { prisma } from "@/lib/prisma";
@@ -187,6 +188,10 @@ export default async function SettingsPage() {
 
   const membershipTier = user.membershipTier as DatabaseTier;
   const lifetimeBasic = isLifetimeBasicMember(membershipTier, user.stripeSubscriptionId);
+  const manualMembership = isManualMembershipMember(
+    membershipTier,
+    user.stripeSubscriptionId,
+  );
   const isFreeMember = membershipTier === "FREE";
   const isPaidSubscriptionTier = membershipTier === "MEMORABLE" || membershipTier === "ELITE";
   const stripeBillingDate = lifetimeBasic
@@ -236,6 +241,20 @@ export default async function SettingsPage() {
                 library, workout programs, and core training PDFs.
               </p>
             </div>
+          ) : manualMembership ? (
+            <div className="space-y-3">
+              <p className={settingsBodyTextClass}>
+                Current plan:{" "}
+                <span className={settingsAccentTextClass}>
+                  {formatDatabaseTierLabel(membershipTier)}
+                </span>
+              </p>
+              <p className={settingsMutedTextClass}>Billing: Manual</p>
+              <p className={settingsMutedTextClass}>
+                Your membership was assigned directly and does not require Stripe billing or a
+                payment method.
+              </p>
+            </div>
           ) : (
             <div className="space-y-4">
               <p className={settingsBodyTextClass}>
@@ -280,6 +299,7 @@ export default async function SettingsPage() {
             currentTier={membershipTier}
             hasSubscription={hasSubscription}
             isLifetimeBasic={lifetimeBasic}
+            isManualMembership={manualMembership}
           />
         ) : null}
       </div>

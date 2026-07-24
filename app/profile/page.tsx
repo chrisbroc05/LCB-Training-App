@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import type { DatabaseTier } from "@/lib/membership";
+import { isManualMembershipMember, type DatabaseTier } from "@/lib/membership";
 import { stripe } from "@/lib/stripe";
 import { formatAssessmentCallDateTime } from "@/lib/assessment-call";
 import { toVimeoEmbedUrl } from "@/lib/vimeo";
@@ -244,6 +244,10 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
       stripeSubscriptionId: user.stripeSubscriptionId,
       stripeCustomerId: user.stripeCustomerId,
     })) ?? user.subscriptionCurrentPeriodEnd;
+  const isManualMembership = isManualMembershipMember(
+    user.membershipTier,
+    user.stripeSubscriptionId,
+  );
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 sm:py-14 md:py-20">
@@ -287,7 +291,11 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
 
         <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
           <h2 className="text-lg font-semibold text-zinc-100">Membership Details</h2>
-          <p className="mt-3 text-sm text-zinc-300">Next billing date: {formatDate(nextBillingDate)}</p>
+          {isManualMembership ? (
+            <p className="mt-3 text-sm text-zinc-300">Billing: Manual</p>
+          ) : (
+            <p className="mt-3 text-sm text-zinc-300">Next billing date: {formatDate(nextBillingDate)}</p>
+          )}
           <Link
             href="/settings"
             className="mt-4 inline-flex rounded-full border border-[#2b3650] bg-black/40 px-4 py-2 text-sm font-semibold text-zinc-200 transition hover:border-[#7f9434] hover:text-[#98b144]"

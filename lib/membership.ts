@@ -152,3 +152,12 @@ export function isLifetimeBasicMember(
 ) {
   return membershipTier === "BASIC" && !stripeSubscriptionId;
 }
+
+export function isManualMembershipMember(
+  membershipTier: DatabaseTier,
+  stripeSubscriptionId: string | null | undefined,
+) {
+  return (
+    (membershipTier === "MEMORABLE" || membershipTier === "ELITE") && !stripeSubscriptionId
+  );
+}

@@ -4,6 +4,7 @@ import { formatDatabaseTierLabel, type DatabaseTier } from "@/lib/membership";
 type DashboardMembershipCardProps = {
   membershipTier: DatabaseTier;
   isPaidMember: boolean;
+  isManualMembership: boolean;
   subscriptionCurrentPeriodEnd: Date | null;
   subscriptionCancelAtPeriodEnd: boolean;
 };
@@ -23,6 +24,7 @@ function formatDate(date: Date | null) {
 export default function DashboardMembershipCard({
   membershipTier,
   isPaidMember,
+  isManualMembership,
   subscriptionCurrentPeriodEnd,
   subscriptionCancelAtPeriodEnd,
 }: DashboardMembershipCardProps) {
@@ -37,8 +39,12 @@ export default function DashboardMembershipCard({
 
       {isPaidMember ? (
         <div className="mt-3 space-y-1 text-sm text-zinc-300">
-          <p>Next billing date: {formatDate(subscriptionCurrentPeriodEnd)}</p>
-          {subscriptionCancelAtPeriodEnd ? (
+          {isManualMembership ? (
+            <p>Billing: Manual</p>
+          ) : (
+            <p>Next billing date: {formatDate(subscriptionCurrentPeriodEnd)}</p>
+          )}
+          {!isManualMembership && subscriptionCancelAtPeriodEnd ? (
             <p className="text-yellow-100">
               Your subscription is set to cancel at the end of the current billing period.
             </p>

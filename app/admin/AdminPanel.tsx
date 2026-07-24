@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import GoalCheckinsPanel from "@/app/admin/GoalCheckinsPanel";
+import MembersPanel from "@/app/admin/MembersPanel";
 import MemberProfileCard from "@/app/admin/MemberProfileCard";
 import { toVimeoEmbedUrl } from "@/lib/vimeo";
 
-type TabType = "swing" | "mental" | "goal";
+type TabType = "swing" | "mental" | "goal" | "members";
 
 type SubmissionListItem = {
   id: string;
@@ -94,7 +95,7 @@ export default function AdminPanel({
   const [editingCoachVimeoLink, setEditingCoachVimeoLink] = useState(true);
 
   useEffect(() => {
-    if (tab === "goal") {
+    if (tab === "goal" || tab === "members") {
       return;
     }
 
@@ -339,9 +340,22 @@ export default function AdminPanel({
         >
           Goal Check-Ins
         </button>
+        <button
+          type="button"
+          onClick={() => setTab("members")}
+          className={`rounded-full px-3 py-1.5 text-xs font-semibold sm:px-4 sm:py-2 sm:text-sm ${
+            tab === "members"
+              ? "bg-[#22c55e] text-black"
+              : "border border-[#2b3650] text-zinc-200 hover:border-[#7f9434]"
+          }`}
+        >
+          Members
+        </button>
       </div>
 
-      {tab === "goal" ? (
+      {tab === "members" ? (
+        <MembersPanel />
+      ) : tab === "goal" ? (
         <GoalCheckinsPanel />
       ) : (
     <div className="mt-6 grid gap-4 sm:gap-6 lg:grid-cols-[360px_1fr]">

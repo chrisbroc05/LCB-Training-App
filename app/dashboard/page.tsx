@@ -17,6 +17,7 @@ import {
   canAccessDrillLibrary,
   canAccessWorkoutPrograms,
   databaseTierToKey,
+  isManualMembershipMember,
   membershipTiers,
   type DatabaseTier,
 } from "@/lib/membership";
@@ -163,6 +164,10 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   );
   const isPaidMember = membershipTier !== "FREE";
   const hasSubscription = Boolean(userRecord.stripeSubscriptionId);
+  const isManualMembership = isManualMembershipMember(
+    membershipTier,
+    userRecord.stripeSubscriptionId,
+  );
   const currentMonthGoalCheckin = canAccessCoachingNav(membershipTier)
     ? await getCurrentMonthGoalCheckin(session.user.id)
     : null;
@@ -281,6 +286,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         <DashboardMembershipCard
           membershipTier={membershipTier}
           isPaidMember={isPaidMember}
+          isManualMembership={isManualMembership}
           subscriptionCurrentPeriodEnd={userRecord.subscriptionCurrentPeriodEnd}
           subscriptionCancelAtPeriodEnd={userRecord.subscriptionCancelAtPeriodEnd}
         />

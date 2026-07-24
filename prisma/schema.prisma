@@ -69,6 +69,7 @@ model User {
   currentTeam            String?
   level                  String?
   playerBio              String?
+  adminNotes             String?
   notifySubmissionResponse Boolean              @default(true)
   notifyGoalResponse       Boolean              @default(true)
   notifyWeeklyCheckin      Boolean              @default(true)
