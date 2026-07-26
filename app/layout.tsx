@@ -77,8 +77,9 @@ export default async function RootLayout({
       </head>
       <body className="min-h-full flex flex-col bg-black text-zinc-100">
         <SiteShell
+          isLoggedIn={Boolean(session?.user)}
           header={
-            <header className="sticky top-0 z-20 border-b border-[#18243a] bg-black/95 backdrop-blur">
+            <header className="border-b border-[#18243a] bg-black/95 backdrop-blur">
               <div className="mx-auto w-full max-w-6xl px-4 py-3 sm:px-6 sm:py-4">
                 <div className="flex items-center justify-between gap-3 md:grid md:grid-cols-[1fr_auto] md:items-center">
                   <Link href="/" className="flex min-w-0 items-center gap-2 sm:gap-3">

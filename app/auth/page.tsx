@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import { keyToDatabaseTier, membershipTiers, type TierKey } from "@/lib/membership";
@@ -9,7 +9,20 @@ import BrandLogo from "@/app/BrandLogo";
 import BillingFrequencyToggle from "@/app/BillingFrequencyToggle";
 import AnnualSavingsBadge from "@/app/AnnualSavingsBadge";
 import OneTimePaymentBadge from "@/app/OneTimePaymentBadge";
-import { getAnnualSavings, getTierPricing, isOneTimeTier, parseBillingFrequency, usesBillingFrequencyToggle, type BillingFrequency } from "@/lib/billing";
+import {
+  getAnnualSavings,
+  getTierPricing,
+  isOneTimeTier,
+  parseBillingFrequency,
+  usesBillingFrequencyToggle,
+  type BillingFrequency,
+} from "@/lib/billing";
+import {
+  FREE_SWING_AUTH_REDIRECT,
+  getPostAuthRedirectPath,
+  isFreeSwingAuthFlow,
+  markPendingCoachingWelcome,
+} from "@/lib/free-swing-flow";
 
 type AuthMode = "login" | "signup";
 
@@ -46,9 +59,27 @@ function AuthContent() {
   const selectedDatabaseTier: DatabaseTier = keyToDatabaseTier[selectedTier];
   const checkoutStatus = searchParams.get("checkout");
   const billingQueryParam = searchParams.get("billing");
+  const redirectParam = searchParams.get("redirect");
+  const isFreeSwingFlow = isFreeSwingAuthFlow(tierQueryParam, redirectParam);
+  const postAuthPath = getPostAuthRedirectPath(redirectParam);
   const [billingFrequency, setBillingFrequency] = useState<BillingFrequency>(
     parseBillingFrequency(billingQueryParam),
   );
+
+  useEffect(() => {
+    if (!isFreeSwingFlow) {
+      return;
+    }
+
+    fetch("/api/auth/session")
+      .then((response) => response.json())
+      .then((session: { user?: { email?: string | null } }) => {
+        if (session?.user) {
+          window.location.href = postAuthPath;
+        }
+      })
+      .catch(() => undefined);
+  }, [isFreeSwingFlow, postAuthPath]);
 
   const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -58,7 +89,7 @@ function AuthContent() {
     const result = await signIn("credentials", {
       email: loginEmail,
       password: loginPassword,
-      callbackUrl: "/dashboard",
+      callbackUrl: postAuthPath,
       redirect: false,
     });
 
@@ -69,7 +100,7 @@ function AuthContent() {
       return;
     }
 
-    window.location.href = result.url ?? "/dashboard";
+    window.location.href = result.url ?? postAuthPath;
   };
 
   const handleSignup = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -113,7 +144,12 @@ function AuthContent() {
 
     if (selectedDatabaseTier === "FREE") {
       setSignupLoading(false);
-      window.location.href = "/dashboard";
+      if (redirectParam === FREE_SWING_AUTH_REDIRECT) {
+        markPendingCoachingWelcome();
+        window.location.href = "/coaching-submissions";
+      } else {
+        window.location.href = "/dashboard";
+      }
       return;
     }
 
@@ -219,14 +255,28 @@ function AuthContent() {
             </div>
           </article>
         ) : (
-          <article className="mx-auto w-full max-w-5xl rounded-2xl border border-[#18243a] bg-black/25 p-5 sm:p-7">
-            <h1 className="text-center text-2xl font-semibold text-zinc-100 sm:text-3xl">Create Account</h1>
+          <article
+            className={`mx-auto w-full rounded-2xl border border-[#18243a] bg-black/25 p-5 sm:p-7 ${
+              isFreeSwingFlow ? "max-w-2xl" : "max-w-5xl"
+            }`}
+          >
+            <h1 className="text-center text-2xl font-semibold text-zinc-100 sm:text-3xl">
+              {isFreeSwingFlow ? "Create Your Free Account" : "Create Account"}
+            </h1>
             <p className="mt-2 text-center text-zinc-300">
-              Choose your membership and get started with LCB Training.
+              {isFreeSwingFlow
+                ? "Sign up free and submit your swing to Coach Broc."
+                : "Choose your membership and get started with LCB Training."}
             </p>
 
             <form className="mt-6 space-y-4" onSubmit={handleSignup}>
-              <div className="grid gap-4 md:grid-cols-3">
+              {isFreeSwingFlow ? (
+                <p className="rounded-xl border border-[#22c55e]/30 bg-[#22c55e]/10 px-4 py-3 text-center text-sm text-[#9df3bd]">
+                  Create your free account to submit your swing to Coach Broc.
+                </p>
+              ) : null}
+
+              <div className={`grid gap-4 ${isFreeSwingFlow ? "grid-cols-1" : "md:grid-cols-3"}`}>
                 <label className="block">
                   <span className="text-sm text-zinc-300">Name</span>
                   <input
@@ -264,17 +314,25 @@ function AuthContent() {
               </div>
 
               <div className="pt-2">
-                <p className="text-sm font-medium text-zinc-300">Select your membership tier</p>
-                <div className="mt-4 flex flex-col items-center gap-2">
-                  <BillingFrequencyToggle
-                    value={billingFrequency}
-                    onChange={setBillingFrequency}
-                  />
-                  <p className="text-xs text-zinc-400">
-                    Monthly and annual pricing applies to Memorable and Elite only.
-                  </p>
-                </div>
-                <div className="mt-4 grid gap-4 md:grid-cols-4">
+                <p className="text-sm font-medium text-zinc-300">
+                  {isFreeSwingFlow ? "Your membership tier" : "Select your membership tier"}
+                </p>
+                {!isFreeSwingFlow ? (
+                  <div className="mt-4 flex flex-col items-center gap-2">
+                    <BillingFrequencyToggle
+                      value={billingFrequency}
+                      onChange={setBillingFrequency}
+                    />
+                    <p className="text-xs text-zinc-400">
+                      Monthly and annual pricing applies to Memorable and Elite only.
+                    </p>
+                  </div>
+                ) : null}
+                <div
+                  className={`mt-4 grid gap-4 ${
+                    isFreeSwingFlow ? "grid-cols-1 sm:grid-cols-2" : "md:grid-cols-4"
+                  }`}
+                >
                   {membershipTiers.map((tier) => {
                     const isSelected = selectedTier === tier.key;
                     const pricing = getTierPricing(tier.key, billingFrequency);
@@ -283,43 +341,62 @@ function AuthContent() {
                       usesBillingFrequencyToggle(tier.key) && billingFrequency === "annual"
                         ? getAnnualSavings(tier.key)
                         : null;
+                    const isFreeTier = tier.key === "free";
+                    const isMinimized = isFreeSwingFlow && !isFreeTier;
+
                     return (
                       <button
                         key={tier.key}
                         type="button"
                         onClick={() => setManuallySelectedTier(tier.key)}
-                        className={`h-full rounded-2xl border p-5 text-left transition ${
+                        className={`h-full rounded-2xl border text-left transition ${
+                          isFreeSwingFlow && isFreeTier ? "sm:col-span-2" : ""
+                        } ${
+                          isMinimized ? "p-3 opacity-60" : "p-5"
+                        } ${
                           isSelected
                             ? "border-[#52B788] bg-[#0f1d34]"
                             : "border-[#2b3650] bg-[#0b1324] hover:border-[#4f5f83]"
                         }`}
                       >
-                        <h2 className="text-xl font-semibold text-zinc-100">{tier.name}</h2>
-                        {oneTimeTier ? (
+                        <h2 className={`font-semibold text-zinc-100 ${isMinimized ? "text-base" : "text-xl"}`}>
+                          {tier.name}
+                        </h2>
+                        {!isMinimized && oneTimeTier ? (
                           <div className="mt-2">
                             <OneTimePaymentBadge />
                           </div>
-                        ) : annualSavings ? (
+                        ) : null}
+                        {!isMinimized && annualSavings ? (
                           <div className="mt-2">
                             <AnnualSavingsBadge amount={annualSavings} />
                           </div>
                         ) : null}
-                        <p className="mt-2 text-xl font-bold text-[#98b144]">{pricing.primary}</p>
-                        {pricing.secondary ? (
+                        <p className={`mt-2 font-bold text-[#98b144] ${isMinimized ? "text-base" : "text-xl"}`}>
+                          {pricing.primary}
+                        </p>
+                        {!isMinimized && pricing.secondary ? (
                           <p className="mt-1 text-sm text-zinc-400">{pricing.secondary}</p>
                         ) : null}
-                        <ul className="mt-4 space-y-2 text-sm text-zinc-200">
-                          {tier.features.map((feature) => (
-                            <li key={`${tier.key}-${feature}`} className="flex items-start gap-2">
-                              <span className="mt-1 h-2 w-2 rounded-full bg-[#22c55e]" />
-                              <span>{feature}</span>
-                            </li>
-                          ))}
-                        </ul>
+                        {!isMinimized ? (
+                          <ul className="mt-4 space-y-2 text-sm text-zinc-200">
+                            {tier.features.map((feature) => (
+                              <li key={`${tier.key}-${feature}`} className="flex items-start gap-2">
+                                <span className="mt-1 h-2 w-2 rounded-full bg-[#22c55e]" />
+                                <span>{feature}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : null}
                       </button>
                     );
                   })}
                 </div>
+                {isFreeSwingFlow ? (
+                  <p className="mt-3 text-center text-xs text-zinc-500">
+                    Paid tiers are available anytime after signup.
+                  </p>
+                ) : null}
               </div>
 
               <input type="hidden" name="plan" value={selectedTier} />
@@ -330,7 +407,11 @@ function AuthContent() {
                 disabled={signupLoading}
                 className="w-full rounded-full border border-[#22c55e] bg-[#22c55e]/10 px-5 py-3 font-semibold text-[#9df3bd] transition hover:bg-[#22c55e]/20 disabled:cursor-not-allowed disabled:opacity-40"
               >
-                {signupLoading ? "Creating account..." : "Sign Up"}
+                {signupLoading
+                  ? "Creating account..."
+                  : isFreeSwingFlow
+                    ? "Create Free Account"
+                    : "Sign Up"}
               </button>
             </form>
 
