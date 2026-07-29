@@ -46,6 +46,8 @@ function AuthContent() {
   const [signupError, setSignupError] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
   const [signupLoading, setSignupLoading] = useState(false);
+  const [sessionChecked, setSessionChecked] = useState(false);
+  const [hasActiveSession, setHasActiveSession] = useState(false);
 
   const tierQueryParam = searchParams.get("tier");
   const normalizedTierQuery = tierQueryParam?.toLowerCase();
@@ -68,6 +70,7 @@ function AuthContent() {
 
   useEffect(() => {
     if (!isFreeSwingFlow) {
+      setSessionChecked(true);
       return;
     }
 
@@ -75,11 +78,27 @@ function AuthContent() {
       .then((response) => response.json())
       .then((session: { user?: { email?: string | null } }) => {
         if (session?.user) {
-          window.location.href = postAuthPath;
+          setHasActiveSession(true);
+          window.location.replace(postAuthPath);
+          return;
         }
+
+        setSessionChecked(true);
       })
-      .catch(() => undefined);
+      .catch(() => {
+        setSessionChecked(true);
+      });
   }, [isFreeSwingFlow, postAuthPath]);
+
+  if (isFreeSwingFlow && (!sessionChecked || hasActiveSession)) {
+    return (
+      <div className="mx-auto flex w-full max-w-6xl justify-center px-4 py-10 sm:px-6 sm:py-14 md:py-20">
+        <section className="w-full max-w-lg rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-8 text-center">
+          <p className="text-sm text-zinc-300">Loading your account...</p>
+        </section>
+      </div>
+    );
+  }
 
   const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -102,6 +121,41 @@ function AuthContent() {
 
     window.location.href = result.url ?? postAuthPath;
   };
+
+  const freeSwingLoginForm = (
+    <form className="mt-6 space-y-4" onSubmit={handleLogin}>
+      <label className="block">
+        <span className="text-sm text-zinc-300">Email</span>
+        <input
+          type="email"
+          placeholder="you@example.com"
+          value={loginEmail}
+          onChange={(event) => setLoginEmail(event.target.value)}
+          className="mt-2 w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 placeholder:text-zinc-500 focus:border-[#22c55e]"
+          required
+        />
+      </label>
+      <label className="block">
+        <span className="text-sm text-zinc-300">Password</span>
+        <input
+          type="password"
+          placeholder="Your password"
+          value={loginPassword}
+          onChange={(event) => setLoginPassword(event.target.value)}
+          className="mt-2 w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 placeholder:text-zinc-500 focus:border-[#22c55e]"
+          required
+        />
+      </label>
+      {loginError && <p className="text-sm text-red-300">{loginError}</p>}
+      <button
+        type="submit"
+        disabled={loginLoading}
+        className="w-full rounded-full bg-[#22c55e] px-5 py-3 font-semibold text-black transition hover:bg-[#35db72] disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        {loginLoading ? "Logging in..." : "Log In"}
+      </button>
+    </form>
+  );
 
   const handleSignup = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -196,7 +250,7 @@ function AuthContent() {
         </section>
       )}
 
-        {authMode === "login" ? (
+        {authMode === "login" && !isFreeSwingFlow ? (
           <article className="mx-auto w-full max-w-md rounded-2xl border border-[#18243a] bg-black/25 p-5 sm:p-7">
             <h1 className="text-center text-2xl font-semibold text-zinc-100 sm:text-3xl">Member Login</h1>
             <p className="mt-2 text-center text-zinc-300">
@@ -253,6 +307,34 @@ function AuthContent() {
                 Don&apos;t have an account? Sign up
               </button>
             </div>
+          </article>
+        ) : isFreeSwingFlow && authMode === "login" ? (
+          <article className="mx-auto w-full max-w-lg rounded-2xl border border-[#18243a] bg-black/25 p-5 sm:p-7">
+            <section className="rounded-2xl border border-[#2b3650] bg-[#0b1324] px-5 py-6 sm:px-7 sm:py-8">
+              <h1 className="text-center text-2xl font-semibold text-zinc-100 sm:text-3xl">
+                Welcome back
+              </h1>
+              <p className="mt-3 text-center text-sm text-zinc-400">
+                Log in to continue to your coaching submissions.
+              </p>
+            </section>
+
+            {freeSwingLoginForm}
+
+            <p className="mt-5 text-center text-sm text-zinc-300">
+              Don&apos;t have an account?{" "}
+              <button
+                type="button"
+                onClick={() => {
+                  setLoginError("");
+                  setSignupError("");
+                  setAuthMode("signup");
+                }}
+                className="underline-offset-2 transition hover:text-[#98b144] hover:underline"
+              >
+                Sign up
+              </button>
+            </p>
           </article>
         ) : isFreeSwingFlow ? (
           <article className="mx-auto w-full max-w-lg rounded-2xl border border-[#18243a] bg-black/25 p-5 sm:p-7">

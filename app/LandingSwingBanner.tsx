@@ -19,11 +19,9 @@ export default function LandingSwingBanner({ isLoggedIn }: LandingSwingBannerPro
     setIsVisible(dismissed !== "1");
   }, []);
 
-  if (!isVisible) {
+  if (isLoggedIn || !isVisible) {
     return null;
   }
-
-  const ctaHref = isLoggedIn ? "/coaching-submissions" : FREE_SWING_AUTH_URL;
 
   function dismissBanner() {
     window.localStorage.setItem(LANDING_SWING_BANNER_DISMISSED_KEY, "1");
@@ -43,7 +41,7 @@ export default function LandingSwingBanner({ isLoggedIn }: LandingSwingBannerPro
           </p>
           <div className="flex items-center justify-between gap-3 sm:justify-end">
             <Link
-              href={ctaHref}
+              href={FREE_SWING_AUTH_URL}
               className="inline-flex items-center justify-center rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#2D6A4F] transition hover:bg-zinc-100"
             >
               Submit My Swing
