@@ -254,29 +254,103 @@ function AuthContent() {
               </button>
             </div>
           </article>
+        ) : isFreeSwingFlow ? (
+          <article className="mx-auto w-full max-w-lg rounded-2xl border border-[#18243a] bg-black/25 p-5 sm:p-7">
+            <section className="rounded-2xl border border-[#2b3650] bg-[#0b1324] px-5 py-6 sm:px-7 sm:py-8">
+              <h1 className="text-center text-2xl font-semibold text-zinc-100 sm:text-3xl">
+                You are one step away
+              </h1>
+              <ul className="mt-5 space-y-3 text-sm sm:text-base">
+                <li className="flex items-start gap-3 text-[#52B788]">
+                  <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-[#52B788]" />
+                  <span>
+                    Submit your swing video and get personal feedback from Coach Broc within 48
+                    hours
+                  </span>
+                </li>
+                <li className="flex items-start gap-3 text-[#52B788]">
+                  <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-[#52B788]" />
+                  <span>
+                    Submit a mental game question and get a personal response from Coach Broc
+                  </span>
+                </li>
+              </ul>
+              <p className="mt-5 text-center text-sm text-zinc-500">
+                Create your free account below to get started. No credit card required.
+              </p>
+            </section>
+
+            <form className="mt-6 space-y-4" onSubmit={handleSignup}>
+              <label className="block">
+                <span className="text-sm text-zinc-300">First name</span>
+                <input
+                  type="text"
+                  placeholder="First name"
+                  value={signupName}
+                  onChange={(event) => setSignupName(event.target.value)}
+                  className="mt-2 w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 placeholder:text-zinc-500 focus:border-[#22c55e]"
+                  required
+                />
+              </label>
+              <label className="block">
+                <span className="text-sm text-zinc-300">Email</span>
+                <input
+                  type="email"
+                  placeholder="you@example.com"
+                  value={signupEmail}
+                  onChange={(event) => setSignupEmail(event.target.value)}
+                  className="mt-2 w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 placeholder:text-zinc-500 focus:border-[#22c55e]"
+                  required
+                />
+              </label>
+              <label className="block">
+                <span className="text-sm text-zinc-300">Password</span>
+                <input
+                  type="password"
+                  placeholder="At least 8 characters"
+                  value={signupPassword}
+                  onChange={(event) => setSignupPassword(event.target.value)}
+                  className="mt-2 w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 placeholder:text-zinc-500 focus:border-[#22c55e]"
+                  minLength={8}
+                  required
+                />
+              </label>
+
+              {signupError && <p className="text-sm text-red-300">{signupError}</p>}
+
+              <button
+                type="submit"
+                disabled={signupLoading}
+                className="w-full rounded-full bg-[#22c55e] px-5 py-3 font-semibold text-black transition hover:bg-[#35db72] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {signupLoading ? "Creating account..." : "Create My Free Account"}
+              </button>
+            </form>
+
+            <p className="mt-5 text-center text-sm text-zinc-300">
+              Already have an account?{" "}
+              <button
+                type="button"
+                onClick={() => {
+                  setLoginError("");
+                  setSignupError("");
+                  setAuthMode("login");
+                }}
+                className="underline-offset-2 transition hover:text-[#98b144] hover:underline"
+              >
+                Log in
+              </button>
+            </p>
+          </article>
         ) : (
-          <article
-            className={`mx-auto w-full rounded-2xl border border-[#18243a] bg-black/25 p-5 sm:p-7 ${
-              isFreeSwingFlow ? "max-w-2xl" : "max-w-5xl"
-            }`}
-          >
-            <h1 className="text-center text-2xl font-semibold text-zinc-100 sm:text-3xl">
-              {isFreeSwingFlow ? "Create Your Free Account" : "Create Account"}
-            </h1>
+          <article className="mx-auto w-full max-w-5xl rounded-2xl border border-[#18243a] bg-black/25 p-5 sm:p-7">
+            <h1 className="text-center text-2xl font-semibold text-zinc-100 sm:text-3xl">Create Account</h1>
             <p className="mt-2 text-center text-zinc-300">
-              {isFreeSwingFlow
-                ? "Sign up free and submit your swing to Coach Broc."
-                : "Choose your membership and get started with LCB Training."}
+              Choose your membership and get started with LCB Training.
             </p>
 
             <form className="mt-6 space-y-4" onSubmit={handleSignup}>
-              {isFreeSwingFlow ? (
-                <p className="rounded-xl border border-[#22c55e]/30 bg-[#22c55e]/10 px-4 py-3 text-center text-sm text-[#9df3bd]">
-                  Create your free account to submit your swing to Coach Broc.
-                </p>
-              ) : null}
-
-              <div className={`grid gap-4 ${isFreeSwingFlow ? "grid-cols-1" : "md:grid-cols-3"}`}>
+              <div className="grid gap-4 md:grid-cols-3">
                 <label className="block">
                   <span className="text-sm text-zinc-300">Name</span>
                   <input
@@ -314,25 +388,17 @@ function AuthContent() {
               </div>
 
               <div className="pt-2">
-                <p className="text-sm font-medium text-zinc-300">
-                  {isFreeSwingFlow ? "Your membership tier" : "Select your membership tier"}
-                </p>
-                {!isFreeSwingFlow ? (
-                  <div className="mt-4 flex flex-col items-center gap-2">
-                    <BillingFrequencyToggle
-                      value={billingFrequency}
-                      onChange={setBillingFrequency}
-                    />
-                    <p className="text-xs text-zinc-400">
-                      Monthly and annual pricing applies to Memorable and Elite only.
-                    </p>
-                  </div>
-                ) : null}
-                <div
-                  className={`mt-4 grid gap-4 ${
-                    isFreeSwingFlow ? "grid-cols-1 sm:grid-cols-2" : "md:grid-cols-4"
-                  }`}
-                >
+                <p className="text-sm font-medium text-zinc-300">Select your membership tier</p>
+                <div className="mt-4 flex flex-col items-center gap-2">
+                  <BillingFrequencyToggle
+                    value={billingFrequency}
+                    onChange={setBillingFrequency}
+                  />
+                  <p className="text-xs text-zinc-400">
+                    Monthly and annual pricing applies to Memorable and Elite only.
+                  </p>
+                </div>
+                <div className="mt-4 grid gap-4 md:grid-cols-4">
                   {membershipTiers.map((tier) => {
                     const isSelected = selectedTier === tier.key;
                     const pricing = getTierPricing(tier.key, billingFrequency);
@@ -341,62 +407,45 @@ function AuthContent() {
                       usesBillingFrequencyToggle(tier.key) && billingFrequency === "annual"
                         ? getAnnualSavings(tier.key)
                         : null;
-                    const isFreeTier = tier.key === "free";
-                    const isMinimized = isFreeSwingFlow && !isFreeTier;
 
                     return (
                       <button
                         key={tier.key}
                         type="button"
                         onClick={() => setManuallySelectedTier(tier.key)}
-                        className={`h-full rounded-2xl border text-left transition ${
-                          isFreeSwingFlow && isFreeTier ? "sm:col-span-2" : ""
-                        } ${
-                          isMinimized ? "p-3 opacity-60" : "p-5"
-                        } ${
+                        className={`h-full rounded-2xl border p-5 text-left transition ${
                           isSelected
                             ? "border-[#52B788] bg-[#0f1d34]"
                             : "border-[#2b3650] bg-[#0b1324] hover:border-[#4f5f83]"
                         }`}
                       >
-                        <h2 className={`font-semibold text-zinc-100 ${isMinimized ? "text-base" : "text-xl"}`}>
-                          {tier.name}
-                        </h2>
-                        {!isMinimized && oneTimeTier ? (
+                        <h2 className="text-xl font-semibold text-zinc-100">{tier.name}</h2>
+                        {oneTimeTier ? (
                           <div className="mt-2">
                             <OneTimePaymentBadge />
                           </div>
                         ) : null}
-                        {!isMinimized && annualSavings ? (
+                        {annualSavings ? (
                           <div className="mt-2">
                             <AnnualSavingsBadge amount={annualSavings} />
                           </div>
                         ) : null}
-                        <p className={`mt-2 font-bold text-[#98b144] ${isMinimized ? "text-base" : "text-xl"}`}>
-                          {pricing.primary}
-                        </p>
-                        {!isMinimized && pricing.secondary ? (
+                        <p className="mt-2 text-xl font-bold text-[#98b144]">{pricing.primary}</p>
+                        {pricing.secondary ? (
                           <p className="mt-1 text-sm text-zinc-400">{pricing.secondary}</p>
                         ) : null}
-                        {!isMinimized ? (
-                          <ul className="mt-4 space-y-2 text-sm text-zinc-200">
-                            {tier.features.map((feature) => (
-                              <li key={`${tier.key}-${feature}`} className="flex items-start gap-2">
-                                <span className="mt-1 h-2 w-2 rounded-full bg-[#22c55e]" />
-                                <span>{feature}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        ) : null}
+                        <ul className="mt-4 space-y-2 text-sm text-zinc-200">
+                          {tier.features.map((feature) => (
+                            <li key={`${tier.key}-${feature}`} className="flex items-start gap-2">
+                              <span className="mt-1 h-2 w-2 rounded-full bg-[#22c55e]" />
+                              <span>{feature}</span>
+                            </li>
+                          ))}
+                        </ul>
                       </button>
                     );
                   })}
                 </div>
-                {isFreeSwingFlow ? (
-                  <p className="mt-3 text-center text-xs text-zinc-500">
-                    Paid tiers are available anytime after signup.
-                  </p>
-                ) : null}
               </div>
 
               <input type="hidden" name="plan" value={selectedTier} />
@@ -407,11 +456,7 @@ function AuthContent() {
                 disabled={signupLoading}
                 className="w-full rounded-full border border-[#22c55e] bg-[#22c55e]/10 px-5 py-3 font-semibold text-[#9df3bd] transition hover:bg-[#22c55e]/20 disabled:cursor-not-allowed disabled:opacity-40"
               >
-                {signupLoading
-                  ? "Creating account..."
-                  : isFreeSwingFlow
-                    ? "Create Free Account"
-                    : "Sign Up"}
+                {signupLoading ? "Creating account..." : "Sign Up"}
               </button>
             </form>
 
