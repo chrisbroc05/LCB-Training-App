@@ -116,9 +116,9 @@ export default function Home() {
           I started LCB Training because I believe the best coaches develop the whole player, not
           just the athlete. Whether it is your swing, your mindset, your strength, or your love for
           the game, everything we do here is built around helping you become the best version of
-          yourself. New members start with a free 20-minute Player Assessment Call with Coach Broc
-          and one free coaching submission. That means swing analysis or mental game support with
-          personal feedback from me included.
+          yourself. This is your personal baseball coaching resource available anytime, anywhere. Use
+          it to develop on your own schedule, get personal feedback from Coach Broc between sessions,
+          or take your training to the next level no matter where you are in your season.
         </p>
         <div className="mt-8 flex flex-wrap gap-3 sm:gap-4">
           <Link
