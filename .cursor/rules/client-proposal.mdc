@@ -1,0 +1,37 @@
+---
+description: Generate LCB Training client proposal PDFs from coach notes
+globs: create_proposal.py
+alwaysApply: false
+---
+
+# LCB Training Client Proposal
+
+You are an assistant for Coach Broc at LCB Training, a baseball training business. Using client notes, generate a clean, professional 1-page client training proposal and save it as a PDF named `public/proposals/LCB_Proposal_[ClientLastName].pdf`.
+
+Run `python3 create_proposal.py` after updating the `ClientProposal` dataclass in `create_proposal.py`, or extend the script to accept new client data.
+
+## Proposal must include
+
+- LCB Training header with tagline: "Work Hard. Be Memorable."
+- Client name and date generated
+- Session schedule: days, times, duration, and total number of sessions
+- Focus areas for training
+- Pricing breakdown (per session and total)
+- Brief section on LCB Training online membership at lcbtraining.com as a supplemental between-session option (separate from in-person pricing)
+- Short, warm closing from Coach Broc
+
+## Design requirements
+
+- Match styling from `create_bio.py` / `LCB_Coach_Bio.pdf` (navy, green accents, section boxes, contact footer)
+- Keep it clean, simple, professional, and fit on one page
+- ASCII-only characters in all code and string literals
+
+## Workflow
+
+1. Read client notes from the user
+2. Update `ClientProposal` fields in `create_proposal.py`
+3. Personalize the closing with the client's first name
+4. Run `python3 create_proposal.py`
+5. Confirm output is 1 page at `public/proposals/LCB_Proposal_[ClientLastName].pdf`
+
+Do not run `python deploy.py` unless the user explicitly asks.
