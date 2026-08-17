@@ -49,12 +49,12 @@ const playbookChapters = [
 ];
 
 const playbookIncludes = [
-  "Interactive chapter experience with reflection questions",
+  "Interactive chapter experience with reflection questions you can save and revisit",
   "Full hitting, fielding, and mindset video drill library",
   "8 downloadable workout programs",
   "Pre-Game Warmup Routine, Nutrition Guide, Mental Game Workbook, and Parent Guide",
-  "Downloadable PDF of your completed playbook with your reflection answers",
-  "New content added regularly",
+  "Downloadable PDF of your completed playbook with your personal reflection answers",
+  "New content added regularly as Coach Broc keeps building",
 ];
 
 const testimonials = [
@@ -132,6 +132,43 @@ function TrainingPillarCard({ title, description }: { title: string; description
       <h3 className="text-lg font-semibold text-zinc-100">{title}</h3>
       <p className="mt-2 text-sm leading-relaxed text-zinc-300">{description}</p>
     </article>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className="shrink-0 text-[#52B788]"
+    >
+      <path d="M20 6 9 17l-5-5" />
+    </svg>
+  );
+}
+
+function PlaybookAlsoIncludesBox({ items }: { items: string[] }) {
+  return (
+    <div className="mx-auto mt-12 max-w-2xl rounded-2xl border border-[#2b3650] border-l-4 border-l-[#52B788] bg-[#0A1628]/20 px-6 py-8 sm:px-8 sm:py-10">
+      <h3 className="text-lg font-bold text-[#52B788] sm:text-xl">Also Includes</h3>
+      <ul className="mt-6 space-y-4">
+        {items.map((item) => (
+          <li key={item} className="flex items-start gap-3">
+            <span className="mt-0.5">
+              <CheckIcon />
+            </span>
+            <span className="text-sm leading-relaxed text-zinc-200 sm:text-base">{item}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
@@ -220,14 +257,7 @@ export default function Home() {
             ))}
           </div>
 
-          <ul className="mx-auto mt-10 max-w-2xl space-y-3 text-center text-sm text-zinc-200 sm:text-base">
-            {playbookIncludes.map((item) => (
-              <li key={item} className="flex items-start justify-center gap-2">
-                <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-[#22c55e]" />
-                <span>{item}</span>
-              </li>
-            ))}
-          </ul>
+          <PlaybookAlsoIncludesBox items={playbookIncludes} />
         </section>
 
         <section className="mt-14">
@@ -320,7 +350,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="mx-auto w-full max-w-6xl px-4 pb-14 sm:px-6 sm:pb-20 md:pb-24">
+      <section className="mx-auto w-full max-w-6xl border-t border-[#52B788]/30 px-4 pb-14 pt-20 sm:px-6 sm:pb-20 sm:pt-24 md:pb-24">
         <div className="text-center">
           <h2 className="text-2xl font-semibold text-zinc-100 sm:text-3xl">
             Want More Than The Playbook?
