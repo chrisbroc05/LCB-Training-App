@@ -152,6 +152,32 @@ export const adminMemberDetailSelect = {
       status: true,
     },
   },
+  playbookProgress: {
+    select: {
+      overallComplete: true,
+      completedAt: true,
+      coachNotes: true,
+      chapters: {
+        orderBy: { chapterNumber: "asc" as const },
+        select: {
+          chapterNumber: true,
+          chapterTitle: true,
+          completed: true,
+          completedAt: true,
+          reflections: {
+            where: { sharedWithCoach: true },
+            orderBy: { questionNumber: "asc" as const },
+            select: {
+              questionNumber: true,
+              questionText: true,
+              answer: true,
+              sharedAt: true,
+            },
+          },
+        },
+      },
+    },
+  },
   _count: {
     select: {
       swingAnalysisSubmissions: true,
@@ -199,6 +225,23 @@ type AdminMemberDetailRecord = {
     createdAt: Date;
     status: string;
   }>;
+  playbookProgress: {
+    overallComplete: boolean;
+    completedAt: Date | null;
+    coachNotes: string | null;
+    chapters: Array<{
+      chapterNumber: number;
+      chapterTitle: string;
+      completed: boolean;
+      completedAt: Date | null;
+      reflections: Array<{
+        questionNumber: number;
+        questionText: string;
+        answer: string | null;
+        sharedAt: Date | null;
+      }>;
+    }>;
+  } | null;
   _count: {
     swingAnalysisSubmissions: number;
     mentalGameSubmissions: number;
@@ -249,6 +292,41 @@ export function serializeAdminMemberDetail(user: AdminMemberDetailRecord) {
       createdAt: checkin.createdAt.toISOString(),
       status: formatSubmissionStatus(checkin.status),
     })),
+    playbook: user.playbookProgress
+      ? {
+          overallComplete: user.playbookProgress.overallComplete,
+          completedAt: user.playbookProgress.completedAt?.toISOString() ?? null,
+          coachNotes: user.playbookProgress.coachNotes,
+          percentComplete: Math.round(
+            (user.playbookProgress.chapters.filter((chapter) => chapter.completed).length /
+              user.playbookProgress.chapters.length) *
+              100,
+          ),
+          chapters: user.playbookProgress.chapters.map((chapter) => ({
+            chapterNumber: chapter.chapterNumber,
+            chapterTitle: chapter.chapterTitle,
+            completed: chapter.completed,
+            completedAt: chapter.completedAt?.toISOString() ?? null,
+            sharedReflections: chapter.reflections.map((reflection) => ({
+              questionNumber: reflection.questionNumber,
+              questionText: reflection.questionText,
+              answer: reflection.answer,
+              sharedAt: reflection.sharedAt?.toISOString() ?? null,
+            })),
+            sharedAt:
+              chapter.reflections.reduce<string | null>((latest, reflection) => {
+                const sharedAt = reflection.sharedAt?.toISOString() ?? null;
+                if (!sharedAt) {
+                  return latest;
+                }
+                if (!latest || sharedAt > latest) {
+                  return sharedAt;
+                }
+                return latest;
+              }, null),
+          })),
+        }
+      : null,
   };
 }
 

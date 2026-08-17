@@ -1020,3 +1020,37 @@ LCB Training`,
     }),
   });
 }
+
+export async function sendPlaybookReflectionSharedNotification(params: {
+  memberName: string;
+  memberEmail: string;
+  membershipTier: DatabaseTier;
+  chapterNumber: number;
+  chapterTitle: string;
+}) {
+  const transporter = createTransporter();
+  const adminUrl = `${getPublicAppUrl()}/admin`;
+
+  await transporter.sendMail({
+    from: process.env.NOTIFICATION_EMAIL,
+    to: getNotificationRecipient(),
+    subject: `${params.memberName} shared their Chapter ${params.chapterNumber} reflections with you`,
+    text: `Hey Coach Broc -- ${params.memberName} just shared their Chapter ${params.chapterNumber} reflections from the LCB Training Playbook. Log in to review them at ${adminUrl}`,
+    html: buildOnboardingEmailShell({
+      heading: "Playbook Reflections Shared",
+      intro: `Hey Coach Broc -- ${params.memberName} just shared Chapter ${params.chapterNumber} reflections.`,
+      bodyHtml: `<p style="margin: 0 0 12px;"><strong>Chapter:</strong> ${escapeHtml(
+        params.chapterTitle,
+      )}</p>
+        <p style="margin: 0 0 12px;"><strong>Member:</strong> ${escapeHtml(
+          params.memberName,
+        )} (${escapeHtml(params.memberEmail)})</p>
+        <p style="margin: 0 0 12px;"><strong>Membership Tier:</strong> ${escapeHtml(
+          getTierLabel(params.membershipTier),
+        )}</p>
+        <p style="margin: 0;"><a href="${escapeHtml(
+          adminUrl,
+        )}" target="_blank" rel="noopener noreferrer" style="color:#8fd7ff; text-decoration:underline;">Log in to review them at lcbtraining.com/admin</a></p>`,
+    }),
+  });
+}

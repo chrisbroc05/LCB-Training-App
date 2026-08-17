@@ -3,10 +3,11 @@
 import { useEffect, useMemo, useState } from "react";
 import GoalCheckinsPanel from "@/app/admin/GoalCheckinsPanel";
 import MembersPanel from "@/app/admin/MembersPanel";
+import PlaybookReflectionsPanel from "@/app/admin/PlaybookReflectionsPanel";
 import MemberProfileCard from "@/app/admin/MemberProfileCard";
 import { toVimeoEmbedUrl } from "@/lib/vimeo";
 
-type TabType = "swing" | "mental" | "goal" | "members";
+type TabType = "swing" | "mental" | "goal" | "members" | "playbook";
 
 type SubmissionListItem = {
   id: string;
@@ -95,7 +96,7 @@ export default function AdminPanel({
   const [editingCoachVimeoLink, setEditingCoachVimeoLink] = useState(true);
 
   useEffect(() => {
-    if (tab === "goal" || tab === "members") {
+    if (tab === "goal" || tab === "members" || tab === "playbook") {
       return;
     }
 
@@ -351,10 +352,23 @@ export default function AdminPanel({
         >
           Members
         </button>
+        <button
+          type="button"
+          onClick={() => setTab("playbook")}
+          className={`rounded-full px-3 py-1.5 text-xs font-semibold sm:px-4 sm:py-2 sm:text-sm ${
+            tab === "playbook"
+              ? "bg-[#22c55e] text-black"
+              : "border border-[#2b3650] text-zinc-200 hover:border-[#7f9434]"
+          }`}
+        >
+          Playbook Reflections
+        </button>
       </div>
 
       {tab === "members" ? (
         <MembersPanel />
+      ) : tab === "playbook" ? (
+        <PlaybookReflectionsPanel />
       ) : tab === "goal" ? (
         <GoalCheckinsPanel />
       ) : (

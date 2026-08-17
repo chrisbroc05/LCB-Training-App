@@ -47,6 +47,25 @@ type MemberDetail = MemberSummary & {
     createdAt: string;
     status: string;
   }>;
+  playbook: {
+    overallComplete: boolean;
+    completedAt: string | null;
+    coachNotes: string | null;
+    percentComplete: number;
+    chapters: Array<{
+      chapterNumber: number;
+      chapterTitle: string;
+      completed: boolean;
+      completedAt: string | null;
+      sharedAt: string | null;
+      sharedReflections: Array<{
+        questionNumber: number;
+        questionText: string;
+        answer: string | null;
+        sharedAt: string | null;
+      }>;
+    }>;
+  } | null;
 };
 
 type TierFilter = "ALL" | DatabaseTier;
@@ -108,6 +127,10 @@ export default function MembersPanel() {
   const [tierSuccess, setTierSuccess] = useState("");
   const [notesError, setNotesError] = useState("");
   const [notesSuccess, setNotesSuccess] = useState("");
+  const [playbookNotesDraft, setPlaybookNotesDraft] = useState("");
+  const [playbookNotesError, setPlaybookNotesError] = useState("");
+  const [playbookNotesSuccess, setPlaybookNotesSuccess] = useState("");
+  const [isSavingPlaybookNotes, setIsSavingPlaybookNotes] = useState(false);
   const [isSavingTier, setIsSavingTier] = useState(false);
   const [isSavingNotes, setIsSavingNotes] = useState(false);
   const [callDate, setCallDate] = useState("");
@@ -155,6 +178,7 @@ export default function MembersPanel() {
       setDetail(data.member);
       setTierDraft(data.member.membershipTier);
       setNotesDraft(data.member.adminNotes ?? "");
+      setPlaybookNotesDraft(data.member.playbook?.coachNotes ?? "");
       setTierError("");
       setTierSuccess("");
       setNotesError("");
@@ -231,6 +255,37 @@ export default function MembersPanel() {
       setTierError("Unable to update membership tier right now.");
     } finally {
       setIsSavingTier(false);
+    }
+  };
+
+  const handleSavePlaybookNotes = async () => {
+    if (!detail) {
+      return;
+    }
+
+    setIsSavingPlaybookNotes(true);
+    setPlaybookNotesError("");
+    setPlaybookNotesSuccess("");
+
+    try {
+      const response = await fetch(`/api/admin/members/${detail.id}/playbook-notes`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ coachNotes: playbookNotesDraft }),
+      });
+
+      const data = (await response.json().catch(() => ({}))) as { error?: string };
+
+      if (!response.ok) {
+        setPlaybookNotesError(data.error ?? "Unable to save playbook notes.");
+        return;
+      }
+
+      setPlaybookNotesSuccess("Playbook notes saved.");
+    } catch {
+      setPlaybookNotesError("Unable to save playbook notes.");
+    } finally {
+      setIsSavingPlaybookNotes(false);
     }
   };
 
@@ -617,6 +672,98 @@ export default function MembersPanel() {
                       </p>
                     </div>
                   ))}
+                </div>
+              )}
+            </div>
+
+            <div className="rounded-xl border border-[#2b3650] bg-[#0b1324]/70 p-4">
+              <p className="text-sm font-semibold text-zinc-100">Playbook</p>
+              {!detail.playbook ? (
+                <p className="mt-3 text-sm text-zinc-400">No playbook progress yet.</p>
+              ) : (
+                <div className="mt-3 space-y-4">
+                  <p className="text-sm text-zinc-300">
+                    <span className="font-semibold text-zinc-100">Overall completion:</span>{" "}
+                    {detail.playbook.percentComplete}%
+                  </p>
+                  <div className="space-y-2">
+                    {detail.playbook.chapters.map((chapter) => (
+                      <p key={chapter.chapterNumber} className="text-sm text-zinc-300">
+                        Chapter {chapter.chapterNumber}: {chapter.chapterTitle} --{" "}
+                        {chapter.completed ? "Complete" : "In progress"}
+                      </p>
+                    ))}
+                  </div>
+
+                  {detail.playbook.chapters.some(
+                    (chapter) => chapter.sharedReflections.length > 0,
+                  ) ? (
+                    <div className="space-y-4">
+                      <p className="text-sm font-semibold text-zinc-100">
+                        Shared Reflections With Coach Broc
+                      </p>
+                      {detail.playbook.chapters.map((chapter) => {
+                        if (chapter.sharedReflections.length === 0) {
+                          return null;
+                        }
+
+                        return (
+                          <div
+                            key={chapter.chapterNumber}
+                            className="rounded-lg border border-[#2b3650] bg-black/30 p-3"
+                          >
+                            <p className="text-sm font-semibold text-zinc-100">
+                              Chapter {chapter.chapterNumber}: {chapter.chapterTitle}
+                            </p>
+                            <p className="mt-1 text-xs text-zinc-500">
+                              Shared {formatDateTime(chapter.sharedAt)}
+                            </p>
+                            <div className="mt-3 space-y-3">
+                              {chapter.sharedReflections.map((reflection) => (
+                                <div key={reflection.questionNumber}>
+                                  <p className="text-xs font-medium text-[#9df3bd]">
+                                    {reflection.questionText}
+                                  </p>
+                                  <p className="mt-1 whitespace-pre-wrap text-sm text-zinc-200">
+                                    {reflection.answer?.trim() || "No answer provided."}
+                                  </p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-zinc-400">No shared reflections yet.</p>
+                  )}
+
+                  <div>
+                    <p className="text-sm font-semibold text-zinc-100">
+                      Private Playbook Coach Notes
+                    </p>
+                    <textarea
+                      value={playbookNotesDraft}
+                      onChange={(event) => setPlaybookNotesDraft(event.target.value)}
+                      rows={4}
+                      placeholder="Add private notes about this member's playbook reflections..."
+                      className="mt-3 w-full rounded-lg border border-[#2b3650] bg-black/40 px-3 py-2 text-sm text-zinc-100"
+                    />
+                    {playbookNotesError ? (
+                      <p className="mt-3 text-sm text-red-300">{playbookNotesError}</p>
+                    ) : null}
+                    {playbookNotesSuccess ? (
+                      <p className="mt-3 text-sm text-[#9df3bd]">{playbookNotesSuccess}</p>
+                    ) : null}
+                    <button
+                      type="button"
+                      onClick={handleSavePlaybookNotes}
+                      disabled={isSavingPlaybookNotes}
+                      className="mt-4 inline-flex rounded-full bg-[#22c55e] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[#35db72] disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {isSavingPlaybookNotes ? "Saving..." : "Save Playbook Notes"}
+                    </button>
+                  </div>
                 </div>
               )}
             </div>

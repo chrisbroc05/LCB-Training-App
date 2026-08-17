@@ -138,6 +138,13 @@ export function canAccessDrillLibrary(userTier: DatabaseTier) {
   return hasDatabaseTierAccess(userTier, "basic");
 }
 
+export function canAccessPlaybook(userTier: DatabaseTier) {
+  return hasDatabaseTierAccess(userTier, "basic");
+}
+
+export const playbookLockedMessage =
+  "Unlock the full playbook and all four chapters with a one-time Basic membership.";
+
 export function canAccessWorkoutPrograms(userTier: DatabaseTier) {
   return hasDatabaseTierAccess(userTier, "basic");
 }

@@ -7,11 +7,13 @@ import { formatDatabaseTierLabel, type DatabaseTier } from "@/lib/membership";
 type UpgradeActionsProps = {
   tier: Exclude<DatabaseTier, "FREE">;
   billingFrequency?: BillingFrequency;
+  buttonLabel?: string;
 };
 
 export default function UpgradeActions({
   tier,
   billingFrequency = "monthly",
+  buttonLabel,
 }: UpgradeActionsProps) {
   const tierLabel = formatDatabaseTierLabel(tier);
 
@@ -54,7 +56,7 @@ export default function UpgradeActions({
         disabled={isLoading}
         className="w-full rounded-full bg-[#22c55e] px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-[#35db72] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
       >
-        {isLoading ? "Redirecting..." : tier === "BASIC" ? "Get Basic -- $59 one-time" : `Upgrade to ${tierLabel}`}
+        {isLoading ? "Redirecting..." : buttonLabel ?? (tier === "BASIC" ? "Get Basic -- $59 one-time" : `Upgrade to ${tierLabel}`)}
       </button>
       {error && <p className="mt-2 text-sm text-red-300">{error}</p>}
     </div>

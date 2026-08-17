@@ -48,6 +48,11 @@ function buildTrainLinks(): NavLink[] {
       isActive: (path) => path.startsWith("/drill-library"),
     },
     {
+      label: "Playbook",
+      href: "/playbook",
+      isActive: (path) => path.startsWith("/playbook"),
+    },
+    {
       label: "Resources",
       href: "/resources",
       isActive: (path) => path.startsWith("/resources"),

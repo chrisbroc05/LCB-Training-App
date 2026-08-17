@@ -83,6 +83,7 @@ model User {
   mentalGameSubmissions  MentalGameSubmission[]
   swingAnalysisSubmissions SwingAnalysisSubmission[]
   goalCheckins           GoalCheckin[]
+  playbookProgress       PlaybookProgress?
 }
 
 model Account {
@@ -193,5 +194,48 @@ model GoalItem {
   createdAt    DateTime    @default(now())
 
   @@index([checkinId])
+}
+
+model PlaybookProgress {
+  id              Int               @id @default(autoincrement())
+  userId          String            @unique
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  overallComplete Boolean           @default(false)
+  completedAt     DateTime?
+  coachNotes      String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  chapters        PlaybookChapter[]
+}
+
+model PlaybookChapter {
+  id            Int                  @id @default(autoincrement())
+  progressId    Int
+  progress      PlaybookProgress     @relation(fields: [progressId], references: [id], onDelete: Cascade)
+  chapterNumber Int
+  chapterTitle  String
+  completed     Boolean              @default(false)
+  completedAt   DateTime?
+  reflections   PlaybookReflection[]
+
+  @@unique([progressId, chapterNumber])
+  @@index([progressId])
+}
+
+model PlaybookReflection {
+  id              Int             @id @default(autoincrement())
+  chapterId       Int
+  chapter         PlaybookChapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  questionNumber  Int
+  questionText    String
+  answer          String?
+  sharedWithCoach Boolean         @default(false)
+  sharedAt        DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@unique([chapterId, questionNumber])
+  @@index([chapterId])
+  @@index([sharedWithCoach, sharedAt])
 }
 
