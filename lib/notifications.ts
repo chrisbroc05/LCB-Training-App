@@ -1054,3 +1054,33 @@ export async function sendPlaybookReflectionSharedNotification(params: {
     }),
   });
 }
+
+export async function sendAccountDeletionRequestNotification(params: {
+  memberName: string;
+  memberEmail: string;
+  membershipTier: DatabaseTier;
+}) {
+  const transporter = createTransporter();
+  const adminUrl = `${getPublicAppUrl()}/admin`;
+
+  await transporter.sendMail({
+    from: process.env.NOTIFICATION_EMAIL,
+    to: getNotificationRecipient(),
+    subject: `${params.memberName} has requested account deletion`,
+    text: `${params.memberName} (${params.memberEmail}) has requested account deletion. Log in to review their account at ${adminUrl}`,
+    html: buildOnboardingEmailShell({
+      heading: "Account Deletion Request",
+      intro: `${params.memberName} has requested account deletion.`,
+      bodyHtml: `<p style="margin: 0 0 12px;"><strong>Member:</strong> ${escapeHtml(
+        params.memberName,
+      )} (${escapeHtml(params.memberEmail)})</p>
+        <p style="margin: 0 0 12px;"><strong>Membership Tier:</strong> ${escapeHtml(
+          getTierLabel(params.membershipTier),
+        )}</p>
+        <p style="margin: 0;">This is a support request. Handle account deletion manually after confirming with the member.</p>
+        <p style="margin: 12px 0 0;"><a href="${escapeHtml(
+          adminUrl,
+        )}" target="_blank" rel="noopener noreferrer" style="color:#8fd7ff; text-decoration:underline;">Log in to review at lcbtraining.com/admin</a></p>`,
+    }),
+  });
+}

@@ -2,12 +2,10 @@
 
 import { useEffect, useState } from "react";
 import SettingsCard from "@/app/settings/SettingsCard";
+import ToggleSwitch from "@/app/settings/ToggleSwitch";
 import {
-  settingsCheckboxLabelClass,
-  settingsCheckboxOptionClass,
   settingsErrorMessageClass,
   settingsMutedTextClass,
-  settingsPrimaryButtonClass,
   settingsSuccessMessageClass,
 } from "@/app/settings/settings-styles";
 
@@ -24,6 +22,33 @@ const defaultPreferences: NotificationPreferences = {
   notifyWeeklyCheckin: true,
   notifyAnnouncements: true,
 };
+
+const notificationOptions: Array<{
+  key: keyof NotificationPreferences;
+  label: string;
+  description: string;
+}> = [
+  {
+    key: "notifySubmissionResponse",
+    label: "Coach Broc responds to a coaching submission",
+    description: "Get notified when Coach Broc sends you feedback",
+  },
+  {
+    key: "notifyGoalResponse",
+    label: "Coach Broc responds to a goal check-in",
+    description: "Get notified when Coach Broc responds to your monthly goals",
+  },
+  {
+    key: "notifyWeeklyCheckin",
+    label: "Weekly accountability check-in emails",
+    description: "Receive your weekly check-in email from Coach Broc",
+  },
+  {
+    key: "notifyAnnouncements",
+    label: "Announcements about new content",
+    description: "Be the first to know when new videos and programs are added",
+  },
+];
 
 export default function NotificationPreferencesSection() {
   const [preferences, setPreferences] = useState<NotificationPreferences>(defaultPreferences);
@@ -52,27 +77,15 @@ export default function NotificationPreferencesSection() {
     void loadPreferences();
   }, []);
 
-  const togglePreference = (key: keyof NotificationPreferences) => {
-    setPreferences((previous) => ({
-      ...previous,
-      [key]: !previous[key],
-    }));
-    setSuccessMessage("");
-    setErrorMessage("");
-  };
-
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const savePreferences = async (nextPreferences: NotificationPreferences) => {
     setIsSaving(true);
     setErrorMessage("");
     setSuccessMessage("");
 
     const response = await fetch("/api/settings/notifications", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(preferences),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(nextPreferences),
     });
 
     setIsSaving(false);
@@ -84,7 +97,13 @@ export default function NotificationPreferencesSection() {
       return;
     }
 
-    setSuccessMessage(data.message ?? "Preferences saved");
+    setSuccessMessage("Preferences saved");
+  };
+
+  const handleToggle = (key: keyof NotificationPreferences, checked: boolean) => {
+    const nextPreferences = { ...preferences, [key]: checked };
+    setPreferences(nextPreferences);
+    void savePreferences(nextPreferences);
   };
 
   if (isLoading) {
@@ -96,66 +115,24 @@ export default function NotificationPreferencesSection() {
   }
 
   return (
-    <SettingsCard
-      title="Notification Preferences"
-      description="Choose which email updates you want to receive from LCB Training."
-    >
-      <form className="space-y-4" onSubmit={handleSubmit}>
-        <label className={settingsCheckboxOptionClass}>
-          <input
-            type="checkbox"
-            checked={preferences.notifySubmissionResponse}
-            onChange={() => togglePreference("notifySubmissionResponse")}
-            className="mt-1 h-4 w-4 accent-[#22c55e]"
+    <SettingsCard title="Notification Preferences">
+      <div>
+        {notificationOptions.map((option) => (
+          <ToggleSwitch
+            key={option.key}
+            label={option.label}
+            description={option.description}
+            checked={preferences[option.key]}
+            disabled={isSaving}
+            onChange={(checked) => handleToggle(option.key, checked)}
           />
-          <span className={settingsCheckboxLabelClass}>
-            Receive email when Coach Broc responds to a coaching submission
-          </span>
-        </label>
+        ))}
+      </div>
 
-        <label className={settingsCheckboxOptionClass}>
-          <input
-            type="checkbox"
-            checked={preferences.notifyGoalResponse}
-            onChange={() => togglePreference("notifyGoalResponse")}
-            className="mt-1 h-4 w-4 accent-[#22c55e]"
-          />
-          <span className={settingsCheckboxLabelClass}>
-            Receive email when Coach Broc responds to a goal check-in
-          </span>
-        </label>
-
-        <label className={settingsCheckboxOptionClass}>
-          <input
-            type="checkbox"
-            checked={preferences.notifyWeeklyCheckin}
-            onChange={() => togglePreference("notifyWeeklyCheckin")}
-            className="mt-1 h-4 w-4 accent-[#22c55e]"
-          />
-          <span className={settingsCheckboxLabelClass}>
-            Receive weekly accountability check-in emails from Coach Broc
-          </span>
-        </label>
-
-        <label className={settingsCheckboxOptionClass}>
-          <input
-            type="checkbox"
-            checked={preferences.notifyAnnouncements}
-            onChange={() => togglePreference("notifyAnnouncements")}
-            className="mt-1 h-4 w-4 accent-[#22c55e]"
-          />
-          <span className={settingsCheckboxLabelClass}>
-            Receive announcements about new content and features
-          </span>
-        </label>
-
-        {errorMessage ? <p className={settingsErrorMessageClass}>{errorMessage}</p> : null}
-        {successMessage ? <p className={settingsSuccessMessageClass}>{successMessage}</p> : null}
-
-        <button type="submit" disabled={isSaving} className={settingsPrimaryButtonClass}>
-          {isSaving ? "Saving..." : "Save Preferences"}
-        </button>
-      </form>
+      {errorMessage ? <p className={`mt-4 ${settingsErrorMessageClass}`}>{errorMessage}</p> : null}
+      {successMessage ? (
+        <p className={`mt-4 ${settingsSuccessMessageClass}`}>{successMessage}</p>
+      ) : null}
     </SettingsCard>
   );
 }

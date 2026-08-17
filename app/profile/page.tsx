@@ -1,37 +1,31 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
+import AccountSummaryCard from "@/app/profile/AccountSummaryCard";
+import AssessmentCallCard from "@/app/profile/AssessmentCallCard";
+import CoachingSubmissionHistory, {
+  type ProfileSubmission,
+} from "@/app/profile/CoachingSubmissionHistory";
+import PlayerProfileCard from "@/app/profile/PlayerProfileCard";
+import PlaybookProgressCard from "@/app/profile/PlaybookProgressCard";
+import ProfileGoalCheckinHistory from "@/app/profile/ProfileGoalCheckinHistory";
+import { profilePageStackClass, profilePageTitleClass } from "@/app/profile/profile-styles";
 import { authOptions } from "@/lib/auth";
+import {
+  ensureCoachingSubmissionPeriod,
+  getCoachingSubmissionAvailability,
+} from "@/lib/coaching-submissions";
+import {
+  canAccessCoachingNav,
+  canAccessPlaybook,
+  isLifetimeBasicMember,
+  type DatabaseTier,
+} from "@/lib/membership";
+import { ensurePlaybookProgress, serializePlaybookProgress } from "@/lib/playbook";
 import { prisma } from "@/lib/prisma";
-import { isManualMembershipMember, type DatabaseTier } from "@/lib/membership";
-import { stripe } from "@/lib/stripe";
-import { formatAssessmentCallDateTime } from "@/lib/assessment-call";
-import { toVimeoEmbedUrl } from "@/lib/vimeo";
 
 type ProfilePageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
-
-type SubmissionStatus = "PENDING" | "REVIEWING" | "COMPLETED";
-type SubmissionType = "SWING" | "MENTAL";
-
-type ProfileSubmission = {
-  id: string;
-  type: SubmissionType;
-  createdAt: Date;
-  status: SubmissionStatus;
-  playerName: string;
-  originalMessage: string;
-  originalVideoUrl: string | null;
-  memberVimeoLink: string | null;
-  responseText: string | null;
-  responseVideoUrl: string | null;
-  extraLines: string[];
-};
-
-function formatTierLabel(tier: DatabaseTier) {
-  return tier.charAt(0) + tier.slice(1).toLowerCase();
-}
 
 function formatDate(date: Date | null) {
   if (!date) {
@@ -45,126 +39,6 @@ function formatDate(date: Date | null) {
   }).format(date);
 }
 
-function formatDateTime(date: Date) {
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(date);
-}
-
-function canInlineSubmissionVideo(url: string) {
-  return (
-    url.startsWith("/api/submission-videos/") ||
-    (url.startsWith("http") && !url.includes("vimeo.com"))
-  );
-}
-
-function MemberSubmissionVideo({
-  memberVimeoLink,
-  originalVideoUrl,
-}: {
-  memberVimeoLink: string | null;
-  originalVideoUrl: string | null;
-}) {
-  if (memberVimeoLink) {
-    const embedUrl = toVimeoEmbedUrl(memberVimeoLink);
-    if (embedUrl) {
-      return (
-        <div className="relative w-full overflow-hidden rounded-xl border border-[#2b3650] pt-[56.25%]">
-          <iframe
-            src={embedUrl}
-            title="Original submission video"
-            className="absolute inset-0 h-full w-full"
-            allow="autoplay; fullscreen; picture-in-picture"
-            allowFullScreen
-          />
-        </div>
-      );
-    }
-  }
-
-  if (originalVideoUrl) {
-    const originalEmbedUrl = toVimeoEmbedUrl(originalVideoUrl);
-    if (originalEmbedUrl) {
-      return (
-        <div className="relative w-full overflow-hidden rounded-xl border border-[#2b3650] pt-[56.25%]">
-          <iframe
-            src={originalEmbedUrl}
-            title="Original submission video"
-            className="absolute inset-0 h-full w-full"
-            allow="autoplay; fullscreen; picture-in-picture"
-            allowFullScreen
-          />
-        </div>
-      );
-    }
-
-    if (canInlineSubmissionVideo(originalVideoUrl)) {
-      return (
-        <div className="overflow-hidden rounded-xl border border-[#2b3650]">
-          <video src={originalVideoUrl} controls className="w-full" />
-        </div>
-      );
-    }
-
-    return (
-      <a
-        href={originalVideoUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-sm text-[#8fd7ff] underline"
-      >
-        View Original Video
-      </a>
-    );
-  }
-
-  return (
-    <p className="text-sm text-zinc-400">Video unavailable -- please resubmit if needed</p>
-  );
-}
-
-async function getStripeBillingDate(params: {
-  stripeSubscriptionId: string | null;
-  stripeCustomerId: string | null;
-}) {
-  if (!params.stripeSubscriptionId) {
-    return null;
-  }
-
-  try {
-    const subscription = await stripe.subscriptions.retrieve(params.stripeSubscriptionId);
-
-    if (
-      params.stripeCustomerId &&
-      typeof subscription.customer === "string" &&
-      subscription.customer !== params.stripeCustomerId
-    ) {
-      return null;
-    }
-
-    const subscriptionWithPeriod = subscription as unknown as { current_period_end?: number };
-    if (typeof subscriptionWithPeriod.current_period_end === "number") {
-      return new Date(subscriptionWithPeriod.current_period_end * 1000);
-    }
-
-    const itemPeriodEnds = subscription.items.data
-      .map((item) => item.current_period_end)
-      .filter((value): value is number => typeof value === "number");
-
-    if (!itemPeriodEnds.length) {
-      return null;
-    }
-
-    return new Date(Math.max(...itemPeriodEnds) * 1000);
-  } catch {
-    return null;
-  }
-}
-
 export default async function ProfilePage({ searchParams }: ProfilePageProps) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
@@ -176,16 +50,15 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
     typeof resolvedSearchParams.type === "string" ? resolvedSearchParams.type.toUpperCase() : "";
   const selectedIdParam = typeof resolvedSearchParams.id === "string" ? resolvedSearchParams.id : "";
 
-  const [user, swingSubmissions, mentalSubmissions] = await Promise.all([
+  const [user, swingSubmissions, mentalSubmissions, coachingFields] = await Promise.all([
     prisma.user.findUnique({
       where: { id: session.user.id },
       select: {
         name: true,
         email: true,
         membershipTier: true,
-        stripeCustomerId: true,
+        signupDate: true,
         stripeSubscriptionId: true,
-        subscriptionCurrentPeriodEnd: true,
         assessmentCallBooked: true,
         assessmentCallDate: true,
       },
@@ -198,12 +71,14 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
       where: { userId: session.user.id },
       orderBy: { createdAt: "desc" },
     }),
+    ensureCoachingSubmissionPeriod(session.user.id),
   ]);
 
   if (!user) {
     redirect("/auth");
   }
 
+  const membershipTier = user.membershipTier as DatabaseTier;
   const merged: ProfileSubmission[] = [
     ...swingSubmissions.map((item) => ({
       id: item.id,
@@ -239,185 +114,58 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
         item.id === selectedIdParam && item.type === (selectedTypeParam === "MENTAL" ? "MENTAL" : "SWING"),
     ) ?? merged[0];
 
-  const nextBillingDate =
-    (await getStripeBillingDate({
-      stripeSubscriptionId: user.stripeSubscriptionId,
-      stripeCustomerId: user.stripeCustomerId,
-    })) ?? user.subscriptionCurrentPeriodEnd;
-  const isManualMembership = isManualMembershipMember(
-    user.membershipTier,
-    user.stripeSubscriptionId,
-  );
+  const availability = coachingFields
+    ? getCoachingSubmissionAvailability(coachingFields)
+    : null;
+  const submissionsRemaining =
+    membershipTier === "MEMORABLE" || membershipTier === "ELITE"
+      ? (availability?.remaining ?? 0)
+      : null;
+  const showLifetimeAccess = isLifetimeBasicMember(membershipTier, user.stripeSubscriptionId);
+
+  let playbookProgress = null;
+  if (canAccessPlaybook(membershipTier)) {
+    const progress = await ensurePlaybookProgress(session.user.id);
+    playbookProgress = serializePlaybookProgress(progress);
+  }
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 sm:py-14 md:py-20">
-      <section className="rounded-3xl border border-[#18243a] bg-[#0b1324]/80 p-5 sm:p-8">
-        <h1 className="text-2xl font-semibold leading-tight text-zinc-100 sm:text-3xl">My Profile</h1>
-        <p className="mt-2 text-zinc-300">
-          Review your account details and track your coaching submissions in one place.
-        </p>
-      </section>
+    <div className="mx-auto w-full max-w-4xl px-4 py-10 sm:px-6 sm:py-14 md:py-20">
+      <div className={profilePageStackClass}>
+        <section className="rounded-xl border border-[#18243a] bg-[#0b1324]/80 p-6">
+          <h1 className={profilePageTitleClass}>My Profile</h1>
+          <p className="mt-2 text-sm text-zinc-300">
+            Your personal dashboard for account details, training progress, and coaching history.
+          </p>
+        </section>
 
-      <section className="mt-8 grid gap-4 sm:gap-5 md:grid-cols-2">
-        <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
-          <h2 className="text-lg font-semibold text-zinc-100">Account Info</h2>
-          <p className="mt-3 text-sm text-zinc-300">Name: {user.name ?? "Not provided"}</p>
-          <p className="mt-1 text-sm text-zinc-300">Email: {user.email}</p>
-          {user.membershipTier === "FREE" ? (
-            user.assessmentCallBooked && user.assessmentCallDate ? (
-              <div className="mt-3 space-y-2">
-                <p className="text-sm text-zinc-300">
-                  Assessment Call Scheduled:{" "}
-                  <span className="font-medium text-[#9df3bd]">
-                    {formatAssessmentCallDateTime(user.assessmentCallDate)}
-                  </span>
-                </p>
-                <p className="text-xs text-zinc-400">
-                  Google Meet link will be in your Calendly confirmation email
-                </p>
-                <p className="text-xs text-zinc-400">
-                  Need to reschedule or cancel? Use the link provided in your Calendly confirmation
-                  email
-                </p>
-              </div>
-            ) : (
-              <p className="mt-3 text-sm text-zinc-300">Assessment Call: Not yet scheduled</p>
-            )
-          ) : null}
-          <div className="mt-4 inline-flex rounded-full border border-[#22c55e]/40 bg-[#22c55e]/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#9df3bd]">
-            {formatTierLabel(user.membershipTier)}
-          </div>
-        </article>
+        <AccountSummaryCard
+          name={user.name}
+          email={user.email}
+          membershipTier={membershipTier}
+          memberSince={formatDate(user.signupDate)}
+          submissionsRemaining={submissionsRemaining}
+          showLifetimeAccess={showLifetimeAccess}
+        />
 
-        <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
-          <h2 className="text-lg font-semibold text-zinc-100">Membership Details</h2>
-          {isManualMembership ? (
-            <p className="mt-3 text-sm text-zinc-300">Billing: Manual</p>
-          ) : (
-            <p className="mt-3 text-sm text-zinc-300">Next billing date: {formatDate(nextBillingDate)}</p>
-          )}
-          <Link
-            href="/settings"
-            className="mt-4 inline-flex rounded-full border border-[#2b3650] bg-black/40 px-4 py-2 text-sm font-semibold text-zinc-200 transition hover:border-[#7f9434] hover:text-[#98b144]"
-          >
-            Manage Membership in Settings
-          </Link>
-        </article>
-      </section>
+        <PlayerProfileCard />
 
-      <section className="mt-8 grid gap-4 sm:gap-5 lg:grid-cols-[1fr_1.2fr]">
-        <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
-          <h2 className="text-lg font-semibold text-zinc-100">My Submissions</h2>
-          {merged.length === 0 ? (
-            <p className="mt-4 text-sm text-zinc-400">You have not submitted any requests yet.</p>
-          ) : (
-            <div className="mt-4 space-y-3">
-              {merged.map((submission) => {
-                const statusLabel =
-                  submission.status === "COMPLETED" ? "Responded" : "Pending Review";
-                return (
-                  <Link
-                    key={`${submission.type}-${submission.id}`}
-                    href={`/profile?type=${submission.type.toLowerCase()}&id=${submission.id}`}
-                    className={`block rounded-xl border p-4 transition ${
-                      selectedSubmission?.id === submission.id
-                        ? "border-[#22c55e]/60 bg-[#22c55e]/10"
-                        : "border-[#2b3650] bg-black/30 hover:border-[#3c4a68]"
-                    }`}
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p className="text-sm font-semibold text-zinc-100">
-                        Coaching Submissions
-                      </p>
-                      <span
-                        className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${
-                          submission.status === "COMPLETED"
-                            ? "bg-[#22c55e]/20 text-[#9df3bd]"
-                            : "bg-[#24314a] text-zinc-200"
-                        }`}
-                      >
-                        {statusLabel}
-                      </span>
-                    </div>
-                    <p className="mt-2 text-xs text-zinc-400">{formatDateTime(submission.createdAt)}</p>
-                  </Link>
-                );
-              })}
-            </div>
-          )}
-        </article>
+        {playbookProgress ? <PlaybookProgressCard progress={playbookProgress} /> : null}
 
-        <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
-          <h2 className="text-lg font-semibold text-zinc-100">Submission Details</h2>
-          {!selectedSubmission ? (
-            <p className="mt-4 text-sm text-zinc-400">Select a submission to view details.</p>
-          ) : (
-            <div className="mt-4 space-y-5">
-              <div className="rounded-xl border border-[#2b3650] bg-black/30 p-4">
-                <p className="text-sm font-semibold text-zinc-100">Original Submission</p>
-                <p className="mt-2 text-sm text-zinc-300">Player: {selectedSubmission.playerName}</p>
-                {selectedSubmission.extraLines.map((line) => (
-                  <p key={line} className="mt-1 text-sm text-zinc-300">
-                    {line}
-                  </p>
-                ))}
-                <p className="mt-3 whitespace-pre-wrap text-sm text-zinc-300">
-                  {selectedSubmission.originalMessage}
-                </p>
-                <div className="mt-4 space-y-2">
-                  <MemberSubmissionVideo
-                    memberVimeoLink={selectedSubmission.memberVimeoLink}
-                    originalVideoUrl={selectedSubmission.originalVideoUrl}
-                  />
-                </div>
-              </div>
+        <CoachingSubmissionHistory
+          submissions={merged}
+          selectedSubmission={selectedSubmission ?? null}
+        />
 
-              <div className="rounded-xl border border-[#2b3650] bg-black/30 p-4">
-                <p className="text-sm font-semibold text-zinc-100">Coach Chris Response</p>
-                {selectedSubmission.status === "COMPLETED" ? (
-                  <div className="mt-3 space-y-3">
-                    {selectedSubmission.responseText && (
-                      <p className="whitespace-pre-wrap text-sm text-zinc-300">
-                        {selectedSubmission.responseText}
-                      </p>
-                    )}
-                    {selectedSubmission.responseVideoUrl && (
-                      <>
-                        <a
-                          href={selectedSubmission.responseVideoUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm text-[#8fd7ff] underline"
-                        >
-                          View Coach Video Response
-                        </a>
-                        {toVimeoEmbedUrl(selectedSubmission.responseVideoUrl) && (
-                          <div className="relative w-full overflow-hidden rounded-xl border border-[#2b3650] pt-[56.25%]">
-                            <iframe
-                              src={toVimeoEmbedUrl(selectedSubmission.responseVideoUrl) ?? undefined}
-                              title="Coach response video"
-                              className="absolute inset-0 h-full w-full"
-                              allow="autoplay; fullscreen; picture-in-picture"
-                              allowFullScreen
-                            />
-                          </div>
-                        )}
-                      </>
-                    )}
-                    {!selectedSubmission.responseText && !selectedSubmission.responseVideoUrl && (
-                      <p className="text-sm text-zinc-400">A response was marked complete with no message attached.</p>
-                    )}
-                  </div>
-                ) : (
-                  <p className="mt-3 text-sm text-zinc-300">
-                    Coach Chris typically responds within 48 hours.
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
-        </article>
-      </section>
+        <ProfileGoalCheckinHistory hasAccess={canAccessCoachingNav(membershipTier)} />
+
+        {membershipTier === "FREE" ? (
+          <AssessmentCallCard
+            assessmentCallBooked={user.assessmentCallBooked}
+            assessmentCallDate={user.assessmentCallDate}
+          />
+        ) : null}
+      </div>
     </div>
   );
 }
