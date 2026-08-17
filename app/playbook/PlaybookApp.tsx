@@ -119,30 +119,75 @@ export default function PlaybookApp() {
   const [isCompleting, setIsCompleting] = useState(false);
   const [isSharingAll, setIsSharingAll] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [loadTimedOut, setLoadTimedOut] = useState(false);
 
   const loadProgress = useCallback(async () => {
-    const response = await fetch("/api/playbook/progress");
-    if (!response.ok) {
+    try {
+      const response = await fetch("/api/playbook/progress");
+      console.log("Playbook API status:", response.status);
+
+      if (!response.ok) {
+        const errorBody = (await response.json().catch(() => ({}))) as { error?: string };
+        setProgress(null);
+        setError(errorBody.error ?? "Unable to load playbook progress.");
+        return null;
+      }
+
+      const data = (await response.json()) as {
+        progress?: PlaybookProgress;
+        error?: string;
+      };
+      console.log("Playbook API data:", data);
+
+      const nextProgress = data.progress ?? null;
+      if (!nextProgress || !Array.isArray(nextProgress.chapters)) {
+        setProgress(null);
+        setError("Playbook progress data was missing or invalid.");
+        return null;
+      }
+
+      setError(null);
+      setProgress(nextProgress);
+      if (nextProgress.overallComplete) {
+        setView((current) => (current === "chapter" ? current : "complete"));
+      }
+      return nextProgress;
+    } catch (loadError) {
+      console.error("Playbook progress fetch failed:", loadError);
       setProgress(null);
+      setError("Something went wrong loading your playbook. Please refresh the page.");
       return null;
     }
-
-    const data = (await response.json()) as { progress: PlaybookProgress };
-    setProgress(data.progress);
-    if (data.progress.overallComplete) {
-      setView((current) => (current === "chapter" ? current : "complete"));
-    }
-    return data.progress;
   }, []);
 
   useEffect(() => {
+    let isActive = true;
+    const timeoutId = window.setTimeout(() => {
+      if (isActive) {
+        setLoadTimedOut(true);
+        setLoading(false);
+        setError("Something went wrong. Please refresh the page.");
+      }
+    }, 8000);
+
     const init = async () => {
       setLoading(true);
+      setLoadTimedOut(false);
+      setError(null);
       await loadProgress();
-      setLoading(false);
+      if (isActive) {
+        setLoading(false);
+        window.clearTimeout(timeoutId);
+      }
     };
 
     void init();
+
+    return () => {
+      isActive = false;
+      window.clearTimeout(timeoutId);
+    };
   }, [loadProgress]);
 
   const chapterContent = useMemo(
@@ -332,6 +377,25 @@ export default function PlaybookApp() {
     }
   };
 
+  if (error) {
+    return (
+      <div className="mx-auto w-full max-w-5xl px-4 py-20 text-center">
+        <p className="text-zinc-300">
+          {loadTimedOut
+            ? "Something went wrong. Please refresh the page."
+            : "Something went wrong loading your playbook. Please refresh the page."}
+        </p>
+        <button
+          type="button"
+          onClick={() => window.location.reload()}
+          className="mt-4 inline-flex rounded-full bg-[#22c55e] px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-[#35db72]"
+        >
+          Refresh
+        </button>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="mx-auto w-full max-w-5xl px-4 py-20 text-center text-zinc-400">
@@ -342,8 +406,15 @@ export default function PlaybookApp() {
 
   if (!progress) {
     return (
-      <div className="mx-auto w-full max-w-5xl px-4 py-20 text-center text-zinc-400">
-        Unable to load playbook progress.
+      <div className="mx-auto w-full max-w-5xl px-4 py-20 text-center">
+        <p className="text-zinc-300">Unable to load playbook progress.</p>
+        <button
+          type="button"
+          onClick={() => window.location.reload()}
+          className="mt-4 inline-flex rounded-full bg-[#22c55e] px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-[#35db72]"
+        >
+          Refresh
+        </button>
       </div>
     );
   }
