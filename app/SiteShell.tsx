@@ -1,13 +1,14 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import LandingBrandBar from "@/app/LandingBrandBar";
+import LandingSwingBanner from "@/app/LandingSwingBanner";
 
 type SiteShellProps = {
   children: React.ReactNode;
   header: React.ReactNode;
   footer: React.ReactNode;
   adminToggle: React.ReactNode;
+  isLoggedIn: boolean;
 };
 
 export default function SiteShell({
@@ -15,6 +16,7 @@ export default function SiteShell({
   header,
   footer,
   adminToggle,
+  isLoggedIn,
 }: SiteShellProps) {
   const pathname = usePathname();
   const isStandaloneLanding = pathname.startsWith("/details");
@@ -27,7 +29,7 @@ export default function SiteShell({
   return (
     <>
       <div className="sticky top-0 z-30">
-        {isHomePage ? <LandingBrandBar /> : null}
+        {isHomePage ? <LandingSwingBanner isLoggedIn={isLoggedIn} /> : null}
         {header}
       </div>
       <main className="flex-1">{children}</main>

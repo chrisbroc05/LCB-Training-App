@@ -1,4 +1,5 @@
 import Link from "next/link";
+import FreeMemberWhileYouWaitCards from "@/app/components/FreeMemberWhileYouWaitCards";
 import { memorableUpgradePitch } from "@/lib/membership";
 import CoachingSubmissionQuota from "@/app/CoachingSubmissionQuota";
 import type { CoachingSubmissionAvailability } from "@/lib/coaching-submissions";
@@ -75,18 +76,18 @@ export default function DashboardCoachingCard({
               {!freeSubmissionUsed ? "Available" : "Used"}
             </span>
           </div>
-          {coachingAvailability ? (
+          {coachingAvailability && !freeSubmissionUsed ? (
             <div className="mt-3">
               <CoachingSubmissionQuota
                 availability={coachingAvailability}
                 membershipTier={membershipTier}
               />
             </div>
-          ) : (
+          ) : !freeSubmissionUsed ? (
             <p className="mt-3 text-sm text-zinc-300">
               Free members can submit one coaching submission.
             </p>
-          )}
+          ) : null}
           {!freeSubmissionUsed ? (
             <Link
               href="/coaching-submissions"
@@ -95,12 +96,21 @@ export default function DashboardCoachingCard({
               Submit Coaching Submission
             </Link>
           ) : (
-            <Link
-              href="/upgrade?reason=free-submission-used"
-              className="mt-4 inline-flex rounded-full border border-[#2b3650] bg-black/40 px-4 py-2 text-sm font-semibold text-zinc-300 transition hover:border-[#7f9434] hover:text-[#98b144]"
-            >
-              Upgrade to continue
-            </Link>
+            <>
+              <p className="mt-3 text-sm text-zinc-300">
+                Your submission has been sent. Coach Broc will be in touch within 48 hours.
+              </p>
+              <p className="mt-3 text-sm text-zinc-300">
+                Want unlimited coaching submissions and personal feedback every month? Upgrade to
+                Memorable.
+              </p>
+              <div className="mt-6 space-y-4">
+                <p className="text-sm font-medium text-zinc-200">
+                  While you wait -- here is what else is waiting for you.
+                </p>
+                <FreeMemberWhileYouWaitCards usePlaybookCheckout />
+              </div>
+            </>
           )}
         </article>
 

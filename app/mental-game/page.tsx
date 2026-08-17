@@ -82,7 +82,7 @@ export default async function MentalGamePage() {
         </p>
 
         <CoachingSubmissionQuota availability={availability} membershipTier={membershipTier} />
-        <MentalGameForm />
+        <MentalGameForm isFreeMember={membershipTier === "FREE"} />
       </section>
     </div>
   );

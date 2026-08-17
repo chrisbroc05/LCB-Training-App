@@ -83,7 +83,7 @@ export default async function SwingAnalysisPage() {
         </p>
 
         <CoachingSubmissionQuota availability={availability} membershipTier={membershipTier} />
-        <SwingAnalysisForm />
+        <SwingAnalysisForm isFreeMember={membershipTier === "FREE"} />
       </section>
     </div>
   );

@@ -15,18 +15,20 @@ export default function LandingSwingBanner({ isLoggedIn }: LandingSwingBannerPro
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    const dismissed = window.localStorage.getItem(LANDING_SWING_BANNER_DISMISSED_KEY);
+    const dismissed = window.sessionStorage.getItem(LANDING_SWING_BANNER_DISMISSED_KEY);
     setIsVisible(dismissed !== "1");
   }, []);
 
-  if (isLoggedIn || !isVisible) {
+  if (!isVisible) {
     return null;
   }
 
   function dismissBanner() {
-    window.localStorage.setItem(LANDING_SWING_BANNER_DISMISSED_KEY, "1");
+    window.sessionStorage.setItem(LANDING_SWING_BANNER_DISMISSED_KEY, "1");
     setIsVisible(false);
   }
+
+  const submitHref = isLoggedIn ? "/coaching-submissions" : FREE_SWING_AUTH_URL;
 
   return (
     <div className="bg-[#2D6A4F] text-white">
@@ -41,7 +43,7 @@ export default function LandingSwingBanner({ isLoggedIn }: LandingSwingBannerPro
           </p>
           <div className="flex items-center justify-between gap-3 sm:justify-end">
             <Link
-              href={FREE_SWING_AUTH_URL}
+              href={submitHref}
               className="inline-flex items-center justify-center rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#2D6A4F] transition hover:bg-zinc-100"
             >
               Submit My Swing

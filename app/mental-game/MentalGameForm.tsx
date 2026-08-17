@@ -1,12 +1,16 @@
 "use client";
 
-import Link from "next/link";
+import CoachingSubmissionConfirmation from "@/app/components/CoachingSubmissionConfirmation";
 import { useState } from "react";
 
 type ResponsePreference = "VIDEO_RESPONSE" | "WRITTEN_RESPONSE";
 const MAX_VIDEO_UPLOAD_BYTES = 100 * 1024 * 1024;
 
-export default function MentalGameForm() {
+type MentalGameFormProps = {
+  isFreeMember?: boolean;
+};
+
+export default function MentalGameForm({ isFreeMember = false }: MentalGameFormProps) {
   const [playerName, setPlayerName] = useState("");
   const [playerAge, setPlayerAge] = useState("");
   const [topic, setTopic] = useState("SLUMP");
@@ -71,7 +75,8 @@ export default function MentalGameForm() {
   };
 
   return (
-    <form className="mt-6 space-y-5 sm:mt-8" onSubmit={handleSubmit}>
+    <>
+      <form className="mt-6 space-y-5 sm:mt-8" onSubmit={handleSubmit}>
       <label className="block">
         <span className="text-sm text-zinc-300">Player name</span>
         <input
@@ -193,30 +198,25 @@ export default function MentalGameForm() {
       >
         {isSubmitting ? "Submitting..." : "Submit Coaching Submission"}
       </button>
+      </form>
 
-      {showConfirmationModal && (
+      {showConfirmationModal ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
-          <div className="w-[94vw] max-w-2xl rounded-2xl border border-[#2b3650] bg-[#0b1324] p-5 shadow-2xl sm:p-6 md:p-8">
-            <h2 className="text-xl font-semibold text-zinc-100 sm:text-2xl">Submission Received</h2>
-            <div className="mt-4 rounded-xl border border-[#2b3650] bg-black/40 p-4">
-              <p className="text-sm font-semibold text-zinc-200">Coaching Submission Summary</p>
-              <p className="mt-2 text-sm text-zinc-300">
-                <span className="font-semibold text-zinc-100">Topic:</span> {submittedTopic}
-              </p>
-              <p className="mt-2 whitespace-pre-wrap text-sm text-zinc-300">{submittedMessage}</p>
-            </div>
-            <p className="mt-4 text-sm text-[#9df3bd]">You will hear back within 48 hours.</p>
-            <div className="mt-6 flex justify-end">
-              <Link
-                href="/dashboard"
-                className="rounded-full bg-[#22c55e] px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-[#35db72]"
-              >
-                Back to Dashboard
-              </Link>
-            </div>
-          </div>
+          <CoachingSubmissionConfirmation
+            isFreeMember={isFreeMember}
+            summary={
+              <div className="rounded-xl border border-[#2b3650] bg-black/40 p-4">
+                <p className="text-sm font-semibold text-zinc-200">Coaching Submission Summary</p>
+                <p className="mt-2 text-sm text-zinc-300">
+                  <span className="font-semibold text-zinc-100">Topic:</span> {submittedTopic}
+                </p>
+                <p className="mt-2 whitespace-pre-wrap text-sm text-zinc-300">{submittedMessage}</p>
+              </div>
+            }
+            onClose={() => setShowConfirmationModal(false)}
+          />
         </div>
-      )}
-    </form>
+      ) : null}
+    </>
   );
 }
