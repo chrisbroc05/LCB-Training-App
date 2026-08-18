@@ -23,6 +23,8 @@ import {
   isFreeSwingAuthFlow,
   markPendingCoachingWelcome,
 } from "@/lib/free-swing-flow";
+import { isPlaybookSignupFlow } from "@/lib/auth-flow";
+import PlaybookSignupFlow from "@/app/auth/PlaybookSignupFlow";
 
 type AuthMode = "login" | "signup";
 
@@ -46,8 +48,13 @@ function AuthContent() {
   const [signupError, setSignupError] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
   const [signupLoading, setSignupLoading] = useState(false);
+  const [resumeLoading, setResumeLoading] = useState(false);
+  const [resumeError, setResumeError] = useState("");
   const [sessionChecked, setSessionChecked] = useState(false);
   const [hasActiveSession, setHasActiveSession] = useState(false);
+  const [pendingCheckoutTier, setPendingCheckoutTier] = useState<
+    DatabaseTier | null
+  >(null);
 
   const tierQueryParam = searchParams.get("tier");
   const normalizedTierQuery = tierQueryParam?.toLowerCase();
@@ -57,38 +64,77 @@ function AuthContent() {
   const modeQuery = searchParams.get("mode")?.toLowerCase();
   const shouldStartOnSignup = modeQuery === "signup" || Boolean(preselectedTierFromQuery);
   const [authMode, setAuthMode] = useState<AuthMode>(shouldStartOnSignup ? "signup" : "login");
-  const selectedTier: TierKey = manuallySelectedTier ?? preselectedTierFromQuery ?? "free";
-  const selectedDatabaseTier: DatabaseTier = keyToDatabaseTier[selectedTier];
   const checkoutStatus = searchParams.get("checkout");
   const billingQueryParam = searchParams.get("billing");
   const redirectParam = searchParams.get("redirect");
   const isFreeSwingFlow = isFreeSwingAuthFlow(tierQueryParam, redirectParam);
+  const isPlaybookFlow = isPlaybookSignupFlow(tierQueryParam, redirectParam);
   const postAuthPath = getPostAuthRedirectPath(redirectParam);
+  const selectedTier: TierKey =
+    manuallySelectedTier ??
+    preselectedTierFromQuery ??
+    (isPlaybookFlow ? "basic" : "free");
+  const selectedDatabaseTier: DatabaseTier = keyToDatabaseTier[selectedTier];
   const [billingFrequency, setBillingFrequency] = useState<BillingFrequency>(
     parseBillingFrequency(billingQueryParam),
   );
 
   useEffect(() => {
-    if (!isFreeSwingFlow) {
+    if (!isFreeSwingFlow && !isPlaybookFlow) {
       setSessionChecked(true);
       return;
     }
 
     fetch("/api/auth/session")
       .then((response) => response.json())
-      .then((session: { user?: { email?: string | null } }) => {
-        if (session?.user) {
-          setHasActiveSession(true);
-          window.location.replace(postAuthPath);
-          return;
-        }
+      .then(
+        (session: {
+          user?: {
+            email?: string | null;
+            membershipTier?: DatabaseTier;
+            pendingCheckoutTier?: DatabaseTier | null;
+          };
+        }) => {
+          if (session?.user) {
+            const sessionPendingCheckout = session.user.pendingCheckoutTier ?? null;
+            setPendingCheckoutTier(sessionPendingCheckout);
 
-        setSessionChecked(true);
-      })
+            if (isFreeSwingFlow) {
+              setHasActiveSession(true);
+              window.location.replace(postAuthPath);
+              return;
+            }
+
+            if (
+              isPlaybookFlow &&
+              sessionPendingCheckout &&
+              session.user.membershipTier === "FREE"
+            ) {
+              setHasActiveSession(true);
+              setSessionChecked(true);
+              return;
+            }
+
+            if (isPlaybookFlow && session.user.membershipTier === "FREE") {
+              setHasActiveSession(true);
+              window.location.replace("/upgrade");
+              return;
+            }
+
+            if (isPlaybookFlow && session.user.membershipTier !== "FREE") {
+              setHasActiveSession(true);
+              window.location.replace("/dashboard");
+              return;
+            }
+          }
+
+          setSessionChecked(true);
+        },
+      )
       .catch(() => {
         setSessionChecked(true);
       });
-  }, [isFreeSwingFlow, postAuthPath]);
+  }, [isFreeSwingFlow, isPlaybookFlow, postAuthPath]);
 
   if (isFreeSwingFlow && (!sessionChecked || hasActiveSession)) {
     return (
@@ -99,6 +145,22 @@ function AuthContent() {
       </div>
     );
   }
+
+  if (isPlaybookFlow && !sessionChecked) {
+    return (
+      <div className="mx-auto flex w-full max-w-6xl justify-center px-4 py-10 sm:px-6 sm:py-14 md:py-20">
+        <section className="w-full max-w-lg rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-8 text-center">
+          <p className="text-sm text-zinc-300">Loading your account...</p>
+        </section>
+      </div>
+    );
+  }
+
+  const isLoggedInWithPendingCheckout = Boolean(
+    isPlaybookFlow && hasActiveSession && pendingCheckoutTier,
+  );
+  const resumeCheckoutTier: DatabaseTier =
+    pendingCheckoutTier ?? selectedDatabaseTier;
 
   const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -173,6 +235,7 @@ function AuthContent() {
         email: signupEmail,
         password: signupPassword,
         selectedMembershipTier: selectedDatabaseTier,
+        signupSource: isPlaybookFlow ? "playbook" : "standard",
       }),
     });
 
@@ -215,6 +278,7 @@ function AuthContent() {
       body: JSON.stringify({
         membershipTier: selectedDatabaseTier,
         billingFrequency,
+        checkoutSource: isPlaybookFlow ? "playbook" : "standard",
       }),
     });
 
@@ -236,6 +300,57 @@ function AuthContent() {
     window.location.href = checkoutData.url;
   };
 
+  const handleResumeCheckout = async () => {
+    setResumeLoading(true);
+    setResumeError("");
+
+    const checkoutResponse = await fetch("/api/stripe/checkout", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        membershipTier: resumeCheckoutTier,
+        billingFrequency,
+        checkoutSource: isPlaybookFlow ? "playbook" : "standard",
+      }),
+    });
+
+    if (!checkoutResponse.ok) {
+      const data = (await checkoutResponse.json().catch(() => ({}))) as { error?: string };
+      setResumeLoading(false);
+      setResumeError(data.error ?? "Unable to start checkout. Please try again.");
+      return;
+    }
+
+    const checkoutData = (await checkoutResponse.json()) as { url?: string };
+    if (!checkoutData.url) {
+      setResumeLoading(false);
+      setResumeError("Unable to start checkout. Please try again.");
+      return;
+    }
+
+    setResumeLoading(false);
+    window.location.href = checkoutData.url;
+  };
+
+  const handleStartFreeLoggedIn = async () => {
+    setResumeLoading(true);
+    setResumeError("");
+
+    const response = await fetch("/api/auth/clear-pending-checkout", {
+      method: "POST",
+    });
+
+    if (!response.ok) {
+      setResumeLoading(false);
+      setResumeError("Unable to switch to free access right now. Please try again.");
+      return;
+    }
+
+    window.location.href = "/dashboard";
+  };
+
   return (
     <div className="mx-auto flex w-full max-w-6xl justify-center px-4 py-10 sm:px-6 sm:py-14 md:py-20">
       <section className="w-full max-w-5xl rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-5 sm:p-7 md:p-9">
@@ -244,11 +359,11 @@ function AuthContent() {
             <BrandLogo className="object-contain" />
           </div>
         </div>
-      {checkoutStatus === "cancelled" && (
+      {checkoutStatus === "cancelled" && !isPlaybookFlow ? (
         <section className="mb-6 rounded-xl border border-yellow-500/40 bg-yellow-500/10 px-5 py-4 text-sm text-yellow-100">
           Checkout was cancelled. Your account is ready, and you can choose a plan again any time.
         </section>
-      )}
+      ) : null}
 
         {authMode === "login" && !isFreeSwingFlow ? (
           <article className="mx-auto w-full max-w-md rounded-2xl border border-[#18243a] bg-black/25 p-5 sm:p-7">
@@ -424,6 +539,54 @@ function AuthContent() {
               </button>
             </p>
           </article>
+        ) : isPlaybookFlow && authMode === "login" ? (
+          <article className="mx-auto w-full max-w-md rounded-2xl border border-[#18243a] bg-black/25 p-5 sm:p-7">
+            <h1 className="text-center text-2xl font-semibold text-zinc-100 sm:text-3xl">Welcome back</h1>
+            <p className="mt-2 text-center text-sm text-zinc-400">
+              Log in to continue unlocking The Next Level Playbook.
+            </p>
+            {freeSwingLoginForm}
+            <p className="mt-5 text-center text-sm text-zinc-300">
+              Don&apos;t have an account?{" "}
+              <button
+                type="button"
+                onClick={() => {
+                  setLoginError("");
+                  setSignupError("");
+                  setAuthMode("signup");
+                }}
+                className="underline-offset-2 transition hover:text-[#98b144] hover:underline"
+              >
+                Sign up
+              </button>
+            </p>
+          </article>
+        ) : isPlaybookFlow ? (
+          <PlaybookSignupFlow
+            selectedTier={selectedTier}
+            onSelectTier={setManuallySelectedTier}
+            signupName={signupName}
+            onSignupNameChange={setSignupName}
+            signupEmail={signupEmail}
+            onSignupEmailChange={setSignupEmail}
+            signupPassword={signupPassword}
+            onSignupPasswordChange={setSignupPassword}
+            signupError={signupError}
+            signupLoading={signupLoading}
+            resumeLoading={resumeLoading}
+            resumeError={resumeError}
+            checkoutStatus={checkoutStatus}
+            isLoggedInWithPendingCheckout={isLoggedInWithPendingCheckout}
+            pendingCheckoutTier={pendingCheckoutTier}
+            onSignupSubmit={handleSignup}
+            onResumeCheckout={handleResumeCheckout}
+            onStartFreeLoggedIn={handleStartFreeLoggedIn}
+            onSwitchToLogin={() => {
+              setLoginError("");
+              setSignupError("");
+              setAuthMode("login");
+            }}
+          />
         ) : (
           <article className="mx-auto w-full max-w-5xl rounded-2xl border border-[#18243a] bg-black/25 p-5 sm:p-7">
             <h1 className="text-center text-2xl font-semibold text-zinc-100 sm:text-3xl">Create Account</h1>

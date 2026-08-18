@@ -59,9 +59,16 @@ export const authOptions: NextAuthOptions = {
       if (token.sub) {
         const dbUser = await prisma.user.findUnique({
           where: { id: token.sub },
-          select: { membershipTier: true },
+          select: { membershipTier: true, pendingCheckoutTier: true },
         });
         token.membershipTier = dbUser?.membershipTier;
+        const pendingCheckoutTier = dbUser?.pendingCheckoutTier;
+        token.pendingCheckoutTier =
+          pendingCheckoutTier === "BASIC" ||
+          pendingCheckoutTier === "MEMORABLE" ||
+          pendingCheckoutTier === "ELITE"
+            ? pendingCheckoutTier
+            : null;
       }
 
       return token;
@@ -71,6 +78,8 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.sub;
         session.user.membershipTier =
           (token.membershipTier as "FREE" | "BASIC" | "MEMORABLE" | "ELITE" | undefined) ?? "FREE";
+        session.user.pendingCheckoutTier =
+          (token.pendingCheckoutTier as "BASIC" | "MEMORABLE" | "ELITE" | null | undefined) ?? null;
       }
       return session;
     },

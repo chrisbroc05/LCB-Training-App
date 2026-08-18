@@ -5,6 +5,7 @@ declare module "next-auth" {
     user: {
       id: string;
       membershipTier: "FREE" | "BASIC" | "MEMORABLE" | "ELITE";
+      pendingCheckoutTier: "BASIC" | "MEMORABLE" | "ELITE" | null;
     } & DefaultSession["user"];
   }
 
@@ -16,5 +17,6 @@ declare module "next-auth" {
 declare module "next-auth/jwt" {
   interface JWT {
     membershipTier?: "FREE" | "BASIC" | "MEMORABLE" | "ELITE";
+    pendingCheckoutTier?: "BASIC" | "MEMORABLE" | "ELITE" | null;
   }
 }

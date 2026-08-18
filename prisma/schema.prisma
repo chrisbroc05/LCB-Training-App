@@ -57,6 +57,7 @@ model User {
   assessmentCallBooked             Boolean      @default(false)
   assessmentCallDate               DateTime?
   membershipTier         MembershipTier         @default(FREE)
+  pendingCheckoutTier    MembershipTier?
   subscriptionStatus     SubscriptionStatus     @default(ACTIVE)
   stripeCustomerId       String?                @unique
   stripeSubscriptionId   String?                @unique

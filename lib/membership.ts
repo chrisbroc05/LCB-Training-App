@@ -1,6 +1,12 @@
 export type TierKey = "free" | "basic" | "memorable" | "elite";
 export type DatabaseTier = "FREE" | "BASIC" | "MEMORABLE" | "ELITE";
 
+export const memorableSignupDescription =
+  "Everything in the Playbook plus 2 personal coaching submissions per month with 48-hour feedback, monthly goal setting, weekly accountability check-ins, and direct access to Coach Broc.";
+
+export const eliteSignupDescription =
+  "Everything in Memorable plus 4 submissions with rollover up to 8, priority 24-hour response, personalized monthly development plan, and monthly group coaching call.";
+
 export type MembershipTier = {
   key: TierKey;
   name: string;
@@ -27,42 +33,34 @@ export const membershipTiers: MembershipTier[] = [
     name: "Basic",
     priceLabel: "$59 one-time",
     summary:
-      "Lifetime access to the full LCB Training content library with drills, workouts, and bonus resources.",
+      "The Next Level Playbook plus the full drill library, workout programs, and bonus resources.",
     features: [
-      "Lifetime access to the full LCB Training content library",
-      "Full hitting, fielding, and mindset video drill library built around real game situations",
-      "8 downloadable workout programs covering strength, speed and agility, mobility, rotational power",
-      "Bonus resources including the Pre-Game Warmup Routine, Nutrition Guide, Mental Game Workbook, and Parent Guide",
-      "New content added regularly",
+      "The Next Level Playbook -- 4 interactive chapters with reflection questions",
+      "Full hitting, fielding, and mindset video drill library",
+      "8 downloadable workout programs",
+      "Pre-Game Warmup Routine, Nutrition Guide, Mental Game Workbook, and Parent Guide",
+      "Downloadable PDF of your completed playbook with your personal answers",
+      "Lifetime access -- pay once, never pay again",
     ],
   },
   {
     key: "memorable",
     name: "Memorable",
     priceLabel: "$149 / month",
-    summary:
-      "Everything in Basic plus real 1-on-1 coaching, monthly submissions, and accountability support.",
+    summary: memorableSignupDescription,
     features: [
-      "Everything in Basic plus real 1-on-1 coaching",
-      "2 coaching submissions per month where Coach Broc sends back detailed personal feedback within 48 hours",
-      "Monthly goal setting check-in to map out what you are working toward",
-      "Weekly accountability check-ins",
-      "Direct access to Coach Broc between submissions",
+      "Everything in the Playbook plus 2 personal coaching submissions per month with 48-hour feedback",
+      "Monthly goal setting, weekly accountability check-ins, and direct access to Coach Broc",
     ],
   },
   {
     key: "elite",
     name: "Elite",
     priceLabel: "$249 / month",
-    summary:
-      "Everything in Memorable plus priority response, personalized plans, group coaching, and recruiting guidance.",
+    summary: eliteSignupDescription,
     features: [
-      "Everything in Memorable plus the highest level of personal coaching available",
-      "4 coaching submissions per month with rollover up to 8",
-      "Priority 24-hour response from Coach Broc",
-      "Personalized monthly development plan from Coach Broc",
-      "Monthly group coaching call including live film breakdown and Q and A",
-      "College recruiting guidance and the College Baseball Recruiting Guide",
+      "Everything in Memorable plus 4 submissions with rollover up to 8",
+      "Priority 24-hour response, personalized monthly development plan, and monthly group coaching call",
     ],
   },
 ];

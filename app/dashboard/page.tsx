@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import DashboardCoachingCard from "@/app/dashboard/DashboardCoachingCard";
 import DashboardMembershipCard from "@/app/dashboard/DashboardMembershipCard";
+import DashboardPlaybookWelcomeCard from "@/app/dashboard/DashboardPlaybookWelcomeCard";
 import DashboardUpgradeSection from "@/app/dashboard/DashboardUpgradeSection";
 import MonthlyGoalProgressCard from "@/app/dashboard/MonthlyGoalProgressCard";
 import {
@@ -15,6 +16,7 @@ import { getCurrentMonthGoalCheckin } from "@/lib/goal-check-in";
 import {
   canAccessCoachingNav,
   canAccessDrillLibrary,
+  canAccessPlaybook,
   canAccessWorkoutPrograms,
   databaseTierToKey,
   isManualMembershipMember,
@@ -58,6 +60,14 @@ function getQuickLinks(membershipTier: DatabaseTier, hasFreeSubmissionRemaining:
       href: "/drill-library",
       label: "Drill Library",
       description: "Hitting, fielding, and mindset drill videos.",
+    });
+  }
+
+  if (canAccessPlaybook(membershipTier)) {
+    links.unshift({
+      href: "/playbook",
+      label: "The Next Level Playbook",
+      description: "Work through all four interactive chapters.",
     });
   }
 
@@ -136,6 +146,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       coachingSubmissionPeriod: true,
       eliteRolloverCredits: true,
       membershipTier: true,
+      pendingCheckoutTier: true,
       subscriptionStatus: true,
       subscriptionCurrentPeriodEnd: true,
       subscriptionCancelAtPeriodEnd: true,
@@ -147,6 +158,10 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
   if (!userRecord) {
     redirect("/auth");
+  }
+
+  if (userRecord.pendingCheckoutTier && userRecord.membershipTier === "FREE") {
+    redirect("/auth?tier=basic&checkout=pending");
   }
 
   const membershipTier = userRecord.membershipTier as DatabaseTier;
@@ -255,20 +270,35 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 sm:py-14 md:py-20">
       <section className="rounded-3xl border border-[#18243a] bg-[#0b1324]/80 p-5 sm:p-8">
-        <h1 className="text-2xl font-semibold leading-tight text-zinc-100 sm:text-3xl">
-          Hey {firstName}, welcome back
-        </h1>
-        <p className="mt-2 text-zinc-300">
-          Your LCB Training home base. Jump into the tools included with your{" "}
-          <span className="font-semibold text-[#98b144]">{currentTier.name}</span> membership.
-        </p>
+        {membershipTier === "BASIC" ? (
+          <>
+            <h1 className="text-2xl font-semibold leading-tight text-zinc-100 sm:text-3xl">
+              Welcome to The Next Level Playbook. You are all set.
+            </h1>
+            <p className="mt-2 text-zinc-300">
+              Your playbook, drill library, and resources are ready whenever you are.
+            </p>
+          </>
+        ) : (
+          <>
+            <h1 className="text-2xl font-semibold leading-tight text-zinc-100 sm:text-3xl">
+              Hey {firstName}, welcome back
+            </h1>
+            <p className="mt-2 text-zinc-300">
+              Your LCB Training home base. Jump into the tools included with your{" "}
+              <span className="font-semibold text-[#98b144]">{currentTier.name}</span> membership.
+            </p>
+          </>
+        )}
       </section>
 
-      {checkoutStatus === "success" && (
+      {membershipTier === "BASIC" ? <DashboardPlaybookWelcomeCard /> : null}
+
+      {checkoutStatus === "success" && membershipTier !== "BASIC" ? (
         <section className="mt-6 rounded-xl border border-[#22c55e]/40 bg-[#22c55e]/10 px-5 py-4 text-sm text-[#bafccf]">
           Payment successful. Your membership is active and your dashboard access has been updated.
         </section>
-      )}
+      ) : null}
 
       {(upgradeStatus === "memorable-required" || upgradeStatus === "pro-required") && (
         <section className="mt-6 rounded-xl border border-yellow-500/40 bg-yellow-500/10 px-5 py-4 text-sm text-yellow-100">

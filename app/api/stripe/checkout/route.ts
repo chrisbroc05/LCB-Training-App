@@ -8,6 +8,7 @@ import { isDatabaseTier } from "@/lib/membership";
 type CheckoutBody = {
   membershipTier?: string;
   billingFrequency?: string;
+  checkoutSource?: string;
 };
 
 function getBaseUrl(request: Request) {
@@ -47,6 +48,8 @@ export async function POST(request: Request) {
     }
 
     const baseUrl = getBaseUrl(request);
+    const checkoutSource = body.checkoutSource?.toLowerCase() ?? "standard";
+    const cancelTierParam = checkoutSource === "playbook" ? "basic" : membershipTier.toLowerCase();
 
     if (membershipTier === "BASIC") {
       const priceId = getBasicOneTimePriceId();
@@ -55,7 +58,7 @@ export async function POST(request: Request) {
         customer_email: session.user.email,
         line_items: [{ price: priceId, quantity: 1 }],
         success_url: `${baseUrl}/dashboard?checkout=success`,
-        cancel_url: `${baseUrl}/auth?checkout=cancelled`,
+        cancel_url: `${baseUrl}/auth?tier=${cancelTierParam}&checkout=cancelled`,
         client_reference_id: session.user.id,
         metadata: {
           userId: session.user.id,
@@ -79,7 +82,7 @@ export async function POST(request: Request) {
       customer_email: session.user.email,
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${baseUrl}/dashboard?checkout=success`,
-      cancel_url: `${baseUrl}/auth?checkout=cancelled`,
+      cancel_url: `${baseUrl}/auth?tier=${cancelTierParam}&checkout=cancelled`,
       client_reference_id: session.user.id,
       metadata: {
         userId: session.user.id,

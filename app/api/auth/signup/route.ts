@@ -9,6 +9,7 @@ type SignupBody = {
   email?: string;
   password?: string;
   selectedMembershipTier?: string;
+  signupSource?: string;
 };
 
 export async function POST(request: Request) {
@@ -18,6 +19,7 @@ export async function POST(request: Request) {
     const email = body.email?.trim().toLowerCase();
     const password = body.password ?? "";
     const selectedMembershipTier = body.selectedMembershipTier?.toUpperCase() ?? "FREE";
+    const signupSource = body.signupSource?.toLowerCase() ?? "standard";
     const membershipTierForNotification: DatabaseTier = isDatabaseTier(selectedMembershipTier)
       ? selectedMembershipTier
       : "FREE";
@@ -53,6 +55,10 @@ export async function POST(request: Request) {
         email,
         password: hashedPassword,
         membershipTier: "FREE",
+        pendingCheckoutTier:
+          signupSource === "playbook" && membershipTierForNotification !== "FREE"
+            ? membershipTierForNotification
+            : null,
         signupDate: new Date(),
       },
       select: {

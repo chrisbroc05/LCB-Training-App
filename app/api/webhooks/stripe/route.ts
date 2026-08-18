@@ -85,6 +85,7 @@ export async function POST(request: Request) {
           where: { id: userId },
           data: {
             membershipTier: "BASIC",
+            pendingCheckoutTier: null,
             subscriptionStatus: "NONE",
             stripeCustomerId,
             stripeSubscriptionId: null,
@@ -98,6 +99,7 @@ export async function POST(request: Request) {
           where: { id: userId },
           data: {
             membershipTier,
+            pendingCheckoutTier: null,
             subscriptionStatus: "ACTIVE",
             stripeCustomerId,
             stripeSubscriptionId,
