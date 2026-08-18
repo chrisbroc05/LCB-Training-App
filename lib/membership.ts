@@ -2,7 +2,7 @@ export type TierKey = "free" | "basic" | "memorable" | "elite";
 export type DatabaseTier = "FREE" | "BASIC" | "MEMORABLE" | "ELITE";
 
 export const memorableSignupDescription =
-  "Everything in the Playbook plus 2 personal coaching submissions per month with 48-hour feedback, monthly goal setting, weekly accountability check-ins, and direct access to Coach Broc.";
+  "Everything in the Playbook plus 2 personal coaching submissions per month with 48-hour feedback, weekly goal setting check-ins, weekly accountability check-ins, and direct access to Coach Broc.";
 
 export const eliteSignupDescription =
   "Everything in Memorable plus 4 submissions with rollover up to 8, priority 24-hour response, personalized monthly development plan, and monthly group coaching call.";
@@ -50,7 +50,7 @@ export const membershipTiers: MembershipTier[] = [
     summary: memorableSignupDescription,
     features: [
       "Everything in the Playbook plus 2 personal coaching submissions per month with 48-hour feedback",
-      "Monthly goal setting, weekly accountability check-ins, and direct access to Coach Broc",
+      "Weekly goal setting check-ins, weekly accountability check-ins, and direct access to Coach Broc",
     ],
   },
   {

@@ -11,11 +11,7 @@ export const PLAYBOOK_INCLUDED_ITEMS = [
 ] as const;
 
 export function isPlaybookSignupFlow(tier: string | null, redirect: string | null) {
-  if (isFreeSwingAuthFlow(tier, redirect)) {
-    return false;
-  }
-
-  return tier?.toLowerCase() === "basic";
+  return !isFreeSwingAuthFlow(tier, redirect);
 }
 
 export function getPlaybookSignupButtonLabel(selectedTier: TierKey) {
@@ -24,14 +20,14 @@ export function getPlaybookSignupButtonLabel(selectedTier: TierKey) {
   }
 
   if (selectedTier === "memorable") {
-    return "Create Account and Start Memorable Coaching";
+    return "Create Account and Add Coaching -- $149/month";
   }
 
   if (selectedTier === "elite") {
-    return "Create Account and Start Elite Coaching";
+    return "Create Account and Go Elite -- $249/month";
   }
 
-  return "Create Account and Unlock The Playbook";
+  return "Create Account and Unlock The Playbook -- $59";
 }
 
 export function getPlaybookResumeCheckoutButtonLabel(pendingTier: DatabaseTier) {
