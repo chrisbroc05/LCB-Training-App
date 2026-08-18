@@ -33,7 +33,7 @@ export default function PlaybookPurchaseCta({
   return (
     <div className={`flex w-full flex-col ${alignmentClass} ${className}`.trim()}>
       {useCheckout ? (
-        <div className="w-full [&_button]:h-12 [&_button]:w-full [&_button]:px-6 [&_button]:text-sm [&_button]:font-semibold [&_button]:text-white sm:[&_button]:w-auto">
+        <div className="w-full [&_button]:h-12 [&_button]:w-full [&_button]:px-6 [&_button]:text-sm [&_button]:font-semibold [&_button]:text-[#0A1628] sm:[&_button]:w-auto">
           <UpgradeActions tier="BASIC" buttonLabel={PLAYBOOK_PURCHASE_BUTTON_LABEL} />
         </div>
       ) : (

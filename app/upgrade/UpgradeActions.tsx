@@ -57,7 +57,7 @@ export default function UpgradeActions({
         disabled={isLoading}
         className={`w-full rounded-full bg-[#22c55e] text-sm font-semibold transition hover:bg-[#35db72] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto ${
           tier === "BASIC"
-            ? "inline-flex h-12 items-center justify-center px-6 text-white"
+            ? "inline-flex h-12 items-center justify-center px-6 text-[#0A1628]"
             : "px-5 py-2.5 text-black"
         }`}
       >

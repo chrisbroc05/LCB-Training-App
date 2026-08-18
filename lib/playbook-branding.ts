@@ -10,10 +10,9 @@ export const PLAYBOOK_PURCHASE_PRICE_SUBTITLE = "One-time payment. Lifetime acce
 export const PLAYBOOK_PDF_FILENAME = "Next_Level_Playbook.pdf";
 
 export const playbookPrimaryButtonClassName =
-  "inline-flex h-12 w-full items-center justify-center rounded-full bg-[#22c55e] px-6 text-sm font-semibold text-white transition hover:bg-[#35db72] sm:w-auto";
+  "inline-flex h-12 w-full items-center justify-center rounded-full bg-[#22c55e] px-6 text-sm font-semibold text-[#0A1628] transition hover:bg-[#35db72] sm:w-auto";
 
-export const playbookHeroPrimaryButtonClassName =
-  "inline-flex h-12 w-full items-center justify-center rounded-full bg-[#22c55e] px-6 text-sm font-semibold text-[#0A1628] transition hover:bg-[#35db72]";
+export const playbookHeroPrimaryButtonClassName = playbookPrimaryButtonClassName;
 
 export const playbookSecondaryButtonClassName =
   "inline-flex h-12 w-full items-center justify-center rounded-full border border-[#52B788] bg-transparent px-6 text-sm font-semibold text-[#52B788] transition hover:bg-[#52B788]/10 sm:w-auto";
