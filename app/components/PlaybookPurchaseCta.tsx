@@ -16,6 +16,7 @@ type PlaybookPurchaseCtaProps = {
   buttonClassName?: string;
   subtitleClassName?: string;
   showSubtitle?: boolean;
+  className?: string;
 };
 
 export default function PlaybookPurchaseCta({
@@ -25,11 +26,12 @@ export default function PlaybookPurchaseCta({
   buttonClassName = playbookPrimaryButtonClassName,
   subtitleClassName = playbookPurchaseSubtitleClassName,
   showSubtitle = true,
+  className = "",
 }: PlaybookPurchaseCtaProps) {
   const alignmentClass = align === "center" ? "items-center text-center" : "items-start text-left";
 
   return (
-    <div className={`flex flex-col ${alignmentClass}`}>
+    <div className={`flex w-full flex-col ${alignmentClass} ${className}`.trim()}>
       {useCheckout ? (
         <div className="w-full [&_button]:h-12 [&_button]:w-full [&_button]:px-6 [&_button]:text-sm [&_button]:font-semibold [&_button]:text-white sm:[&_button]:w-auto">
           <UpgradeActions tier="BASIC" buttonLabel={PLAYBOOK_PURCHASE_BUTTON_LABEL} />

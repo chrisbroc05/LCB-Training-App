@@ -212,27 +212,31 @@ export default function Home() {
   return (
     <>
       <section className="w-full border-b border-[#18243a] bg-gradient-to-br from-[#0A1628] via-[#0f1d34] to-[#050b16]">
-        <div className="mx-auto w-full max-w-4xl px-4 py-8 text-center sm:px-6 sm:py-10 md:py-12">
-          <h1 className="mx-auto text-3xl font-bold tracking-tight text-zinc-100 sm:text-4xl md:text-5xl">
-            {PLAYBOOK_NAME}
-          </h1>
-          <p className="mx-auto mt-4 max-w-3xl text-base leading-relaxed text-zinc-300 sm:text-lg">
-            Everything I know about this game in one place. The mental game. The physical game. The
-            preparation. The life lessons. Written from 12+ years of player development and my own
-            experience as a player.
-          </p>
-          <div className="mt-6">
-            <div className="flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4">
-              <PlaybookPurchaseCta
-                showSubtitle={false}
-                align="center"
-                buttonClassName={playbookHeroPrimaryButtonClassName}
-              />
-              <a href="#playbook-chapters" className={playbookHeroSecondaryButtonClassName}>
-                See What Is Inside
-              </a>
+        <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 sm:py-10 md:py-12">
+          <div className="flex flex-col gap-6 md:flex-row md:items-center md:gap-10 lg:gap-12">
+            <div className="md:w-[60%]">
+              <h1 className="text-left text-3xl font-bold tracking-tight text-zinc-100 sm:text-4xl md:text-5xl">
+                {PLAYBOOK_NAME}
+              </h1>
+              <p className="mt-4 max-w-3xl text-left text-base leading-relaxed text-zinc-300 sm:text-lg">
+                Everything I know about this game in one place. The mental game. The physical game. The
+                preparation. The life lessons. Written from 12+ years of player development and my own
+                experience as a player.
+              </p>
             </div>
-            <p className="mt-3 text-center text-xs text-zinc-400">{PLAYBOOK_PURCHASE_PRICE_SUBTITLE}</p>
+
+            <div className="md:w-[40%]">
+              <div className="flex w-full flex-col gap-3">
+                <PlaybookPurchaseCta
+                  showSubtitle={false}
+                  buttonClassName={playbookHeroPrimaryButtonClassName}
+                />
+                <a href="#playbook-chapters" className={playbookHeroSecondaryButtonClassName}>
+                  See What Is Inside
+                </a>
+              </div>
+              <p className="mt-3 text-center text-xs text-zinc-400">{PLAYBOOK_PURCHASE_PRICE_SUBTITLE}</p>
+            </div>
           </div>
         </div>
       </section>
