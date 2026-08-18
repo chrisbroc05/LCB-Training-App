@@ -99,9 +99,6 @@ export default async function RootLayout({
                   />
                 </div>
               </div>
-              <div className="hidden w-full bg-[#0A1628] py-2 md:block">
-                <p className="text-center text-sm italic text-[#52B788]">Work Hard. Be Memorable.</p>
-              </div>
             </header>
           }
           adminToggle={<AdminViewToggle isAdmin={hasAdminAccess} />}
