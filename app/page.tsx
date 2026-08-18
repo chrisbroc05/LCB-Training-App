@@ -4,8 +4,8 @@ import PlaybookPurchaseCta from "@/app/components/PlaybookPurchaseCta";
 import {
   PLAYBOOK_NAME,
   PLAYBOOK_PURCHASE_PRICE_SUBTITLE,
-  playbookPrimaryButtonClassName,
-  playbookSecondaryButtonClassName,
+  playbookHeroPrimaryButtonClassName,
+  playbookHeroSecondaryButtonClassName,
 } from "@/lib/playbook-branding";
 
 const playbookChapters = [
@@ -212,19 +212,23 @@ export default function Home() {
   return (
     <>
       <section className="w-full border-b border-[#18243a] bg-gradient-to-br from-[#0A1628] via-[#0f1d34] to-[#050b16]">
-        <div className="mx-auto w-full max-w-6xl px-4 pb-8 pt-12 sm:px-6 sm:pb-10 sm:pt-14 md:pb-12 md:pt-16">
-          <h1 className="max-w-4xl text-3xl font-bold tracking-tight text-zinc-100 sm:text-4xl md:text-6xl">
+        <div className="mx-auto w-full max-w-4xl px-4 py-8 text-center sm:px-6 sm:py-10 md:py-12">
+          <h1 className="mx-auto text-3xl font-bold tracking-tight text-zinc-100 sm:text-4xl md:text-5xl">
             {PLAYBOOK_NAME}
           </h1>
-          <p className="mt-5 max-w-3xl text-base leading-relaxed text-zinc-300 sm:text-lg md:text-xl">
+          <p className="mx-auto mt-4 max-w-3xl text-base leading-relaxed text-zinc-300 sm:text-lg">
             Everything I know about this game in one place. The mental game. The physical game. The
             preparation. The life lessons. Written from 12+ years of player development and my own
             experience as a player.
           </p>
-          <div className="mt-8">
-            <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:gap-4">
-              <PlaybookPurchaseCta showSubtitle={false} buttonClassName={playbookPrimaryButtonClassName} />
-              <a href="#playbook-chapters" className={playbookSecondaryButtonClassName}>
+          <div className="mt-6">
+            <div className="flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4">
+              <PlaybookPurchaseCta
+                showSubtitle={false}
+                align="center"
+                buttonClassName={playbookHeroPrimaryButtonClassName}
+              />
+              <a href="#playbook-chapters" className={playbookHeroSecondaryButtonClassName}>
                 See What Is Inside
               </a>
             </div>
