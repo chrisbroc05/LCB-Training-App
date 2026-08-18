@@ -1,7 +1,12 @@
 import Link from "next/link";
 import CoachBioSection from "@/components/CoachBioSection";
 import PlaybookPurchaseCta from "@/app/components/PlaybookPurchaseCta";
-import { PLAYBOOK_NAME } from "@/lib/playbook-branding";
+import {
+  PLAYBOOK_NAME,
+  PLAYBOOK_PURCHASE_PRICE_SUBTITLE,
+  playbookPrimaryButtonClassName,
+  playbookSecondaryButtonClassName,
+} from "@/lib/playbook-branding";
 
 const playbookChapters = [
   {
@@ -216,19 +221,19 @@ export default function Home() {
             preparation. The life lessons. Written from 12+ years of player development and my own
             experience as a player.
           </p>
-          <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-start">
-            <PlaybookPurchaseCta />
-            <a
-              href="#playbook-chapters"
-              className="inline-flex w-full items-center justify-center rounded-full border border-[#52B788] px-6 py-3 text-center font-semibold text-[#52B788] transition hover:bg-[#52B788]/10 sm:w-auto"
-            >
-              See What Is Inside
-            </a>
+          <div className="mt-8">
+            <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:gap-4">
+              <PlaybookPurchaseCta showSubtitle={false} buttonClassName={playbookPrimaryButtonClassName} />
+              <a href="#playbook-chapters" className={playbookSecondaryButtonClassName}>
+                See What Is Inside
+              </a>
+            </div>
+            <p className="mt-3 text-center text-xs text-zinc-400">{PLAYBOOK_PURCHASE_PRICE_SUBTITLE}</p>
           </div>
         </div>
       </section>
 
-      <div className="mx-auto w-full max-w-6xl px-4 pb-10 pt-4 sm:px-6 sm:pb-14 sm:pt-6 md:pb-20 md:pt-8">
+      <div className="mx-auto w-full max-w-6xl px-4 pb-10 pt-10 sm:px-6 sm:pb-14 sm:pt-12 md:pb-20 md:pt-14">
         <CoachBioSection />
 
         <section id="playbook-chapters" className="mt-14 scroll-mt-24">
@@ -332,11 +337,7 @@ export default function Home() {
             One time. Lifetime access. Everything Coach Broc knows about this game.
           </p>
           <div className="mt-8">
-            <PlaybookPurchaseCta
-              align="center"
-              buttonClassName="inline-flex w-full items-center justify-center rounded-full bg-[#22c55e] px-8 py-3.5 text-base font-semibold text-black transition hover:bg-[#35db72] sm:w-auto sm:px-10 sm:py-4 sm:text-lg"
-              subtitleClassName="mt-3 text-sm text-zinc-400"
-            />
+            <PlaybookPurchaseCta align="center" />
           </div>
           <p className="mt-5 text-sm text-zinc-400">
             Not ready to commit? Start free and get one personal coaching submission from Coach

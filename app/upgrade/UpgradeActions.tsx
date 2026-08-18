@@ -55,7 +55,11 @@ export default function UpgradeActions({
         type="button"
         onClick={startCheckout}
         disabled={isLoading}
-        className="w-full rounded-full bg-[#22c55e] px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-[#35db72] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+        className={`w-full rounded-full bg-[#22c55e] text-sm font-semibold transition hover:bg-[#35db72] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto ${
+          tier === "BASIC"
+            ? "inline-flex h-12 items-center justify-center px-6 text-white"
+            : "px-5 py-2.5 text-black"
+        }`}
       >
         {isLoading
           ? "Redirecting..."

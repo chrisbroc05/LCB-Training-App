@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import PlaybookPurchaseCta from "@/app/components/PlaybookPurchaseCta";
-import { PLAYBOOK_NAME } from "@/lib/playbook-branding";
+import { PLAYBOOK_NAME, playbookPrimaryButtonClassName } from "@/lib/playbook-branding";
 
 type FreeMemberWhileYouWaitCardsProps = {
   coachingHref?: string;
@@ -27,7 +27,7 @@ export default function FreeMemberWhileYouWaitCards({
           <PlaybookPurchaseCta
             href={playbookHref}
             useCheckout={usePlaybookCheckout}
-            buttonClassName="inline-flex w-full items-center justify-center rounded-full bg-[#22c55e] px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-[#35db72] sm:w-auto"
+            buttonClassName={playbookPrimaryButtonClassName}
           />
         </div>
       </article>
