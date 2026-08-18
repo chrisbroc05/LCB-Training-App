@@ -31,7 +31,7 @@ export async function requirePlaybookMember() {
   if (!canAccessPlaybook(user.membershipTier)) {
     return {
       error: NextResponse.json(
-        { error: "The Playbook is available on Basic, Memorable, and Elite memberships." },
+        { error: "The Next Level Playbook is available on Basic, Memorable, and Elite memberships." },
         { status: 403 },
       ),
     };

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import ProfileCard from "@/app/profile/ProfileCard";
+import { PLAYBOOK_PDF_FILENAME } from "@/lib/playbook-branding";
 import {
   profileBodyTextClass,
   profileMutedTextClass,
@@ -81,7 +82,7 @@ export default function PlaybookProgressCard({ progress }: PlaybookProgressCardP
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = "LCB_Training_Playbook.pdf";
+    link.download = PLAYBOOK_PDF_FILENAME;
     document.body.appendChild(link);
     link.click();
     link.remove();

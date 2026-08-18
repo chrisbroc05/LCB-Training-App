@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requirePlaybookMember } from "@/lib/playbook-api";
 import { ensurePlaybookProgress } from "@/lib/playbook";
 import { generatePlaybookMemberPdf } from "@/lib/playbook-pdf";
+import { PLAYBOOK_PDF_FILENAME } from "@/lib/playbook-branding";
 
 export async function GET() {
   const access = await requirePlaybookMember();
@@ -28,7 +29,7 @@ export async function GET() {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": 'attachment; filename="LCB_Training_Playbook.pdf"',
+        "Content-Disposition": `attachment; filename="${PLAYBOOK_PDF_FILENAME}"`,
         "Cache-Control": "no-store",
       },
     });

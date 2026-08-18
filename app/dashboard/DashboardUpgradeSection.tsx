@@ -6,6 +6,7 @@ import AnnualSavingsBadge from "@/app/AnnualSavingsBadge";
 import OneTimePaymentBadge from "@/app/OneTimePaymentBadge";
 import BillingFrequencyToggle from "@/app/BillingFrequencyToggle";
 import UpgradeActions from "@/app/upgrade/UpgradeActions";
+import PlaybookPurchaseCta from "@/app/components/PlaybookPurchaseCta";
 import { getAnnualSavings, getTierPricing, isOneTimeTier, usesBillingFrequencyToggle, type BillingFrequency } from "@/lib/billing";
 import {
   eliteUpgradePitch,
@@ -150,6 +151,10 @@ export default function DashboardUpgradeSection({
                 >
                   Upgrade to {tier.name}
                 </Link>
+              ) : tier.key === "basic" ? (
+                <div className="mt-6">
+                  <PlaybookPurchaseCta useCheckout />
+                </div>
               ) : (
                 <div className="mt-6 [&_button]:w-full">
                   <UpgradeActions tier={databaseTier} billingFrequency={billingFrequency} />

@@ -1035,7 +1035,7 @@ export async function sendPlaybookReflectionSharedNotification(params: {
     from: process.env.NOTIFICATION_EMAIL,
     to: getNotificationRecipient(),
     subject: `${params.memberName} shared their Chapter ${params.chapterNumber} reflections with you`,
-    text: `Hey Coach Broc -- ${params.memberName} just shared their Chapter ${params.chapterNumber} reflections from the LCB Training Playbook. Log in to review them at ${adminUrl}`,
+    text: `Hey Coach Broc -- ${params.memberName} just shared their Chapter ${params.chapterNumber} reflections from The Next Level Playbook. Log in to review them at ${adminUrl}`,
     html: buildOnboardingEmailShell({
       heading: "Playbook Reflections Shared",
       intro: `Hey Coach Broc -- ${params.memberName} just shared Chapter ${params.chapterNumber} reflections.`,

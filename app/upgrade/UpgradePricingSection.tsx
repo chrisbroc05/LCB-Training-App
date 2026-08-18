@@ -3,6 +3,7 @@
 import { useState } from "react";
 import BillingFrequencyToggle from "@/app/BillingFrequencyToggle";
 import UpgradeActions from "@/app/upgrade/UpgradeActions";
+import PlaybookPurchaseCta from "@/app/components/PlaybookPurchaseCta";
 import AnnualSavingsBadge from "@/app/AnnualSavingsBadge";
 import OneTimePaymentBadge from "@/app/OneTimePaymentBadge";
 import {
@@ -88,7 +89,13 @@ export default function UpgradePricingSection() {
                   <li key={feature}>{feature}</li>
                 ))}
               </ul>
-              <UpgradeActions tier={databaseTier} billingFrequency={billingFrequency} />
+              {tier.key === "basic" ? (
+                <div className="mt-4">
+                  <PlaybookPurchaseCta useCheckout />
+                </div>
+              ) : (
+                <UpgradeActions tier={databaseTier} billingFrequency={billingFrequency} />
+              )}
             </article>
           );
         })}

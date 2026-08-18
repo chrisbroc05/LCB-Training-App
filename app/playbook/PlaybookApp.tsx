@@ -6,6 +6,7 @@ import {
   PLAYBOOK_CHAPTERS,
   type PlaybookSection,
 } from "@/lib/playbook-content";
+import { PLAYBOOK_LANDING_SUBHEADLINE, PLAYBOOK_NAME, PLAYBOOK_PDF_FILENAME } from "@/lib/playbook-branding";
 
 type PlaybookReflection = {
   questionNumber: number;
@@ -342,7 +343,7 @@ export default function PlaybookApp() {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = "LCB_Training_Playbook.pdf";
+      link.download = PLAYBOOK_PDF_FILENAME;
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -591,11 +592,8 @@ export default function PlaybookApp() {
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6 sm:py-14 md:py-20">
       <section className="rounded-3xl border border-[#18243a] bg-[#0b1324]/80 p-5 sm:p-8">
-        <h1 className="text-2xl font-bold text-zinc-100 sm:text-3xl">The LCB Training Playbook</h1>
-        <p className="mt-3 max-w-3xl text-zinc-300">
-          Written by Coach Broc from his own experience as a player and coach. Everything he knows
-          about this game in one place.
-        </p>
+        <h1 className="text-2xl font-bold text-zinc-100 sm:text-3xl">{PLAYBOOK_NAME}</h1>
+        <p className="mt-3 max-w-3xl text-zinc-300">{PLAYBOOK_LANDING_SUBHEADLINE}</p>
 
         <div className="mt-8">
           <div className="flex items-center justify-between text-sm text-zinc-300">

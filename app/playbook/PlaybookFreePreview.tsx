@@ -1,6 +1,10 @@
 "use client";
 
-import UpgradeActions from "@/app/upgrade/UpgradeActions";
+import PlaybookPurchaseCta from "@/app/components/PlaybookPurchaseCta";
+import {
+  PLAYBOOK_LANDING_SUBHEADLINE,
+  PLAYBOOK_NAME,
+} from "@/lib/playbook-branding";
 import {
   FREE_PREVIEW_SECTION_COUNT,
   PLAYBOOK_CHAPTERS,
@@ -68,13 +72,8 @@ export default function PlaybookFreePreview() {
         <p className="text-sm font-semibold uppercase tracking-wide text-[#52B788]">
           Chapter 1 Preview
         </p>
-        <h1 className="mt-2 text-2xl font-bold text-zinc-100 sm:text-3xl">
-          The LCB Training Playbook
-        </h1>
-        <p className="mt-3 text-zinc-300">
-          Written by Coach Broc from his own experience as a player and coach. Everything he knows
-          about this game in one place.
-        </p>
+        <h1 className="mt-2 text-2xl font-bold text-zinc-100 sm:text-3xl">{PLAYBOOK_NAME}</h1>
+        <p className="mt-3 text-zinc-300">{PLAYBOOK_LANDING_SUBHEADLINE}</p>
         <h2 className="mt-8 text-xl font-semibold text-zinc-100">
           Chapter 1: {chapter.title}
         </h2>
@@ -96,7 +95,7 @@ export default function PlaybookFreePreview() {
         <div className="mx-auto flex max-w-md flex-col items-center gap-4">
           <LockIcon />
           <p className="text-base text-zinc-200">{playbookLockedMessage}</p>
-          <UpgradeActions tier="BASIC" buttonLabel="Get The Playbook -- $59 One Time" />
+          <PlaybookPurchaseCta useCheckout align="center" />
         </div>
       </section>
     </div>

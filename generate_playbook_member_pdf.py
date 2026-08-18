@@ -126,7 +126,7 @@ def add_cover(story, styles, member_name: str, logo_path: Path | None):
         except Exception:
             pass
 
-    story.append(Paragraph("The LCB Training Playbook", styles["title"]))
+    story.append(Paragraph("The Next Level Playbook", styles["title"]))
     story.append(Spacer(1, 0.15 * inch))
     story.append(Paragraph(escape_text(member_name), styles["subtitle"]))
     story.append(Spacer(1, 0.25 * inch))

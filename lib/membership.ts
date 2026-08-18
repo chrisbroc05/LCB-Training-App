@@ -143,7 +143,7 @@ export function canAccessPlaybook(userTier: DatabaseTier) {
 }
 
 export const playbookLockedMessage =
-  "Unlock the full playbook and all four chapters with a one-time Basic membership.";
+  "Unlock The Next Level Playbook and all four chapters with a one-time Basic membership.";
 
 export function canAccessWorkoutPrograms(userTier: DatabaseTier) {
   return hasDatabaseTierAccess(userTier, "basic");

@@ -62,7 +62,7 @@ export default function AccountSummaryCard({
             </span>
             <p className={`mt-2 ${profileBodyTextClass}`}>
               Your Basic membership includes lifetime access to the full LCB Training library and
-              Playbook.
+              The Next Level Playbook.
             </p>
           </div>
         ) : null}

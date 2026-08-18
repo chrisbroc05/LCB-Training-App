@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { BillingFrequency } from "@/lib/billing";
+import { PLAYBOOK_PURCHASE_BUTTON_LABEL } from "@/lib/playbook-branding";
 import { formatDatabaseTierLabel, type DatabaseTier } from "@/lib/membership";
 
 type UpgradeActionsProps = {
@@ -56,7 +57,10 @@ export default function UpgradeActions({
         disabled={isLoading}
         className="w-full rounded-full bg-[#22c55e] px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-[#35db72] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
       >
-        {isLoading ? "Redirecting..." : buttonLabel ?? (tier === "BASIC" ? "Get Basic -- $59 one-time" : `Upgrade to ${tierLabel}`)}
+        {isLoading
+          ? "Redirecting..."
+          : buttonLabel ??
+            (tier === "BASIC" ? PLAYBOOK_PURCHASE_BUTTON_LABEL : `Upgrade to ${tierLabel}`)}
       </button>
       {error && <p className="mt-2 text-sm text-red-300">{error}</p>}
     </div>

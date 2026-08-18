@@ -31,7 +31,7 @@ export default async function UpgradePage({ searchParams }: UpgradePageProps) {
         )}
         {reason === "playbook" && (
           <p className="mt-4 rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-100">
-            Unlock the full LCB Training Playbook and all four chapters with a one-time Basic
+            Unlock The Next Level Playbook and all four chapters with a one-time Basic
             membership ($59).
           </p>
         )}

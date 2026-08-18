@@ -1,5 +1,7 @@
 import Link from "next/link";
 import CoachBioSection from "@/components/CoachBioSection";
+import PlaybookPurchaseCta from "@/app/components/PlaybookPurchaseCta";
+import { PLAYBOOK_NAME } from "@/lib/playbook-branding";
 
 const playbookChapters = [
   {
@@ -205,22 +207,17 @@ export default function Home() {
   return (
     <>
       <section className="w-full border-b border-[#18243a] bg-gradient-to-br from-[#0A1628] via-[#0f1d34] to-[#050b16]">
-        <div className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6 sm:py-16 md:py-24">
+        <div className="mx-auto w-full max-w-6xl px-4 pb-8 pt-12 sm:px-6 sm:pb-10 sm:pt-14 md:pb-12 md:pt-16">
           <h1 className="max-w-4xl text-3xl font-bold tracking-tight text-zinc-100 sm:text-4xl md:text-6xl">
-            The LCB Training Playbook
+            {PLAYBOOK_NAME}
           </h1>
           <p className="mt-5 max-w-3xl text-base leading-relaxed text-zinc-300 sm:text-lg md:text-xl">
             Everything I know about this game in one place. The mental game. The physical game. The
             preparation. The life lessons. Written from 12+ years of player development and my own
             experience as a player.
           </p>
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-4">
-            <Link
-              href="/auth?tier=basic"
-              className="inline-flex w-full items-center justify-center rounded-full bg-[#22c55e] px-6 py-3 text-center font-semibold text-black transition hover:bg-[#35db72] sm:w-auto"
-            >
-              Get The Playbook -- $59
-            </Link>
+          <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-start">
+            <PlaybookPurchaseCta />
             <a
               href="#playbook-chapters"
               className="inline-flex w-full items-center justify-center rounded-full border border-[#52B788] px-6 py-3 text-center font-semibold text-[#52B788] transition hover:bg-[#52B788]/10 sm:w-auto"
@@ -231,7 +228,7 @@ export default function Home() {
         </div>
       </section>
 
-      <div className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 sm:py-14 md:py-20">
+      <div className="mx-auto w-full max-w-6xl px-4 pb-10 pt-4 sm:px-6 sm:pb-14 sm:pt-6 md:pb-20 md:pt-8">
         <CoachBioSection />
 
         <section id="playbook-chapters" className="mt-14 scroll-mt-24">
@@ -334,12 +331,13 @@ export default function Home() {
           <p className="mt-4 text-base text-zinc-300 sm:text-lg">
             One time. Lifetime access. Everything Coach Broc knows about this game.
           </p>
-          <Link
-            href="/auth?tier=basic"
-            className="mt-8 inline-flex w-full items-center justify-center rounded-full bg-[#22c55e] px-8 py-3.5 text-base font-semibold text-black transition hover:bg-[#35db72] sm:w-auto sm:px-10 sm:py-4 sm:text-lg"
-          >
-            Get The Playbook -- $59
-          </Link>
+          <div className="mt-8">
+            <PlaybookPurchaseCta
+              align="center"
+              buttonClassName="inline-flex w-full items-center justify-center rounded-full bg-[#22c55e] px-8 py-3.5 text-base font-semibold text-black transition hover:bg-[#35db72] sm:w-auto sm:px-10 sm:py-4 sm:text-lg"
+              subtitleClassName="mt-3 text-sm text-zinc-400"
+            />
+          </div>
           <p className="mt-5 text-sm text-zinc-400">
             Not ready to commit? Start free and get one personal coaching submission from Coach
             Broc.{" "}

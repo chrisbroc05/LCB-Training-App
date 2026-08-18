@@ -13,7 +13,7 @@ const experience = [
 
 export default function CoachBioSection() {
   return (
-    <section className="mt-14 rounded-3xl bg-[#0A1628] px-5 py-20 sm:px-8">
+    <section className="rounded-3xl bg-[#0A1628] px-5 py-12 sm:px-8 sm:py-14">
       <div className="mx-auto max-w-3xl rounded-3xl border border-[#18243a] bg-[#0b1324]/80 px-6 py-10 sm:px-10 sm:py-12">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-white sm:text-3xl">Meet Your Coach</h2>
