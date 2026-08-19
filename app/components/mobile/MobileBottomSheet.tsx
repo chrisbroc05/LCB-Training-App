@@ -10,7 +10,7 @@ type MobileBottomSheetProps = {
   children: React.ReactNode;
   footer?: React.ReactNode;
   ariaLabel?: string;
-  variant?: "default" | "cinematic";
+  variant?: "default" | "cinematic" | "admin";
   showCloseButton?: boolean;
 };
 
@@ -42,6 +42,7 @@ export default function MobileBottomSheet({
   const [dragOffset, setDragOffset] = useState(0);
   const [mounted, setMounted] = useState(false);
   const isCinematic = variant === "cinematic";
+  const isAdmin = variant === "admin";
 
   useEffect(() => {
     setMounted(true);
@@ -109,7 +110,7 @@ export default function MobileBottomSheet({
         role="dialog"
         aria-modal="true"
         aria-label={ariaLabel ?? title ?? "Bottom sheet"}
-        className={`mobile-sheet-panel ${isCinematic ? "mobile-sheet-panel-cinematic" : ""}`}
+        className={`mobile-sheet-panel ${isCinematic ? "mobile-sheet-panel-cinematic" : ""} ${isAdmin ? "mobile-sheet-panel-admin" : ""}`}
         style={{ transform: dragOffset > 0 ? `translateY(${dragOffset}px)` : undefined }}
         onClick={(event) => event.stopPropagation()}
       >
@@ -132,10 +133,16 @@ export default function MobileBottomSheet({
           </button>
         ) : null}
         {title && !isCinematic ? <h2 className="mobile-sheet-title">{title}</h2> : null}
-        <div className={`mobile-sheet-body ${isCinematic ? "mobile-sheet-body-cinematic" : ""}`}>
+        <div
+          className={`mobile-sheet-body ${isCinematic ? "mobile-sheet-body-cinematic" : ""} ${isAdmin ? "mobile-sheet-body-admin" : ""}`}
+        >
           {children}
         </div>
-        {footer ? <div className="mobile-sheet-footer">{footer}</div> : null}
+        {footer ? (
+          <div className={`mobile-sheet-footer ${isAdmin ? "mobile-sheet-footer-admin" : ""}`}>
+            {footer}
+          </div>
+        ) : null}
       </div>
     </div>,
     document.body,
