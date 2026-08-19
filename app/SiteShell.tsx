@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import LandingSwingBanner from "@/app/LandingSwingBanner";
+import LandingHeader from "@/app/LandingHeader";
 import MobileAppHeader from "@/app/components/mobile/MobileAppHeader";
 import MobileBottomNav from "@/app/components/mobile/MobileBottomNav";
 import { MobileAppProvider } from "@/app/components/mobile/MobileAppProvider";
@@ -48,7 +49,7 @@ export default function SiteShell({
     <>
       <div className={headerWrapperClass}>
         {isHomePage ? <LandingSwingBanner isLoggedIn={isLoggedIn} /> : null}
-        {header}
+        {isHomePage ? <LandingHeader isLoggedIn={isLoggedIn} /> : header}
       </div>
       <main className={useMobileChrome ? "mobile-app-main flex-1 md:pb-0 md:pt-0" : "flex-1"}>
         {children}

@@ -211,11 +211,8 @@ function PlaybookChapterCard({
 export default function Home() {
   return (
     <>
-      <section className="w-full border-b border-[#18243a] bg-gradient-to-br from-[#0A1628] via-[#0f1d34] to-[#050b16]">
-        <div className="hidden w-full py-2 md:block">
-          <p className="text-center text-sm italic text-[#52B788]">Work Hard. Be Memorable.</p>
-        </div>
-        <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 sm:py-10 md:py-12">
+      <section className="w-full bg-gradient-to-br from-[#0A1628] via-[#0f1d34] to-[#050b16]">
+        <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 sm:py-8 md:py-10">
           <div className="flex flex-col gap-6 md:flex-row md:items-center md:gap-10 lg:gap-12">
             <div className="md:w-[60%]">
               <h1 className="text-left text-3xl font-bold tracking-tight text-zinc-100 sm:text-4xl md:text-5xl">
