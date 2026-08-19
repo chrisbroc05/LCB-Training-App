@@ -33,7 +33,7 @@ export default function ResourceGuideCard({
             rel="noopener noreferrer"
             className="resources-action-pill"
           >
-            Get PDF
+            {resource.actionLabel}
           </Link>
         </div>
       ) : (

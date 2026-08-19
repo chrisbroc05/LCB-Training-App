@@ -59,10 +59,10 @@ const rotationalPowerProgram: WorkoutProgramCard = {
   description:
     "Rotational power work with PVC pipe mechanics, med ball circuits, and a full exercise glossary.",
   layout: "single",
-  singleActionLabel: "Get Program",
+  singleActionLabel: "Download",
   downloads: [
     {
-      label: "Get Program",
+      label: "Download",
       href: "/LCB_Rotational_Sample.pdf",
     },
   ],
@@ -108,10 +108,10 @@ function buildMobilityProgram(ageKey: AgeGroupKey): WorkoutProgramCard {
     title: "Mobility Program",
     description: mobilityDescriptions[ageKey],
     layout: "single",
-    singleActionLabel: "Get Program",
+    singleActionLabel: "Download",
     downloads: [
       {
-        label: "Get Program",
+        label: "Download",
         href: getWorkoutPdfUrl(`LCB_Mobility_${ageKey}.pdf`),
       },
     ],

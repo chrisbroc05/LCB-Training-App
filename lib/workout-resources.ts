@@ -7,6 +7,7 @@ export type WorkoutResource = {
   title: string;
   description: string;
   requiredTier: WorkoutResourceTier;
+  actionLabel: string;
 };
 
 export type WorkoutResourceGroup = {
@@ -25,24 +26,28 @@ export const workoutResourceGroups: WorkoutResourceGroup[] = [
         title: "Pre-Game Warmup Routine",
         description: "A structured warmup routine to prepare athletes before games and practices.",
         requiredTier: "basic",
+        actionLabel: "View Routine",
       },
       {
         filename: "LCB_Nutrition_Guide.pdf",
         title: "Nutrition and Fueling Guide",
         description: "Fuel and recovery guidance built for baseball athletes.",
         requiredTier: "basic",
+        actionLabel: "View Guide",
       },
       {
         filename: "LCB_Mental_Game_Workbook.pdf",
         title: "Mental Game Workbook",
         description: "Exercises and prompts to strengthen confidence, focus, and composure.",
         requiredTier: "basic",
+        actionLabel: "View Workbook",
       },
       {
         filename: "LCB_Parent_Guide.pdf",
         title: "Parent Guide",
         description: "Support strategies for parents helping athletes grow on and off the field.",
         requiredTier: "basic",
+        actionLabel: "View Guide",
       },
     ],
   },
@@ -55,6 +60,7 @@ export const workoutResourceGroups: WorkoutResourceGroup[] = [
         title: "College Baseball Recruiting Guide",
         description: "A roadmap for navigating the college baseball recruiting process.",
         requiredTier: "elite",
+        actionLabel: "View Guide",
       },
     ],
   },
