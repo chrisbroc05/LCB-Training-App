@@ -23,22 +23,22 @@ export function getMobileTierBadge(tier: DatabaseTier) {
     case "BASIC":
       return {
         label: "Basic",
-        className: "bg-[#1d4ed8] text-white",
+        className: "mobile-tier-pill-basic",
       };
     case "MEMORABLE":
       return {
         label: "Memorable",
-        className: "bg-[#2D6A4F] text-white",
+        className: "mobile-tier-pill-memorable",
       };
     case "ELITE":
       return {
         label: "Elite",
-        className: "bg-[#B8860B] text-white",
+        className: "mobile-tier-pill-elite",
       };
     default:
       return {
         label: "Free",
-        className: "bg-[#4b5563] text-white",
+        className: "mobile-tier-pill-free",
       };
   }
 }

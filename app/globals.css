@@ -27,7 +27,7 @@ body {
 
 @media (max-width: 767px) {
   .mobile-app-main {
-    padding-top: calc(56px + env(safe-area-inset-top));
+    padding-top: calc(48px + env(safe-area-inset-top));
     padding-bottom: calc(100px + env(safe-area-inset-bottom));
     min-height: 100vh;
     animation: mobile-page-fade 200ms ease-out;
@@ -39,8 +39,8 @@ body {
     left: 0;
     right: 0;
     z-index: 60;
-    background: #0a1628;
-    border-bottom: 1px solid #132038;
+    background: rgba(10, 22, 40, 0.96);
+    border-bottom: 1px solid #152238;
     padding-top: env(safe-area-inset-top);
   }
 
@@ -49,26 +49,29 @@ body {
     grid-template-columns: 1fr auto 1fr;
     align-items: center;
     gap: 8px;
-    min-height: 56px;
+    min-height: 48px;
     padding: 0 16px;
   }
 
   .mobile-app-header-left {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     min-width: 0;
   }
 
-  .mobile-app-logo-mark {
-    font-size: 28px;
+  .mobile-app-wordmark {
+    font-size: 17px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    color: #ffffff;
     line-height: 1;
   }
 
   .mobile-app-user-name {
-    font-size: 16px;
-    font-weight: 700;
-    color: #ffffff;
+    font-size: 14px;
+    font-weight: 400;
+    color: #cbd5e1;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -82,32 +85,57 @@ body {
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    gap: 8px;
+    gap: 6px;
   }
 
   .mobile-tier-pill {
-    min-height: 44px;
-    padding: 0 12px;
+    min-height: 26px;
+    padding: 0 8px;
     border-radius: 999px;
-    font-size: 14px;
-    font-weight: 700;
+    font-size: 11px;
+    font-weight: 600;
     line-height: 1;
+    letter-spacing: 0.02em;
+    border: 1px solid transparent;
+  }
+
+  .mobile-tier-pill-basic {
+    background: rgba(29, 78, 216, 0.28);
+    border-color: rgba(59, 130, 246, 0.35);
+    color: #dbeafe;
+  }
+
+  .mobile-tier-pill-memorable {
+    background: rgba(45, 106, 79, 0.32);
+    border-color: rgba(82, 183, 136, 0.35);
+    color: #d8f3dc;
+  }
+
+  .mobile-tier-pill-elite {
+    background: rgba(184, 134, 11, 0.24);
+    border-color: rgba(218, 165, 32, 0.35);
+    color: #fde68a;
+  }
+
+  .mobile-tier-pill-free {
+    background: rgba(75, 85, 99, 0.28);
+    border-color: rgba(148, 163, 184, 0.25);
+    color: #e2e8f0;
   }
 
   .mobile-settings-button {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 44px;
-    height: 44px;
+    width: 36px;
+    height: 36px;
     border-radius: 999px;
-    color: #d4d4d8;
-    transition: color 150ms ease-out, background-color 150ms ease-out;
+    color: #94a3b8;
+    transition: color 150ms ease-out;
   }
 
   .mobile-settings-button:hover {
-    color: #98b144;
-    background: rgba(82, 183, 136, 0.12);
+    color: #cbd5e1;
   }
 
   .mobile-bottom-nav {
@@ -115,16 +143,16 @@ body {
     left: 50%;
     bottom: calc(24px + env(safe-area-inset-bottom));
     z-index: 60;
-    width: calc(100% - 48px);
-    max-width: 420px;
+    width: calc(100% - 32px);
+    max-width: 480px;
     transform: translateX(-50%);
   }
 
   .mobile-bottom-nav-pill {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 4px;
-    padding: 6px;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 2px;
+    padding: 5px;
     border-radius: 999px;
     background: #0a1628;
     border: 1px solid #24314a;
@@ -137,10 +165,10 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 2px;
+    gap: 1px;
     border-radius: 999px;
     color: #a1a1aa;
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 600;
     transition: transform 150ms ease-out, background-color 150ms ease-out, color 150ms ease-out;
   }
@@ -154,11 +182,11 @@ body {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    height: 20px;
+    height: 18px;
   }
 
   .mobile-bottom-nav-label {
-    font-size: 14px;
+    font-size: 11px;
     line-height: 1.1;
   }
 

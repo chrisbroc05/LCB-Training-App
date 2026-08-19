@@ -164,6 +164,41 @@ function buildDrillLibraryEmbedUrl(url: string, options?: { autoplay?: boolean }
   return parsedUrl.toString();
 }
 
+function PlayGlyph({ compact = false }: { compact?: boolean }) {
+  if (compact) {
+    return (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M8 5v14l11-7-11-7Z" />
+      </svg>
+    );
+  }
+
+  return (
+    <span className="rounded-full border border-white/60 bg-black/60 px-4 py-2 text-xs font-semibold text-white sm:px-5 sm:text-sm">
+      Play Video
+    </span>
+  );
+}
+
+function VideoThumbnailPlaceholder({ compact = false }: { compact?: boolean }) {
+  return (
+    <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-[#2b3650] bg-[#0b1324]">
+      <div className="absolute inset-0 bg-[linear-gradient(135deg,#0f1d34_0%,#152238_55%,#0b1324_100%)]" />
+      <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+        <span
+          className={
+            compact
+              ? "inline-flex h-11 w-11 items-center justify-center rounded-full bg-[#52B788] text-[#0A1628]"
+              : "inline-flex items-center justify-center"
+          }
+        >
+          <PlayGlyph compact={compact} />
+        </span>
+      </div>
+    </div>
+  );
+}
+
 type VideoSectionProps = {
   heading: string;
   description: string;
@@ -184,23 +219,8 @@ function VideoSection({ heading, description, videos, onSelectVideo }: VideoSect
             onClick={() => onSelectVideo(video)}
             className="group rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 text-left transition hover:border-[#2b7c4b] hover:bg-[#11203a] sm:p-6"
           >
-            <div className="relative overflow-hidden rounded-xl border border-[#2b3650] bg-black">
-              <div className="aspect-video w-full">
-                <iframe
-                  src={buildDrillLibraryEmbedUrl(video.url)}
-                  title={video.title}
-                  className="h-full w-full pointer-events-none"
-                  allow="autoplay; fullscreen; picture-in-picture"
-                  allowFullScreen
-                />
-              </div>
-              <div className="absolute inset-0 flex items-center justify-center bg-black/45 transition group-hover:bg-black/35">
-                <span className="rounded-full border border-white/60 bg-black/60 px-4 py-2 text-xs font-semibold text-white sm:px-5 sm:text-sm">
-                  Play Video
-                </span>
-              </div>
-            </div>
-              <p className="mt-4 text-base font-semibold text-zinc-100 sm:text-lg">{video.title}</p>
+            <VideoThumbnailPlaceholder />
+            <p className="mt-4 text-base font-semibold text-zinc-100 sm:text-lg">{video.title}</p>
           </button>
         ))}
       </div>
@@ -265,24 +285,7 @@ export default function VideoLibrary() {
               onClick={() => setSelectedVideo(video)}
               className="mobile-card text-left"
             >
-              <div className="relative overflow-hidden rounded-xl border border-[#2b3650] bg-black">
-                <div className="aspect-video w-full">
-                  <iframe
-                    src={buildDrillLibraryEmbedUrl(video.url)}
-                    title={video.title}
-                    className="pointer-events-none h-full w-full"
-                    allow="autoplay; fullscreen; picture-in-picture"
-                    allowFullScreen
-                  />
-                </div>
-                <div className="absolute inset-0 flex items-center justify-center bg-black/45">
-                  <span className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-[#52B788] text-[#0A1628]">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                      <path d="M8 5v14l11-7-11-7Z" />
-                    </svg>
-                  </span>
-                </div>
-              </div>
+              <VideoThumbnailPlaceholder compact />
               <p className="mt-3 text-base font-semibold text-zinc-100">{video.title}</p>
             </button>
           ))}
@@ -317,13 +320,16 @@ export default function VideoLibrary() {
           title={selectedVideo.title}
         >
           <div className="aspect-video w-full overflow-hidden rounded-xl border border-[#2b3650] bg-black">
-            <iframe
-              src={modalUrl}
-              title={selectedVideo.title}
-              className="h-full w-full"
-              allow="autoplay; fullscreen; picture-in-picture"
-              allowFullScreen
-            />
+            {modalUrl ? (
+              <iframe
+                src={modalUrl}
+                title={selectedVideo.title}
+                className="h-full w-full"
+                allow="fullscreen; picture-in-picture"
+                allowFullScreen
+                loading="lazy"
+              />
+            ) : null}
           </div>
         </MobileBottomSheet>
       ) : null}
@@ -344,13 +350,16 @@ export default function VideoLibrary() {
             >
               Close
             </button>
-            <iframe
-              src={modalUrl}
-              title={selectedVideo.title}
-              className="h-full w-full"
-              allow="autoplay; fullscreen; picture-in-picture"
-              allowFullScreen
-            />
+            {modalUrl ? (
+              <iframe
+                src={modalUrl}
+                title={selectedVideo.title}
+                className="h-full w-full"
+                allow="fullscreen; picture-in-picture"
+                allowFullScreen
+                loading="lazy"
+              />
+            ) : null}
           </div>
         </div>
       ) : null}

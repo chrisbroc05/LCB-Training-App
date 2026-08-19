@@ -3,7 +3,9 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import LockedFeaturePanel from "@/app/LockedFeaturePanel";
 import VideoLibrary from "@/app/dashboard/VideoLibrary";
+import DrillLibraryErrorBoundary from "@/app/drill-library/DrillLibraryErrorBoundary";
 import DrillLibraryMobileResources from "@/app/drill-library/DrillLibraryMobileResources";
+import DrillLibraryVideoSection from "@/app/drill-library/DrillLibraryVideoSection";
 import { canAccessDrillLibrary, type DatabaseTier } from "@/lib/membership";
 import { prisma } from "@/lib/prisma";
 
@@ -48,11 +50,15 @@ export default async function DrillLibraryPage() {
           </p>
         </section>
 
-        <VideoLibrary />
+        <DrillLibraryErrorBoundary>
+          <VideoLibrary />
+        </DrillLibraryErrorBoundary>
       </div>
 
       <div className="md:hidden">
-        <VideoLibrary />
+        <DrillLibraryErrorBoundary>
+          <DrillLibraryVideoSection />
+        </DrillLibraryErrorBoundary>
         <DrillLibraryMobileResources membershipTier={membershipTier} />
       </div>
     </>
