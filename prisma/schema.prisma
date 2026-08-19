@@ -85,6 +85,21 @@ model User {
   swingAnalysisSubmissions SwingAnalysisSubmission[]
   goalCheckins           GoalCheckin[]
   playbookProgress       PlaybookProgress?
+  notifications          Notification[]
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  body      String?
+  type      String
+  read      Boolean  @default(false)
+  linkUrl   String?
+  createdAt DateTime @default(now())
+
+  @@index([userId, read, createdAt])
 }
 
 model Account {

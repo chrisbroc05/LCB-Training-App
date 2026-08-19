@@ -31,7 +31,7 @@ export default function LandingSwingBanner({ isLoggedIn }: LandingSwingBannerPro
   const submitHref = isLoggedIn ? "/coaching-submissions" : FREE_SWING_AUTH_URL;
 
   return (
-    <div className="bg-[#2D6A4F] text-white">
+    <div className="sticky top-0 z-40 bg-[#2D6A4F] text-white">
       <div className="mx-auto w-full max-w-6xl px-4 py-3 sm:px-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="hidden text-sm leading-relaxed sm:block">

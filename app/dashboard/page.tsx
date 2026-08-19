@@ -188,6 +188,20 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     ? await getCurrentMonthGoalCheckin(session.user.id)
     : null;
 
+  const unreadResponse = await prisma.notification.findFirst({
+    where: {
+      userId: session.user.id,
+      read: false,
+      type: { in: ["submission_response", "goal_response"] },
+    },
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      title: true,
+      linkUrl: true,
+    },
+  });
+
   const pendingSubmissions = canAccessCoachingNav(membershipTier)
     ? await Promise.all([
         prisma.swingAnalysisSubmission.findMany({
@@ -271,17 +285,15 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   return (
     <>
       <MobileDashboardView
-        firstName={firstName}
         userId={session.user.id}
         membershipTier={membershipTier}
         coachingAvailability={coachingAvailability}
         freeSubmissionUsed={freeSubmissionUsed}
-        assessmentCallBooked={userRecord.assessmentCallBooked}
-        assessmentCallDate={userRecord.assessmentCallDate}
         hasSubscription={hasSubscription}
         currentMonthGoalCheckin={currentMonthGoalCheckin}
         checkoutStatus={checkoutStatus}
         upgradeStatus={upgradeStatus}
+        unreadResponse={unreadResponse}
       />
 
       <div className="mx-auto hidden w-full max-w-6xl px-4 py-10 sm:px-6 sm:py-14 md:block md:py-20">

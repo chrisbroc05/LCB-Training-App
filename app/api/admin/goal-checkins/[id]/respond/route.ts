@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin";
+import { createAppNotification } from "@/lib/app-notifications";
 import { sendGoalCheckinResponseEmail } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import { shouldSendNotificationEmail } from "@/lib/user-notification-preferences";
@@ -83,6 +84,14 @@ export async function POST(request: Request, context: RouteContext) {
   } catch (error) {
     console.error("Failed to send goal check-in response email", error);
   }
+
+  await createAppNotification({
+    userId: existing.userId,
+    title: "Coach Broc responded",
+    body: "Your monthly goal check-in feedback is ready to review.",
+    type: "goal_response",
+    linkUrl: "/goal-setting",
+  });
 
   return NextResponse.json({ success: true });
 }

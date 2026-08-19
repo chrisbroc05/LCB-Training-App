@@ -6,8 +6,10 @@ import VideoLibrary from "@/app/dashboard/VideoLibrary";
 import DrillLibraryErrorBoundary from "@/app/drill-library/DrillLibraryErrorBoundary";
 import DrillLibraryMobileResources from "@/app/drill-library/DrillLibraryMobileResources";
 import DrillLibraryVideoSection from "@/app/drill-library/DrillLibraryVideoSection";
+import { allDrillLibraryVideos } from "@/lib/drill-library-videos";
 import { canAccessDrillLibrary, type DatabaseTier } from "@/lib/membership";
 import { prisma } from "@/lib/prisma";
+import { fetchVimeoThumbnailMap } from "@/lib/vimeo-oembed";
 
 export default async function DrillLibraryPage() {
   const session = await getServerSession(authOptions);
@@ -33,6 +35,10 @@ export default async function DrillLibraryPage() {
     );
   }
 
+  const thumbnailMap = await fetchVimeoThumbnailMap(
+    allDrillLibraryVideos.map((video) => video.url),
+  );
+
   return (
     <>
       <div className="px-4 pt-4 md:hidden">
@@ -51,13 +57,13 @@ export default async function DrillLibraryPage() {
         </section>
 
         <DrillLibraryErrorBoundary>
-          <VideoLibrary />
+          <VideoLibrary thumbnailMap={thumbnailMap} />
         </DrillLibraryErrorBoundary>
       </div>
 
       <div className="md:hidden">
         <DrillLibraryErrorBoundary>
-          <DrillLibraryVideoSection />
+          <DrillLibraryVideoSection thumbnailMap={thumbnailMap} />
         </DrillLibraryErrorBoundary>
         <DrillLibraryMobileResources membershipTier={membershipTier} />
       </div>

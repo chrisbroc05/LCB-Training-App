@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin";
+import { createAppNotification } from "@/lib/app-notifications";
 import { sendSubmissionResponseEmail } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import { shouldSendNotificationEmail } from "@/lib/user-notification-preferences";
@@ -172,6 +173,14 @@ export async function POST(request: Request, context: RouteContext) {
       });
     }
 
+    await createAppNotification({
+      userId: updated.userId,
+      title: "Coach Broc responded",
+      body: "Your coaching submission feedback is ready to review.",
+      type: "submission_response",
+      linkUrl: `/profile?type=mental&id=${updated.id}`,
+    });
+
     return NextResponse.json({ success: true });
   }
 
@@ -216,6 +225,14 @@ export async function POST(request: Request, context: RouteContext) {
       videoDownloadLink: responseMode === "video" ? videoResponseDownloadLink : undefined,
     });
   }
+
+  await createAppNotification({
+    userId: updated.userId,
+    title: "Coach Broc responded",
+    body: "Your coaching submission feedback is ready to review.",
+    type: "submission_response",
+    linkUrl: `/profile?type=swing&id=${updated.id}`,
+  });
 
   return NextResponse.json({ success: true });
 }

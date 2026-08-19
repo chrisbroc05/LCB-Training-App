@@ -10,7 +10,22 @@ type MobileBottomSheetProps = {
   children: React.ReactNode;
   footer?: React.ReactNode;
   ariaLabel?: string;
+  variant?: "default" | "cinematic";
+  showCloseButton?: boolean;
 };
+
+function CloseIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M6 6l12 12M18 6 6 18"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
 
 export default function MobileBottomSheet({
   open,
@@ -19,11 +34,14 @@ export default function MobileBottomSheet({
   children,
   footer,
   ariaLabel,
+  variant = "default",
+  showCloseButton = false,
 }: MobileBottomSheetProps) {
   const sheetRef = useRef<HTMLDivElement | null>(null);
   const dragStartY = useRef<number | null>(null);
   const [dragOffset, setDragOffset] = useState(0);
   const [mounted, setMounted] = useState(false);
+  const isCinematic = variant === "cinematic";
 
   useEffect(() => {
     setMounted(true);
@@ -91,7 +109,7 @@ export default function MobileBottomSheet({
         role="dialog"
         aria-modal="true"
         aria-label={ariaLabel ?? title ?? "Bottom sheet"}
-        className="mobile-sheet-panel"
+        className={`mobile-sheet-panel ${isCinematic ? "mobile-sheet-panel-cinematic" : ""}`}
         style={{ transform: dragOffset > 0 ? `translateY(${dragOffset}px)` : undefined }}
         onClick={(event) => event.stopPropagation()}
       >
@@ -103,8 +121,20 @@ export default function MobileBottomSheet({
         >
           <div className="mobile-sheet-handle" />
         </div>
-        {title ? <h2 className="mobile-sheet-title">{title}</h2> : null}
-        <div className="mobile-sheet-body">{children}</div>
+        {showCloseButton ? (
+          <button
+            type="button"
+            onClick={onClose}
+            className="mobile-sheet-close-button"
+            aria-label="Close"
+          >
+            <CloseIcon />
+          </button>
+        ) : null}
+        {title && !isCinematic ? <h2 className="mobile-sheet-title">{title}</h2> : null}
+        <div className={`mobile-sheet-body ${isCinematic ? "mobile-sheet-body-cinematic" : ""}`}>
+          {children}
+        </div>
         {footer ? <div className="mobile-sheet-footer">{footer}</div> : null}
       </div>
     </div>,

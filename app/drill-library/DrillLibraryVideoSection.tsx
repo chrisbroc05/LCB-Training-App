@@ -3,6 +3,10 @@
 import { useEffect, useState } from "react";
 import VideoLibrary from "@/app/dashboard/VideoLibrary";
 
+type DrillLibraryVideoSectionProps = {
+  thumbnailMap: Record<string, string | null>;
+};
+
 function VideoLibrarySkeleton() {
   return (
     <section className="mt-6 space-y-4 px-4 md:hidden">
@@ -28,7 +32,7 @@ function VideoLibrarySkeleton() {
   );
 }
 
-export default function DrillLibraryVideoSection() {
+export default function DrillLibraryVideoSection({ thumbnailMap }: DrillLibraryVideoSectionProps) {
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
@@ -39,5 +43,5 @@ export default function DrillLibraryVideoSection() {
     return <VideoLibrarySkeleton />;
   }
 
-  return <VideoLibrary />;
+  return <VideoLibrary thumbnailMap={thumbnailMap} />;
 }

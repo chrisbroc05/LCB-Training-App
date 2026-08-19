@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useOptionalMobileApp } from "@/app/components/mobile/MobileAppProvider";
+import MobileNotificationBell from "@/app/components/mobile/MobileNotificationBell";
 import { getMobileFirstName, getMobileTierBadge } from "@/lib/mobile-ui";
 import type { DatabaseTier } from "@/lib/membership";
 
@@ -42,8 +43,15 @@ export default function MobileAppHeader({
     <header className="mobile-app-header md:hidden">
       <div className="mobile-app-header-inner">
         <div className="mobile-app-header-left">
-          <span className="mobile-app-wordmark">LCB</span>
-          <span className="mobile-app-user-name">{firstName}</span>
+          <Link href="/" className="mobile-app-brand-link">
+            <span className="mobile-app-brand-row">
+              <span className="mobile-app-logo-mark" aria-hidden="true">
+                {"\u26BE"}
+              </span>
+              <span className="mobile-app-wordmark">LCB Training</span>
+            </span>
+            <span className="mobile-app-user-greeting">Hey, {firstName}</span>
+          </Link>
         </div>
         <div className="mobile-app-header-center" aria-hidden="true" />
         <div className="mobile-app-header-right">
@@ -54,6 +62,7 @@ export default function MobileAppHeader({
           >
             {tierBadge.label}
           </button>
+          <MobileNotificationBell />
           <Link href="/settings" className="mobile-settings-button" aria-label="Settings">
             <SettingsIcon />
           </Link>
