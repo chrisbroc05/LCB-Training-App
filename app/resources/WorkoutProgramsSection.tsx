@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
+  ageGroupDetails,
   ageGroupOptions,
   getProgramsForAgeGroup,
   isAgeGroupKey,
@@ -11,38 +12,39 @@ import {
   type WorkoutProgramCard,
 } from "@/lib/workout-programs";
 
-function WorkoutProgramDownloadCard({ program }: { program: WorkoutProgramCard }) {
-  const [primaryDownload, ...additionalDownloads] = program.downloads;
-
+function ResourceActionPill({ href, label }: { href: string; label: string }) {
   return (
-    <article className="rounded-xl border border-[#2b3650] bg-black/30 p-4 sm:p-5">
-      <h3 className="text-base font-semibold text-zinc-100 sm:text-lg">{program.title}</h3>
+    <Link
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="resources-action-pill"
+    >
+      {label}
+    </Link>
+  );
+}
+
+function WorkoutProgramCardView({ program }: { program: WorkoutProgramCard }) {
+  return (
+    <article className="resources-program-card">
+      <h3 className="text-base font-bold text-white sm:text-lg">{program.title}</h3>
       <p className="mt-2 text-sm leading-relaxed text-zinc-300">{program.description}</p>
-      {primaryDownload ? (
-        <Link
-          href={primaryDownload.href}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-4 inline-flex rounded-full bg-[#22c55e] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[#35db72]"
-        >
-          Download
-        </Link>
-      ) : null}
-      {additionalDownloads.length > 0 ? (
-        <div className="mt-3 flex flex-wrap gap-3">
-          {additionalDownloads.map((download) => (
-            <Link
+      <div className="mt-4 border-t border-[#2b3650] pt-4">
+        <div className="flex flex-wrap gap-2">
+          {program.downloads.map((download) => (
+            <ResourceActionPill
               key={`${program.title}-${download.label}-${download.href}`}
               href={download.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs font-semibold text-[#98b144] transition hover:text-[#b5d84f]"
-            >
-              Download {download.label}
-            </Link>
+              label={
+                program.layout === "single"
+                  ? program.singleActionLabel ?? download.label
+                  : download.label
+              }
+            />
           ))}
         </div>
-      ) : null}
+      </div>
     </article>
   );
 }
@@ -50,6 +52,7 @@ function WorkoutProgramDownloadCard({ program }: { program: WorkoutProgramCard }
 export default function WorkoutProgramsSection() {
   const [selectedAgeGroup, setSelectedAgeGroup] = useState<AgeGroupKey | null>(null);
   const [hasLoadedPreference, setHasLoadedPreference] = useState(false);
+  const [cardsVisible, setCardsVisible] = useState(true);
 
   useEffect(() => {
     const storedValue = window.localStorage.getItem(RESOURCES_AGE_GROUP_STORAGE_KEY);
@@ -60,11 +63,28 @@ export default function WorkoutProgramsSection() {
   }, []);
 
   const handleSelectAgeGroup = (ageKey: AgeGroupKey) => {
-    setSelectedAgeGroup(ageKey);
-    window.localStorage.setItem(RESOURCES_AGE_GROUP_STORAGE_KEY, ageKey);
+    if (ageKey === selectedAgeGroup) {
+      return;
+    }
+
+    if (!selectedAgeGroup) {
+      setSelectedAgeGroup(ageKey);
+      window.localStorage.setItem(RESOURCES_AGE_GROUP_STORAGE_KEY, ageKey);
+      return;
+    }
+
+    setCardsVisible(false);
+    window.setTimeout(() => {
+      setSelectedAgeGroup(ageKey);
+      window.localStorage.setItem(RESOURCES_AGE_GROUP_STORAGE_KEY, ageKey);
+      window.setTimeout(() => {
+        setCardsVisible(true);
+      }, 0);
+    }, 200);
   };
 
   const visiblePrograms = selectedAgeGroup ? getProgramsForAgeGroup(selectedAgeGroup) : [];
+  const selectedDetails = selectedAgeGroup ? ageGroupDetails[selectedAgeGroup] : null;
 
   return (
     <section className="mt-8 rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
@@ -73,7 +93,7 @@ export default function WorkoutProgramsSection() {
         Choose your age group to view strength, speed, mobility, and rotational power programs.
       </p>
 
-      <div className="mobile-filter-row mt-5">
+      <div className="resources-age-pill-row mt-5">
         {ageGroupOptions.map((option) => {
           const isSelected = selectedAgeGroup === option.key;
 
@@ -82,10 +102,8 @@ export default function WorkoutProgramsSection() {
               key={option.key}
               type="button"
               onClick={() => handleSelectAgeGroup(option.key)}
-              className={`mobile-filter-pill ${
-                isSelected
-                  ? "border-[#52B788] bg-[#52B788] text-[#0A1628]"
-                  : "border-[#2b3650] bg-transparent text-zinc-400"
+              className={`resources-age-pill ${
+                isSelected ? "resources-age-pill-selected" : "resources-age-pill-unselected"
               }`}
             >
               {option.label}
@@ -100,11 +118,20 @@ export default function WorkoutProgramsSection() {
         </p>
       ) : null}
 
-      {selectedAgeGroup ? (
-        <div className="mt-6 grid gap-4 md:grid-cols-2">
-          {visiblePrograms.map((program) => (
-            <WorkoutProgramDownloadCard key={program.title} program={program} />
-          ))}
+      {selectedAgeGroup && selectedDetails ? (
+        <div
+          className={`mt-6 transition-opacity duration-200 ${
+            cardsVisible ? "opacity-100" : "opacity-0"
+          }`}
+        >
+          <h3 className="text-lg font-bold text-[#52B788] sm:text-xl">{selectedDetails.header}</h3>
+          <p className="mt-2 text-sm text-zinc-300">{selectedDetails.description}</p>
+
+          <div className="mt-5 grid gap-4 md:grid-cols-2">
+            {visiblePrograms.map((program) => (
+              <WorkoutProgramCardView key={`${selectedAgeGroup}-${program.title}`} program={program} />
+            ))}
+          </div>
         </div>
       ) : null}
     </section>

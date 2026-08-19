@@ -447,6 +447,77 @@ body {
   }
 }
 
+.resources-age-pill-row {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+@media (min-width: 640px) {
+  .resources-age-pill-row {
+    flex-direction: row;
+  }
+}
+
+.resources-age-pill {
+  display: inline-flex;
+  min-height: 44px;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0 16px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+  transition: background-color 150ms ease-out, color 150ms ease-out, border-color 150ms ease-out;
+}
+
+.resources-age-pill-selected {
+  border: none;
+  background: #52b788;
+  color: #0a1628;
+}
+
+.resources-age-pill-unselected {
+  border: 1px solid #52b788;
+  background: #132038;
+  color: #ffffff;
+}
+
+.resources-program-card {
+  border-radius: 12px;
+  border: 1px solid #2b3650;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 16px;
+}
+
+@media (min-width: 640px) {
+  .resources-program-card {
+    padding: 20px;
+  }
+}
+
+.resources-action-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid #52b788;
+  background: rgba(82, 183, 136, 0.08);
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #0a1628;
+  transition: background-color 150ms ease-out, border-color 150ms ease-out;
+}
+
+.resources-action-pill:hover {
+  background: rgba(82, 183, 136, 0.18);
+  border-color: #98b144;
+}
+
 input,
 textarea,
 select {

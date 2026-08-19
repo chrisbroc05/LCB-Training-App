@@ -11,29 +11,13 @@ export type WorkoutProgramCard = {
   title: string;
   description: string;
   downloads: ProgramDownload[];
-};
-
-export type AgeGroupPrograms = {
-  key: AgeGroupKey;
-  label: string;
-  programs: WorkoutProgramCard[];
+  layout: "phases" | "single";
+  singleActionLabel?: string;
 };
 
 type PhaseNumber = 1 | 2 | 3;
 
 type ProgramCategory = "strength" | "speed";
-
-const strengthPhaseDescriptions: Record<PhaseNumber, string> = {
-  1: "Foundation movement patterns, bodyweight strength, and coordination.",
-  2: "Progressive resistance training with light external load.",
-  3: "Higher intensity strength training with compound movements and power development.",
-};
-
-const speedPhaseDescriptions: Record<PhaseNumber, string> = {
-  1: "Basic acceleration, deceleration, and change of direction.",
-  2: "Intermediate speed mechanics and multi-directional agility.",
-  3: "Advanced sprint mechanics, explosive first step, and game-speed agility.",
-};
 
 const phaseLabels: Record<PhaseNumber, string> = {
   1: "Phase 1",
@@ -49,13 +33,36 @@ export const ageGroupOptions: { key: AgeGroupKey; label: string }[] = [
   { key: "16-18", label: "Ages 16-18" },
 ];
 
+export const ageGroupDetails: Record<
+  AgeGroupKey,
+  {
+    header: string;
+    description: string;
+  }
+> = {
+  "8-11": {
+    header: "Ages 8-11 Programs",
+    description: "Foundation programs focused on movement, coordination, and fun.",
+  },
+  "12-15": {
+    header: "Ages 12-15 Programs",
+    description: "Progressive programs building real athletic strength and speed.",
+  },
+  "16-18": {
+    header: "Ages 16-18 Programs",
+    description: "Advanced programs designed to get you ready for the next level.",
+  },
+};
+
 const rotationalPowerProgram: WorkoutProgramCard = {
   title: "Rotational Power Program",
   description:
-    "Rotational workouts with PVC pipe mechanics, med ball circuits, and a full exercise glossary for bat speed and throwing power.",
+    "Rotational power work with PVC pipe mechanics, med ball circuits, and a full exercise glossary.",
+  layout: "single",
+  singleActionLabel: "Get Program",
   downloads: [
     {
-      label: "Download",
+      label: "Get Program",
       href: "/LCB_Rotational_Sample.pdf",
     },
   ],
@@ -75,7 +82,8 @@ function buildPhaseDownloads(ageKey: AgeGroupKey, category: ProgramCategory) {
 function buildStrengthProgram(ageKey: AgeGroupKey): WorkoutProgramCard {
   return {
     title: "Strength Program",
-    description: `12-week strength track in three phases. ${strengthPhaseDescriptions[1]} ${strengthPhaseDescriptions[2]} ${strengthPhaseDescriptions[3]}`,
+    description: "Build athletic strength across a progressive 12-week training block.",
+    layout: "phases",
     downloads: buildPhaseDownloads(ageKey, "strength"),
   };
 }
@@ -83,24 +91,27 @@ function buildStrengthProgram(ageKey: AgeGroupKey): WorkoutProgramCard {
 function buildSpeedProgram(ageKey: AgeGroupKey): WorkoutProgramCard {
   return {
     title: "Speed and Agility Program",
-    description: `12-week speed and agility track in three phases. ${speedPhaseDescriptions[1]} ${speedPhaseDescriptions[2]} ${speedPhaseDescriptions[3]}`,
+    description: "Develop first-step quickness, agility, and game-speed movement.",
+    layout: "phases",
     downloads: buildPhaseDownloads(ageKey, "speed"),
   };
 }
 
 const mobilityDescriptions: Record<AgeGroupKey, string> = {
-  "8-11": "Increase flexibility and joint range for safer athletic movement.",
-  "12-15": "Improve movement quality and recovery through targeted mobility work.",
-  "16-18": "Maintain hip, shoulder, and spine mobility to support performance.",
+  "8-11": "Flexibility and joint range work for safer athletic movement.",
+  "12-15": "Targeted mobility work to improve movement quality and recovery.",
+  "16-18": "Hip, shoulder, and spine mobility to support high-level performance.",
 };
 
 function buildMobilityProgram(ageKey: AgeGroupKey): WorkoutProgramCard {
   return {
     title: "Mobility Program",
     description: mobilityDescriptions[ageKey],
+    layout: "single",
+    singleActionLabel: "Get Program",
     downloads: [
       {
-        label: "Download",
+        label: "Get Program",
         href: getWorkoutPdfUrl(`LCB_Mobility_${ageKey}.pdf`),
       },
     ],
