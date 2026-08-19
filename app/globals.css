@@ -501,21 +501,21 @@ body {
 
 .resources-action-pill {
   display: inline-flex;
+  min-height: 44px;
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  border: 1px solid #52b788;
-  background: rgba(82, 183, 136, 0.08);
-  padding: 6px 12px;
+  border: none;
+  background: #52b788;
+  padding: 0 16px;
   font-size: 12px;
   font-weight: 700;
   color: #0a1628;
-  transition: background-color 150ms ease-out, border-color 150ms ease-out;
+  transition: background-color 150ms ease-out;
 }
 
 .resources-action-pill:hover {
-  background: rgba(82, 183, 136, 0.18);
-  border-color: #98b144;
+  background: #45a074;
 }
 
 input,
