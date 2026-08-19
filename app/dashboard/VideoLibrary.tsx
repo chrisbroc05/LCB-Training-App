@@ -1,13 +1,21 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import MobileBottomSheet from "@/app/components/mobile/MobileBottomSheet";
+import { useIsMobile } from "@/app/components/mobile/useIsMobile";
 
 type VideoLibraryItem = {
   title: string;
   url: string;
+  category: "hitting" | "fielding" | "mindset";
 };
 
-const hittingVideos: VideoLibraryItem[] = [
+type VideoLibrarySourceItem = {
+  title: string;
+  url: string;
+};
+
+const hittingVideoSources: VideoLibrarySourceItem[] = [
   { title: "Coil into your load", url: "https://player.vimeo.com/video/1200422510" },
   { title: "Recreate this feeling", url: "https://player.vimeo.com/video/1200422513" },
   { title: "Med ball & tee combo #1", url: "https://player.vimeo.com/video/1200422511" },
@@ -33,7 +41,12 @@ const hittingVideos: VideoLibraryItem[] = [
   },
 ];
 
-const fieldingVideos: VideoLibraryItem[] = [
+const hittingVideos: VideoLibraryItem[] = hittingVideoSources.map((video) => ({
+  ...video,
+  category: "hitting",
+}));
+
+const fieldingVideoSources: VideoLibrarySourceItem[] = [
   { title: "Do these everyday", url: "https://player.vimeo.com/video/1200425708" },
   {
     title: "4 drills you can do with just a glove, ball and bucket",
@@ -78,7 +91,12 @@ const fieldingVideos: VideoLibraryItem[] = [
   { title: "Backhand Footwork Drill", url: "https://player.vimeo.com/video/1205924073" },
 ];
 
-const mindsetVideos: VideoLibraryItem[] = [
+const fieldingVideos: VideoLibraryItem[] = fieldingVideoSources.map((video) => ({
+  ...video,
+  category: "fielding",
+}));
+
+const mindsetVideoSources: VideoLibrarySourceItem[] = [
   { title: "Take Your Mobility Serious", url: "https://player.vimeo.com/video/1210519237" },
   {
     title: "You Don't Have to Be the Biggest Player on the Team",
@@ -106,6 +124,22 @@ const mindsetVideos: VideoLibraryItem[] = [
     url: "https://player.vimeo.com/video/1210521772",
   },
 ];
+
+const mindsetVideos: VideoLibraryItem[] = mindsetVideoSources.map((video) => ({
+  ...video,
+  category: "mindset",
+}));
+
+const drillCategories = [
+  { key: "all", label: "All" },
+  { key: "hitting", label: "Hitting" },
+  { key: "fielding", label: "Fielding" },
+  { key: "mindset", label: "Mindset" },
+] as const;
+
+type DrillCategoryFilter = (typeof drillCategories)[number]["key"];
+
+const allVideos = [...hittingVideos, ...fieldingVideos, ...mindsetVideos];
 
 const drillLibraryEmbedParams = {
   title: "0",
@@ -176,6 +210,16 @@ function VideoSection({ heading, description, videos, onSelectVideo }: VideoSect
 
 export default function VideoLibrary() {
   const [selectedVideo, setSelectedVideo] = useState<VideoLibraryItem | null>(null);
+  const [mobileCategory, setMobileCategory] = useState<DrillCategoryFilter>("all");
+  const isMobile = useIsMobile();
+
+  const filteredMobileVideos = useMemo(() => {
+    if (mobileCategory === "all") {
+      return allVideos;
+    }
+
+    return allVideos.filter((video) => video.category === mobileCategory);
+  }, [mobileCategory]);
 
   useEffect(() => {
     if (!selectedVideo) {
@@ -200,7 +244,52 @@ export default function VideoLibrary() {
 
   return (
     <>
-      <section className="mt-10 space-y-8">
+      <section className="mt-6 space-y-4 px-4 md:hidden">
+        <div className="mobile-filter-row">
+          {drillCategories.map((category) => (
+            <button
+              key={category.key}
+              type="button"
+              onClick={() => setMobileCategory(category.key)}
+              className={`mobile-filter-pill ${mobileCategory === category.key ? "is-active" : ""}`}
+            >
+              {category.label}
+            </button>
+          ))}
+        </div>
+        <div className="mobile-card-stack">
+          {filteredMobileVideos.map((video) => (
+            <button
+              key={video.url}
+              type="button"
+              onClick={() => setSelectedVideo(video)}
+              className="mobile-card text-left"
+            >
+              <div className="relative overflow-hidden rounded-xl border border-[#2b3650] bg-black">
+                <div className="aspect-video w-full">
+                  <iframe
+                    src={buildDrillLibraryEmbedUrl(video.url)}
+                    title={video.title}
+                    className="pointer-events-none h-full w-full"
+                    allow="autoplay; fullscreen; picture-in-picture"
+                    allowFullScreen
+                  />
+                </div>
+                <div className="absolute inset-0 flex items-center justify-center bg-black/45">
+                  <span className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-[#52B788] text-[#0A1628]">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                      <path d="M8 5v14l11-7-11-7Z" />
+                    </svg>
+                  </span>
+                </div>
+              </div>
+              <p className="mt-3 text-base font-semibold text-zinc-100">{video.title}</p>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-10 hidden space-y-8 md:block">
         <VideoSection
           heading="Hitting Library"
           description="Drill demonstrations for swing mechanics, load, posture, and bat path."
@@ -221,13 +310,31 @@ export default function VideoLibrary() {
         />
       </section>
 
-      {selectedVideo && (
+      {selectedVideo && isMobile ? (
+        <MobileBottomSheet
+          open={Boolean(selectedVideo)}
+          onClose={() => setSelectedVideo(null)}
+          title={selectedVideo.title}
+        >
+          <div className="aspect-video w-full overflow-hidden rounded-xl border border-[#2b3650] bg-black">
+            <iframe
+              src={modalUrl}
+              title={selectedVideo.title}
+              className="h-full w-full"
+              allow="autoplay; fullscreen; picture-in-picture"
+              allowFullScreen
+            />
+          </div>
+        </MobileBottomSheet>
+      ) : null}
+
+      {selectedVideo && !isMobile ? (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-3 sm:p-6"
           onClick={() => setSelectedVideo(null)}
         >
           <div
-            className="relative h-[78dvh] w-[96vw] sm:h-[80vh] sm:w-[85vw] lg:w-[80vw] max-w-6xl overflow-hidden rounded-2xl border border-[#2b3650] bg-black shadow-2xl"
+            className="relative h-[78dvh] w-[96vw] max-w-6xl overflow-hidden rounded-2xl border border-[#2b3650] bg-black shadow-2xl sm:h-[80vh] sm:w-[85vw] lg:w-[80vw]"
             onClick={(event) => event.stopPropagation()}
           >
             <button
@@ -246,7 +353,7 @@ export default function VideoLibrary() {
             />
           </div>
         </div>
-      )}
+      ) : null}
     </>
   );
 }

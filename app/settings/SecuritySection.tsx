@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import ResponsiveOverlay from "@/app/components/mobile/ResponsiveOverlay";
 import SettingsCard from "@/app/settings/SettingsCard";
 import {
   settingsCardClass,
@@ -9,7 +10,6 @@ import {
   settingsLabelClass,
   settingsPrimaryButtonClass,
   settingsSecondaryButtonClass,
-  settingsSectionTitleClass,
   settingsSuccessMessageClass,
 } from "@/app/settings/settings-styles";
 
@@ -26,7 +26,6 @@ function ChangePasswordModal({
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
-  const modalRef = useRef<HTMLDivElement | null>(null);
 
   const resetForm = () => {
     setCurrentPassword("");
@@ -73,12 +72,6 @@ function ChangePasswordModal({
     };
   }, [successMessage]);
 
-  const handleOverlayClick = (event: React.MouseEvent<HTMLDivElement>) => {
-    if (event.target === event.currentTarget) {
-      handleClose();
-    }
-  };
-
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsSaving(true);
@@ -115,68 +108,67 @@ function ChangePasswordModal({
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4"
-      onClick={handleOverlayClick}
-      role="presentation"
+    <ResponsiveOverlay
+      open={isOpen}
+      onClose={handleClose}
+      title="Change Password"
+      ariaLabel="Change password"
+      desktopPanelClassName={`${settingsCardClass} w-full max-w-lg shadow-2xl`}
+      footer={
+        <div className="flex flex-col gap-3">
+          <button type="submit" form="change-password-form" disabled={isSaving} className={`${settingsPrimaryButtonClass} h-12 w-full`}>
+            {isSaving ? "Saving..." : "Save New Password"}
+          </button>
+          <button type="button" onClick={handleClose} className={`${settingsSecondaryButtonClass} h-12 w-full`}>
+            Cancel
+          </button>
+        </div>
+      }
     >
-      <div
-        ref={modalRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="change-password-title"
-        className={`${settingsCardClass} shadow-2xl`}
-        onClick={(event) => event.stopPropagation()}
-      >
-        <h3 id="change-password-title" className={settingsSectionTitleClass}>
-          Change Password
-        </h3>
+      <form id="change-password-form" className="space-y-4" onSubmit={handleSubmit}>
+        <label className="block">
+          <span className={settingsLabelClass}>Current password</span>
+          <input
+            type="password"
+            value={currentPassword}
+            onChange={(event) => setCurrentPassword(event.target.value)}
+            className={settingsInputClass}
+          />
+        </label>
 
-        <form className="mt-5 space-y-4" onSubmit={handleSubmit}>
-          <label className="block">
-            <span className={settingsLabelClass}>Current password</span>
-            <input
-              type="password"
-              value={currentPassword}
-              onChange={(event) => setCurrentPassword(event.target.value)}
-              className={settingsInputClass}
-            />
-          </label>
+        <label className="block">
+          <span className={settingsLabelClass}>New password</span>
+          <input
+            type="password"
+            value={newPassword}
+            onChange={(event) => setNewPassword(event.target.value)}
+            className={settingsInputClass}
+          />
+        </label>
 
-          <label className="block">
-            <span className={settingsLabelClass}>New password</span>
-            <input
-              type="password"
-              value={newPassword}
-              onChange={(event) => setNewPassword(event.target.value)}
-              className={settingsInputClass}
-            />
-          </label>
+        <label className="block">
+          <span className={settingsLabelClass}>Confirm new password</span>
+          <input
+            type="password"
+            value={confirmPassword}
+            onChange={(event) => setConfirmPassword(event.target.value)}
+            className={settingsInputClass}
+          />
+        </label>
 
-          <label className="block">
-            <span className={settingsLabelClass}>Confirm new password</span>
-            <input
-              type="password"
-              value={confirmPassword}
-              onChange={(event) => setConfirmPassword(event.target.value)}
-              className={settingsInputClass}
-            />
-          </label>
+        {errorMessage ? <p className={settingsErrorMessageClass}>{errorMessage}</p> : null}
+        {successMessage ? <p className={settingsSuccessMessageClass}>{successMessage}</p> : null}
 
-          {errorMessage ? <p className={settingsErrorMessageClass}>{errorMessage}</p> : null}
-          {successMessage ? <p className={settingsSuccessMessageClass}>{successMessage}</p> : null}
-
-          <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
-            <button type="button" onClick={handleClose} className={settingsSecondaryButtonClass}>
-              Cancel
-            </button>
-            <button type="submit" disabled={isSaving} className={settingsPrimaryButtonClass}>
-              {isSaving ? "Saving..." : "Save New Password"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <div className="hidden flex-col-reverse gap-3 pt-2 sm:flex sm:flex-row sm:justify-end">
+          <button type="button" onClick={handleClose} className={settingsSecondaryButtonClass}>
+            Cancel
+          </button>
+          <button type="submit" disabled={isSaving} className={settingsPrimaryButtonClass}>
+            {isSaving ? "Saving..." : "Save New Password"}
+          </button>
+        </div>
+      </form>
+    </ResponsiveOverlay>
   );
 }
 

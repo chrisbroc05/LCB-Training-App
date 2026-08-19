@@ -108,8 +108,8 @@ def build_section_cell(
                 ("BOTTOMPADDING", (0, 0), (0, 0), 8),
                 ("LEFTPADDING", (0, 0), (0, 0), 10),
                 ("RIGHTPADDING", (0, 0), (0, 0), 10),
-                ("TOPPADDING", (0, 1), (0, 1), 10),
-                ("BOTTOMPADDING", (0, 1), (0, 1), 10),
+                ("TOPPADDING", (0, 1), (0, 1), 8),
+                ("BOTTOMPADDING", (0, 1), (0, 1), 8),
                 ("LEFTPADDING", (0, 1), (0, 1), 10),
                 ("RIGHTPADDING", (0, 1), (0, 1), 10),
             ]
@@ -244,11 +244,13 @@ def build_proposal_pdf(project_root: Path, proposal: ClientProposal, output_path
         item_style,
     )
     online_body = Paragraph(
-        "Between sessions, athletes can stay sharp with the LCB Training online membership at "
-        "<b>lcbtraining.com</b>. The platform includes drill videos, workout programs, and optional "
-        "remote coaching support. Online membership is separate from this in-person proposal and "
-        "can be added at any time if you would like extra work between sessions.",
-        body_style,
+        "Between sessions, the LCB Training online membership at <b>lcbtraining.com</b> is a helpful "
+        "in-season and off-season resource to keep development going on their own schedule. The "
+        "platform includes a full video drill library (hitting, fielding, mindset), 8 downloadable "
+        "workout programs, bonus guides, and optional remote 1 on 1 coaching with personal feedback "
+        "from Coach Broc. Online membership is separate from this in-person proposal and "
+        "can be added at any time.",
+        item_style,
     )
     closing_body = Paragraph(
         f"{proposal.first_name}, I am looking forward to working with your players and helping them grow "
@@ -266,15 +268,15 @@ def build_proposal_pdf(project_root: Path, proposal: ClientProposal, output_path
         Paragraph('"Work Hard. Be Memorable."', tagline_style),
         Spacer(1, 5),
         HRFlowable(width="100%", thickness=1.1, color=LIGHT_GREEN, lineCap="round"),
-        Spacer(1, 6),
+        Spacer(1, 4),
         Paragraph(
             f"<b>Prepared for:</b> {proposal.first_name} {proposal.last_name}<br/>"
             f"<b>Date:</b> {generated_on}",
             meta_style,
         ),
-        Spacer(1, 8),
+        Spacer(1, 5),
         build_section_cell("Session Schedule", schedule_body, full_width, section_header_style),
-        Spacer(1, 6),
+        Spacer(1, 4),
         build_aligned_row(
             build_section_cell(
                 "Focus Areas",
@@ -290,16 +292,16 @@ def build_proposal_pdf(project_root: Path, proposal: ClientProposal, output_path
             ),
             two_col_widths,
         ),
-        Spacer(1, 6),
+        Spacer(1, 4),
         build_section_cell(
             "Online Training (Optional)",
             online_body,
             full_width,
             section_header_style,
         ),
-        Spacer(1, 6),
+        Spacer(1, 4),
         build_section_cell("A Note From Coach Broc", closing_body, full_width, section_header_style),
-        Spacer(1, 6),
+        Spacer(1, 4),
     ]
 
     left_contact = Paragraph(
@@ -333,17 +335,17 @@ def main() -> None:
     proposal = ClientProposal(
         first_name="Brian",
         last_name="Paruch",
-        players_description="Two players (13U and 15U)",
+        players_description="Alex (13U) and Kyle (15U)",
         focus_areas=["Hitting", "Speed & Agility", "Strength"],
         session_format="2:1 (two players, one coach)",
         rate_per_session=75,
-        schedule_days="Tuesdays and Thursdays",
-        schedule_time="3:30 - 4:30 PM",
+        schedule_days="Mondays and Wednesdays",
+        schedule_time="4:00 - 5:00 PM",
         session_duration="1 hour",
         program_weeks=4,
         total_sessions=8,
         total_cost=600,
-        start_note="Sessions are tentatively scheduled to begin this week or next week.",
+        start_note="First session tentatively scheduled for Wednesday, August 19.",
     )
     output_path = project_root / "public" / "proposals" / f"LCB_Proposal_{proposal.last_name}.pdf"
     build_proposal_pdf(project_root, proposal, output_path)

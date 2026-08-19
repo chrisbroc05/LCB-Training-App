@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import ResponsiveOverlay from "@/app/components/mobile/ResponsiveOverlay";
 import SettingsCard from "@/app/settings/SettingsCard";
 import {
   settingsCardClass,
@@ -63,66 +64,64 @@ function DeleteAccountModal({ isOpen, onClose, userEmail, userName }: DeleteAcco
     setConfirmEmail("");
   };
 
-  if (!isOpen) {
-    return null;
-  }
-
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4"
-      onClick={(event) => {
-        if (event.target === event.currentTarget) {
-          handleClose();
-        }
-      }}
-      role="presentation"
+    <ResponsiveOverlay
+      open={isOpen}
+      onClose={handleClose}
+      title="Delete Account"
+      ariaLabel="Delete account"
+      desktopPanelClassName={`${settingsCardClass} w-full max-w-md shadow-2xl`}
+      footer={
+        <div className="flex flex-col gap-3">
+          <button
+            type="submit"
+            form="delete-account-form"
+            disabled={isSubmitting || confirmEmail.trim().toLowerCase() !== userEmail.toLowerCase()}
+            className={`${settingsDangerButtonClass} h-12 w-full`}
+          >
+            {isSubmitting ? "Sending..." : "Confirm Deletion Request"}
+          </button>
+          <button type="button" onClick={handleClose} className={`${settingsSecondaryButtonClass} h-12 w-full`}>
+            Cancel
+          </button>
+        </div>
+      }
     >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="delete-account-title"
-        className={`${settingsCardClass} max-w-md shadow-2xl`}
-        onClick={(event) => event.stopPropagation()}
-      >
-        <h3 id="delete-account-title" className={`${settingsSectionTitleClass} text-red-300`}>
-          Delete Account
-        </h3>
-        <p className={`mt-3 ${settingsMutedTextClass}`}>
-          This action is permanent. Your account, progress, and submission history will be removed.
-          Type your email address to confirm you want to request account deletion.
-        </p>
+      <p className={`${settingsMutedTextClass} text-red-200/90`}>
+        This action is permanent. Your account, progress, and submission history will be removed.
+        Type your email address to confirm you want to request account deletion.
+      </p>
 
-        <form className="mt-5 space-y-4" onSubmit={handleSubmit}>
-          <label className="block">
-            <span className={settingsLabelClass}>Confirm email for {userName || "your account"}</span>
-            <input
-              type="email"
-              value={confirmEmail}
-              onChange={(event) => setConfirmEmail(event.target.value)}
-              placeholder={userEmail}
-              className={settingsInputClass}
-              required
-            />
-          </label>
+      <form id="delete-account-form" className="mt-5 space-y-4" onSubmit={handleSubmit}>
+        <label className="block">
+          <span className={settingsLabelClass}>Confirm email for {userName || "your account"}</span>
+          <input
+            type="email"
+            value={confirmEmail}
+            onChange={(event) => setConfirmEmail(event.target.value)}
+            placeholder={userEmail}
+            className={settingsInputClass}
+            required
+          />
+        </label>
 
-          {errorMessage ? <p className={settingsErrorMessageClass}>{errorMessage}</p> : null}
-          {successMessage ? <p className={settingsSuccessMessageClass}>{successMessage}</p> : null}
+        {errorMessage ? <p className={settingsErrorMessageClass}>{errorMessage}</p> : null}
+        {successMessage ? <p className={settingsSuccessMessageClass}>{successMessage}</p> : null}
 
-          <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
-            <button type="button" onClick={handleClose} className={settingsSecondaryButtonClass}>
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting || confirmEmail.trim().toLowerCase() !== userEmail.toLowerCase()}
-              className={settingsDangerButtonClass}
-            >
-              {isSubmitting ? "Sending..." : "Confirm Deletion Request"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <div className="hidden flex-col-reverse gap-3 pt-2 sm:flex sm:flex-row sm:justify-end">
+          <button type="button" onClick={handleClose} className={settingsSecondaryButtonClass}>
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={isSubmitting || confirmEmail.trim().toLowerCase() !== userEmail.toLowerCase()}
+            className={settingsDangerButtonClass}
+          >
+            {isSubmitting ? "Sending..." : "Confirm Deletion Request"}
+          </button>
+        </div>
+      </form>
+    </ResponsiveOverlay>
   );
 }
 

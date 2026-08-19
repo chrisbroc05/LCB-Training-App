@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import LockedFeaturePanel from "@/app/LockedFeaturePanel";
 import VideoLibrary from "@/app/dashboard/VideoLibrary";
+import DrillLibraryMobileResources from "@/app/drill-library/DrillLibraryMobileResources";
 import { canAccessDrillLibrary, type DatabaseTier } from "@/lib/membership";
 import { prisma } from "@/lib/prisma";
 
@@ -31,15 +32,29 @@ export default async function DrillLibraryPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 sm:py-14 md:py-20">
-      <section className="rounded-3xl border border-[#18243a] bg-[#0b1324]/80 p-5 sm:p-8">
-        <h1 className="text-2xl font-semibold leading-tight text-zinc-100 sm:text-3xl">Drill Library</h1>
-        <p className="mt-2 text-zinc-300">
-          Browse hitting, fielding, and mindset drills. Click any video to open the full player.
+    <>
+      <div className="px-4 pt-4 md:hidden">
+        <h1 className="text-2xl font-bold text-white">Train</h1>
+        <p className="mt-2 text-sm text-zinc-400">
+          Filter drills by category and open any video in a full-width player.
         </p>
-      </section>
+      </div>
 
-      <VideoLibrary />
-    </div>
+      <div className="mx-auto hidden w-full max-w-6xl px-4 py-10 sm:px-6 sm:py-14 md:block md:py-20">
+        <section className="rounded-3xl border border-[#18243a] bg-[#0b1324]/80 p-5 sm:p-8">
+          <h1 className="text-2xl font-semibold leading-tight text-zinc-100 sm:text-3xl">Drill Library</h1>
+          <p className="mt-2 text-zinc-300">
+            Browse hitting, fielding, and mindset drills. Click any video to open the full player.
+          </p>
+        </section>
+
+        <VideoLibrary />
+      </div>
+
+      <div className="md:hidden">
+        <VideoLibrary />
+        <DrillLibraryMobileResources membershipTier={membershipTier} />
+      </div>
+    </>
   );
 }

@@ -7,6 +7,7 @@ import DashboardCoachingCard from "@/app/dashboard/DashboardCoachingCard";
 import DashboardMembershipCard from "@/app/dashboard/DashboardMembershipCard";
 import DashboardPlaybookWelcomeCard from "@/app/dashboard/DashboardPlaybookWelcomeCard";
 import DashboardUpgradeSection from "@/app/dashboard/DashboardUpgradeSection";
+import MobileDashboardView from "@/app/dashboard/MobileDashboardView";
 import MonthlyGoalProgressCard from "@/app/dashboard/MonthlyGoalProgressCard";
 import {
   ensureCoachingSubmissionPeriod,
@@ -268,7 +269,22 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     : [];
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 sm:py-14 md:py-20">
+    <>
+      <MobileDashboardView
+        firstName={firstName}
+        userId={session.user.id}
+        membershipTier={membershipTier}
+        coachingAvailability={coachingAvailability}
+        freeSubmissionUsed={freeSubmissionUsed}
+        assessmentCallBooked={userRecord.assessmentCallBooked}
+        assessmentCallDate={userRecord.assessmentCallDate}
+        hasSubscription={hasSubscription}
+        currentMonthGoalCheckin={currentMonthGoalCheckin}
+        checkoutStatus={checkoutStatus}
+        upgradeStatus={upgradeStatus}
+      />
+
+      <div className="mx-auto hidden w-full max-w-6xl px-4 py-10 sm:px-6 sm:py-14 md:block md:py-20">
       <section className="rounded-3xl border border-[#18243a] bg-[#0b1324]/80 p-5 sm:p-8">
         {membershipTier === "BASIC" ? (
           <>
@@ -432,6 +448,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         membershipTier={membershipTier}
         hasSubscription={hasSubscription}
       />
-    </div>
+      </div>
+    </>
   );
 }

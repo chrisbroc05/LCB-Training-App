@@ -206,15 +206,13 @@ export default function PlaybookSignupFlow({
           {!isFreeSelected ? (
             <section className="mt-8 border-t border-[#2b3650] pt-8">
               {(isMemorableSelected || isEliteSelected) && (
-                <div className="mb-4 text-center">
-                  <button
-                    type="button"
-                    onClick={() => onSelectTier("basic")}
-                    className="text-sm text-[#98b144] underline-offset-2 transition hover:text-[#b5d84f] hover:underline"
-                  >
-                    Switch back to Playbook -- $59
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => onSelectTier("basic")}
+                  className="mb-4 inline-flex h-12 w-full items-center justify-center rounded-full border-2 border-[#52B788] bg-transparent px-6 text-sm font-semibold text-[#52B788] transition hover:bg-[#52B788]/15"
+                >
+                  Switch Back to Playbook -- $59 One Time
+                </button>
               )}
 
               <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-400">

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
+import { shouldUseMobileAppChrome } from "@/lib/mobile-ui";
 
 type TopNavigationProps = {
   isLoggedIn: boolean;
@@ -415,6 +416,7 @@ export default function TopNavigation({
 
   const trainGroup: NavGroup = { label: "Train", links: buildTrainLinks() };
   const coachingGroup: NavGroup = { label: "Coaching", links: buildCoachingLinks() };
+  const suppressMobileMenu = shouldUseMobileAppChrome(isLoggedIn, pathname);
 
   return (
     <nav ref={navRef} className="flex justify-end md:justify-self-end">
@@ -467,6 +469,7 @@ export default function TopNavigation({
         ) : null}
       </div>
 
+      {!suppressMobileMenu ? (
       <div className="relative md:hidden">
         <button
           type="button"
@@ -543,6 +546,7 @@ export default function TopNavigation({
           </div>
         ) : null}
       </div>
+      ) : null}
     </nav>
   );
 }

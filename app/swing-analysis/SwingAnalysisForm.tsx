@@ -1,6 +1,7 @@
 "use client";
 
 import CoachingSubmissionConfirmation from "@/app/components/CoachingSubmissionConfirmation";
+import ResponsiveOverlay from "@/app/components/mobile/ResponsiveOverlay";
 import { useState } from "react";
 
 const SUBMISSION_TIMEOUT_MS = 90000;
@@ -236,7 +237,13 @@ export default function SwingAnalysisForm({ isFreeMember = false }: SwingAnalysi
       </form>
 
       {showConfirmationModal ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+        <ResponsiveOverlay
+          open={showConfirmationModal}
+          onClose={() => setShowConfirmationModal(false)}
+          ariaLabel="Submission confirmation"
+          desktopClassName="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+          desktopPanelClassName="w-[94vw] max-w-2xl overflow-y-auto rounded-2xl border border-[#18243a] bg-[#0b1324] p-0 shadow-2xl sm:max-w-3xl"
+        >
           <CoachingSubmissionConfirmation
             isFreeMember={isFreeMember}
             summary={
@@ -249,7 +256,7 @@ export default function SwingAnalysisForm({ isFreeMember = false }: SwingAnalysi
             }
             onClose={() => setShowConfirmationModal(false)}
           />
-        </div>
+        </ResponsiveOverlay>
       ) : null}
     </>
   );
