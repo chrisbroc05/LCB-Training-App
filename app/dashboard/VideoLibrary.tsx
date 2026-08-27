@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   allDrillLibraryVideos,
@@ -119,6 +119,25 @@ function VideoSection({
   );
 }
 
+type VideoDimensions = {
+  finalWidth: number;
+  finalHeight: number;
+};
+
+const EXPAND_HINT_STORAGE_KEY = "video-expanded-hint-shown";
+
+function calculateVideoDimensions(): VideoDimensions {
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const availableHeight = vh - 180;
+  const heightBasedWidth = availableHeight * (16 / 9);
+  const useHeightBased = heightBasedWidth <= vw;
+  const finalWidth = useHeightBased ? heightBasedWidth : vw;
+  const finalHeight = useHeightBased ? availableHeight : vw * (9 / 16);
+
+  return { finalWidth, finalHeight };
+}
+
 type MobileVideoOverlayProps = {
   video: DrillLibraryVideoItem;
   currentVideoIndex: number;
@@ -137,17 +156,57 @@ function MobileVideoOverlay({
   onPrevious,
 }: MobileVideoOverlayProps) {
   const [mounted, setMounted] = useState(false);
+  const [videoDimensions, setVideoDimensions] = useState<VideoDimensions>({
+    finalWidth: 375,
+    finalHeight: 211,
+  });
+  const [videoEnded, setVideoEnded] = useState(false);
+  const [showExpandHint, setShowExpandHint] = useState(false);
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
+
   const videoId = extractVimeoVideoId(video.url);
   const embedUrl = videoId
-    ? `https://player.vimeo.com/video/${videoId}?autoplay=1&title=0&byline=0&portrait=0&dnt=1`
+    ? `https://player.vimeo.com/video/${videoId}?autoplay=1&title=0&byline=0&portrait=0&dnt=1&controls=1&api=1`
     : "";
 
   const isFirst = currentVideoIndex === 0;
   const isLast = currentVideoIndex === currentCategoryVideos.length - 1;
 
+  const markExpandHintShown = useCallback(() => {
+    try {
+      sessionStorage.setItem(EXPAND_HINT_STORAGE_KEY, "true");
+    } catch {
+      // ignore storage errors
+    }
+    setShowExpandHint(false);
+  }, []);
+
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    try {
+      const hintShown = sessionStorage.getItem(EXPAND_HINT_STORAGE_KEY);
+      setShowExpandHint(!hintShown);
+    } catch {
+      setShowExpandHint(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    const updateDimensions = () => {
+      setVideoDimensions(calculateVideoDimensions());
+    };
+
+    updateDimensions();
+    window.addEventListener("resize", updateDimensions);
+    return () => window.removeEventListener("resize", updateDimensions);
+  }, []);
+
+  useEffect(() => {
+    setVideoEnded(false);
+  }, [video.url]);
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
@@ -157,6 +216,82 @@ function MobileVideoOverlay({
       document.body.style.overflow = previousOverflow;
     };
   }, []);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      if (document.fullscreenElement) {
+        markExpandHintShown();
+      }
+    };
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
+  }, [markExpandHintShown]);
+
+  useEffect(() => {
+    const subscribeToVimeoEvents = (iframeWindow: Window) => {
+      ["finish", "play"].forEach((eventName) => {
+        iframeWindow.postMessage(
+          JSON.stringify({ method: "addEventListener", value: eventName }),
+          "https://player.vimeo.com",
+        );
+      });
+    };
+
+    const handleMessage = (event: MessageEvent) => {
+      if (event.origin !== "https://player.vimeo.com") {
+        return;
+      }
+
+      try {
+        const data = JSON.parse(event.data as string) as {
+          event?: string;
+          method?: string;
+          value?: boolean;
+          data?: { fullscreen?: boolean };
+        };
+
+        if (data.event === "ready" && iframeRef.current?.contentWindow) {
+          subscribeToVimeoEvents(iframeRef.current.contentWindow);
+        }
+
+        if (data.event === "finish") {
+          setVideoEnded(true);
+        }
+
+        if (data.event === "play") {
+          setVideoEnded(false);
+        }
+
+        if (data.event === "fullscreenchange" && data.data?.fullscreen) {
+          markExpandHintShown();
+        }
+      } catch {
+        // ignore non-JSON messages
+      }
+    };
+
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, [markExpandHintShown, embedUrl]);
+
+  const handleNext = () => {
+    if (isLast) {
+      return;
+    }
+
+    setVideoEnded(false);
+    onNext();
+  };
+
+  const handlePrevious = () => {
+    if (isFirst) {
+      return;
+    }
+
+    setVideoEnded(false);
+    onPrevious();
+  };
 
   if (!mounted) {
     return null;
@@ -207,21 +342,113 @@ function MobileVideoOverlay({
         style={{
           width: "100%",
           paddingTop: "calc(48px + env(safe-area-inset-top))",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
         }}
       >
-        {embedUrl ? (
-          <iframe
-            key={embedUrl}
-            src={embedUrl}
-            title={video.title}
+        <div
+          style={{
+            position: "relative",
+            width: `${videoDimensions.finalWidth}px`,
+            height: `${videoDimensions.finalHeight}px`,
+          }}
+        >
+          {embedUrl ? (
+            <iframe
+              ref={iframeRef}
+              key={embedUrl}
+              src={embedUrl}
+              title={video.title}
+              style={{
+                width: `${videoDimensions.finalWidth}px`,
+                height: `${videoDimensions.finalHeight}px`,
+                border: "none",
+                display: "block",
+              }}
+              allow="autoplay; fullscreen; picture-in-picture"
+              allowFullScreen
+            />
+          ) : null}
+
+          {videoEnded ? (
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: "rgba(0,0,0,0.85)",
+                zIndex: 10,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "16px",
+              }}
+            >
+              <p
+                style={{
+                  color: "white",
+                  fontSize: "16px",
+                  fontWeight: 600,
+                  textAlign: "center",
+                  padding: "0 24px",
+                }}
+              >
+                Video complete
+              </p>
+              {!isLast ? (
+                <button
+                  type="button"
+                  onClick={handleNext}
+                  style={{
+                    backgroundColor: "#52B788",
+                    color: "#0A1628",
+                    border: "none",
+                    borderRadius: "12px",
+                    padding: "12px 32px",
+                    fontSize: "15px",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                  }}
+                >
+                  Next Video
+                </button>
+              ) : null}
+              <button
+                type="button"
+                onClick={onClose}
+                style={{
+                  backgroundColor: "transparent",
+                  color: "#aaaaaa",
+                  border: "1px solid #aaaaaa",
+                  borderRadius: "12px",
+                  padding: "10px 24px",
+                  fontSize: "14px",
+                  cursor: "pointer",
+                }}
+              >
+                Back to Library
+              </button>
+            </div>
+          ) : null}
+        </div>
+
+        {showExpandHint ? (
+          <p
             style={{
-              width: "100%",
-              height: "calc(100vw * 9 / 16)",
-              border: "none",
+              color: "#52B788",
+              fontSize: "12px",
+              textAlign: "center",
+              marginTop: "8px",
+              opacity: 0.8,
+              padding: "0 16px",
             }}
-            allow="autoplay; fullscreen; picture-in-picture"
-            allowFullScreen
-          />
+          >
+            Tap the expand icon in the video for full screen
+          </p>
         ) : null}
       </div>
 
@@ -258,7 +485,7 @@ function MobileVideoOverlay({
       >
         <button
           type="button"
-          onClick={onPrevious}
+          onClick={handlePrevious}
           disabled={isFirst}
           style={{
             background: isFirst ? "#333333" : "#52B788",
@@ -275,7 +502,7 @@ function MobileVideoOverlay({
         </button>
         <button
           type="button"
-          onClick={onNext}
+          onClick={handleNext}
           disabled={isLast}
           style={{
             background: isLast ? "#333333" : "#52B788",
