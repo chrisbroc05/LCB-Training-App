@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { useEffect, useMemo, useState } from "react";
+import VideoPlayer from "@/app/components/mobile/VideoPlayer";
 import {
   allDrillLibraryVideos,
   fieldingVideos,
@@ -9,7 +9,7 @@ import {
   mindsetVideos,
   type DrillLibraryVideoItem,
 } from "@/lib/drill-library-videos";
-import { buildDrillLibraryEmbedUrl, extractVimeoVideoId } from "@/lib/vimeo";
+import { buildDrillLibraryEmbedUrl } from "@/lib/vimeo";
 
 const drillCategories = [
   { key: "all", label: "All" },
@@ -20,6 +20,12 @@ const drillCategories = [
 
 type DrillCategoryFilter = (typeof drillCategories)[number]["key"];
 type DrillCategoryKey = DrillLibraryVideoItem["category"];
+
+type PlayerState = {
+  video: DrillLibraryVideoItem;
+  videos: DrillLibraryVideoItem[];
+  startIndex: number;
+};
 
 function getVideosForCategory(category: DrillCategoryKey) {
   if (category === "hitting") {
@@ -119,420 +125,14 @@ function VideoSection({
   );
 }
 
-type VideoDimensions = {
-  finalWidth: number;
-  finalHeight: number;
-};
-
-const EXPAND_HINT_STORAGE_KEY = "video-expanded-hint-shown";
-
-function calculateVideoDimensions(): VideoDimensions {
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-  const availableHeight = vh - 180;
-  const heightBasedWidth = availableHeight * (16 / 9);
-  const useHeightBased = heightBasedWidth <= vw;
-  const finalWidth = useHeightBased ? heightBasedWidth : vw;
-  const finalHeight = useHeightBased ? availableHeight : vw * (9 / 16);
-
-  return { finalWidth, finalHeight };
-}
-
-type MobileVideoOverlayProps = {
-  video: DrillLibraryVideoItem;
-  currentVideoIndex: number;
-  currentCategoryVideos: DrillLibraryVideoItem[];
-  onClose: () => void;
-  onNext: () => void;
-  onPrevious: () => void;
-};
-
-function MobileVideoOverlay({
-  video,
-  currentVideoIndex,
-  currentCategoryVideos,
-  onClose,
-  onNext,
-  onPrevious,
-}: MobileVideoOverlayProps) {
-  const [mounted, setMounted] = useState(false);
-  const [videoDimensions, setVideoDimensions] = useState<VideoDimensions>({
-    finalWidth: 375,
-    finalHeight: 211,
-  });
-  const [videoEnded, setVideoEnded] = useState(false);
-  const [showExpandHint, setShowExpandHint] = useState(false);
-  const iframeRef = useRef<HTMLIFrameElement | null>(null);
-
-  const videoId = extractVimeoVideoId(video.url);
-  const embedUrl = videoId
-    ? `https://player.vimeo.com/video/${videoId}?autoplay=1&title=0&byline=0&portrait=0&dnt=1&controls=1&api=1`
-    : "";
-
-  const isFirst = currentVideoIndex === 0;
-  const isLast = currentVideoIndex === currentCategoryVideos.length - 1;
-
-  const markExpandHintShown = useCallback(() => {
-    try {
-      sessionStorage.setItem(EXPAND_HINT_STORAGE_KEY, "true");
-    } catch {
-      // ignore storage errors
-    }
-    setShowExpandHint(false);
-  }, []);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    try {
-      const hintShown = sessionStorage.getItem(EXPAND_HINT_STORAGE_KEY);
-      setShowExpandHint(!hintShown);
-    } catch {
-      setShowExpandHint(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    const updateDimensions = () => {
-      setVideoDimensions(calculateVideoDimensions());
-    };
-
-    updateDimensions();
-    window.addEventListener("resize", updateDimensions);
-    return () => window.removeEventListener("resize", updateDimensions);
-  }, []);
-
-  useEffect(() => {
-    setVideoEnded(false);
-  }, [video.url]);
-
-  useEffect(() => {
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, []);
-
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      if (document.fullscreenElement) {
-        markExpandHintShown();
-      }
-    };
-
-    document.addEventListener("fullscreenchange", handleFullscreenChange);
-    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
-  }, [markExpandHintShown]);
-
-  useEffect(() => {
-    const subscribeToVimeoEvents = (iframeWindow: Window) => {
-      ["finish", "play"].forEach((eventName) => {
-        iframeWindow.postMessage(
-          JSON.stringify({ method: "addEventListener", value: eventName }),
-          "https://player.vimeo.com",
-        );
-      });
-    };
-
-    const handleMessage = (event: MessageEvent) => {
-      if (event.origin !== "https://player.vimeo.com") {
-        return;
-      }
-
-      try {
-        const data = JSON.parse(event.data as string) as {
-          event?: string;
-          method?: string;
-          value?: boolean;
-          data?: { fullscreen?: boolean };
-        };
-
-        if (data.event === "ready" && iframeRef.current?.contentWindow) {
-          subscribeToVimeoEvents(iframeRef.current.contentWindow);
-        }
-
-        if (data.event === "finish") {
-          setVideoEnded(true);
-        }
-
-        if (data.event === "play") {
-          setVideoEnded(false);
-        }
-
-        if (data.event === "fullscreenchange" && data.data?.fullscreen) {
-          markExpandHintShown();
-        }
-      } catch {
-        // ignore non-JSON messages
-      }
-    };
-
-    window.addEventListener("message", handleMessage);
-    return () => window.removeEventListener("message", handleMessage);
-  }, [markExpandHintShown, embedUrl]);
-
-  const handleNext = () => {
-    if (isLast) {
-      return;
-    }
-
-    setVideoEnded(false);
-    onNext();
-  };
-
-  const handlePrevious = () => {
-    if (isFirst) {
-      return;
-    }
-
-    setVideoEnded(false);
-    onPrevious();
-  };
-
-  if (!mounted) {
-    return null;
-  }
-
-  return createPortal(
-    <div
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: "#000000",
-        zIndex: 9999,
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
-      <button
-        type="button"
-        onClick={onClose}
-        aria-label="Close video"
-        style={{
-          position: "absolute",
-          top: "calc(16px + env(safe-area-inset-top))",
-          right: "16px",
-          background: "rgba(0,0,0,0.5)",
-          border: "none",
-          color: "white",
-          fontSize: "24px",
-          width: "40px",
-          height: "40px",
-          borderRadius: "50%",
-          cursor: "pointer",
-          zIndex: 10000,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        x
-      </button>
-
-      <div
-        style={{
-          width: "100%",
-          paddingTop: "calc(48px + env(safe-area-inset-top))",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-        }}
-      >
-        <div
-          style={{
-            position: "relative",
-            width: `${videoDimensions.finalWidth}px`,
-            height: `${videoDimensions.finalHeight}px`,
-          }}
-        >
-          {embedUrl ? (
-            <iframe
-              ref={iframeRef}
-              key={embedUrl}
-              src={embedUrl}
-              title={video.title}
-              style={{
-                width: `${videoDimensions.finalWidth}px`,
-                height: `${videoDimensions.finalHeight}px`,
-                border: "none",
-                display: "block",
-              }}
-              allow="autoplay; fullscreen; picture-in-picture"
-              allowFullScreen
-            />
-          ) : null}
-
-          {videoEnded ? (
-            <div
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                backgroundColor: "rgba(0,0,0,0.85)",
-                zIndex: 10,
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "16px",
-              }}
-            >
-              <p
-                style={{
-                  color: "white",
-                  fontSize: "16px",
-                  fontWeight: 600,
-                  textAlign: "center",
-                  padding: "0 24px",
-                }}
-              >
-                Video complete
-              </p>
-              {!isLast ? (
-                <button
-                  type="button"
-                  onClick={handleNext}
-                  style={{
-                    backgroundColor: "#52B788",
-                    color: "#0A1628",
-                    border: "none",
-                    borderRadius: "12px",
-                    padding: "12px 32px",
-                    fontSize: "15px",
-                    fontWeight: 700,
-                    cursor: "pointer",
-                  }}
-                >
-                  Next Video
-                </button>
-              ) : null}
-              <button
-                type="button"
-                onClick={onClose}
-                style={{
-                  backgroundColor: "transparent",
-                  color: "#aaaaaa",
-                  border: "1px solid #aaaaaa",
-                  borderRadius: "12px",
-                  padding: "10px 24px",
-                  fontSize: "14px",
-                  cursor: "pointer",
-                }}
-              >
-                Back to Library
-              </button>
-            </div>
-          ) : null}
-        </div>
-
-        {showExpandHint ? (
-          <p
-            style={{
-              color: "#52B788",
-              fontSize: "12px",
-              textAlign: "center",
-              marginTop: "8px",
-              opacity: 0.8,
-              padding: "0 16px",
-            }}
-          >
-            Tap the expand icon in the video for full screen
-          </p>
-        ) : null}
-      </div>
-
-      <p
-        style={{
-          color: "white",
-          fontSize: "14px",
-          fontWeight: 600,
-          marginTop: "16px",
-          padding: "0 16px",
-          textAlign: "center",
-        }}
-      >
-        {video.title}
-      </p>
-
-      <p
-        style={{
-          color: "#888888",
-          fontSize: "12px",
-          marginTop: "8px",
-        }}
-      >
-        {currentVideoIndex + 1} of {currentCategoryVideos.length}
-      </p>
-
-      <div
-        style={{
-          display: "flex",
-          gap: "16px",
-          marginTop: "16px",
-          paddingBottom: "calc(16px + env(safe-area-inset-bottom))",
-        }}
-      >
-        <button
-          type="button"
-          onClick={handlePrevious}
-          disabled={isFirst}
-          style={{
-            background: isFirst ? "#333333" : "#52B788",
-            color: isFirst ? "#666666" : "#0A1628",
-            border: "none",
-            borderRadius: "8px",
-            padding: "10px 24px",
-            fontSize: "14px",
-            fontWeight: 700,
-            cursor: isFirst ? "not-allowed" : "pointer",
-          }}
-        >
-          Previous
-        </button>
-        <button
-          type="button"
-          onClick={handleNext}
-          disabled={isLast}
-          style={{
-            background: isLast ? "#333333" : "#52B788",
-            color: isLast ? "#666666" : "#0A1628",
-            border: "none",
-            borderRadius: "8px",
-            padding: "10px 24px",
-            fontSize: "14px",
-            fontWeight: 700,
-            cursor: isLast ? "not-allowed" : "pointer",
-          }}
-        >
-          Next
-        </button>
-      </div>
-    </div>,
-    document.body,
-  );
-}
-
 type VideoLibraryProps = {
   thumbnailMap?: Record<string, string | null>;
 };
 
 export default function VideoLibrary({ thumbnailMap = {} }: VideoLibraryProps) {
-  const [selectedVideo, setSelectedVideo] = useState<DrillLibraryVideoItem | null>(null);
-  const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
-  const [currentCategoryVideos, setCurrentCategoryVideos] = useState<DrillLibraryVideoItem[]>([]);
+  const [playerState, setPlayerState] = useState<PlayerState | null>(null);
+  const [desktopVideo, setDesktopVideo] = useState<DrillLibraryVideoItem | null>(null);
   const [mobileCategory, setMobileCategory] = useState<DrillCategoryFilter>("all");
-  const [showMobileOverlay, setShowMobileOverlay] = useState(false);
 
   const filteredMobileVideos = useMemo(() => {
     if (mobileCategory === "all") {
@@ -542,67 +142,43 @@ export default function VideoLibrary({ thumbnailMap = {} }: VideoLibraryProps) {
     return allDrillLibraryVideos.filter((video) => video.category === mobileCategory);
   }, [mobileCategory]);
 
-  const openMobileVideo = (
-    video: DrillLibraryVideoItem,
-    categoryVideos: DrillLibraryVideoItem[],
-    index: number,
-  ) => {
-    setSelectedVideo(video);
-    setCurrentVideoIndex(index);
-    setCurrentCategoryVideos(categoryVideos);
-    setShowMobileOverlay(true);
+  const openVideo = (video: DrillLibraryVideoItem, index: number) => {
+    const categoryVideos =
+      mobileCategory === "all" ? getVideosForCategory(video.category) : filteredMobileVideos;
+    const videoIndex =
+      mobileCategory === "all"
+        ? categoryVideos.findIndex((entry) => entry.url === video.url)
+        : index;
+
+    setPlayerState({
+      video,
+      videos: categoryVideos,
+      startIndex: videoIndex >= 0 ? videoIndex : 0,
+    });
   };
 
   const closeVideo = () => {
-    setSelectedVideo(null);
-    setShowMobileOverlay(false);
-  };
-
-  const goToNext = () => {
-    if (currentVideoIndex >= currentCategoryVideos.length - 1) {
-      return;
-    }
-
-    const nextIndex = currentVideoIndex + 1;
-    setCurrentVideoIndex(nextIndex);
-    setSelectedVideo(currentCategoryVideos[nextIndex]);
-  };
-
-  const goToPrevious = () => {
-    if (currentVideoIndex <= 0) {
-      return;
-    }
-
-    const previousIndex = currentVideoIndex - 1;
-    setCurrentVideoIndex(previousIndex);
-    setSelectedVideo(currentCategoryVideos[previousIndex]);
-  };
-
-  const openDesktopVideo = (video: DrillLibraryVideoItem) => {
-    setSelectedVideo(video);
+    setPlayerState(null);
   };
 
   useEffect(() => {
-    if (!selectedVideo || showMobileOverlay) {
+    if (!desktopVideo) {
       return;
     }
 
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        setSelectedVideo(null);
+        setDesktopVideo(null);
       }
     };
 
     window.addEventListener("keydown", handleEscape);
     return () => window.removeEventListener("keydown", handleEscape);
-  }, [selectedVideo, showMobileOverlay]);
+  }, [desktopVideo]);
 
   const desktopModalUrl = useMemo(
-    () =>
-      selectedVideo && !showMobileOverlay
-        ? buildDrillLibraryEmbedUrl(selectedVideo.url, { autoplay: true })
-        : "",
-    [selectedVideo, showMobileOverlay],
+    () => (desktopVideo ? buildDrillLibraryEmbedUrl(desktopVideo.url, { autoplay: true }) : ""),
+    [desktopVideo],
   );
 
   return (
@@ -621,28 +197,17 @@ export default function VideoLibrary({ thumbnailMap = {} }: VideoLibraryProps) {
           ))}
         </div>
         <div className="mobile-card-stack">
-          {filteredMobileVideos.map((video, index) => {
-            const categoryVideos =
-              mobileCategory === "all"
-                ? getVideosForCategory(video.category)
-                : filteredMobileVideos;
-            const videoIndex =
-              mobileCategory === "all"
-                ? categoryVideos.findIndex((entry) => entry.url === video.url)
-                : index;
-
-            return (
-              <button
-                key={video.url}
-                type="button"
-                onClick={() => openMobileVideo(video, categoryVideos, videoIndex)}
-                className="mobile-card text-left"
-              >
-                <VideoThumbnail thumbnailUrl={thumbnailMap[video.url]} compact />
-                <p className="mt-3 text-base font-semibold text-zinc-100">{video.title}</p>
-              </button>
-            );
-          })}
+          {filteredMobileVideos.map((video, index) => (
+            <button
+              key={video.url}
+              type="button"
+              onClick={() => openVideo(video, index)}
+              className="mobile-card text-left"
+            >
+              <VideoThumbnail thumbnailUrl={thumbnailMap[video.url]} compact />
+              <p className="mt-3 text-base font-semibold text-zinc-100">{video.title}</p>
+            </button>
+          ))}
         </div>
       </section>
 
@@ -652,39 +217,37 @@ export default function VideoLibrary({ thumbnailMap = {} }: VideoLibraryProps) {
           description="Drill demonstrations for swing mechanics, load, posture, and bat path."
           videos={hittingVideos}
           thumbnailMap={thumbnailMap}
-          onSelectVideo={openDesktopVideo}
+          onSelectVideo={setDesktopVideo}
         />
         <VideoSection
           heading="Fielding Library"
           description="Defensive drill work for control, timing, footwork, and making game-speed plays."
           videos={fieldingVideos}
           thumbnailMap={thumbnailMap}
-          onSelectVideo={openDesktopVideo}
+          onSelectVideo={setDesktopVideo}
         />
         <VideoSection
           heading="Mindset Library"
           description="Mental performance lessons to build confidence, focus, and composure."
           videos={mindsetVideos}
           thumbnailMap={thumbnailMap}
-          onSelectVideo={openDesktopVideo}
+          onSelectVideo={setDesktopVideo}
         />
       </section>
 
-      {selectedVideo && showMobileOverlay ? (
-        <MobileVideoOverlay
-          video={selectedVideo}
-          currentVideoIndex={currentVideoIndex}
-          currentCategoryVideos={currentCategoryVideos}
+      {playerState ? (
+        <VideoPlayer
+          video={playerState.video}
+          videos={playerState.videos}
+          startIndex={playerState.startIndex}
           onClose={closeVideo}
-          onNext={goToNext}
-          onPrevious={goToPrevious}
         />
       ) : null}
 
-      {selectedVideo && !showMobileOverlay ? (
+      {desktopVideo ? (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-3 sm:p-6"
-          onClick={() => setSelectedVideo(null)}
+          onClick={() => setDesktopVideo(null)}
         >
           <div
             className="relative h-[78dvh] w-[96vw] max-w-6xl overflow-hidden rounded-2xl border border-[#2b3650] bg-black shadow-2xl sm:h-[80vh] sm:w-[85vw] lg:w-[80vw]"
@@ -692,7 +255,7 @@ export default function VideoLibrary({ thumbnailMap = {} }: VideoLibraryProps) {
           >
             <button
               type="button"
-              onClick={() => setSelectedVideo(null)}
+              onClick={() => setDesktopVideo(null)}
               className="absolute right-3 top-3 z-10 rounded-full bg-black/70 px-3 py-1 text-sm font-semibold text-zinc-100 transition hover:bg-black"
             >
               Close
@@ -700,7 +263,7 @@ export default function VideoLibrary({ thumbnailMap = {} }: VideoLibraryProps) {
             {desktopModalUrl ? (
               <iframe
                 src={desktopModalUrl}
-                title={selectedVideo.title}
+                title={desktopVideo.title}
                 className="h-full w-full"
                 allow="fullscreen; picture-in-picture"
                 allowFullScreen
