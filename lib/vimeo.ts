@@ -45,21 +45,60 @@ export function extractVimeoVideoId(url: string | null | undefined) {
   return parseVimeoUrl(url)?.videoId ?? null;
 }
 
+export const VIMEO_EMBED_PARAMS = {
+  title: "0",
+  byline: "0",
+  portrait: "0",
+  dnt: "1",
+  transparent: "0",
+  rel: "0",
+  pip: "0",
+} as const;
+
+function applyVimeoEmbedParams(params: URLSearchParams) {
+  Object.entries(VIMEO_EMBED_PARAMS).forEach(([key, value]) => {
+    params.set(key, value);
+  });
+}
+
 export function toVimeoEmbedUrl(url: string | null | undefined) {
   const parsed = parseVimeoUrl(url);
   if (!parsed) {
     return null;
   }
 
-  const params = new URLSearchParams({
-    title: "0",
-    byline: "0",
-    portrait: "0",
-    dnt: "1",
-  });
+  const params = new URLSearchParams();
+  applyVimeoEmbedParams(params);
 
   if (parsed.hash) {
     params.set("h", parsed.hash);
+  }
+
+  return `https://player.vimeo.com/video/${parsed.videoId}?${params.toString()}`;
+}
+
+export function buildDrillLibraryEmbedUrl(
+  url: string,
+  options?: { autoplay?: boolean; muted?: boolean },
+) {
+  const parsed = parseVimeoUrl(url);
+  if (!parsed) {
+    return url;
+  }
+
+  const params = new URLSearchParams();
+  applyVimeoEmbedParams(params);
+
+  if (parsed.hash) {
+    params.set("h", parsed.hash);
+  }
+
+  if (options?.autoplay) {
+    params.set("autoplay", "1");
+  }
+
+  if (options?.muted) {
+    params.set("muted", "1");
   }
 
   return `https://player.vimeo.com/video/${parsed.videoId}?${params.toString()}`;

@@ -10,6 +10,7 @@ import {
   mindsetVideos,
   type DrillLibraryVideoItem,
 } from "@/lib/drill-library-videos";
+import { buildDrillLibraryEmbedUrl } from "@/lib/vimeo";
 
 const drillCategories = [
   { key: "all", label: "All" },
@@ -20,29 +21,6 @@ const drillCategories = [
 
 type DrillCategoryFilter = (typeof drillCategories)[number]["key"];
 type DrillCategoryKey = DrillLibraryVideoItem["category"];
-
-const drillLibraryEmbedParams = {
-  title: "0",
-  byline: "0",
-  portrait: "0",
-  dnt: "1",
-  transparent: "0",
-  rel: "0",
-} as const;
-
-function buildDrillLibraryEmbedUrl(url: string, options?: { autoplay?: boolean }) {
-  const parsedUrl = new URL(url);
-
-  Object.entries(drillLibraryEmbedParams).forEach(([key, value]) => {
-    parsedUrl.searchParams.set(key, value);
-  });
-
-  if (options?.autoplay) {
-    parsedUrl.searchParams.set("autoplay", "1");
-  }
-
-  return parsedUrl.toString();
-}
 
 function getCategoryLabel(category: DrillCategoryKey) {
   if (category === "hitting") {
