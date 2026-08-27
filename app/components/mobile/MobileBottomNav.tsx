@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { useOptionalMobileApp } from "@/app/components/mobile/MobileAppProvider";
 
 type MobileBottomNavProps = {
@@ -16,6 +17,8 @@ type NavTab = {
   isActive: (pathname: string) => boolean;
   icon: (active: boolean) => React.ReactNode;
 };
+
+const prefetchRoutes = ["/dashboard", "/playbook", "/drill-library", "/resources", "/profile"];
 
 function HomeIcon({ active }: { active: boolean }) {
   return (
@@ -136,9 +139,15 @@ function getLockedUpgradeMessage(tabKey: NavTab["key"]) {
   return "Upgrade to Basic or above to unlock the drill library and training videos.";
 }
 
+function isTabActive(pathname: string, tab: NavTab) {
+  return tab.isActive(pathname);
+}
+
 export default function MobileBottomNav({ hasBasicAccess }: MobileBottomNavProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const mobileApp = useOptionalMobileApp();
+  const [optimisticPath, setOptimisticPath] = useState<string | null>(null);
 
   const tabs: NavTab[] = [
     {
@@ -181,6 +190,16 @@ export default function MobileBottomNav({ hasBasicAccess }: MobileBottomNavProps
     },
   ];
 
+  useEffect(() => {
+    prefetchRoutes.forEach((route) => {
+      router.prefetch(route);
+    });
+  }, [router]);
+
+  useEffect(() => {
+    setOptimisticPath(null);
+  }, [pathname]);
+
   const handleTabPress = (
     event: React.MouseEvent<HTMLAnchorElement>,
     tab: NavTab,
@@ -188,14 +207,28 @@ export default function MobileBottomNav({ hasBasicAccess }: MobileBottomNavProps
     if (tab.locked) {
       event.preventDefault();
       mobileApp?.openUpgradeSheet(getLockedUpgradeMessage(tab.key));
+      return;
     }
+
+    setOptimisticPath(tab.href);
+  };
+
+  const resolveActive = (tab: NavTab) => {
+    if (optimisticPath) {
+      const activeTab = tabs.find((entry) => entry.href === optimisticPath);
+      if (activeTab) {
+        return activeTab.key === tab.key;
+      }
+    }
+
+    return isTabActive(pathname, tab);
   };
 
   return (
     <nav className="mobile-bottom-nav md:hidden" aria-label="Mobile app navigation">
       <div className="mobile-bottom-nav-pill">
         {tabs.map((tab) => {
-          const active = tab.isActive(pathname);
+          const active = resolveActive(tab);
           const content = (
             <>
               <span className="mobile-bottom-nav-icon">
@@ -209,6 +242,7 @@ export default function MobileBottomNav({ hasBasicAccess }: MobileBottomNavProps
             <Link
               key={tab.key}
               href={tab.href}
+              prefetch={true}
               onClick={(event) => handleTabPress(event, tab)}
               className={`mobile-bottom-nav-tab mobile-tab-press ${active ? "is-active" : ""}`}
               aria-current={active ? "page" : undefined}

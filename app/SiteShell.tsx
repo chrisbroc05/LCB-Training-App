@@ -5,6 +5,7 @@ import LandingSwingBanner from "@/app/LandingSwingBanner";
 import LandingHeader from "@/app/LandingHeader";
 import MobileAppHeader from "@/app/components/mobile/MobileAppHeader";
 import MobileBottomNav from "@/app/components/mobile/MobileBottomNav";
+import MobilePageTransition from "@/app/components/mobile/MobilePageTransition";
 import { MobileAppProvider } from "@/app/components/mobile/MobileAppProvider";
 import { shouldUseMobileAppChrome } from "@/lib/mobile-ui";
 import type { DatabaseTier } from "@/lib/membership";
@@ -52,7 +53,7 @@ export default function SiteShell({
         {isHomePage ? <LandingHeader isLoggedIn={isLoggedIn} /> : header}
       </div>
       <main className={useMobileChrome ? "mobile-app-main flex-1 md:pb-0 md:pt-0" : "flex-1"}>
-        {children}
+        {useMobileChrome ? <MobilePageTransition>{children}</MobilePageTransition> : children}
       </main>
       {useMobileChrome ? (
         <>

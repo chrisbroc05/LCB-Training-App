@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import MobileBottomSheet from "@/app/components/mobile/MobileBottomSheet";
+import FullScreenVideoFeed from "@/app/components/mobile/FullScreenVideoFeed";
 import { useIsMobile } from "@/app/components/mobile/useIsMobile";
 import {
   allDrillLibraryVideos,
@@ -19,6 +19,7 @@ const drillCategories = [
 ] as const;
 
 type DrillCategoryFilter = (typeof drillCategories)[number]["key"];
+type DrillCategoryKey = DrillLibraryVideoItem["category"];
 
 const drillLibraryEmbedParams = {
   title: "0",
@@ -41,6 +42,30 @@ function buildDrillLibraryEmbedUrl(url: string, options?: { autoplay?: boolean }
   }
 
   return parsedUrl.toString();
+}
+
+function getCategoryLabel(category: DrillCategoryKey) {
+  if (category === "hitting") {
+    return "Hitting";
+  }
+
+  if (category === "fielding") {
+    return "Fielding";
+  }
+
+  return "Mindset";
+}
+
+function getVideosForCategory(category: DrillCategoryKey) {
+  if (category === "hitting") {
+    return hittingVideos;
+  }
+
+  if (category === "fielding") {
+    return fieldingVideos;
+  }
+
+  return mindsetVideos;
 }
 
 function WhitePlayIcon() {
@@ -135,8 +160,20 @@ type VideoLibraryProps = {
 
 export default function VideoLibrary({ thumbnailMap = {} }: VideoLibraryProps) {
   const [selectedVideo, setSelectedVideo] = useState<DrillLibraryVideoItem | null>(null);
+  const [feedCategory, setFeedCategory] = useState<DrillCategoryKey>("hitting");
   const [mobileCategory, setMobileCategory] = useState<DrillCategoryFilter>("all");
   const isMobile = useIsMobile();
+
+  const feedVideos = useMemo(() => getVideosForCategory(feedCategory), [feedCategory]);
+
+  const selectedVideoIndex = useMemo(() => {
+    if (!selectedVideo) {
+      return 0;
+    }
+
+    const index = feedVideos.findIndex((video) => video.url === selectedVideo.url);
+    return index >= 0 ? index : 0;
+  }, [feedVideos, selectedVideo]);
 
   const filteredMobileVideos = useMemo(() => {
     if (mobileCategory === "all") {
@@ -146,8 +183,22 @@ export default function VideoLibrary({ thumbnailMap = {} }: VideoLibraryProps) {
     return allDrillLibraryVideos.filter((video) => video.category === mobileCategory);
   }, [mobileCategory]);
 
+  const openVideo = (video: DrillLibraryVideoItem) => {
+    const category =
+      mobileCategory === "all" ? video.category : (mobileCategory as DrillCategoryKey);
+    setFeedCategory(category);
+    setSelectedVideo(video);
+  };
+
+  const handleSwitchFeedCategory = (category: DrillCategoryKey) => {
+    setFeedCategory(category);
+    setMobileCategory(category);
+    const nextVideos = getVideosForCategory(category);
+    setSelectedVideo(nextVideos[0] ?? null);
+  };
+
   useEffect(() => {
-    if (!selectedVideo) {
+    if (!selectedVideo || isMobile) {
       return;
     }
 
@@ -159,7 +210,7 @@ export default function VideoLibrary({ thumbnailMap = {} }: VideoLibraryProps) {
 
     window.addEventListener("keydown", handleEscape);
     return () => window.removeEventListener("keydown", handleEscape);
-  }, [selectedVideo]);
+  }, [isMobile, selectedVideo]);
 
   const modalUrl = useMemo(
     () =>
@@ -187,7 +238,7 @@ export default function VideoLibrary({ thumbnailMap = {} }: VideoLibraryProps) {
             <button
               key={video.url}
               type="button"
-              onClick={() => setSelectedVideo(video)}
+              onClick={() => openVideo(video)}
               className="mobile-card text-left"
             >
               <VideoThumbnail thumbnailUrl={thumbnailMap[video.url]} compact />
@@ -203,45 +254,33 @@ export default function VideoLibrary({ thumbnailMap = {} }: VideoLibraryProps) {
           description="Drill demonstrations for swing mechanics, load, posture, and bat path."
           videos={hittingVideos}
           thumbnailMap={thumbnailMap}
-          onSelectVideo={setSelectedVideo}
+          onSelectVideo={openVideo}
         />
         <VideoSection
           heading="Fielding Library"
           description="Defensive drill work for control, timing, footwork, and making game-speed plays."
           videos={fieldingVideos}
           thumbnailMap={thumbnailMap}
-          onSelectVideo={setSelectedVideo}
+          onSelectVideo={openVideo}
         />
         <VideoSection
           heading="Mindset Library"
           description="Mental performance lessons to build confidence, focus, and composure."
           videos={mindsetVideos}
           thumbnailMap={thumbnailMap}
-          onSelectVideo={setSelectedVideo}
+          onSelectVideo={openVideo}
         />
       </section>
 
       {selectedVideo && isMobile ? (
-        <MobileBottomSheet
-          open={Boolean(selectedVideo)}
+        <FullScreenVideoFeed
+          videos={feedVideos}
+          initialIndex={selectedVideoIndex}
+          categoryLabel={getCategoryLabel(feedCategory)}
+          categoryKey={feedCategory}
           onClose={() => setSelectedVideo(null)}
-          variant="cinematic"
-          showCloseButton
-        >
-          <div className="mobile-video-player-shell">
-            {modalUrl ? (
-              <iframe
-                src={modalUrl}
-                title={selectedVideo.title}
-                className="mobile-video-player-iframe"
-                allow="autoplay; fullscreen; picture-in-picture"
-                allowFullScreen
-                loading="lazy"
-              />
-            ) : null}
-          </div>
-          <p className="mobile-video-player-title">{selectedVideo.title}</p>
-        </MobileBottomSheet>
+          onSwitchCategory={handleSwitchFeedCategory}
+        />
       ) : null}
 
       {selectedVideo && !isMobile ? (
