@@ -4,7 +4,7 @@ import Player from "@vimeo/player";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { DrillLibraryVideoItem } from "@/lib/drill-library-videos";
-import { buildDrillLibraryEmbedUrl } from "@/lib/vimeo";
+import { buildDrillLibraryEmbedUrl, extractVimeoVideoId } from "@/lib/vimeo";
 
 type DrillCategoryKey = "hitting" | "fielding" | "mindset";
 
@@ -17,28 +17,11 @@ type FullScreenVideoFeedProps = {
   onSwitchCategory: (category: DrillCategoryKey) => void;
 };
 
-type VideoDimensions = {
-  width: number;
-  height: number;
-};
-
 const categoryOptions: Array<{ key: DrillCategoryKey; label: string }> = [
   { key: "hitting", label: "Hitting" },
   { key: "fielding", label: "Fielding" },
   { key: "mindset", label: "Mindset" },
 ];
-
-function calculateVideoDimensions(screenWidth: number, screenHeight: number): VideoDimensions {
-  const videoByWidth = { width: screenWidth, height: screenWidth * (9 / 16) };
-  const videoByHeight = { width: screenHeight * (16 / 9), height: screenHeight * 0.75 };
-  const useHeightBased = videoByHeight.width <= screenWidth;
-  const videoDimensions = useHeightBased ? videoByHeight : videoByWidth;
-
-  return {
-    width: Math.min(videoDimensions.width, screenWidth),
-    height: Math.min(videoDimensions.height, screenHeight),
-  };
-}
 
 function CloseIcon() {
   return (
@@ -80,6 +63,11 @@ function MuteIcon({ muted }: { muted: boolean }) {
   );
 }
 
+function applyFallbackIframeSize(iframe: HTMLIFrameElement) {
+  iframe.style.width = "100vw";
+  iframe.style.height = `${window.innerWidth * (9 / 16)}px`;
+}
+
 export default function FullScreenVideoFeed({
   videos,
   initialIndex,
@@ -92,13 +80,15 @@ export default function FullScreenVideoFeed({
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [isMuted, setIsMuted] = useState(false);
   const [showEndMessage, setShowEndMessage] = useState(false);
-  const [showUpNext, setShowUpNext] = useState(false);
-  const [showEndScreenBlocker, setShowEndScreenBlocker] = useState(false);
-  const [slideDirection, setSlideDirection] = useState<"up" | "down" | null>(null);
-  const [enterDirection, setEnterDirection] = useState<"up" | "down" | null>(null);
-  const [isAnimating, setIsAnimating] = useState(false);
-  const [videoDimensions, setVideoDimensions] = useState<VideoDimensions>({ width: 0, height: 0 });
+  const [showBlocker, setShowBlocker] = useState(false);
+  const [useFallbackSize, setUseFallbackSize] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  const playerRef = useRef<Player | null>(null);
+  const currentIndexRef = useRef(initialIndex);
+  const videosRef = useRef(videos);
+  const onCloseRef = useRef(onClose);
+  const isClosingRef = useRef(false);
+  const hasEnteredFullscreenRef = useRef(false);
   const advanceTimeoutRef = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
   const touchEndY = useRef<number | null>(null);
@@ -106,27 +96,95 @@ export default function FullScreenVideoFeed({
 
   const currentVideo = videos[currentIndex];
 
-  const embedUrl = useMemo(() => {
-    if (!currentVideo) {
+  const initialEmbedUrl = useMemo(() => {
+    const startVideo = videos[initialIndex] ?? videos[0];
+    if (!startVideo) {
       return "";
     }
 
-    return buildDrillLibraryEmbedUrl(currentVideo.url, { autoplay: true, muted: isMuted });
-  }, [currentVideo, isMuted]);
+    return buildDrillLibraryEmbedUrl(startVideo.url, { autoplay: true });
+  }, [initialIndex, videos]);
 
-  const updateVideoDimensions = useCallback(() => {
-    setVideoDimensions(calculateVideoDimensions(window.innerWidth, window.innerHeight));
+  const requestPlayerFullscreen = useCallback(async (player: Player) => {
+    try {
+      await player.requestFullscreen();
+      hasEnteredFullscreenRef.current = true;
+      setUseFallbackSize(false);
+    } catch {
+      setUseFallbackSize(true);
+      if (iframeRef.current) {
+        applyFallbackIframeSize(iframeRef.current);
+      }
+    }
   }, []);
+
+  const loadVideoAtIndex = useCallback(
+    async (index: number) => {
+      const player = playerRef.current;
+      const categoryVideos = videosRef.current;
+      const targetVideo = categoryVideos[index];
+      const videoId = targetVideo ? extractVimeoVideoId(targetVideo.url) : null;
+
+      if (!player || !videoId) {
+        return;
+      }
+
+      setCurrentIndex(index);
+      currentIndexRef.current = index;
+      setShowEndMessage(false);
+      setShowBlocker(false);
+
+      try {
+        await player.loadVideo(Number(videoId));
+        await player.play();
+        if (isMuted) {
+          await player.setVolume(0);
+        }
+        await requestPlayerFullscreen(player);
+      } catch (error) {
+        console.error("Error loading video:", error);
+      }
+    },
+    [isMuted, requestPlayerFullscreen],
+  );
+
+  const goToNextVideo = useCallback(async () => {
+    const nextIndex = currentIndexRef.current + 1;
+    if (nextIndex >= videosRef.current.length) {
+      setShowEndMessage(true);
+      return;
+    }
+
+    await loadVideoAtIndex(nextIndex);
+  }, [loadVideoAtIndex]);
+
+  const goToPreviousVideo = useCallback(async () => {
+    const previousIndex = currentIndexRef.current - 1;
+    if (previousIndex < 0) {
+      return;
+    }
+
+    await loadVideoAtIndex(previousIndex);
+  }, [loadVideoAtIndex]);
+
+  const goToNextVideoRef = useRef(goToNextVideo);
+  goToNextVideoRef.current = goToNextVideo;
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
   useEffect(() => {
-    updateVideoDimensions();
-    window.addEventListener("resize", updateVideoDimensions);
-    return () => window.removeEventListener("resize", updateVideoDimensions);
-  }, [updateVideoDimensions]);
+    currentIndexRef.current = currentIndex;
+  }, [currentIndex]);
+
+  useEffect(() => {
+    videosRef.current = videos;
+  }, [videos]);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
@@ -134,7 +192,8 @@ export default function FullScreenVideoFeed({
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        onClose();
+        isClosingRef.current = true;
+        onCloseRef.current();
       }
     };
 
@@ -143,88 +202,64 @@ export default function FullScreenVideoFeed({
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [onClose]);
-
-  useEffect(() => {
-    setCurrentIndex(initialIndex);
-    setShowEndMessage(false);
-    setShowUpNext(false);
-    setShowEndScreenBlocker(false);
-  }, [initialIndex, videos]);
-
-  const animateToIndex = useCallback(
-    (nextIndex: number, direction: "up" | "down") => {
-      if (isAnimating || nextIndex === currentIndex) {
-        return;
-      }
-
-      setShowUpNext(false);
-      setShowEndScreenBlocker(false);
-      setIsAnimating(true);
-      setSlideDirection(direction);
-
-      window.setTimeout(() => {
-        setCurrentIndex(nextIndex);
-        setShowEndMessage(false);
-        setSlideDirection(null);
-        setEnterDirection(direction);
-        window.setTimeout(() => {
-          setEnterDirection(null);
-          setIsAnimating(false);
-        }, 250);
-      }, 250);
-    },
-    [currentIndex, isAnimating],
-  );
-
-  const goToNextVideo = useCallback(() => {
-    if (currentIndex >= videos.length - 1) {
-      setShowEndMessage(true);
-      return;
-    }
-
-    animateToIndex(currentIndex + 1, "up");
-  }, [animateToIndex, currentIndex, videos.length]);
-
-  const goToPreviousVideo = useCallback(() => {
-    if (currentIndex <= 0) {
-      return;
-    }
-
-    setShowEndMessage(false);
-    animateToIndex(currentIndex - 1, "down");
-  }, [animateToIndex, currentIndex]);
+  }, []);
 
   useEffect(() => {
     const iframe = iframeRef.current;
-    if (!iframe || !embedUrl) {
+    if (!iframe || !initialEmbedUrl) {
       return;
     }
 
+    isClosingRef.current = false;
     const player = new Player(iframe);
+    playerRef.current = player;
 
     const handleEnded = () => {
-      setShowEndScreenBlocker(true);
+      setShowBlocker(true);
 
-      if (currentIndex >= videos.length - 1) {
+      if (currentIndexRef.current >= videosRef.current.length - 1) {
         setShowEndMessage(true);
         return;
       }
 
-      setShowUpNext(true);
       advanceTimeoutRef.current = window.setTimeout(() => {
-        setShowUpNext(false);
-        goToNextVideo();
-      }, 1000);
+        setShowBlocker(false);
+        void goToNextVideoRef.current();
+      }, 1500);
     };
 
     const handlePlay = () => {
-      setShowEndScreenBlocker(false);
-      setShowUpNext(false);
+      setShowBlocker(false);
+    };
+
+    const handleFullscreenChange = (data: { fullscreen: boolean }) => {
+      if (data.fullscreen) {
+        hasEnteredFullscreenRef.current = true;
+        return;
+      }
+
+      if (hasEnteredFullscreenRef.current && !isClosingRef.current) {
+        isClosingRef.current = true;
+        onCloseRef.current();
+      }
     };
 
     player.on("ended", handleEnded);
     player.on("play", handlePlay);
+    player.on("fullscreenchange", handleFullscreenChange);
+
+    void player.ready().then(async () => {
+      if (initialIndex > 0) {
+        const startVideo = videosRef.current[initialIndex];
+        const videoId = startVideo ? extractVimeoVideoId(startVideo.url) : null;
+        if (videoId) {
+          await player.loadVideo(Number(videoId));
+          await player.play();
+        }
+      }
+
+      await requestPlayerFullscreen(player);
+    });
 
     return () => {
       if (advanceTimeoutRef.current !== null) {
@@ -234,13 +269,47 @@ export default function FullScreenVideoFeed({
 
       player.off("ended", handleEnded);
       player.off("play", handlePlay);
+      player.off("fullscreenchange", handleFullscreenChange);
+      playerRef.current = null;
       void player.destroy().catch(() => undefined);
     };
-  }, [currentIndex, embedUrl, goToNextVideo, videos.length]);
+  }, [initialEmbedUrl, initialIndex, requestPlayerFullscreen]);
+
+  const handleClose = () => {
+    isClosingRef.current = true;
+
+    if (advanceTimeoutRef.current !== null) {
+      window.clearTimeout(advanceTimeoutRef.current);
+      advanceTimeoutRef.current = null;
+    }
+
+    const player = playerRef.current;
+    if (!player) {
+      onClose();
+      return;
+    }
+
+    void player.exitFullscreen().catch(() => undefined).finally(onClose);
+  };
+
+  const handleToggleMute = async () => {
+    const player = playerRef.current;
+    if (!player) {
+      return;
+    }
+
+    const nextMuted = !isMuted;
+    setIsMuted(nextMuted);
+
+    try {
+      await player.setVolume(nextMuted ? 0 : 1);
+    } catch (error) {
+      console.error("Error toggling mute:", error);
+    }
+  };
 
   const onTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
     touchStartY.current = event.targetTouches[0]?.clientY ?? null;
-    touchEndY.current = null;
   };
 
   const onTouchMove = (event: React.TouchEvent<HTMLDivElement>) => {
@@ -255,29 +324,18 @@ export default function FullScreenVideoFeed({
     const distance = touchStartY.current - touchEndY.current;
 
     if (distance > minSwipeDistance) {
-      goToNextVideo();
+      void goToNextVideo();
     } else if (distance < -minSwipeDistance) {
-      goToPreviousVideo();
+      void goToPreviousVideo();
     }
 
     touchStartY.current = null;
     touchEndY.current = null;
   };
 
-  if (!mounted || !currentVideo) {
+  if (!mounted || !currentVideo || !initialEmbedUrl) {
     return null;
   }
-
-  const slideClass =
-    slideDirection === "up"
-      ? "is-sliding-up"
-      : slideDirection === "down"
-        ? "is-sliding-down"
-        : enterDirection === "up"
-          ? "is-entering-up"
-          : enterDirection === "down"
-            ? "is-entering-down"
-            : "";
 
   const otherCategories = categoryOptions.filter((category) => category.key !== categoryKey);
 
@@ -292,31 +350,16 @@ export default function FullScreenVideoFeed({
       onTouchEnd={onTouchEnd}
     >
       <div className="fullscreen-video-stage">
-        <div className={`fullscreen-video-frame ${slideClass}`}>
-          <div
-            className="fullscreen-video-player-shell"
-            style={{
-              width: `${videoDimensions.width}px`,
-              height: `${videoDimensions.height}px`,
-            }}
-          >
-            {embedUrl ? (
-              <iframe
-                ref={iframeRef}
-                key={embedUrl}
-                src={embedUrl}
-                title={currentVideo.title}
-                className="fullscreen-video-iframe"
-                style={{
-                  width: `${videoDimensions.width}px`,
-                  height: `${videoDimensions.height}px`,
-                }}
-                allow="autoplay; fullscreen; picture-in-picture"
-                allowFullScreen
-              />
-            ) : null}
-            {showEndScreenBlocker ? <div className="fullscreen-video-end-blocker" aria-hidden="true" /> : null}
-          </div>
+        <div className="fullscreen-video-player-shell">
+          <iframe
+            ref={iframeRef}
+            src={initialEmbedUrl}
+            title={currentVideo.title}
+            className={`fullscreen-video-iframe ${useFallbackSize ? "is-fallback-size" : ""}`}
+            allow="autoplay; fullscreen; picture-in-picture"
+            allowFullScreen
+          />
+          {showBlocker ? <div className="fullscreen-video-end-blocker" aria-hidden="true" /> : null}
         </div>
       </div>
 
@@ -325,7 +368,9 @@ export default function FullScreenVideoFeed({
           <button
             type="button"
             className="fullscreen-video-icon-button"
-            onClick={() => setIsMuted((value) => !value)}
+            onClick={() => {
+              void handleToggleMute();
+            }}
             aria-label={isMuted ? "Unmute video" : "Mute video"}
           >
             <MuteIcon muted={isMuted} />
@@ -335,14 +380,12 @@ export default function FullScreenVideoFeed({
         <button
           type="button"
           className="fullscreen-video-close-button"
-          onClick={onClose}
+          onClick={handleClose}
           aria-label="Close video"
         >
           <CloseIcon />
         </button>
       </div>
-
-      {showUpNext ? <p className="fullscreen-video-up-next">Up next...</p> : null}
 
       <div className="fullscreen-video-meta">
         <p className="fullscreen-video-title">{currentVideo.title}</p>

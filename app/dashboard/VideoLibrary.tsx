@@ -252,6 +252,7 @@ export default function VideoLibrary({ thumbnailMap = {} }: VideoLibraryProps) {
 
       {selectedVideo && isMobile ? (
         <FullScreenVideoFeed
+          key={feedCategory}
           videos={feedVideos}
           initialIndex={selectedVideoIndex}
           categoryLabel={getCategoryLabel(feedCategory)}

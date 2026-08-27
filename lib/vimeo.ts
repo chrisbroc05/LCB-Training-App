@@ -46,6 +46,7 @@ export function extractVimeoVideoId(url: string | null | undefined) {
 }
 
 export const VIMEO_EMBED_PARAMS = {
+  controls: "1",
   title: "0",
   byline: "0",
   portrait: "0",

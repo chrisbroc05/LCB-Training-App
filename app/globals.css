@@ -471,8 +471,15 @@ body {
 
   .fullscreen-video-iframe {
     display: block;
+    width: 1px;
+    height: 1px;
     border: 0;
     background: #000000;
+  }
+
+  .fullscreen-video-iframe.is-fallback-size {
+    width: 100vw;
+    height: calc(100vw * 9 / 16);
   }
 
   .fullscreen-video-end-blocker {
@@ -480,9 +487,10 @@ body {
     left: 0;
     right: 0;
     bottom: 0;
-    height: 60px;
-    background: rgba(0, 0, 0, 0);
+    height: 80px;
+    background: rgba(0, 0, 0, 0.01);
     pointer-events: all;
+    z-index: 10;
   }
 
   .fullscreen-video-top-bar {
@@ -543,39 +551,6 @@ body {
     background: rgba(255, 255, 255, 0.08);
     color: #ffffff;
     flex-shrink: 0;
-  }
-
-  .fullscreen-video-frame.is-sliding-up {
-    transform: translateY(-100%);
-    opacity: 0;
-  }
-
-  .fullscreen-video-frame.is-sliding-down {
-    transform: translateY(100%);
-    opacity: 0;
-  }
-
-  .fullscreen-video-frame.is-entering-up {
-    animation: fullscreen-video-enter-up 250ms ease-out;
-  }
-
-  .fullscreen-video-frame.is-entering-down {
-    animation: fullscreen-video-enter-down 250ms ease-out;
-  }
-
-  .fullscreen-video-up-next {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    z-index: 4;
-    transform: translate(-50%, -50%);
-    border-radius: 999px;
-    background: rgba(0, 0, 0, 0.65);
-    padding: 8px 14px;
-    font-size: 13px;
-    font-weight: 600;
-    color: #ffffff;
-    pointer-events: none;
   }
 
   .fullscreen-video-meta {
