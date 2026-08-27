@@ -14,6 +14,7 @@ import BrandLogo from "@/app/BrandLogo";
 import TopNavigation from "@/app/TopNavigation";
 import AdminViewToggle from "@/app/AdminViewToggle";
 import SiteShell from "@/app/SiteShell";
+import PWAInstallHint from "@/components/PWAInstallHint";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -59,6 +60,12 @@ export default async function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <head>
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="LCB Training" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <meta name="theme-color" content="#0A1628" />
         {gaId ? (
           <>
             <script async src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`} />
@@ -125,6 +132,7 @@ export default async function RootLayout({
         >
           {children}
         </SiteShell>
+        <PWAInstallHint />
       </body>
     </html>
   );
