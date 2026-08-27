@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import FullScreenVideoFeed from "@/app/components/mobile/FullScreenVideoFeed";
-import { useIsMobile } from "@/app/components/mobile/useIsMobile";
+import { createPortal } from "react-dom";
 import {
   allDrillLibraryVideos,
   fieldingVideos,
@@ -10,7 +9,7 @@ import {
   mindsetVideos,
   type DrillLibraryVideoItem,
 } from "@/lib/drill-library-videos";
-import { buildDrillLibraryEmbedUrl } from "@/lib/vimeo";
+import { buildDrillLibraryEmbedUrl, extractVimeoVideoId } from "@/lib/vimeo";
 
 const drillCategories = [
   { key: "all", label: "All" },
@@ -21,18 +20,6 @@ const drillCategories = [
 
 type DrillCategoryFilter = (typeof drillCategories)[number]["key"];
 type DrillCategoryKey = DrillLibraryVideoItem["category"];
-
-function getCategoryLabel(category: DrillCategoryKey) {
-  if (category === "hitting") {
-    return "Hitting";
-  }
-
-  if (category === "fielding") {
-    return "Fielding";
-  }
-
-  return "Mindset";
-}
 
 function getVideosForCategory(category: DrillCategoryKey) {
   if (category === "hitting") {
@@ -132,26 +119,193 @@ function VideoSection({
   );
 }
 
+type MobileVideoOverlayProps = {
+  video: DrillLibraryVideoItem;
+  currentVideoIndex: number;
+  currentCategoryVideos: DrillLibraryVideoItem[];
+  onClose: () => void;
+  onNext: () => void;
+  onPrevious: () => void;
+};
+
+function MobileVideoOverlay({
+  video,
+  currentVideoIndex,
+  currentCategoryVideos,
+  onClose,
+  onNext,
+  onPrevious,
+}: MobileVideoOverlayProps) {
+  const [mounted, setMounted] = useState(false);
+  const videoId = extractVimeoVideoId(video.url);
+  const embedUrl = videoId
+    ? `https://player.vimeo.com/video/${videoId}?autoplay=1&title=0&byline=0&portrait=0&dnt=1`
+    : "";
+
+  const isFirst = currentVideoIndex === 0;
+  const isLast = currentVideoIndex === currentCategoryVideos.length - 1;
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, []);
+
+  if (!mounted) {
+    return null;
+  }
+
+  return createPortal(
+    <div
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: "#000000",
+        zIndex: 9999,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label="Close video"
+        style={{
+          position: "absolute",
+          top: "calc(16px + env(safe-area-inset-top))",
+          right: "16px",
+          background: "rgba(0,0,0,0.5)",
+          border: "none",
+          color: "white",
+          fontSize: "24px",
+          width: "40px",
+          height: "40px",
+          borderRadius: "50%",
+          cursor: "pointer",
+          zIndex: 10000,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        x
+      </button>
+
+      <div
+        style={{
+          width: "100%",
+          paddingTop: "calc(48px + env(safe-area-inset-top))",
+        }}
+      >
+        {embedUrl ? (
+          <iframe
+            key={embedUrl}
+            src={embedUrl}
+            title={video.title}
+            style={{
+              width: "100%",
+              height: "calc(100vw * 9 / 16)",
+              border: "none",
+            }}
+            allow="autoplay; fullscreen; picture-in-picture"
+            allowFullScreen
+          />
+        ) : null}
+      </div>
+
+      <p
+        style={{
+          color: "white",
+          fontSize: "14px",
+          fontWeight: 600,
+          marginTop: "16px",
+          padding: "0 16px",
+          textAlign: "center",
+        }}
+      >
+        {video.title}
+      </p>
+
+      <p
+        style={{
+          color: "#888888",
+          fontSize: "12px",
+          marginTop: "8px",
+        }}
+      >
+        {currentVideoIndex + 1} of {currentCategoryVideos.length}
+      </p>
+
+      <div
+        style={{
+          display: "flex",
+          gap: "16px",
+          marginTop: "16px",
+          paddingBottom: "calc(16px + env(safe-area-inset-bottom))",
+        }}
+      >
+        <button
+          type="button"
+          onClick={onPrevious}
+          disabled={isFirst}
+          style={{
+            background: isFirst ? "#333333" : "#52B788",
+            color: isFirst ? "#666666" : "#0A1628",
+            border: "none",
+            borderRadius: "8px",
+            padding: "10px 24px",
+            fontSize: "14px",
+            fontWeight: 700,
+            cursor: isFirst ? "not-allowed" : "pointer",
+          }}
+        >
+          Previous
+        </button>
+        <button
+          type="button"
+          onClick={onNext}
+          disabled={isLast}
+          style={{
+            background: isLast ? "#333333" : "#52B788",
+            color: isLast ? "#666666" : "#0A1628",
+            border: "none",
+            borderRadius: "8px",
+            padding: "10px 24px",
+            fontSize: "14px",
+            fontWeight: 700,
+            cursor: isLast ? "not-allowed" : "pointer",
+          }}
+        >
+          Next
+        </button>
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
 type VideoLibraryProps = {
   thumbnailMap?: Record<string, string | null>;
 };
 
 export default function VideoLibrary({ thumbnailMap = {} }: VideoLibraryProps) {
   const [selectedVideo, setSelectedVideo] = useState<DrillLibraryVideoItem | null>(null);
-  const [feedCategory, setFeedCategory] = useState<DrillCategoryKey>("hitting");
+  const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
+  const [currentCategoryVideos, setCurrentCategoryVideos] = useState<DrillLibraryVideoItem[]>([]);
   const [mobileCategory, setMobileCategory] = useState<DrillCategoryFilter>("all");
-  const isMobile = useIsMobile();
-
-  const feedVideos = useMemo(() => getVideosForCategory(feedCategory), [feedCategory]);
-
-  const selectedVideoIndex = useMemo(() => {
-    if (!selectedVideo) {
-      return 0;
-    }
-
-    const index = feedVideos.findIndex((video) => video.url === selectedVideo.url);
-    return index >= 0 ? index : 0;
-  }, [feedVideos, selectedVideo]);
+  const [showMobileOverlay, setShowMobileOverlay] = useState(false);
 
   const filteredMobileVideos = useMemo(() => {
     if (mobileCategory === "all") {
@@ -161,22 +315,48 @@ export default function VideoLibrary({ thumbnailMap = {} }: VideoLibraryProps) {
     return allDrillLibraryVideos.filter((video) => video.category === mobileCategory);
   }, [mobileCategory]);
 
-  const openVideo = (video: DrillLibraryVideoItem) => {
-    const category =
-      mobileCategory === "all" ? video.category : (mobileCategory as DrillCategoryKey);
-    setFeedCategory(category);
+  const openMobileVideo = (
+    video: DrillLibraryVideoItem,
+    categoryVideos: DrillLibraryVideoItem[],
+    index: number,
+  ) => {
+    setSelectedVideo(video);
+    setCurrentVideoIndex(index);
+    setCurrentCategoryVideos(categoryVideos);
+    setShowMobileOverlay(true);
+  };
+
+  const closeVideo = () => {
+    setSelectedVideo(null);
+    setShowMobileOverlay(false);
+  };
+
+  const goToNext = () => {
+    if (currentVideoIndex >= currentCategoryVideos.length - 1) {
+      return;
+    }
+
+    const nextIndex = currentVideoIndex + 1;
+    setCurrentVideoIndex(nextIndex);
+    setSelectedVideo(currentCategoryVideos[nextIndex]);
+  };
+
+  const goToPrevious = () => {
+    if (currentVideoIndex <= 0) {
+      return;
+    }
+
+    const previousIndex = currentVideoIndex - 1;
+    setCurrentVideoIndex(previousIndex);
+    setSelectedVideo(currentCategoryVideos[previousIndex]);
+  };
+
+  const openDesktopVideo = (video: DrillLibraryVideoItem) => {
     setSelectedVideo(video);
   };
 
-  const handleSwitchFeedCategory = (category: DrillCategoryKey) => {
-    setFeedCategory(category);
-    setMobileCategory(category);
-    const nextVideos = getVideosForCategory(category);
-    setSelectedVideo(nextVideos[0] ?? null);
-  };
-
   useEffect(() => {
-    if (!selectedVideo || isMobile) {
+    if (!selectedVideo || showMobileOverlay) {
       return;
     }
 
@@ -188,12 +368,14 @@ export default function VideoLibrary({ thumbnailMap = {} }: VideoLibraryProps) {
 
     window.addEventListener("keydown", handleEscape);
     return () => window.removeEventListener("keydown", handleEscape);
-  }, [isMobile, selectedVideo]);
+  }, [selectedVideo, showMobileOverlay]);
 
-  const modalUrl = useMemo(
+  const desktopModalUrl = useMemo(
     () =>
-      selectedVideo ? buildDrillLibraryEmbedUrl(selectedVideo.url, { autoplay: true }) : "",
-    [selectedVideo],
+      selectedVideo && !showMobileOverlay
+        ? buildDrillLibraryEmbedUrl(selectedVideo.url, { autoplay: true })
+        : "",
+    [selectedVideo, showMobileOverlay],
   );
 
   return (
@@ -212,17 +394,28 @@ export default function VideoLibrary({ thumbnailMap = {} }: VideoLibraryProps) {
           ))}
         </div>
         <div className="mobile-card-stack">
-          {filteredMobileVideos.map((video) => (
-            <button
-              key={video.url}
-              type="button"
-              onClick={() => openVideo(video)}
-              className="mobile-card text-left"
-            >
-              <VideoThumbnail thumbnailUrl={thumbnailMap[video.url]} compact />
-              <p className="mt-3 text-base font-semibold text-zinc-100">{video.title}</p>
-            </button>
-          ))}
+          {filteredMobileVideos.map((video, index) => {
+            const categoryVideos =
+              mobileCategory === "all"
+                ? getVideosForCategory(video.category)
+                : filteredMobileVideos;
+            const videoIndex =
+              mobileCategory === "all"
+                ? categoryVideos.findIndex((entry) => entry.url === video.url)
+                : index;
+
+            return (
+              <button
+                key={video.url}
+                type="button"
+                onClick={() => openMobileVideo(video, categoryVideos, videoIndex)}
+                className="mobile-card text-left"
+              >
+                <VideoThumbnail thumbnailUrl={thumbnailMap[video.url]} compact />
+                <p className="mt-3 text-base font-semibold text-zinc-100">{video.title}</p>
+              </button>
+            );
+          })}
         </div>
       </section>
 
@@ -232,37 +425,36 @@ export default function VideoLibrary({ thumbnailMap = {} }: VideoLibraryProps) {
           description="Drill demonstrations for swing mechanics, load, posture, and bat path."
           videos={hittingVideos}
           thumbnailMap={thumbnailMap}
-          onSelectVideo={openVideo}
+          onSelectVideo={openDesktopVideo}
         />
         <VideoSection
           heading="Fielding Library"
           description="Defensive drill work for control, timing, footwork, and making game-speed plays."
           videos={fieldingVideos}
           thumbnailMap={thumbnailMap}
-          onSelectVideo={openVideo}
+          onSelectVideo={openDesktopVideo}
         />
         <VideoSection
           heading="Mindset Library"
           description="Mental performance lessons to build confidence, focus, and composure."
           videos={mindsetVideos}
           thumbnailMap={thumbnailMap}
-          onSelectVideo={openVideo}
+          onSelectVideo={openDesktopVideo}
         />
       </section>
 
-      {selectedVideo && isMobile ? (
-        <FullScreenVideoFeed
-          key={feedCategory}
-          videos={feedVideos}
-          initialIndex={selectedVideoIndex}
-          categoryLabel={getCategoryLabel(feedCategory)}
-          categoryKey={feedCategory}
-          onClose={() => setSelectedVideo(null)}
-          onSwitchCategory={handleSwitchFeedCategory}
+      {selectedVideo && showMobileOverlay ? (
+        <MobileVideoOverlay
+          video={selectedVideo}
+          currentVideoIndex={currentVideoIndex}
+          currentCategoryVideos={currentCategoryVideos}
+          onClose={closeVideo}
+          onNext={goToNext}
+          onPrevious={goToPrevious}
         />
       ) : null}
 
-      {selectedVideo && !isMobile ? (
+      {selectedVideo && !showMobileOverlay ? (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-3 sm:p-6"
           onClick={() => setSelectedVideo(null)}
@@ -278,9 +470,9 @@ export default function VideoLibrary({ thumbnailMap = {} }: VideoLibraryProps) {
             >
               Close
             </button>
-            {modalUrl ? (
+            {desktopModalUrl ? (
               <iframe
-                src={modalUrl}
+                src={desktopModalUrl}
                 title={selectedVideo.title}
                 className="h-full w-full"
                 allow="fullscreen; picture-in-picture"
