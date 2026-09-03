@@ -31,6 +31,15 @@ export function getBasicOneTimePriceId() {
   return priceId;
 }
 
+export function getRemoteSessionPriceId() {
+  const priceId = process.env.STRIPE_REMOTE_PRICE_ID;
+  if (!priceId) {
+    throw new Error("Missing Stripe price ID for remote sessions. Configure STRIPE_REMOTE_PRICE_ID.");
+  }
+
+  return priceId;
+}
+
 export function getSubscriptionPriceId(
   tier: DatabaseTier,
   billingFrequency: BillingFrequency = "monthly",

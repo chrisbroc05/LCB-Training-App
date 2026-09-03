@@ -1,0 +1,12 @@
+---
+description: ManyChat REMOTE keyword flow destination for LCB Training
+alwaysApply: false
+---
+
+# ManyChat REMOTE Keyword Flow
+
+When updating the ManyChat REMOTE keyword automation, set the destination link to:
+
+https://lcbtraining.com/remote
+
+This landing page handles remote session booking with Stripe checkout and redirects to Calendly after payment.

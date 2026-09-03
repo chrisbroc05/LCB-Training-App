@@ -197,7 +197,7 @@ export default function InPersonDetailsPage() {
             ))}
           </ul>
           <Link
-            href="https://lcbtraining.com"
+            href="/remote"
             className="mt-8 inline-flex w-full items-center justify-center rounded-full border border-[#22c55e] px-8 py-3 text-base font-semibold text-[#98b144] transition hover:border-[#35db72] hover:text-[#9df3bd] sm:w-auto"
           >
             Explore Remote Training

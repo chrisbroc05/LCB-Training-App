@@ -34,7 +34,7 @@ export default function SiteShell({
   userEmail,
 }: SiteShellProps) {
   const pathname = usePathname();
-  const isStandaloneLanding = pathname.startsWith("/details");
+  const isStandaloneLanding = pathname.startsWith("/details") || pathname.startsWith("/remote");
   const isHomePage = pathname === "/";
   const useMobileChrome = shouldUseMobileAppChrome(isLoggedIn, pathname);
 
