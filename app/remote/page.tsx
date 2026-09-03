@@ -84,9 +84,11 @@ export default function RemoteSessionPage() {
                 <div
                   key={step.number}
                   className={
-                    index < remoteSessionSteps.length - 1
-                      ? "border-b border-white/10 pb-6 md:border-b-0 md:border-r md:pb-0 md:pr-6"
-                      : "md:pl-6"
+                    index === 1
+                      ? "border-b border-white/10 pb-6 md:border-b-0 md:border-r md:pb-0 md:px-6"
+                      : index < remoteSessionSteps.length - 1
+                        ? "border-b border-white/10 pb-6 md:border-b-0 md:border-r md:pb-0 md:pr-6"
+                        : "md:pl-6"
                   }
                 >
                   <p className="text-[32px] font-bold leading-none text-[#52B788]">{step.number}</p>
