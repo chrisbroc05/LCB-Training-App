@@ -5,7 +5,9 @@ import {
   REMOTE_SESSION_DURATION,
   REMOTE_SESSION_PRICE,
   coachCredentialLine,
+  remoteSessionCheckoutNote,
   remoteSessionExpectations,
+  remoteSessionSteps,
 } from "@/lib/remote-session-branding";
 
 export const metadata: Metadata = {
@@ -75,7 +77,31 @@ export default function RemoteSessionPage() {
             <p className="mt-3 text-sm text-zinc-400">Limited spots available each week</p>
           </div>
 
-          <div className="mx-auto mt-8 max-w-sm">
+          <div className="mx-auto mt-8 max-w-2xl rounded-xl bg-white/5 p-6 text-left sm:p-8">
+            <p className="text-center text-sm font-semibold text-[#52B788]">Simple 3-step process</p>
+            <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-3 md:gap-0">
+              {remoteSessionSteps.map((step, index) => (
+                <div
+                  key={step.number}
+                  className={
+                    index < remoteSessionSteps.length - 1
+                      ? "border-b border-white/10 pb-6 md:border-b-0 md:border-r md:pb-0 md:pr-6"
+                      : "md:pl-6"
+                  }
+                >
+                  <p className="text-[32px] font-bold leading-none text-[#52B788]">{step.number}</p>
+                  <h3 className="mt-3 text-base font-bold text-white">{step.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-zinc-400">{step.description}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <p className="mx-auto mt-6 max-w-md text-center text-sm text-zinc-400">
+            {remoteSessionCheckoutNote}
+          </p>
+
+          <div className="mx-auto mt-5 max-w-sm">
             <RemoteCheckoutButton label="Book Now" />
           </div>
         </section>
