@@ -42,7 +42,9 @@ export default function SwingAnalysisForm({ isFreeMember = false }: SwingAnalysi
     }
 
     if (videoFile && videoFile.size > MAX_VIDEO_UPLOAD_BYTES) {
-      setSubmitError("Video exceeds 100MB. Please trim the video and try again.");
+      setSubmitError(
+        "Your video is too large. Please trim or compress it to under 100MB and try again.",
+      );
       return;
     }
 
@@ -131,7 +133,9 @@ export default function SwingAnalysisForm({ isFreeMember = false }: SwingAnalysi
             onChange={(event) => {
               const file = event.target.files?.[0] ?? null;
               if (file && file.size > MAX_VIDEO_UPLOAD_BYTES) {
-                setSubmitError("Video exceeds 100MB. Please trim the video and try again.");
+                setSubmitError(
+                  "Your video is too large. Please trim or compress it to under 100MB and try again.",
+                );
                 setVideoFile(null);
                 setVideoFileName("");
                 return;

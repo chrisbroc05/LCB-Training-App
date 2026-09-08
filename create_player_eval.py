@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from pathlib import Path
 
 from reportlab.lib.enums import TA_CENTER
@@ -12,7 +13,6 @@ from reportlab.platypus import HRFlowable, Paragraph, SimpleDocTemplate, Spacer,
 
 from create_bio import (
     GREEN,
-    LIGHT_GRAY,
     LIGHT_GREEN,
     NAVY,
     WHITE,
@@ -22,16 +22,25 @@ from create_bio import (
 )
 
 
+@dataclass(frozen=True)
+class PlayerEvaluation:
+    first_name: str
+    last_name: str
+    team: str
+    eval_date: str
+    strengths: list[str]
+    areas_to_improve: list[str]
+    recommended_drills: list[str]
+    closing_note: str
+
+
 def build_bullet_list(items: list[str], style: ParagraphStyle) -> Paragraph:
     bullets = "<br/>".join(f"&bull; {item}" for item in items)
     return Paragraph(bullets, style)
 
 
-def main() -> None:
-    project_root = Path(__file__).resolve().parent
-    output_dir = project_root / "public" / "player-evaluations"
-    output_dir.mkdir(parents=True, exist_ok=True)
-    output_path = output_dir / "LCB_Eval_Kurey.pdf"
+def build_player_eval_pdf(project_root: Path, evaluation: PlayerEvaluation, output_path: Path) -> None:
+    output_path.parent.mkdir(parents=True, exist_ok=True)
 
     doc = SimpleDocTemplate(
         str(output_path),
@@ -40,7 +49,7 @@ def main() -> None:
         rightMargin=0.85 * inch,
         topMargin=0.4 * inch,
         bottomMargin=0.4 * inch,
-        title="Player Evaluation - Jonathan Kurey",
+        title=f"Player Evaluation - {evaluation.first_name} {evaluation.last_name}",
         author="LCB Training",
     )
 
@@ -78,13 +87,6 @@ def main() -> None:
         leading=14,
         textColor=WHITE,
     )
-    body_style = ParagraphStyle(
-        "body",
-        fontName="Helvetica",
-        fontSize=10,
-        leading=13,
-        textColor=NAVY,
-    )
     list_style = ParagraphStyle(
         "list",
         fontName="Helvetica",
@@ -117,86 +119,59 @@ def main() -> None:
         textColor=WHITE,
     )
 
-    strengths = [
-        "Exceptional lower half movement with great balance behind the front foot",
-        "Stacked and connected posture through the swing with no hip drift",
-        "Strong power for his age and stage",
-        "Good barrel accuracy",
-    ]
-    areas_to_improve = [
-        "Front shoulder tends to fly out during the swing",
-        "Hands are long with a casting motion similar to a golf swing, causing his head to pull off the ball",
-        "Focus on creating a quicker, more connected upper half",
-    ]
-    recommended_drills = [
-        "Low-and-away tee drill focused on driving the ball to the opposite field to train a closed front shoulder and strong posture over the plate",
-        "Top-hand-only swing drill with the lead arm held up to build connection and shorten the swing path",
-    ]
-
-    closing_note = (
-        "Jonathan has a lot to be excited about. His athleticism and coachability stood out right away, "
-        "and he is already building habits that will serve him well as he keeps growing. The areas noted "
-        "above are very workable, and with consistent reps on the recommended drills, he can make meaningful "
-        "progress quickly. Thank you to the Kurey family for trusting LCB Training with Jonathan's development "
-        "-- and to his coaches for the support around him. We would love to keep training together and help "
-        "him take the next step. Please reach out anytime."
-    )
     platform_note = (
-        "Between sessions, Jonathan can keep developing with <b>The Next Level Playbook</b> and the full "
-        "LCB Training online platform -- video drills, workout programs, and coaching tools built to "
-        "support his progress.<br/><br/>Visit <b>lcbtraining.com</b> to learn more."
+        f"Between sessions, {evaluation.first_name} can keep developing with "
+        f"<b>The Next Level Playbook</b> and the full LCB Training online platform -- video drills, "
+        f"workout programs, and coaching tools built to support his progress.<br/><br/>"
+        f"Visit <b>lcbtraining.com</b> to learn more."
     )
 
-    story = []
-
-    story.append(get_logo_or_fallback(project_root))
-    story.append(Spacer(1, 4))
-    story.append(Paragraph("Player Evaluation Report", title_style))
-    story.append(Spacer(1, 3))
-    story.append(Paragraph('"Work Hard. Be Memorable."', tagline_style))
-    story.append(Spacer(1, 6))
-    story.append(
+    story = [
+        get_logo_or_fallback(project_root),
+        Spacer(1, 4),
+        Paragraph("Player Evaluation Report", title_style),
+        Spacer(1, 3),
+        Paragraph('"Work Hard. Be Memorable."', tagline_style),
+        Spacer(1, 6),
         Paragraph(
-            "<b>Jonathan Kurey</b> &nbsp;|&nbsp; Northwest Travelers 12U &nbsp;|&nbsp; August 26, 2026",
+            f"<b>{evaluation.first_name} {evaluation.last_name}</b> &nbsp;|&nbsp; "
+            f"{evaluation.team} &nbsp;|&nbsp; {evaluation.eval_date}",
             meta_style,
-        )
-    )
-    story.append(Spacer(1, 6))
-    story.append(HRFlowable(width="100%", thickness=1.1, color=LIGHT_GREEN, lineCap="round"))
-    story.append(Spacer(1, 6))
-
-    strengths_cell = build_section_cell(
-        "Strengths",
-        build_bullet_list(strengths, list_style),
-        two_col_widths[0],
-        section_header_style,
-    )
-    improve_cell = build_section_cell(
-        "Areas to Improve",
-        build_bullet_list(areas_to_improve, list_style),
-        two_col_widths[1],
-        section_header_style,
-    )
-    story.append(build_aligned_row(strengths_cell, improve_cell, two_col_widths))
-    story.append(Spacer(1, 5))
-
-    drills_cell = build_section_cell(
-        "Recommended Drills",
-        build_bullet_list(recommended_drills, list_style),
-        full_width,
-        section_header_style,
-    )
-    story.append(drills_cell)
-    story.append(Spacer(1, 5))
-
-    coach_note_cell = build_section_cell(
-        "Note from Coach Broc",
-        Paragraph(closing_note, note_style),
-        full_width,
-        section_header_style,
-    )
-    story.append(coach_note_cell)
-    story.append(Spacer(1, 5))
+        ),
+        Spacer(1, 6),
+        HRFlowable(width="100%", thickness=1.1, color=LIGHT_GREEN, lineCap="round"),
+        Spacer(1, 6),
+        build_aligned_row(
+            build_section_cell(
+                "Strengths",
+                build_bullet_list(evaluation.strengths, list_style),
+                two_col_widths[0],
+                section_header_style,
+            ),
+            build_section_cell(
+                "Areas to Improve",
+                build_bullet_list(evaluation.areas_to_improve, list_style),
+                two_col_widths[1],
+                section_header_style,
+            ),
+            two_col_widths,
+        ),
+        Spacer(1, 5),
+        build_section_cell(
+            "Recommended Drills",
+            build_bullet_list(evaluation.recommended_drills, list_style),
+            full_width,
+            section_header_style,
+        ),
+        Spacer(1, 5),
+        build_section_cell(
+            "Note from Coach Broc",
+            Paragraph(evaluation.closing_note, note_style),
+            full_width,
+            section_header_style,
+        ),
+        Spacer(1, 5),
+    ]
 
     platform_table = Table(
         [[Paragraph(platform_note, callout_style)]],
@@ -214,8 +189,7 @@ def main() -> None:
             ]
         )
     )
-    story.append(platform_table)
-    story.append(Spacer(1, 5))
+    story.extend([platform_table, Spacer(1, 5)])
 
     left_contact = Paragraph(
         "Coach Broccolino<br/>Email: chrisbroc05@gmail.com<br/>Phone: 847-208-9661",
@@ -242,6 +216,43 @@ def main() -> None:
     story.append(contact_table)
 
     doc.build(story)
+
+
+def main() -> None:
+    project_root = Path(__file__).resolve().parent
+    evaluation = PlayerEvaluation(
+        first_name="A J",
+        last_name="Hellman",
+        team="Northwest Travelers 12U White",
+        eval_date="September 4, 2026",
+        strengths=[
+            "Excellent hand-eye coordination",
+            "Strong and accurate contact on the baseball",
+            "Naturally athletic frame carried over from football",
+            "Great coachable attitude with genuine curiosity to learn",
+        ],
+        areas_to_improve=[
+            "Loading into the knee instead of the hip, causing the hips to drift back and the knee to straighten and pop up during the swing",
+            "Overly tall posture and a steep, choppy bat path that results in mostly hard ground balls rather than line drives",
+            "Improving posture, with the chest staying forward over the plate, is the key focus",
+        ],
+        recommended_drills=[
+            "Forty-five-degree angled tee drill, feet set toward third base, loading into the back hip and driving the ball up the middle to right-center",
+            "Top-hand-only isolation drill working a low line drive to second base",
+            "Low-and-outside tee drill to encourage better posture and opposite-field contact",
+            "Bat-on-shoulders hinge drill to train a forward, hinged posture through the swing",
+        ],
+        closing_note=(
+            "A J has a lot to be excited about. His hand-eye coordination and natural hitting ability stand out, "
+            "and once his posture and swing angle click into place, his potential is very real. The areas noted "
+            "above are very workable, and with consistent reps on the recommended drills, he can make meaningful "
+            "progress quickly. Thank you to the Hellman family for trusting LCB Training with A J's development "
+            "-- and to his coaches for the support around him. We would love to keep training together and help "
+            "him take the next step. Please reach out anytime."
+        ),
+    )
+    output_path = project_root / "public" / "player-evaluations" / "LCB_Eval_Hellman.pdf"
+    build_player_eval_pdf(project_root, evaluation, output_path)
 
     try:
         from pypdf import PdfReader

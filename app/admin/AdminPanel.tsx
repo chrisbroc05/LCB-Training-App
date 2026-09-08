@@ -6,6 +6,7 @@ import MembersPanel from "@/app/admin/MembersPanel";
 import PlaybookReflectionsPanel from "@/app/admin/PlaybookReflectionsPanel";
 import MemberProfileCard from "@/app/admin/MemberProfileCard";
 import { toVimeoEmbedUrl } from "@/lib/vimeo";
+import { getAdminR2VideoUrl, isR2VideoReference } from "@/lib/r2";
 
 type TabType = "swing" | "mental" | "goal" | "members" | "playbook";
 
@@ -62,8 +63,17 @@ function formatResponseDateTime(value: string | null | undefined) {
 function canInlineResponseVideo(url: string) {
   return (
     url.startsWith("/api/submission-videos/") ||
+    url.startsWith("/api/admin/r2-video/") ||
     (url.startsWith("http") && !url.includes("vimeo.com"))
   );
+}
+
+function resolveInlineSubmissionVideoUrl(url: string) {
+  if (isR2VideoReference(url)) {
+    return getAdminR2VideoUrl(url);
+  }
+
+  return url;
 }
 
 export default function AdminPanel({
@@ -164,13 +174,16 @@ export default function AdminPanel({
     if (!detail) {
       return null;
     }
-    return detail.submittedVideo || detail.videoPath || null;
+
+    const storedVideo = detail.submittedVideo || detail.videoPath || null;
+    if (!storedVideo) {
+      return null;
+    }
+
+    return resolveInlineSubmissionVideoUrl(storedVideo);
   }, [detail]);
 
-  const canInlineFallbackVideo = fallbackVideoUrl
-    ? fallbackVideoUrl.startsWith("/api/submission-videos/") ||
-      (fallbackVideoUrl.startsWith("http") && !fallbackVideoUrl.includes("vimeo.com"))
-    : false;
+  const canInlineFallbackVideo = fallbackVideoUrl ? canInlineResponseVideo(fallbackVideoUrl) : false;
 
   const handleSaveMemberVimeoLink = async () => {
     if (!detail) {

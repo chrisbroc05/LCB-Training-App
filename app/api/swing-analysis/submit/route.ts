@@ -10,11 +10,10 @@ import {
 import { prisma } from "@/lib/prisma";
 import { sendSubmissionReceivedEmail, sendSwingSubmissionNotification } from "@/lib/notifications";
 import {
-  createTemporaryVideoDownloadLink,
-  EMAIL_VIDEO_ATTACHMENT_MAX_BYTES,
-  MAX_SUBMISSION_VIDEO_BYTES,
-  persistSubmissionVideoFile,
-} from "@/lib/submission-videos";
+  formatR2VideoReference,
+  uploadSubmissionVideoToR2,
+} from "@/lib/r2";
+import { MAX_SUBMISSION_VIDEO_BYTES } from "@/lib/submission-videos";
 
 const DB_TIMEOUT_MS = 15000;
 const EMAIL_TIMEOUT_MS = 15000;
@@ -55,15 +54,6 @@ export async function POST(request: Request) {
     const videoUrl = String(formData.get("videoUrl") ?? "").trim();
     const uploadedVideo = formData.get("video");
     let submittedVideo = videoUrl;
-    let emailAttachment:
-      | {
-          fileName: string;
-          content: Buffer;
-          contentType: string;
-        }
-      | undefined;
-    let temporaryDownloadLink: string | undefined;
-    let temporaryDownloadExpiresAt: Date | undefined;
 
     if (uploadedVideo instanceof File && uploadedVideo.size > 0) {
       console.log(
@@ -74,29 +64,22 @@ export async function POST(request: Request) {
           `[swing-submit:${requestId}] File too large (${uploadedVideo.size} > ${MAX_SUBMISSION_VIDEO_BYTES})`,
         );
         return NextResponse.json(
-          { error: "Uploaded video is too large. Please upload a file under 100MB." },
+          {
+            error:
+              "Your video is too large. Please trim or compress it to under 100MB and try again.",
+          },
           { status: 413 },
         );
       }
 
-      const storedVideo = await withTimeout(
-        persistSubmissionVideoFile(uploadedVideo),
+      const r2Key = await withTimeout(
+        uploadSubmissionVideoToR2(uploadedVideo),
         EMAIL_TIMEOUT_MS,
-        "Video file storage",
+        "Video upload to R2",
       );
 
-      submittedVideo = storedVideo.relativeUrl;
-      if (storedVideo.sizeBytes <= EMAIL_VIDEO_ATTACHMENT_MAX_BYTES) {
-        emailAttachment = {
-          fileName: storedVideo.originalFileName,
-          content: storedVideo.fileBuffer,
-          contentType: storedVideo.mimeType,
-        };
-      } else {
-        const tempLink = createTemporaryVideoDownloadLink(storedVideo.videoId);
-        temporaryDownloadLink = tempLink.url;
-        temporaryDownloadExpiresAt = tempLink.expiresAt;
-      }
+      submittedVideo = formatR2VideoReference(r2Key);
+      console.log(`[swing-submit:${requestId}] Uploaded video to R2 (${r2Key})`);
     } else {
       console.log(`[swing-submit:${requestId}] No uploaded file, using provided video URL`);
     }
@@ -188,9 +171,6 @@ export async function POST(request: Request) {
           notes,
           responsePreference: responsePreference as "VIDEO_RESPONSE" | "WRITTEN_RESPONSE",
           submittedVideo,
-          videoAttachment: emailAttachment,
-          temporaryVideoLink: temporaryDownloadLink,
-          temporaryVideoLinkExpiresAt: temporaryDownloadExpiresAt,
         }),
         EMAIL_TIMEOUT_MS,
         "Notification email",
