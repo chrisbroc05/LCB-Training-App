@@ -25,15 +25,20 @@ export default function LandingHeader({ isLoggedIn }: LandingHeaderProps) {
           LCB Training
         </p>
 
-        <div className="flex justify-end">
+        <div className="flex items-center justify-end gap-2 sm:gap-3">
           {isLoggedIn ? (
             <Link href="/dashboard" className={landingOutlineButtonClassName}>
               Go to Dashboard
             </Link>
           ) : (
-            <Link href="/auth?tier=basic" className={landingPrimaryButtonClassName}>
-              Unlock The Playbook
-            </Link>
+            <>
+              <Link href="/auth?mode=login" className={landingOutlineButtonClassName}>
+                Log In
+              </Link>
+              <Link href="/auth?tier=basic" className={landingPrimaryButtonClassName}>
+                Unlock The Playbook
+              </Link>
+            </>
           )}
         </div>
       </div>

@@ -1,7 +1,9 @@
 import Link from "next/link";
+import { getServerSession } from "next-auth";
 import CoachBioSection from "@/components/CoachBioSection";
 import PlaybookPurchaseCta from "@/app/components/PlaybookPurchaseCta";
 import RemoteSessionHeroCard from "@/app/components/RemoteSessionHeroCard";
+import { authOptions } from "@/lib/auth";
 import {
   PLAYBOOK_NAME,
   PLAYBOOK_PURCHASE_PRICE_SUBTITLE,
@@ -210,11 +212,25 @@ function PlaybookChapterCard({
   );
 }
 
-export default function Home() {
+export default async function Home() {
+  const session = await getServerSession(authOptions);
+  const isLoggedIn = Boolean(session?.user);
+
   return (
     <>
       <section className="w-full bg-gradient-to-br from-[#0A1628] via-[#0f1d34] to-[#050b16]">
         <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 sm:py-8 md:py-10">
+          {!isLoggedIn ? (
+            <p className="mb-4 text-center text-sm text-zinc-400">
+              Already have an account?{" "}
+              <Link
+                href="/auth?mode=login"
+                className="font-semibold text-[#52B788] transition hover:text-[#9df3bd]"
+              >
+                Log In
+              </Link>
+            </p>
+          ) : null}
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 md:items-stretch">
             <article className={heroOfferCardClassName}>
               <h1 className="text-left text-3xl font-bold tracking-tight text-zinc-100 sm:text-4xl">
