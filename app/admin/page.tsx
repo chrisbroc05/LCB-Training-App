@@ -12,8 +12,6 @@ export default async function AdminPage() {
   if (!isAdminEmail(session?.user?.email)) {
     redirect("/dashboard");
   }
-  const cloudinaryUploadEnabled =
-    process.env.CLOUDINARY_ADMIN_RESPONSE_UPLOAD_ENABLED?.toLowerCase() === "true";
 
   const freeMembers = await prisma.user.findMany({
     where: { membershipTier: "FREE" },
@@ -35,7 +33,7 @@ export default async function AdminPage() {
         <p className="mt-2 text-zinc-300">
           Review coaching submissions and goal check-ins, then send responses.
         </p>
-        <AdminPanel cloudinaryUploadEnabled={cloudinaryUploadEnabled} />
+        <AdminPanel />
       </section>
 
       <FreeMembersSection

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import GoalCheckinsPanel from "@/app/admin/GoalCheckinsPanel";
 import MembersPanel from "@/app/admin/MembersPanel";
 import PlaybookReflectionsPanel from "@/app/admin/PlaybookReflectionsPanel";
@@ -78,11 +78,26 @@ function resolveInlineSubmissionVideoUrl(url: string) {
   return url;
 }
 
-export default function AdminPanel({
-  cloudinaryUploadEnabled,
-}: {
-  cloudinaryUploadEnabled: boolean;
-}) {
+function getResponseVideoDisplayName(url: string | null | undefined) {
+  if (!url || !isR2VideoReference(url)) {
+    return null;
+  }
+
+  const key = parseR2VideoReference(url);
+  if (!key) {
+    return "Response video";
+  }
+
+  const segment = key.split("/").pop() ?? "Response video";
+  const dashIndex = segment.indexOf("-");
+  if (dashIndex > 0 && /^\d+$/.test(segment.slice(0, dashIndex))) {
+    return segment.slice(dashIndex + 1);
+  }
+
+  return segment;
+}
+
+export default function AdminPanel() {
   const [tab, setTab] = useState<TabType>("swing");
   const [items, setItems] = useState<SubmissionListItem[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -90,12 +105,11 @@ export default function AdminPanel({
   const [loadingList, setLoadingList] = useState(false);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [writtenResponse, setWrittenResponse] = useState("");
-  const [responseMode, setResponseMode] = useState<"written" | "video">("written");
-  const [videoInputMode, setVideoInputMode] = useState<"upload" | "vimeo">(
-    cloudinaryUploadEnabled ? "upload" : "vimeo",
-  );
-  const [responseVideo, setResponseVideo] = useState<File | null>(null);
   const [manualVideoUrl, setManualVideoUrl] = useState("");
+  const [showVimeoInput, setShowVimeoInput] = useState(false);
+  const [uploadedResponseFileName, setUploadedResponseFileName] = useState("");
+  const [responseVideoInputKey, setResponseVideoInputKey] = useState(0);
+  const responseVideoInputRef = useRef<HTMLInputElement>(null);
   const [sendError, setSendError] = useState("");
   const [showResponseModal, setShowResponseModal] = useState(false);
   const [responseSummary, setResponseSummary] = useState("");
@@ -105,7 +119,6 @@ export default function AdminPanel({
   const [savingMemberVimeoLink, setSavingMemberVimeoLink] = useState(false);
   const [memberVimeoPlayerKey, setMemberVimeoPlayerKey] = useState(0);
   const [editingMemberVimeoLink, setEditingMemberVimeoLink] = useState(true);
-  const [editingCoachVimeoLink, setEditingCoachVimeoLink] = useState(true);
   const [uploadingResponseR2, setUploadingResponseR2] = useState(false);
   const [responseR2UploadError, setResponseR2UploadError] = useState("");
   const [responseR2UploadSuccess, setResponseR2UploadSuccess] = useState(false);
@@ -156,11 +169,10 @@ export default function AdminPanel({
       setMemberVimeoSaveSuccess(false);
       setEditingMemberVimeoLink(!data.submission.memberVimeoLink);
       setWrittenResponse("");
-      setResponseVideo(null);
       setManualVideoUrl("");
-      setEditingCoachVimeoLink(true);
-      setResponseMode("written");
-      setVideoInputMode(cloudinaryUploadEnabled ? "upload" : "vimeo");
+      setShowVimeoInput(false);
+      setUploadedResponseFileName("");
+      setResponseVideoInputKey((current) => current + 1);
       setSendError("");
       setShowResponseModal(false);
       setResponseSummary("");
@@ -169,13 +181,20 @@ export default function AdminPanel({
     };
 
     void loadDetail();
-  }, [selectedId, tab, cloudinaryUploadEnabled]);
+  }, [selectedId, tab]);
 
   const memberVimeoEmbedUrl = detail?.memberVimeoLink ? toVimeoEmbedUrl(detail.memberVimeoLink) : null;
-  const coachVimeoEmbedUrl =
-    responseMode === "video" && videoInputMode === "vimeo" && manualVideoUrl.trim()
-      ? toVimeoEmbedUrl(manualVideoUrl)
-      : null;
+  const coachVimeoEmbedUrl = manualVideoUrl.trim() ? toVimeoEmbedUrl(manualVideoUrl) : null;
+
+  const hasUploadedR2Video = detail?.responseVideoUrl
+    ? isR2VideoReference(detail.responseVideoUrl)
+    : false;
+  const responseVideoDisplayName =
+    uploadedResponseFileName || getResponseVideoDisplayName(detail?.responseVideoUrl);
+  const hasResponseVideoReady = hasUploadedR2Video || Boolean(uploadedResponseFileName);
+  const canSendResponse = Boolean(
+    writtenResponse.trim() || hasUploadedR2Video || manualVideoUrl.trim(),
+  );
 
   const fallbackVideoUrl = useMemo(() => {
     if (!detail) {
@@ -256,30 +275,15 @@ export default function AdminPanel({
     }
 
     setSendError("");
-    const formData = new FormData();
-    formData.set("responseMode", responseMode);
+    if (!canSendResponse) {
+      setSendError("Provide a written response, upload a video, or paste a Vimeo link.");
+      return;
+    }
 
-    if (responseMode === "written") {
-      if (!writtenResponse.trim()) {
-        setSendError("Please provide a written response.");
-        return;
-      }
-      formData.set("writtenResponse", writtenResponse.trim());
-    } else {
-      formData.set("videoInputMode", videoInputMode);
-      if (videoInputMode === "upload") {
-        if (!responseVideo) {
-          setSendError("Please upload a response video file.");
-          return;
-        }
-        formData.set("responseVideo", responseVideo);
-      } else {
-        if (!manualVideoUrl.trim()) {
-          setSendError("Please paste a Vimeo response link.");
-          return;
-        }
-        formData.set("responseVideoUrl", manualVideoUrl.trim());
-      }
+    const formData = new FormData();
+    formData.set("writtenResponse", writtenResponse.trim());
+    if (manualVideoUrl.trim()) {
+      formData.set("responseVideoUrl", manualVideoUrl.trim());
     }
 
     const response = await fetch(`/api/admin/submissions/${tab}/${detail.id}/respond`, {
@@ -293,13 +297,18 @@ export default function AdminPanel({
       return;
     }
 
-    const summary =
-      responseMode === "written"
-        ? `Written response sent: "${writtenResponse.trim().slice(0, 180)}${writtenResponse.trim().length > 180 ? "..." : ""}"`
-        : videoInputMode === "upload"
-          ? `Video response sent using uploaded file: ${responseVideo?.name ?? "video file"}.`
-          : `Video response sent with Vimeo link: ${manualVideoUrl.trim()}`;
-    setResponseSummary(summary);
+    const summaryParts: string[] = [];
+    if (writtenResponse.trim()) {
+      summaryParts.push(
+        `Written response: "${writtenResponse.trim().slice(0, 180)}${writtenResponse.trim().length > 180 ? "..." : ""}"`,
+      );
+    }
+    if (hasUploadedR2Video) {
+      summaryParts.push("Video response sent using uploaded file.");
+    } else if (manualVideoUrl.trim()) {
+      summaryParts.push(`Video response sent with Vimeo link: ${manualVideoUrl.trim()}`);
+    }
+    setResponseSummary(summaryParts.join(" "));
     setShowResponseModal(true);
 
     const refreshed = await fetch(`/api/admin/submissions/${tab}/${detail.id}`);
@@ -359,6 +368,7 @@ export default function AdminPanel({
       }
 
       setResponseR2UploadSuccess(true);
+      setUploadedResponseFileName(file.name);
       setDetail({
         ...detail,
         responseVideoUrl: payload.responseVideoUrl ?? detail.responseVideoUrl ?? null,
@@ -369,6 +379,49 @@ export default function AdminPanel({
       );
     } finally {
       setUploadingResponseR2(false);
+    }
+  };
+
+  const handleReplaceResponseVideo = async () => {
+    if (!detail) {
+      return;
+    }
+
+    if (tab !== "swing" && tab !== "mental") {
+      return;
+    }
+
+    setResponseR2UploadError("");
+    setResponseR2UploadSuccess(false);
+    setUploadedResponseFileName("");
+    setResponseVideoInputKey((current) => current + 1);
+
+    if (hasUploadedR2Video) {
+      const formData = new FormData();
+      formData.set("submissionId", detail.id);
+      formData.set("submissionType", tab);
+
+      try {
+        const response = await fetch("/api/admin/clear-response-video", {
+          method: "POST",
+          body: formData,
+        });
+
+        const payload = (await response.json().catch(() => ({}))) as { error?: string };
+
+        if (!response.ok) {
+          throw new Error(payload.error ?? "Unable to clear uploaded video.");
+        }
+
+        setDetail({
+          ...detail,
+          responseVideoUrl: null,
+        });
+      } catch (error) {
+        setResponseR2UploadError(
+          error instanceof Error ? error.message : "Unable to clear uploaded video.",
+        );
+      }
     }
   };
 
@@ -728,141 +781,106 @@ export default function AdminPanel({
             ) : (
               <div className="rounded-xl border border-[#2b3650] bg-[#0b1324]/70 p-4">
                 <h3 className="text-lg font-semibold text-zinc-100">Send Response</h3>
-                <p className="mt-1 text-xs text-zinc-400">
-                  For video responses, choose either device upload (camera roll supported) or a manual
-                  Vimeo link.
-                </p>
                 <div className="mt-4 space-y-4">
-                  <div className="flex flex-wrap gap-4">
-                    <label className="flex items-center gap-2 text-sm text-zinc-200">
-                      <input
-                        type="radio"
-                        checked={responseMode === "written"}
-                        onChange={() => setResponseMode("written")}
-                        className="h-4 w-4 accent-[#22c55e]"
-                      />
-                      Written Response
-                    </label>
-                    <label className="flex items-center gap-2 text-sm text-zinc-200">
-                      <input
-                        type="radio"
-                        checked={responseMode === "video"}
-                        onChange={() => setResponseMode("video")}
-                        className="h-4 w-4 accent-[#22c55e]"
-                      />
-                      Video Response
-                    </label>
-                  </div>
+                  <textarea
+                    rows={6}
+                    value={writtenResponse}
+                    onChange={(event) => setWrittenResponse(event.target.value)}
+                    placeholder="Write your response here..."
+                    className="w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 placeholder:text-zinc-500 focus:border-[#22c55e]"
+                  />
 
-                  {responseMode === "written" ? (
-                    <textarea
-                      rows={6}
-                      value={writtenResponse}
-                      onChange={(event) => setWrittenResponse(event.target.value)}
-                      placeholder="Write your response here..."
-                      className="w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 placeholder:text-zinc-500 focus:border-[#22c55e]"
+                  <div className="space-y-3">
+                    <input
+                      key={responseVideoInputKey}
+                      ref={responseVideoInputRef}
+                      type="file"
+                      accept="video/*"
+                      disabled={uploadingResponseR2}
+                      onChange={(event) => {
+                        const file = event.target.files?.[0] ?? null;
+                        void handleUploadResponseVideo(file);
+                        event.target.value = "";
+                      }}
+                      className="hidden"
                     />
-                  ) : (
-                    <div className="space-y-3">
-                      <div className="space-y-2 rounded-xl border border-[#2b3650] bg-black/40 p-4">
-                        <p className="text-sm font-medium text-zinc-200">Upload Response Video</p>
-                        <input
-                          type="file"
-                          accept="video/*"
-                          disabled={uploadingResponseR2}
-                          onChange={(event) => {
-                            const file = event.target.files?.[0] ?? null;
-                            void handleUploadResponseVideo(file);
-                            event.target.value = "";
-                          }}
-                          className="w-full rounded-lg border border-dashed border-[#3b4b6a] bg-black px-4 py-4 text-sm text-zinc-300 file:mr-4 file:rounded-md file:border-0 file:bg-[#22c55e] file:px-3 file:py-2 file:font-semibold file:text-black hover:file:bg-[#35db72] disabled:cursor-not-allowed disabled:opacity-60"
-                        />
-                        <p className="text-xs text-zinc-400">
-                          Upload a response video file directly to secure storage. Vimeo link remains
-                          available below as a fallback.
-                        </p>
-                        {responseR2UploadError ? (
-                          <p className="text-sm text-red-300">{responseR2UploadError}</p>
-                        ) : null}
-                        {responseR2UploadSuccess ? (
-                          <p className="text-sm font-medium text-[#9df3bd]">Response video uploaded.</p>
-                        ) : null}
-                        {uploadingResponseR2 ? (
-                          <p className="text-sm text-zinc-400">Uploading response video...</p>
-                        ) : null}
-                      </div>
 
-                      {detail.responseVideoUrl &&
-                      resolveInlineSubmissionVideoUrl(detail.responseVideoUrl) ? (
-                        <div className="overflow-hidden rounded-xl border border-[#2b3650] bg-black">
-                          <div className="aspect-video w-full">
-                            <video
-                              src={resolveInlineSubmissionVideoUrl(detail.responseVideoUrl) ?? undefined}
-                              controls
-                              className="h-full w-full"
-                            />
+                    {hasResponseVideoReady ? (
+                      <div className="space-y-3">
+                        {detail.responseVideoUrl &&
+                        resolveInlineSubmissionVideoUrl(detail.responseVideoUrl) ? (
+                          <div className="overflow-hidden rounded-xl border border-[#2b3650] bg-black">
+                            <div className="aspect-video w-full">
+                              <video
+                                src={
+                                  resolveInlineSubmissionVideoUrl(detail.responseVideoUrl) ?? undefined
+                                }
+                                controls
+                                className="h-full w-full"
+                              />
+                            </div>
                           </div>
-                        </div>
-                      ) : null}
+                        ) : null}
 
-                      <div className="flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setVideoInputMode("upload")}
-                          disabled={!cloudinaryUploadEnabled}
-                          className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
-                            videoInputMode === "upload"
-                              ? "bg-[#22c55e] text-black"
-                              : "border border-[#2b3650] text-zinc-200 hover:border-[#7f9434]"
-                          } ${!cloudinaryUploadEnabled ? "cursor-not-allowed opacity-50" : ""}`}
-                        >
-                          Upload from Device
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setVideoInputMode("vimeo");
-                            setEditingCoachVimeoLink(true);
-                          }}
-                          className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
-                            videoInputMode === "vimeo"
-                              ? "bg-[#22c55e] text-black"
-                              : "border border-[#2b3650] text-zinc-200 hover:border-[#7f9434]"
-                          }`}
-                        >
-                          Paste Vimeo Link
-                        </button>
-                      </div>
-
-                      {!cloudinaryUploadEnabled && (
-                        <p className="text-xs text-yellow-200">
-                          Device upload is currently disabled. Use a Vimeo link for now.
-                        </p>
-                      )}
-
-                      {videoInputMode === "upload" && cloudinaryUploadEnabled ? (
-                        <div className="space-y-2">
-                          <input
-                            type="file"
-                            accept="video/*"
-                            onChange={(event) => setResponseVideo(event.target.files?.[0] ?? null)}
-                            className="w-full rounded-lg border border-dashed border-[#3b4b6a] bg-black px-4 py-4 text-sm text-zinc-300 file:mr-4 file:rounded-md file:border-0 file:bg-[#22c55e] file:px-3 file:py-2 file:font-semibold file:text-black hover:file:bg-[#35db72]"
-                          />
-                          <p className="text-xs text-zinc-400">
-                            Upload from desktop or phone camera roll. Files under 10MB are attached
-                            to the member email. Larger files are stored on Cloudinary and sent as a
-                            download link.
+                        <div className="flex flex-wrap items-center gap-3">
+                          <p className="text-sm text-zinc-300">
+                            {responseVideoDisplayName ?? "Response video uploaded"}
                           </p>
-                        </div>
-                      ) : coachVimeoEmbedUrl && !editingCoachVimeoLink ? (
-                        <div className="space-y-3">
                           <button
                             type="button"
-                            onClick={() => setEditingCoachVimeoLink(true)}
-                            className="text-sm font-medium text-[#52B788] underline transition hover:text-[#9df3bd]"
+                            onClick={() => void handleReplaceResponseVideo()}
+                            disabled={uploadingResponseR2}
+                            className="rounded-full border border-[#52B788]/40 px-4 py-1.5 text-xs font-semibold text-[#52B788] transition hover:border-[#52B788] hover:text-[#9df3bd] disabled:cursor-not-allowed disabled:opacity-50"
                           >
-                            Change Video Link
+                            Replace Video
                           </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => responseVideoInputRef.current?.click()}
+                        disabled={uploadingResponseR2}
+                        className="rounded-full bg-[#52B788] px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-[#9df3bd] disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        Upload Response Video
+                      </button>
+                    )}
+
+                    {responseR2UploadError ? (
+                      <p className="text-sm text-red-300">{responseR2UploadError}</p>
+                    ) : null}
+                    {responseR2UploadSuccess ? (
+                      <p className="text-sm font-medium text-[#9df3bd]">Response video uploaded.</p>
+                    ) : null}
+                    {uploadingResponseR2 ? (
+                      <p className="text-sm text-zinc-400">Uploading response video...</p>
+                    ) : null}
+                  </div>
+
+                  <div className="space-y-2">
+                    {!showVimeoInput ? (
+                      <button
+                        type="button"
+                        onClick={() => setShowVimeoInput(true)}
+                        className="text-xs text-zinc-500 transition hover:text-zinc-300"
+                      >
+                        Or paste a Vimeo link instead
+                      </button>
+                    ) : (
+                      <div className="space-y-2">
+                        <input
+                          type="url"
+                          value={manualVideoUrl}
+                          onChange={(event) => setManualVideoUrl(event.target.value)}
+                          placeholder="https://vimeo.com/..."
+                          className="w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-[#22c55e]"
+                        />
+                        <p className="text-xs text-zinc-400">
+                          Note: make sure the video is set to Unlisted on Vimeo so members can view it
+                          without signing in.
+                        </p>
+                        {coachVimeoEmbedUrl ? (
                           <div className="overflow-hidden rounded-xl border border-[#2b3650] bg-black">
                             <div className="aspect-video w-full">
                               <iframe
@@ -874,40 +892,18 @@ export default function AdminPanel({
                               />
                             </div>
                           </div>
-                        </div>
-                      ) : (
-                        <div className="space-y-3">
-                          <input
-                            type="url"
-                            value={manualVideoUrl}
-                            onChange={(event) => setManualVideoUrl(event.target.value)}
-                            placeholder="https://vimeo.com/..."
-                            className="w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 placeholder:text-zinc-500 focus:border-[#22c55e]"
-                          />
-                          <p className="text-xs text-zinc-400">
-                            Note: make sure the video is set to Unlisted on Vimeo so members can view it
-                            without signing in.
-                          </p>
-                          {manualVideoUrl.trim() && coachVimeoEmbedUrl ? (
-                            <button
-                              type="button"
-                              onClick={() => setEditingCoachVimeoLink(false)}
-                              className="rounded-full border border-[#52B788]/40 px-4 py-2 text-sm font-semibold text-[#52B788] transition hover:border-[#52B788] hover:text-[#9df3bd]"
-                            >
-                              Use This Link
-                            </button>
-                          ) : null}
-                        </div>
-                      )}
-                    </div>
-                  )}
+                        ) : null}
+                      </div>
+                    )}
+                  </div>
 
                   {sendError && <p className="text-sm text-red-300">{sendError}</p>}
 
                   <button
                     type="button"
                     onClick={handleSendResponse}
-                    className="w-full rounded-full bg-[#22c55e] px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-[#35db72] sm:w-auto"
+                    disabled={!canSendResponse}
+                    className="w-full rounded-full bg-[#22c55e] px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-[#35db72] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
                   >
                     Send Response
                   </button>
