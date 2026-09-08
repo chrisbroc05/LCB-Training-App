@@ -404,7 +404,7 @@ export default function TopNavigation({
   if (!isLoggedIn) {
     return (
       <nav className="flex items-center justify-end gap-1 md:justify-self-end">
-        <Link href="/auth" onClick={closeMenus} className={linkClass(pathname.startsWith("/auth"))}>
+        <Link href="/auth?mode=login" onClick={closeMenus} className={linkClass(pathname.startsWith("/auth"))}>
           Login
         </Link>
         <Link href="/auth?mode=signup" onClick={closeMenus} className={linkClass(false)}>

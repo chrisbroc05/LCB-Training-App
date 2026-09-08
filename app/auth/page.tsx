@@ -56,7 +56,11 @@ function AuthContent() {
   const isFreeSwingFlow = isFreeSwingAuthFlow(tierQueryParam, redirectParam);
   const isPlaybookFlow = isPlaybookSignupFlow(tierQueryParam, redirectParam);
   const shouldStartOnSignup =
-    modeQuery === "signup" || Boolean(preselectedTierFromQuery) || isPlaybookFlow;
+    modeQuery === "login"
+      ? false
+      : modeQuery === "signup" ||
+        Boolean(preselectedTierFromQuery) ||
+        (isPlaybookFlow && modeQuery !== "login");
   const [authMode, setAuthMode] = useState<AuthMode>(shouldStartOnSignup ? "signup" : "login");
   const checkoutStatus = searchParams.get("checkout");
   const billingQueryParam = searchParams.get("billing");
@@ -71,6 +75,17 @@ function AuthContent() {
   const [billingFrequency, setBillingFrequency] = useState<BillingFrequency>(
     parseBillingFrequency(billingQueryParam),
   );
+
+  useEffect(() => {
+    if (modeQuery === "login") {
+      setAuthMode("login");
+      return;
+    }
+
+    if (modeQuery === "signup" || preselectedTierFromQuery || isPlaybookFlow) {
+      setAuthMode("signup");
+    }
+  }, [modeQuery, preselectedTierFromQuery, isPlaybookFlow]);
 
   useEffect(() => {
     if (!isFreeSwingFlow && !isPlaybookFlow) {
