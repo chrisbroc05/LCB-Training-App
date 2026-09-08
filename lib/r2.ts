@@ -56,7 +56,15 @@ export function getAdminR2VideoUrl(reference: string) {
     return null;
   }
 
-  return `/api/admin/r2-video/${key.split("/").map(encodeURIComponent).join("/")}`;
+  return getStreamableR2VideoUrl(key);
+}
+
+export function getStreamableR2VideoUrl(key: string) {
+  return `/api/video/${key.split("/").map(encodeURIComponent).join("/")}`;
+}
+
+export function isValidR2ObjectKey(key: string) {
+  return (key.startsWith("submissions/") || key.startsWith("responses/")) && !key.includes("..");
 }
 
 export function isR2VideoReference(value: string) {
@@ -66,6 +74,25 @@ export function isR2VideoReference(value: string) {
 export async function uploadSubmissionVideoToR2(file: File) {
   const { bucketName } = getR2Config();
   const key = `submissions/${Date.now()}-${sanitizeFileName(file.name)}`;
+  const contentType = file.type || "video/mp4";
+  const body = Readable.fromWeb(file.stream() as Parameters<typeof Readable.fromWeb>[0]);
+
+  await getR2Client().send(
+    new PutObjectCommand({
+      Bucket: bucketName,
+      Key: key,
+      Body: body,
+      ContentType: contentType,
+      ContentLength: file.size,
+    }),
+  );
+
+  return key;
+}
+
+export async function uploadResponseVideoToR2(file: File) {
+  const { bucketName } = getR2Config();
+  const key = `responses/${Date.now()}-${sanitizeFileName(file.name)}`;
   const contentType = file.type || "video/mp4";
   const body = Readable.fromWeb(file.stream() as Parameters<typeof Readable.fromWeb>[0]);
 

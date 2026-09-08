@@ -1,7 +1,6 @@
 import Link from "next/link";
 import ProfileCard from "@/app/profile/ProfileCard";
-import MemberSubmissionVideo from "@/app/profile/MemberSubmissionVideo";
-import { toVimeoEmbedUrl } from "@/lib/vimeo";
+import MemberSubmissionVideo, { CoachResponseVideo } from "@/app/profile/MemberSubmissionVideo";
 
 type SubmissionStatus = "PENDING" | "REVIEWING" | "COMPLETED";
 type SubmissionType = "SWING" | "MENTAL";
@@ -118,27 +117,7 @@ export default function CoachingSubmissionHistory({
                       </p>
                     ) : null}
                     {selectedSubmission.responseVideoUrl ? (
-                      <>
-                        <a
-                          href={selectedSubmission.responseVideoUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm text-[#8fd7ff] underline"
-                        >
-                          View Coach Video Response
-                        </a>
-                        {toVimeoEmbedUrl(selectedSubmission.responseVideoUrl) ? (
-                          <div className="relative w-full overflow-hidden rounded-xl border border-[#2b3650] pt-[56.25%]">
-                            <iframe
-                              src={toVimeoEmbedUrl(selectedSubmission.responseVideoUrl) ?? undefined}
-                              title="Coach response video"
-                              className="absolute inset-0 h-full w-full"
-                              allow="autoplay; fullscreen; picture-in-picture"
-                              allowFullScreen
-                            />
-                          </div>
-                        ) : null}
-                      </>
+                      <CoachResponseVideo responseVideoUrl={selectedSubmission.responseVideoUrl} />
                     ) : null}
                     {!selectedSubmission.responseText && !selectedSubmission.responseVideoUrl ? (
                       <p className="text-sm text-zinc-400">

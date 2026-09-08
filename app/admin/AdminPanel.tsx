@@ -6,7 +6,7 @@ import MembersPanel from "@/app/admin/MembersPanel";
 import PlaybookReflectionsPanel from "@/app/admin/PlaybookReflectionsPanel";
 import MemberProfileCard from "@/app/admin/MemberProfileCard";
 import { toVimeoEmbedUrl } from "@/lib/vimeo";
-import { getAdminR2VideoUrl, isR2VideoReference } from "@/lib/r2";
+import { getStreamableR2VideoUrl, isR2VideoReference, parseR2VideoReference } from "@/lib/r2";
 
 type TabType = "swing" | "mental" | "goal" | "members" | "playbook";
 
@@ -63,6 +63,7 @@ function formatResponseDateTime(value: string | null | undefined) {
 function canInlineResponseVideo(url: string) {
   return (
     url.startsWith("/api/submission-videos/") ||
+    url.startsWith("/api/video/") ||
     url.startsWith("/api/admin/r2-video/") ||
     (url.startsWith("http") && !url.includes("vimeo.com"))
   );
@@ -70,7 +71,8 @@ function canInlineResponseVideo(url: string) {
 
 function resolveInlineSubmissionVideoUrl(url: string) {
   if (isR2VideoReference(url)) {
-    return getAdminR2VideoUrl(url);
+    const key = parseR2VideoReference(url);
+    return key ? getStreamableR2VideoUrl(key) : null;
   }
 
   return url;
@@ -104,6 +106,9 @@ export default function AdminPanel({
   const [memberVimeoPlayerKey, setMemberVimeoPlayerKey] = useState(0);
   const [editingMemberVimeoLink, setEditingMemberVimeoLink] = useState(true);
   const [editingCoachVimeoLink, setEditingCoachVimeoLink] = useState(true);
+  const [uploadingResponseR2, setUploadingResponseR2] = useState(false);
+  const [responseR2UploadError, setResponseR2UploadError] = useState("");
+  const [responseR2UploadSuccess, setResponseR2UploadSuccess] = useState(false);
 
   useEffect(() => {
     if (tab === "goal" || tab === "members" || tab === "playbook") {
@@ -159,6 +164,8 @@ export default function AdminPanel({
       setSendError("");
       setShowResponseModal(false);
       setResponseSummary("");
+      setResponseR2UploadError("");
+      setResponseR2UploadSuccess(false);
     };
 
     void loadDetail();
@@ -316,6 +323,53 @@ export default function AdminPanel({
           : item,
       ),
     );
+  };
+
+  const handleUploadResponseVideo = async (file: File | null) => {
+    if (!detail || !file) {
+      return;
+    }
+
+    if (tab !== "swing" && tab !== "mental") {
+      return;
+    }
+
+    setUploadingResponseR2(true);
+    setResponseR2UploadError("");
+    setResponseR2UploadSuccess(false);
+
+    const formData = new FormData();
+    formData.set("video", file);
+    formData.set("submissionId", detail.id);
+    formData.set("submissionType", tab);
+
+    try {
+      const response = await fetch("/api/admin/upload-response", {
+        method: "POST",
+        body: formData,
+      });
+
+      const payload = (await response.json().catch(() => ({}))) as {
+        error?: string;
+        responseVideoUrl?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Unable to upload response video.");
+      }
+
+      setResponseR2UploadSuccess(true);
+      setDetail({
+        ...detail,
+        responseVideoUrl: payload.responseVideoUrl ?? detail.responseVideoUrl ?? null,
+      });
+    } catch (error) {
+      setResponseR2UploadError(
+        error instanceof Error ? error.message : "Unable to upload response video.",
+      );
+    } finally {
+      setUploadingResponseR2(false);
+    }
   };
 
   return (
@@ -643,22 +697,27 @@ export default function AdminPanel({
                           allowFullScreen
                         />
                       </div>
-                    ) : canInlineResponseVideo(detail.responseVideoUrl) ? (
-                      <div className="aspect-video w-full">
-                        <video src={detail.responseVideoUrl} controls className="h-full w-full" />
-                      </div>
-                    ) : (
-                      <div className="px-4 py-3">
-                        <a
-                          href={detail.responseVideoUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm text-[#8fd7ff] underline"
-                        >
-                          Open response video
-                        </a>
-                      </div>
-                    )}
+                    ) : (() => {
+                      const inlineResponseUrl =
+                        resolveInlineSubmissionVideoUrl(detail.responseVideoUrl ?? "") ??
+                        detail.responseVideoUrl;
+                      return canInlineResponseVideo(inlineResponseUrl) ? (
+                        <div className="aspect-video w-full">
+                          <video src={inlineResponseUrl} controls className="h-full w-full" />
+                        </div>
+                      ) : (
+                        <div className="px-4 py-3">
+                          <a
+                            href={detail.responseVideoUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-[#8fd7ff] underline"
+                          >
+                            Open response video
+                          </a>
+                        </div>
+                      );
+                    })()}
                   </div>
                 ) : null}
 
@@ -705,6 +764,47 @@ export default function AdminPanel({
                     />
                   ) : (
                     <div className="space-y-3">
+                      <div className="space-y-2 rounded-xl border border-[#2b3650] bg-black/40 p-4">
+                        <p className="text-sm font-medium text-zinc-200">Upload Response Video</p>
+                        <input
+                          type="file"
+                          accept="video/*"
+                          disabled={uploadingResponseR2}
+                          onChange={(event) => {
+                            const file = event.target.files?.[0] ?? null;
+                            void handleUploadResponseVideo(file);
+                            event.target.value = "";
+                          }}
+                          className="w-full rounded-lg border border-dashed border-[#3b4b6a] bg-black px-4 py-4 text-sm text-zinc-300 file:mr-4 file:rounded-md file:border-0 file:bg-[#22c55e] file:px-3 file:py-2 file:font-semibold file:text-black hover:file:bg-[#35db72] disabled:cursor-not-allowed disabled:opacity-60"
+                        />
+                        <p className="text-xs text-zinc-400">
+                          Upload a response video file directly to secure storage. Vimeo link remains
+                          available below as a fallback.
+                        </p>
+                        {responseR2UploadError ? (
+                          <p className="text-sm text-red-300">{responseR2UploadError}</p>
+                        ) : null}
+                        {responseR2UploadSuccess ? (
+                          <p className="text-sm font-medium text-[#9df3bd]">Response video uploaded.</p>
+                        ) : null}
+                        {uploadingResponseR2 ? (
+                          <p className="text-sm text-zinc-400">Uploading response video...</p>
+                        ) : null}
+                      </div>
+
+                      {detail.responseVideoUrl &&
+                      resolveInlineSubmissionVideoUrl(detail.responseVideoUrl) ? (
+                        <div className="overflow-hidden rounded-xl border border-[#2b3650] bg-black">
+                          <div className="aspect-video w-full">
+                            <video
+                              src={resolveInlineSubmissionVideoUrl(detail.responseVideoUrl) ?? undefined}
+                              controls
+                              className="h-full w-full"
+                            />
+                          </div>
+                        </div>
+                      ) : null}
+
                       <div className="flex flex-wrap gap-2">
                         <button
                           type="button"

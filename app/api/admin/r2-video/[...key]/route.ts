@@ -20,7 +20,10 @@ export async function GET(_request: Request, context: RouteContext) {
   const { key: keySegments } = await context.params;
   const key = keySegments.map((segment) => decodeURIComponent(segment)).join("/");
 
-  if (!key.startsWith("submissions/") || key.includes("..")) {
+  if (
+    (!key.startsWith("submissions/") && !key.startsWith("responses/")) ||
+    key.includes("..")
+  ) {
     return NextResponse.json({ error: "Invalid video key." }, { status: 400 });
   }
 
