@@ -5,6 +5,7 @@ import { isAdminEmail } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
 import AdminPanel from "@/app/admin/AdminPanel";
 import FreeMembersSection from "@/app/admin/FreeMembersSection";
+import SignOutButton from "@/app/components/SignOutButton";
 
 export default async function AdminPage() {
   const session = await getServerSession(authOptions);
@@ -44,6 +45,10 @@ export default async function AdminPage() {
           assessmentCallDate: member.assessmentCallDate?.toISOString() ?? null,
         }))}
       />
+
+      <div className="mt-8">
+        <SignOutButton />
+      </div>
     </div>
   );
 }

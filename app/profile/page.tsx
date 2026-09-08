@@ -8,6 +8,7 @@ import CoachingSubmissionHistory, {
 import PlayerProfileCard from "@/app/profile/PlayerProfileCard";
 import PlaybookProgressCard from "@/app/profile/PlaybookProgressCard";
 import ProfileGoalCheckinHistory from "@/app/profile/ProfileGoalCheckinHistory";
+import SignOutButton from "@/app/components/SignOutButton";
 import { profilePageStackClass, profilePageTitleClass } from "@/app/profile/profile-styles";
 import { authOptions } from "@/lib/auth";
 import {
@@ -165,6 +166,8 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
             assessmentCallDate={user.assessmentCallDate}
           />
         ) : null}
+
+        <SignOutButton />
       </div>
     </div>
   );
