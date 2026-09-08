@@ -31,7 +31,7 @@ export async function POST(request: Request, context: RouteContext) {
   const responseVideoUrl = String(formData.get("responseVideoUrl") ?? "").trim();
 
   if (responseVideoUrl && !isValidVimeoUrl(responseVideoUrl)) {
-    return NextResponse.json({ error: "Please provide a valid Vimeo video link." }, { status: 400 });
+    return NextResponse.json({ error: "Please provide a valid video link." }, { status: 400 });
   }
 
   if (params.type === "mental") {
@@ -48,7 +48,7 @@ export async function POST(request: Request, context: RouteContext) {
 
     if (!finalText && !finalVideoUrl) {
       return NextResponse.json(
-        { error: "Provide a written response, upload a video, or paste a Vimeo link." },
+        { error: "Provide a written response or upload a video." },
         { status: 400 },
       );
     }
@@ -109,7 +109,7 @@ export async function POST(request: Request, context: RouteContext) {
 
   if (!finalText && !finalVideoUrl) {
     return NextResponse.json(
-      { error: "Provide a written response, upload a video, or paste a Vimeo link." },
+      { error: "Provide a written response or upload a video." },
       { status: 400 },
     );
   }

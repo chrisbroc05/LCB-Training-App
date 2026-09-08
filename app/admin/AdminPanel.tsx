@@ -113,12 +113,7 @@ export default function AdminPanel() {
   const [sendError, setSendError] = useState("");
   const [showResponseModal, setShowResponseModal] = useState(false);
   const [responseSummary, setResponseSummary] = useState("");
-  const [memberVimeoLinkInput, setMemberVimeoLinkInput] = useState("");
-  const [memberVimeoSaveError, setMemberVimeoSaveError] = useState("");
-  const [memberVimeoSaveSuccess, setMemberVimeoSaveSuccess] = useState(false);
-  const [savingMemberVimeoLink, setSavingMemberVimeoLink] = useState(false);
   const [memberVimeoPlayerKey, setMemberVimeoPlayerKey] = useState(0);
-  const [editingMemberVimeoLink, setEditingMemberVimeoLink] = useState(true);
   const [uploadingResponseR2, setUploadingResponseR2] = useState(false);
   const [responseR2UploadError, setResponseR2UploadError] = useState("");
   const [responseR2UploadSuccess, setResponseR2UploadSuccess] = useState(false);
@@ -164,10 +159,6 @@ export default function AdminPanel() {
       }
       const data = (await response.json()) as { submission: SubmissionDetail };
       setDetail(data.submission);
-      setMemberVimeoLinkInput(data.submission.memberVimeoLink ?? "");
-      setMemberVimeoSaveError("");
-      setMemberVimeoSaveSuccess(false);
-      setEditingMemberVimeoLink(!data.submission.memberVimeoLink);
       setWrittenResponse("");
       setManualVideoUrl("");
       setShowVimeoInput(false);
@@ -184,7 +175,6 @@ export default function AdminPanel() {
   }, [selectedId, tab]);
 
   const memberVimeoEmbedUrl = detail?.memberVimeoLink ? toVimeoEmbedUrl(detail.memberVimeoLink) : null;
-  const coachVimeoEmbedUrl = manualVideoUrl.trim() ? toVimeoEmbedUrl(manualVideoUrl) : null;
 
   const hasUploadedR2Video = detail?.responseVideoUrl
     ? isR2VideoReference(detail.responseVideoUrl)
@@ -211,64 +201,6 @@ export default function AdminPanel() {
 
   const canInlineFallbackVideo = fallbackVideoUrl ? canInlineResponseVideo(fallbackVideoUrl) : false;
 
-  const handleSaveMemberVimeoLink = async () => {
-    if (!detail) {
-      return;
-    }
-
-    setMemberVimeoSaveError("");
-    setMemberVimeoSaveSuccess(false);
-    setSavingMemberVimeoLink(true);
-
-    const response = await fetch("/api/admin/submission-vimeo-link", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        submissionId: detail.id,
-        submissionType: tab,
-        vimeoLink: memberVimeoLinkInput.trim(),
-      }),
-    });
-
-    if (!response.ok) {
-      setSavingMemberVimeoLink(false);
-      const data = (await response.json().catch(() => ({}))) as { error?: string };
-      setMemberVimeoSaveError(data.error ?? "Unable to save member Vimeo link.");
-      return;
-    }
-
-    const data = (await response.json()) as { memberVimeoLink?: string };
-    const savedLink = data.memberVimeoLink ?? memberVimeoLinkInput.trim();
-
-    const refreshed = await fetch(`/api/admin/submissions/${tab}/${detail.id}`);
-    if (refreshed.ok) {
-      const refreshData = (await refreshed.json()) as { submission: SubmissionDetail };
-      setDetail(refreshData.submission);
-      setMemberVimeoLinkInput(refreshData.submission.memberVimeoLink ?? savedLink);
-    } else {
-      setDetail({
-        ...detail,
-        memberVimeoLink: savedLink,
-      });
-      setMemberVimeoLinkInput(savedLink);
-    }
-
-    setSavingMemberVimeoLink(false);
-    setEditingMemberVimeoLink(false);
-    setMemberVimeoSaveSuccess(true);
-    setMemberVimeoPlayerKey((current) => current + 1);
-    setItems((previous) =>
-      previous.map((item) =>
-        item.id === detail.id
-          ? {
-              ...item,
-              hasMemberVimeoLink: true,
-            }
-          : item,
-      ),
-    );
-  };
-
   const handleSendResponse = async () => {
     if (!detail) {
       return;
@@ -276,7 +208,7 @@ export default function AdminPanel() {
 
     setSendError("");
     if (!canSendResponse) {
-      setSendError("Provide a written response, upload a video, or paste a Vimeo link.");
+      setSendError("Provide a written response or upload a video.");
       return;
     }
 
@@ -306,7 +238,7 @@ export default function AdminPanel() {
     if (hasUploadedR2Video) {
       summaryParts.push("Video response sent using uploaded file.");
     } else if (manualVideoUrl.trim()) {
-      summaryParts.push(`Video response sent with Vimeo link: ${manualVideoUrl.trim()}`);
+      summaryParts.push("Video response sent using external video link.");
     }
     setResponseSummary(summaryParts.join(" "));
     setShowResponseModal(true);
@@ -515,7 +447,7 @@ export default function AdminPanel() {
                 <div className="flex items-center gap-2">
                   <span
                     className="inline-flex h-5 w-5 items-center justify-center"
-                    title={item.hasMemberVimeoLink ? "Member Vimeo link saved" : "Member Vimeo link needed"}
+                    title={item.hasMemberVimeoLink ? "Member video available" : "Member video needed"}
                   >
                     {item.hasMemberVimeoLink ? (
                       <svg
@@ -615,58 +547,6 @@ export default function AdminPanel() {
             <div className="rounded-xl border border-[#2b3650] bg-[#0b1324]/70 p-4">
               <h3 className="text-lg font-semibold text-zinc-100">Member Submission Video</h3>
 
-              {detail.memberVimeoLink && !editingMemberVimeoLink ? (
-                <div className="mt-3 space-y-2">
-                  {memberVimeoSaveSuccess ? (
-                    <p className="text-sm font-medium text-[#9df3bd]">Video link saved</p>
-                  ) : null}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEditingMemberVimeoLink(true);
-                      setMemberVimeoLinkInput(detail.memberVimeoLink ?? "");
-                      setMemberVimeoSaveError("");
-                      setMemberVimeoSaveSuccess(false);
-                    }}
-                    className="text-sm font-medium text-[#52B788] underline transition hover:text-[#9df3bd]"
-                  >
-                    Change Video Link
-                  </button>
-                </div>
-              ) : (
-                <div className="mt-4 space-y-3">
-                  <label className="block text-sm font-medium text-zinc-200" htmlFor="member-vimeo-link">
-                    Paste Member Vimeo Link
-                  </label>
-                  <input
-                    id="member-vimeo-link"
-                    type="url"
-                    value={memberVimeoLinkInput}
-                    onChange={(event) => setMemberVimeoLinkInput(event.target.value)}
-                    placeholder="https://vimeo.com/..."
-                    className="w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 placeholder:text-zinc-500 focus:border-[#22c55e]"
-                  />
-                  <p className="text-xs text-zinc-400">
-                    Note: make sure the video is set to Unlisted on Vimeo so members can view it without
-                    signing in.
-                  </p>
-                  {memberVimeoSaveError ? (
-                    <p className="text-sm text-red-300">{memberVimeoSaveError}</p>
-                  ) : null}
-                  {memberVimeoSaveSuccess ? (
-                    <p className="text-sm font-medium text-[#9df3bd]">Video link saved</p>
-                  ) : null}
-                  <button
-                    type="button"
-                    onClick={handleSaveMemberVimeoLink}
-                    disabled={savingMemberVimeoLink || !memberVimeoLinkInput.trim()}
-                    className="rounded-full bg-[#22c55e] px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-[#35db72] disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {savingMemberVimeoLink ? "Saving..." : "Save Link"}
-                  </button>
-                </div>
-              )}
-
               {memberVimeoEmbedUrl ? (
                 <div className="mt-4 overflow-hidden rounded-xl border border-[#2b3650] bg-black">
                   <div className="aspect-video w-full">
@@ -682,9 +562,6 @@ export default function AdminPanel() {
                 </div>
               ) : fallbackVideoUrl ? (
                 <div className="mt-4 space-y-3">
-                  <p className="text-xs text-zinc-400">
-                    Temporary link -- upload to Vimeo and paste link above for permanent access
-                  </p>
                   <div className="overflow-hidden rounded-xl border border-[#2b3650] bg-black">
                     <div className="border-b border-[#2b3650] px-4 py-2">
                       <div className="flex flex-wrap gap-3">
@@ -873,26 +750,9 @@ export default function AdminPanel() {
                           type="url"
                           value={manualVideoUrl}
                           onChange={(event) => setManualVideoUrl(event.target.value)}
-                          placeholder="https://vimeo.com/..."
+                          placeholder="https://..."
                           className="w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-[#22c55e]"
                         />
-                        <p className="text-xs text-zinc-400">
-                          Note: make sure the video is set to Unlisted on Vimeo so members can view it
-                          without signing in.
-                        </p>
-                        {coachVimeoEmbedUrl ? (
-                          <div className="overflow-hidden rounded-xl border border-[#2b3650] bg-black">
-                            <div className="aspect-video w-full">
-                              <iframe
-                                src={coachVimeoEmbedUrl}
-                                title="Coach response preview"
-                                className="h-full w-full"
-                                allow="autoplay; fullscreen; picture-in-picture"
-                                allowFullScreen
-                              />
-                            </div>
-                          </div>
-                        ) : null}
                       </div>
                     )}
                   </div>

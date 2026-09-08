@@ -133,6 +133,11 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   }
 
   const resolvedSearchParams = searchParams ? await searchParams : {};
+  const tabParam = typeof resolvedSearchParams.tab === "string" ? resolvedSearchParams.tab : null;
+  if (tabParam === "submissions") {
+    redirect("/profile");
+  }
+
   const checkoutStatus =
     typeof resolvedSearchParams.checkout === "string" ? resolvedSearchParams.checkout : null;
   const upgradeStatus =

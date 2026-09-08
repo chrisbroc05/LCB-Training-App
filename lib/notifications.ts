@@ -323,48 +323,9 @@ export async function sendSubmissionResponseEmail(params: {
   videoDownloadLink?: string;
 }) {
   const transporter = createTransporter();
-  const submissionLabel = "coaching submission";
-
-  const videoBodyLines = [
-    params.videoResponseUrl ? `Video response: ${params.videoResponseUrl}` : "",
-    params.videoAttachment ? `Attached video file: ${params.videoAttachment.fileName}` : "",
-    params.videoDownloadLink ? `Download video: ${params.videoDownloadLink}` : "",
-  ]
-    .filter(Boolean)
-    .join("\n");
-  const responseBody =
-    params.responseMode === "VIDEO"
-      ? `Your coach has sent a video response.\n${videoBodyLines}`
-      : `Your coach has sent a written response:\n\n${params.writtenResponse}`;
-
-  const htmlResponseBody =
-    params.responseMode === "VIDEO"
-      ? `<p style="margin:0 0 8px;">Your coach has sent a video response.</p>
-        ${
-          params.videoResponseUrl
-            ? `<p style="margin:0 0 8px;">Watch online: <a href="${escapeHtml(
-                params.videoResponseUrl,
-              )}" target="_blank" rel="noopener noreferrer" style="color:#8fd7ff; text-decoration:underline;">${escapeHtml(
-                params.videoResponseUrl,
-              )}</a></p>`
-            : ""
-        }
-        ${
-          params.videoAttachment
-            ? `<p style="margin:0 0 8px;">Attached video file: ${escapeHtml(params.videoAttachment.fileName)}</p>`
-            : ""
-        }
-        ${
-          params.videoDownloadLink
-            ? `<p style="margin:0;">Download video: <a href="${escapeHtml(
-                params.videoDownloadLink,
-              )}" target="_blank" rel="noopener noreferrer" style="color:#8fd7ff; text-decoration:underline;">${escapeHtml(
-                params.videoDownloadLink,
-              )}</a></p>`
-            : ""
-        }`
-      : `Your coach has sent a written response:<br/><br/>${escapeHtml(params.writtenResponse ?? "")}`;
-  const settingsUrl = `${process.env.NEXTAUTH_URL?.replace(/\/$/, "") ?? "http://localhost:3000"}/settings`;
+  const appUrl = (process.env.NEXTAUTH_URL || "https://www.lcbtraining.com").replace(/\/$/, "");
+  const viewUrl = `${appUrl}/dashboard?tab=submissions`;
+  const settingsUrl = `${appUrl}/settings`;
   const isFreeTier = params.membershipTier === "FREE";
   const freeTierCtaText = isFreeTier
     ? `Want to keep progressing?
@@ -388,12 +349,82 @@ Upgrade now in Settings: ${settingsUrl}
   const generalSettingsCtaHtml = `<p style="margin: 12px 0 0;"><a href="${escapeHtml(
     settingsUrl,
   )}" target="_blank" rel="noopener noreferrer" style="color:#8fd7ff; text-decoration:underline;">Manage or upgrade your membership in Settings</a></p>`;
+  const viewResponseButtonHtml = `<a href="${escapeHtml(
+    viewUrl,
+  )}" target="_blank" rel="noopener noreferrer" style="display:inline-block; margin:16px 0; padding:12px 24px; background:#52B788; color:#000000; font-weight:700; text-decoration:none; border-radius:9999px;">View My Response</a>`;
+
+  if (params.responseMode === "VIDEO") {
+    await transporter.sendMail({
+      from: process.env.NOTIFICATION_EMAIL,
+      to: params.toEmail,
+      subject: "Coach Broc sent you a video response",
+      text: `Hi ${params.playerName},
+
+Coach Broc has reviewed your submission and sent you a personal video response.
+
+Click below to watch it:
+
+View My Response: ${viewUrl}
+
+Log in to your account to watch the video and read any notes from Coach Broc.
+
+Work Hard. Be Memorable.
+-- Coach Broc
+${freeTierCtaText}${generalSettingsCtaText}`,
+      html: `<div style="font-family: Arial, sans-serif; color: #e5e7eb; background: #05070d; padding: 24px;">
+      <div style="max-width: 620px; margin: 0 auto; border: 1px solid #1f2c43; border-radius: 12px; overflow: hidden; background: #0b1324;">
+        <div style="background: linear-gradient(90deg, #000000 0%, #0f1d34 70%, #7fbf2f 100%); padding: 18px 20px; font-size: 18px; font-weight: 700; color: #f4f4f5;">
+          Coach Broc sent you a video response
+        </div>
+        <div style="padding: 20px; font-size: 14px; line-height: 1.65; color: #e5e7eb;">
+          <p style="margin: 0 0 12px;">Hi ${escapeHtml(params.playerName)},</p>
+          <p style="margin: 0 0 12px;">Coach Broc has reviewed your submission and sent you a personal video response.</p>
+          <p style="margin: 0 0 12px;">Click below to watch it:</p>
+          ${viewResponseButtonHtml}
+          <p style="margin: 0 0 12px;">Log in to your account to watch the video and read any notes from Coach Broc.</p>
+          <p style="margin: 0 0 4px;">Work Hard. Be Memorable.</p>
+          <p style="margin: 0;">-- Coach Broc</p>
+          ${freeTierCtaHtml}
+          ${generalSettingsCtaHtml}
+        </div>
+      </div>
+    </div>`,
+      attachments: params.videoAttachment
+        ? [
+            {
+              filename: params.videoAttachment.fileName,
+              content: params.videoAttachment.content,
+              contentType: params.videoAttachment.contentType,
+            },
+          ]
+        : undefined,
+    });
+    return;
+  }
+
+  const writtenResponseBody = params.writtenResponse?.trim() ?? "";
+  const responseBody = writtenResponseBody
+    ? `Your coach has sent a written response:\n\n${writtenResponseBody}`
+    : "Your coach has sent a written response.";
+  const htmlResponseBody = writtenResponseBody
+    ? `Your coach has sent a written response:<br/><br/>${escapeHtml(writtenResponseBody)}`
+    : "Your coach has sent a written response.";
 
   await transporter.sendMail({
     from: process.env.NOTIFICATION_EMAIL,
     to: params.toEmail,
     subject: "Your LCB Training Coach Response",
-    text: `Hi ${params.playerName},\n\nThanks for your ${submissionLabel} submission.\n\n${responseBody}\n${freeTierCtaText}\n${generalSettingsCtaText}\n\n-LCB Training`,
+    text: `Hi ${params.playerName},
+
+Thanks for your coaching submission.
+
+${responseBody}
+
+View your response in the app: ${viewUrl}
+
+${freeTierCtaText}${generalSettingsCtaText}
+
+-LCB Training`,
     html: `<div style="font-family: Arial, sans-serif; color: #e5e7eb; background: #05070d; padding: 24px;">
       <div style="max-width: 620px; margin: 0 auto; border: 1px solid #1f2c43; border-radius: 12px; overflow: hidden; background: #0b1324;">
         <div style="background: linear-gradient(90deg, #000000 0%, #0f1d34 70%, #7fbf2f 100%); padding: 18px 20px; font-size: 18px; font-weight: 700; color: #f4f4f5;">
@@ -401,8 +432,11 @@ Upgrade now in Settings: ${settingsUrl}
         </div>
         <div style="padding: 20px; font-size: 14px; line-height: 1.65; color: #e5e7eb;">
           <p style="margin: 0 0 12px;">Hi ${escapeHtml(params.playerName)},</p>
-          <p style="margin: 0 0 12px;">Thanks for your ${escapeHtml(submissionLabel)} submission.</p>
+          <p style="margin: 0 0 12px;">Thanks for your coaching submission.</p>
           <p style="margin: 0 0 12px;">${htmlResponseBody}</p>
+          <p style="margin: 0 0 12px;"><a href="${escapeHtml(
+            viewUrl,
+          )}" target="_blank" rel="noopener noreferrer" style="color:#8fd7ff; text-decoration:underline;">View your response in the app</a></p>
           ${freeTierCtaHtml}
           ${generalSettingsCtaHtml}
           <p style="margin: 12px 0 0;">-LCB Training</p>
