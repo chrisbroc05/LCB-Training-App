@@ -14,6 +14,7 @@ import BrandLogo from "@/app/BrandLogo";
 import TopNavigation from "@/app/TopNavigation";
 import AdminViewToggle from "@/app/AdminViewToggle";
 import SiteShell from "@/app/SiteShell";
+import AppSplashScreen from "@/components/AppSplashScreen";
 import PWAInstallHint from "@/components/PWAInstallHint";
 import "./globals.css";
 
@@ -83,6 +84,7 @@ export default async function RootLayout({
         ) : null}
       </head>
       <body className="min-h-full flex flex-col bg-black text-zinc-100">
+        <AppSplashScreen />
         <SiteShell
           isLoggedIn={Boolean(session?.user)}
           membershipTier={membershipTier}
