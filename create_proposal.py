@@ -43,6 +43,9 @@ class ClientProposal:
     pricing_note: str
     online_note: str
     closing_note: str
+    session_format: str = ""
+    program_overview: str = ""
+    pricing_summary: str = ""
 
 
 def format_currency(amount: int) -> str:
@@ -105,13 +108,17 @@ def build_pricing_body(
     pricing_note: str,
     item_style: ParagraphStyle,
     note_style: ParagraphStyle,
+    pricing_summary: str = "",
 ) -> Table:
-    tier_lines = "<br/>".join(
-        f"<b>{tier.label}:</b> {format_currency(tier.rate_per_hour)}/hr -- "
-        f"{total_sessions} sessions = {format_currency(tier.total_cost)} total"
-        for tier in tiers
-    )
-    pricing_para = Paragraph(tier_lines, item_style)
+    if pricing_summary:
+        pricing_para = Paragraph(pricing_summary, item_style)
+    else:
+        tier_lines = "<br/>".join(
+            f"<b>{tier.label}:</b> {format_currency(tier.rate_per_hour)}/hr -- "
+            f"{total_sessions} sessions = {format_currency(tier.total_cost)} total"
+            for tier in tiers
+        )
+        pricing_para = Paragraph(tier_lines, item_style)
     note_para = Paragraph(f"<br/>{pricing_note}", note_style)
     outer = Table([[pricing_para], [note_para]], colWidths=[6.4 * inch])
     outer.setStyle(
@@ -228,7 +235,21 @@ def build_proposal_pdf(project_root: Path, proposal: ClientProposal, output_path
         proposal.pricing_note,
         item_style,
         note_style,
+        proposal.pricing_summary,
     )
+
+    meta_parts = [
+        f"<b>Training Focus:</b> {focus_text}",
+    ]
+    if proposal.session_format:
+        meta_parts.append(f"<b>Format:</b> {proposal.session_format}")
+    meta_parts.extend(
+        [
+            f"<b>Session Length:</b> {proposal.session_duration}",
+            f"<b>Total Sessions:</b> {proposal.total_sessions}",
+        ]
+    )
+    meta_line = " &nbsp;|&nbsp; ".join(meta_parts)
 
     story = [
         get_logo_or_fallback(project_root),
@@ -244,18 +265,26 @@ def build_proposal_pdf(project_root: Path, proposal: ClientProposal, output_path
         Spacer(1, 4),
         HRFlowable(width="100%", thickness=1.1, color=LIGHT_GREEN, lineCap="round"),
         Spacer(1, 4),
-        Paragraph(
-            f"<b>Training Focus:</b> {focus_text} &nbsp;|&nbsp; "
-            f"<b>Session Length:</b> {proposal.session_duration} &nbsp;|&nbsp; "
-            f"<b>Total Sessions:</b> {proposal.total_sessions}",
-            meta_style,
-        ),
+        Paragraph(meta_line, meta_style),
         Spacer(1, 14),
         build_section_cell("Session Schedule", schedule_body, full_width, section_header_style),
         Spacer(1, 4),
         build_section_cell("Pricing", pricing_body, full_width, section_header_style),
         Spacer(1, 4),
     ]
+
+    if proposal.program_overview:
+        story.extend(
+            [
+                build_section_cell(
+                    "Program Overview",
+                    Paragraph(proposal.program_overview, item_style),
+                    full_width,
+                    section_header_style,
+                ),
+                Spacer(1, 4),
+            ]
+        )
 
     platform_table = Table(
         [[Paragraph(proposal.online_note, callout_style)]],

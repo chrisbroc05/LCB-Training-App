@@ -1,9 +1,17 @@
+/**
+ * Brand reinforcement opportunities elsewhere in the app:
+ * 1. Dashboard welcome (app/dashboard/page.tsx) -- echo the secondary tagline beneath "welcome back"
+ * 2. Site footer (app/layout.tsx) -- add "What do you want to be known for?" under the primary slogan
+ * 3. Coaching submission flow -- a one-line prompt before upload: "What do you want this work to say about you?"
+ */
 import Link from "next/link";
 import { getServerSession } from "next-auth";
+import BrandStorySection from "@/components/BrandStorySection";
 import CoachBioSection from "@/components/CoachBioSection";
 import PlaybookPurchaseCta from "@/app/components/PlaybookPurchaseCta";
 import RemoteSessionHeroCard from "@/app/components/RemoteSessionHeroCard";
 import { authOptions } from "@/lib/auth";
+import { BRAND_PRIMARY_SLOGAN, BRAND_SECONDARY_TAGLINE } from "@/lib/brand-copy";
 import {
   PLAYBOOK_NAME,
   PLAYBOOK_PURCHASE_PRICE_SUBTITLE,
@@ -219,9 +227,9 @@ export default async function Home() {
   return (
     <>
       <section className="w-full bg-gradient-to-br from-[#0A1628] via-[#0f1d34] to-[#050b16]">
-        <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 sm:py-8 md:py-10">
+        <div className="mx-auto w-full max-w-4xl px-4 py-12 text-center sm:px-6 sm:py-16 md:py-20">
           {!isLoggedIn ? (
-            <p className="mb-4 text-center text-sm text-zinc-400">
+            <p className="mb-6 text-sm text-zinc-400">
               Already have an account?{" "}
               <Link
                 href="/auth?mode=login"
@@ -231,15 +239,38 @@ export default async function Home() {
               </Link>
             </p>
           ) : null}
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 md:items-stretch">
+          <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl md:text-6xl">
+            {BRAND_PRIMARY_SLOGAN}
+          </h1>
+          <p className="mt-5 text-xl font-medium text-[#52B788] sm:text-2xl md:text-3xl">
+            {BRAND_SECONDARY_TAGLINE}
+          </p>
+        </div>
+      </section>
+
+      <BrandStorySection />
+
+      <div className="mx-auto w-full max-w-6xl px-4 pb-10 pt-10 sm:px-6 sm:pb-14 sm:pt-12 md:pb-20 md:pt-14">
+        <CoachBioSection />
+
+        <section id="training-options" className="mt-14 scroll-mt-24">
+          <div className="text-center">
+            <h2 className="text-2xl font-semibold text-zinc-100 sm:text-3xl">Start Training</h2>
+            <p className="mx-auto mt-3 max-w-2xl text-zinc-300">
+              Choose how you want to work with Coach Broc — on your own, live, or with a free swing
+              review.
+            </p>
+          </div>
+
+          <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-2 md:items-stretch">
             <article className={heroOfferCardClassName}>
-              <h1 className="text-left text-3xl font-bold tracking-tight text-zinc-100 sm:text-4xl">
+              <h3 className="text-left text-3xl font-bold tracking-tight text-zinc-100 sm:text-4xl">
                 {PLAYBOOK_NAME}
-              </h1>
+              </h3>
               <p className="mt-4 text-left text-base leading-relaxed text-zinc-300 sm:text-lg">
-                Everything I know about this game in one place. The mental game. The physical game. The
-                preparation. The life lessons. Written from 12+ years of player development and my own
-                experience as a player.
+                Everything I know about this game in one place. The mental game. The physical game.
+                The preparation. The life lessons. Written from 12+ years of player development and
+                my own experience as a player.
               </p>
 
               <div className="mt-auto flex w-full flex-col gap-3 pt-6">
@@ -256,11 +287,7 @@ export default async function Home() {
 
             <RemoteSessionHeroCard />
           </div>
-        </div>
-      </section>
-
-      <div className="mx-auto w-full max-w-6xl px-4 pb-10 pt-10 sm:px-6 sm:pb-14 sm:pt-12 md:pb-20 md:pt-14">
-        <CoachBioSection />
+        </section>
 
         <section id="playbook-chapters" className="mt-14 scroll-mt-24">
           <div className="text-center">
