@@ -257,7 +257,7 @@ export default async function Home() {
           <div className="text-center">
             <h2 className="text-2xl font-semibold text-zinc-100 sm:text-3xl">Start Training</h2>
             <p className="mx-auto mt-3 max-w-2xl text-zinc-300">
-              Choose how you want to work with Coach Broc — on your own, live, or with a free swing
+              Choose how you want to work with Coach Broc -- on your own, live, or with a free swing
               review.
             </p>
           </div>

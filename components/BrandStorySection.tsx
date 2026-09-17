@@ -11,14 +11,14 @@ export default function BrandStorySection() {
             the eye when it matters.
           </p>
           <p>
-            LCB Training builds the complete player — hitting, fielding, speed and agility, strength
+            LCB Training builds the complete player -- hitting, fielding, speed and agility, strength
             and mobility. But all of it serves the same underlying question:{" "}
             <span className="font-semibold text-[#52B788]">{BRAND_SECONDARY_TAGLINE}</span>
           </p>
           <p>
             The physical training and the mindset coaching are not two separate offerings. They are
             one philosophy. We work the mechanics, the movement, and the mental game together because
-            effort and identity show up in every rep — not just on the stat sheet.
+            effort and identity show up in every rep -- not just on the stat sheet.
           </p>
         </div>
       </div>

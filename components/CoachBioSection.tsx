@@ -20,7 +20,7 @@ export default function CoachBioSection() {
         <div className="text-center">
           <h2 className="text-2xl font-bold text-white sm:text-3xl">Meet Your Coach</h2>
           <p className="mx-auto mt-3 max-w-xl text-sm text-zinc-400 sm:text-base">
-            This is the standard I coach to — because I lived it.
+            This is the standard I coach to -- because I lived it.
           </p>
           <div className="mx-auto mt-3 h-[2px] w-24 rounded-full bg-[#52B788]" />
         </div>
@@ -35,7 +35,7 @@ export default function CoachBioSection() {
         <div className="mx-auto mt-8 max-w-2xl space-y-5 text-base leading-relaxed text-[#CCCCCC] sm:text-lg">
           <p>
             When I was about ten years old playing travel baseball, an opposing coach approached my
-            dad the following weekend and said he remembered me. Not for a great hit — for two things.
+            dad the following weekend and said he remembered me. Not for a great hit -- for two things.
           </p>
           <p>
             First, that I hustled down the line on a routine ground ball to second base and almost
@@ -46,7 +46,7 @@ export default function CoachBioSection() {
           </p>
           <p>
             That coach did not remember me for stats. He remembered me for effort. That is the
-            standard I now coach to at LCB Training — and it is why everything we do, from swing
+            standard I now coach to at LCB Training -- and it is why everything we do, from swing
             mechanics to mindset work, points back to the same question: what do you want to be known
             for?
           </p>
