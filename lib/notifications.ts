@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import { getDrillLibraryVideosByIds } from "@/lib/drill-library-videos";
 import type { DatabaseTier } from "@/lib/membership";
 import { formatDatabaseTierLabel } from "@/lib/membership";
 
@@ -307,6 +308,32 @@ export async function sendMentalGameSubmissionNotification(params: {
   });
 }
 
+function buildRecommendedDrillsEmailSections(
+  recommendedDrillIds: string[] | undefined,
+  viewUrl: string,
+  viewResponseButtonHtml: string,
+) {
+  const recommendedDrills = getDrillLibraryVideosByIds(recommendedDrillIds ?? []);
+  if (recommendedDrills.length === 0) {
+    return { text: "", html: "" };
+  }
+
+  const drillTitlesText = recommendedDrills.map((drill) => `- ${drill.title}`).join("\n");
+  const drillListHtml = recommendedDrills
+    .map((drill) => `<li style="margin:0 0 6px;">${escapeHtml(drill.title)}</li>`)
+    .join("");
+
+  return {
+    text: `\n\nDrills Coach Broc recommends for you:\n${drillTitlesText}\n\nLog in to the app to watch these drills.\nOpen the app: ${viewUrl}\n`,
+    html: `<div style="margin-top:20px; padding:14px; border:1px solid #2b3650; border-radius:10px; background:#060b16;">
+        <p style="margin:0 0 10px; font-weight:700; color:#98b144;">Drills Coach Broc Recommends For You</p>
+        <ul style="margin:0 0 12px; padding-left:20px;">${drillListHtml}</ul>
+        <p style="margin:0 0 12px;">Log in to the app to watch these drills.</p>
+        ${viewResponseButtonHtml}
+      </div>`,
+  };
+}
+
 export async function sendSubmissionResponseEmail(params: {
   toEmail: string;
   playerName: string;
@@ -315,6 +342,7 @@ export async function sendSubmissionResponseEmail(params: {
   membershipTier?: DatabaseTier;
   writtenResponse?: string;
   videoResponseUrl?: string;
+  recommendedDrillIds?: string[];
   videoAttachment?: {
     fileName: string;
     content: Buffer;
@@ -352,6 +380,11 @@ Upgrade now in Settings: ${settingsUrl}
   const viewResponseButtonHtml = `<a href="${escapeHtml(
     viewUrl,
   )}" target="_blank" rel="noopener noreferrer" style="display:inline-block; margin:16px 0; padding:12px 24px; background:#52B788; color:#000000; font-weight:700; text-decoration:none; border-radius:9999px;">View My Response</a>`;
+  const recommendedDrillsEmail = buildRecommendedDrillsEmailSections(
+    params.recommendedDrillIds,
+    viewUrl,
+    viewResponseButtonHtml,
+  );
 
   if (params.responseMode === "VIDEO") {
     await transporter.sendMail({
@@ -367,7 +400,7 @@ Click below to watch it:
 View My Response: ${viewUrl}
 
 Log in to your account to watch the video and read any notes from Coach Broc.
-
+${recommendedDrillsEmail.text}
 Work Hard. Be Memorable.
 -- Coach Broc
 ${freeTierCtaText}${generalSettingsCtaText}`,
@@ -382,6 +415,7 @@ ${freeTierCtaText}${generalSettingsCtaText}`,
           <p style="margin: 0 0 12px;">Click below to watch it:</p>
           ${viewResponseButtonHtml}
           <p style="margin: 0 0 12px;">Log in to your account to watch the video and read any notes from Coach Broc.</p>
+          ${recommendedDrillsEmail.html}
           <p style="margin: 0 0 4px;">Work Hard. Be Memorable.</p>
           <p style="margin: 0;">-- Coach Broc</p>
           ${freeTierCtaHtml}
@@ -421,7 +455,7 @@ Thanks for your coaching submission.
 ${responseBody}
 
 View your response in the app: ${viewUrl}
-
+${recommendedDrillsEmail.text}
 ${freeTierCtaText}${generalSettingsCtaText}
 
 -LCB Training`,
@@ -437,6 +471,7 @@ ${freeTierCtaText}${generalSettingsCtaText}
           <p style="margin: 0 0 12px;"><a href="${escapeHtml(
             viewUrl,
           )}" target="_blank" rel="noopener noreferrer" style="color:#8fd7ff; text-decoration:underline;">View your response in the app</a></p>
+          ${recommendedDrillsEmail.html}
           ${freeTierCtaHtml}
           ${generalSettingsCtaHtml}
           <p style="margin: 12px 0 0;">-LCB Training</p>

@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin";
 import { createAppNotification } from "@/lib/app-notifications";
+import { parseRecommendedDrillsFormValue } from "@/lib/drill-library-videos";
 import { sendSubmissionResponseEmail } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import { shouldSendNotificationEmail } from "@/lib/user-notification-preferences";
@@ -29,6 +30,13 @@ export async function POST(request: Request, context: RouteContext) {
   const formData = await request.formData();
   const writtenResponse = String(formData.get("writtenResponse") ?? "").trim();
   const responseVideoUrl = String(formData.get("responseVideoUrl") ?? "").trim();
+  const recommendedDrillsResult = parseRecommendedDrillsFormValue(formData.get("recommendedDrills"));
+
+  if (!recommendedDrillsResult.ok) {
+    return NextResponse.json({ error: recommendedDrillsResult.error }, { status: 400 });
+  }
+
+  const recommendedDrills = recommendedDrillsResult.ids;
 
   if (responseVideoUrl && !isValidVimeoUrl(responseVideoUrl)) {
     return NextResponse.json({ error: "Please provide a valid video link." }, { status: 400 });
@@ -59,6 +67,7 @@ export async function POST(request: Request, context: RouteContext) {
         status: "COMPLETED",
         responseText: finalText,
         responseVideoUrl: finalVideoUrl,
+        recommendedDrills,
         respondedAt: new Date(),
       },
     });
@@ -82,6 +91,7 @@ export async function POST(request: Request, context: RouteContext) {
         membershipTier: user?.membershipTier,
         writtenResponse: finalText ?? undefined,
         videoResponseUrl: finalVideoUrl ?? undefined,
+        recommendedDrillIds: recommendedDrills,
       });
     }
 
@@ -120,6 +130,7 @@ export async function POST(request: Request, context: RouteContext) {
       status: "COMPLETED",
       responseText: finalText,
       responseVideoUrl: finalVideoUrl,
+      recommendedDrills,
       respondedAt: new Date(),
     },
   });
@@ -143,6 +154,7 @@ export async function POST(request: Request, context: RouteContext) {
       membershipTier: user?.membershipTier,
       writtenResponse: finalText ?? undefined,
       videoResponseUrl: finalVideoUrl ?? undefined,
+      recommendedDrillIds: recommendedDrills,
     });
   }
 

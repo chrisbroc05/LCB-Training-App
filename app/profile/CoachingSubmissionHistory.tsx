@@ -1,6 +1,7 @@
 import Link from "next/link";
 import ProfileCard from "@/app/profile/ProfileCard";
 import MemberSubmissionVideo, { CoachResponseVideo } from "@/app/profile/MemberSubmissionVideo";
+import RecommendedDrillsSection from "@/app/profile/RecommendedDrillsSection";
 
 type SubmissionStatus = "PENDING" | "REVIEWING" | "COMPLETED";
 type SubmissionType = "SWING" | "MENTAL";
@@ -16,12 +17,14 @@ export type ProfileSubmission = {
   memberVimeoLink: string | null;
   responseText: string | null;
   responseVideoUrl: string | null;
+  recommendedDrillIds: string[];
   extraLines: string[];
 };
 
 type CoachingSubmissionHistoryProps = {
   submissions: ProfileSubmission[];
   selectedSubmission: ProfileSubmission | null;
+  recommendedDrillThumbnailMap: Record<string, string | null>;
 };
 
 function formatDateTime(date: Date) {
@@ -37,6 +40,7 @@ function formatDateTime(date: Date) {
 export default function CoachingSubmissionHistory({
   submissions,
   selectedSubmission,
+  recommendedDrillThumbnailMap,
 }: CoachingSubmissionHistoryProps) {
   return (
     <ProfileCard title="Coaching Submission History">
@@ -124,6 +128,10 @@ export default function CoachingSubmissionHistory({
                         A response was marked complete with no message attached.
                       </p>
                     ) : null}
+                    <RecommendedDrillsSection
+                      recommendedDrillIds={selectedSubmission.recommendedDrillIds}
+                      thumbnailMap={recommendedDrillThumbnailMap}
+                    />
                   </div>
                 ) : (
                   <p className="mt-3 text-sm text-zinc-300">

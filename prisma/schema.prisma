@@ -149,6 +149,7 @@ model MentalGameSubmission {
   status             MentalGameSubmissionStatus   @default(PENDING)
   responseText       String?
   responseVideoUrl   String?
+  recommendedDrills  String[]                     @default([])
   memberVimeoLink    String?
   respondedAt        DateTime?
   createdAt          DateTime                     @default(now())
@@ -171,6 +172,7 @@ model SwingAnalysisSubmission {
   status             MentalGameSubmissionStatus   @default(PENDING)
   responseText       String?
   responseVideoUrl   String?
+  recommendedDrills  String[]                     @default([])
   memberVimeoLink    String?
   respondedAt        DateTime?
   createdAt          DateTime                     @default(now())

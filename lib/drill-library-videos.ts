@@ -134,3 +134,85 @@ export function extractVimeoVideoId(url: string) {
   const match = url.match(/vimeo\.com\/(?:video\/)?(\d+)/i);
   return match?.[1] ?? null;
 }
+
+export function getDrillLibraryVideoId(video: DrillLibraryVideoItem) {
+  return extractVimeoVideoId(video.url);
+}
+
+const drillLibraryById = new Map(
+  allDrillLibraryVideos.flatMap((video) => {
+    const id = getDrillLibraryVideoId(video);
+    return id ? [[id, video] as const] : [];
+  }),
+);
+
+export function getDrillLibraryVideoById(id: string) {
+  return drillLibraryById.get(id);
+}
+
+export function getDrillLibraryVideosByIds(ids: string[]) {
+  return ids
+    .map((id) => getDrillLibraryVideoById(id))
+    .filter((video): video is DrillLibraryVideoItem => Boolean(video));
+}
+
+export function getDrillCategoryLabel(category: DrillLibraryVideoItem["category"]) {
+  if (category === "hitting") {
+    return "Hitting";
+  }
+
+  if (category === "fielding") {
+    return "Fielding";
+  }
+
+  return "Mindset";
+}
+
+const MAX_RECOMMENDED_DRILLS = 5;
+
+export function validateRecommendedDrillIds(
+  value: unknown,
+): { ok: true; ids: string[] } | { ok: false; error: string } {
+  if (value === undefined || value === null) {
+    return { ok: true, ids: [] };
+  }
+
+  if (!Array.isArray(value)) {
+    return { ok: false, error: "Recommended drills must be an array of video IDs." };
+  }
+
+  const ids: string[] = [];
+  for (const entry of value) {
+    if (typeof entry !== "string" || !entry.trim()) {
+      return { ok: false, error: "Each recommended drill must be a valid video ID." };
+    }
+
+    const id = entry.trim();
+    if (!drillLibraryById.has(id)) {
+      return { ok: false, error: "One or more recommended drills are not in the drill library." };
+    }
+
+    if (!ids.includes(id)) {
+      ids.push(id);
+    }
+  }
+
+  if (ids.length > MAX_RECOMMENDED_DRILLS) {
+    return { ok: false, error: `You can recommend up to ${MAX_RECOMMENDED_DRILLS} drills.` };
+  }
+
+  return { ok: true, ids };
+}
+
+export function parseRecommendedDrillsFormValue(raw: FormDataEntryValue | null) {
+  if (raw === null || raw === undefined || raw === "") {
+    return validateRecommendedDrillIds([]);
+  }
+
+  try {
+    const parsed = JSON.parse(String(raw)) as unknown;
+    return validateRecommendedDrillIds(parsed);
+  } catch {
+    return { ok: false as const, error: "Recommended drills payload is invalid." };
+  }
+}

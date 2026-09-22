@@ -5,6 +5,11 @@ import GoalCheckinsPanel from "@/app/admin/GoalCheckinsPanel";
 import MembersPanel from "@/app/admin/MembersPanel";
 import PlaybookReflectionsPanel from "@/app/admin/PlaybookReflectionsPanel";
 import MemberProfileCard from "@/app/admin/MemberProfileCard";
+import RecommendDrillsPicker from "@/app/admin/RecommendDrillsPicker";
+import {
+  getDrillCategoryLabel,
+  getDrillLibraryVideosByIds,
+} from "@/lib/drill-library-videos";
 import { toVimeoEmbedUrl } from "@/lib/vimeo";
 import { getStreamableR2VideoUrl, isR2VideoReference, parseR2VideoReference } from "@/lib/r2";
 
@@ -41,6 +46,7 @@ type SubmissionDetail = SubmissionListItem & {
   responsePreference?: "VIDEO_RESPONSE" | "WRITTEN_RESPONSE";
   responseText?: string | null;
   responseVideoUrl?: string | null;
+  recommendedDrills?: string[];
   respondedAt?: string | null;
   memberVimeoLink?: string | null;
   memberProfile?: MemberProfileSummary;
@@ -117,6 +123,7 @@ export default function AdminPanel() {
   const [uploadingResponseR2, setUploadingResponseR2] = useState(false);
   const [responseR2UploadError, setResponseR2UploadError] = useState("");
   const [responseR2UploadSuccess, setResponseR2UploadSuccess] = useState(false);
+  const [selectedRecommendedDrills, setSelectedRecommendedDrills] = useState<string[]>([]);
 
   useEffect(() => {
     if (tab === "goal" || tab === "members" || tab === "playbook") {
@@ -169,6 +176,7 @@ export default function AdminPanel() {
       setResponseSummary("");
       setResponseR2UploadError("");
       setResponseR2UploadSuccess(false);
+      setSelectedRecommendedDrills([]);
     };
 
     void loadDetail();
@@ -214,6 +222,7 @@ export default function AdminPanel() {
 
     const formData = new FormData();
     formData.set("writtenResponse", writtenResponse.trim());
+    formData.set("recommendedDrills", JSON.stringify(selectedRecommendedDrills));
     if (manualVideoUrl.trim()) {
       formData.set("responseVideoUrl", manualVideoUrl.trim());
     }
@@ -239,6 +248,11 @@ export default function AdminPanel() {
       summaryParts.push("Video response sent using uploaded file.");
     } else if (manualVideoUrl.trim()) {
       summaryParts.push("Video response sent using external video link.");
+    }
+    if (selectedRecommendedDrills.length > 0) {
+      summaryParts.push(
+        `Recommended ${selectedRecommendedDrills.length} drill${selectedRecommendedDrills.length === 1 ? "" : "s"}.`,
+      );
     }
     setResponseSummary(summaryParts.join(" "));
     setShowResponseModal(true);
@@ -654,6 +668,25 @@ export default function AdminPanel() {
                 {!detail.responseText && !detail.responseVideoUrl ? (
                   <p className="mt-4 text-sm text-zinc-400">No response content saved for this submission.</p>
                 ) : null}
+
+                {detail.recommendedDrills && detail.recommendedDrills.length > 0 ? (
+                  <div className="mt-4 space-y-2">
+                    <p className="text-sm font-semibold text-zinc-100">Recommended Drills</p>
+                    <ul className="space-y-2">
+                      {getDrillLibraryVideosByIds(detail.recommendedDrills).map((drill) => (
+                        <li
+                          key={drill.url}
+                          className="rounded-lg border border-[#2b3650] bg-black/30 px-3 py-2 text-sm text-zinc-300"
+                        >
+                          <span className="font-medium text-zinc-100">{drill.title}</span>
+                          <span className="mt-1 block text-xs uppercase tracking-wide text-zinc-500">
+                            {getDrillCategoryLabel(drill.category)}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
               </div>
             ) : (
               <div className="rounded-xl border border-[#2b3650] bg-[#0b1324]/70 p-4">
@@ -756,6 +789,11 @@ export default function AdminPanel() {
                       </div>
                     )}
                   </div>
+
+                  <RecommendDrillsPicker
+                    selectedIds={selectedRecommendedDrills}
+                    onChange={setSelectedRecommendedDrills}
+                  />
 
                   {sendError && <p className="text-sm text-red-300">{sendError}</p>}
 

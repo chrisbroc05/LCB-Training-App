@@ -21,8 +21,10 @@ import {
   isLifetimeBasicMember,
   type DatabaseTier,
 } from "@/lib/membership";
+import { getDrillLibraryVideosByIds } from "@/lib/drill-library-videos";
 import { ensurePlaybookProgress, serializePlaybookProgress } from "@/lib/playbook";
 import { prisma } from "@/lib/prisma";
+import { fetchVimeoThumbnailMap } from "@/lib/vimeo-oembed";
 
 type ProfilePageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -92,6 +94,7 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
       memberVimeoLink: item.memberVimeoLink,
       responseText: item.responseText,
       responseVideoUrl: item.responseVideoUrl,
+      recommendedDrillIds: item.recommendedDrills,
       extraLines: [`Pitch Focus: ${item.pitchType}`, `Handedness: ${item.handedness}`],
     })),
     ...mentalSubmissions.map((item) => ({
@@ -105,9 +108,20 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
       memberVimeoLink: item.memberVimeoLink,
       responseText: item.responseText,
       responseVideoUrl: item.responseVideoUrl,
+      recommendedDrillIds: item.recommendedDrills,
       extraLines: [`Topic: ${item.topic}`, `Age: ${item.playerAge}`],
     })),
   ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+  const recommendedDrillUrls = [
+    ...new Set(
+      merged.flatMap((submission) =>
+        getDrillLibraryVideosByIds(submission.recommendedDrillIds).map((video) => video.url),
+      ),
+    ),
+  ];
+  const recommendedDrillThumbnailMap =
+    recommendedDrillUrls.length > 0 ? await fetchVimeoThumbnailMap(recommendedDrillUrls) : {};
 
   const selectedSubmission =
     merged.find(
@@ -156,6 +170,7 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
         <CoachingSubmissionHistory
           submissions={merged}
           selectedSubmission={selectedSubmission ?? null}
+          recommendedDrillThumbnailMap={recommendedDrillThumbnailMap}
         />
 
         <ProfileGoalCheckinHistory hasAccess={canAccessCoachingNav(membershipTier)} />
