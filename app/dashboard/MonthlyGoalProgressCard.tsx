@@ -18,6 +18,7 @@ type MonthlyGoalProgressCardProps = {
     completed: boolean;
     completedAt: Date | null;
   }>;
+  className?: string;
 };
 
 function buildSavedCompletionMap(goals: SerializedGoalItem[]) {
@@ -31,7 +32,11 @@ function buildSavedCompletionMap(goals: SerializedGoalItem[]) {
 export default function MonthlyGoalProgressCard({
   hasCheckin,
   goals: initialGoals,
+  className = "",
 }: MonthlyGoalProgressCardProps) {
+  const articleClassName = ["rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6", className]
+    .filter(Boolean)
+    .join(" ");
   const [goals, setGoals] = useState<SerializedGoalItem[]>(() =>
     initialGoals.map(serializeGoalItem),
   );
@@ -157,7 +162,7 @@ export default function MonthlyGoalProgressCard({
 
   if (!hasCheckin || totalCount === 0) {
     return (
-      <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
+      <article className={articleClassName}>
         <h2 className="text-lg font-semibold text-zinc-100">This Month's Goals</h2>
         <p className="mt-3 text-sm text-zinc-300">
           You have not set your goals for this month yet.
@@ -173,7 +178,7 @@ export default function MonthlyGoalProgressCard({
   }
 
   return (
-    <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
+    <article className={articleClassName}>
       <h2 className="text-lg font-semibold text-zinc-100">This Month's Goals</h2>
 
       <div className="mt-4">

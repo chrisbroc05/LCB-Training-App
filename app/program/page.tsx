@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import ProgramCheckoutSection from "@/app/program/ProgramCheckoutSection";
 import { authOptions } from "@/lib/auth";
 import { FREE_SWING_AUTH_URL } from "@/lib/free-swing-flow";
+import { PLAYBOOK_PROGRAM_INCLUDED_DESCRIPTION } from "@/lib/playbook-branding";
 import {
   TWELVE_WEEK_PROGRAM_NAME,
   TWELVE_WEEK_PROGRAM_PRICE_LABEL,
@@ -73,6 +74,15 @@ export default async function ProgramPage({ searchParams }: ProgramPageProps) {
           </ul>
         </div>
 
+        <div className="mt-10 rounded-2xl border border-[#52B788]/30 bg-[#22c55e]/5 p-6 sm:p-8">
+          <h2 className="text-xl font-semibold text-zinc-100 sm:text-2xl">
+            The Next Level Playbook is included
+          </h2>
+          <p className="mt-4 text-sm leading-relaxed text-zinc-300 sm:text-base">
+            {PLAYBOOK_PROGRAM_INCLUDED_DESCRIPTION}
+          </p>
+        </div>
+
         <div className="mt-10">
           <ProgramCheckoutSection
             isLoggedIn={Boolean(session?.user)}
@@ -97,7 +107,7 @@ export default async function ProgramPage({ searchParams }: ProgramPageProps) {
             <p className="mt-2 text-sm text-zinc-400">One-time purchase with lifetime Playbook access.</p>
             <p className="mt-3 text-lg font-semibold text-[#98b144]">$59 one-time</p>
             <Link
-              href="/auth?tier=basic"
+              href="/playbook"
               className="mt-4 inline-flex items-center justify-center rounded-full border border-[#52B788]/60 px-4 py-2 text-sm font-semibold text-[#52B788] transition hover:bg-[#52B788]/10"
             >
               Unlock The Playbook

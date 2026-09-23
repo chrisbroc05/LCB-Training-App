@@ -4,9 +4,9 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import DashboardCoachingCard from "@/app/dashboard/DashboardCoachingCard";
+import DashboardEnrolledHomeSection from "@/app/dashboard/DashboardEnrolledHomeSection";
 import DashboardMembershipCard from "@/app/dashboard/DashboardMembershipCard";
 import DashboardPlaybookWelcomeCard from "@/app/dashboard/DashboardPlaybookWelcomeCard";
-import DashboardTwelveWeekProgramCard from "@/app/dashboard/DashboardTwelveWeekProgramCard";
 import DashboardUpgradeSection from "@/app/dashboard/DashboardUpgradeSection";
 import MobileDashboardView from "@/app/dashboard/MobileDashboardView";
 import MonthlyGoalProgressCard from "@/app/dashboard/MonthlyGoalProgressCard";
@@ -142,6 +142,8 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
   const checkoutStatus =
     typeof resolvedSearchParams.checkout === "string" ? resolvedSearchParams.checkout : null;
+  const checkoutProduct =
+    typeof resolvedSearchParams.product === "string" ? resolvedSearchParams.product : null;
   const upgradeStatus =
     typeof resolvedSearchParams.upgrade === "string" ? resolvedSearchParams.upgrade : null;
 
@@ -301,9 +303,9 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         freeSubmissionUsed={freeSubmissionUsed}
         currentMonthGoalCheckin={currentMonthGoalCheckin}
         checkoutStatus={checkoutStatus}
+        checkoutProduct={checkoutProduct}
         upgradeStatus={upgradeStatus}
         unreadResponse={unreadResponse}
-        twelveWeekProgramEndsAt={userRecord.twelveWeekProgramEndsAt}
         twelveWeekCallBooked={userRecord.twelveWeekCallBooked}
         twelveWeekCallScheduledAt={userRecord.twelveWeekCallScheduledAt}
         calendlyBookingUrl={calendlyBookingUrl}
@@ -342,20 +344,27 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         )}
       </section>
 
-      {isTwelveWeekProgramMember(membershipTier) ? (
-        <div className="mt-6">
-          <DashboardTwelveWeekProgramCard
-            programEndsAt={userRecord.twelveWeekProgramEndsAt}
-            calendlyBookingUrl={calendlyBookingUrl}
-            callBooked={userRecord.twelveWeekCallBooked}
-            callScheduledAt={userRecord.twelveWeekCallScheduledAt}
-          />
-        </div>
-      ) : null}
-
       {membershipTier === "BASIC" ? <DashboardPlaybookWelcomeCard /> : null}
 
-      {checkoutStatus === "success" && membershipTier !== "BASIC" ? (
+      {checkoutStatus === "success" && checkoutProduct === "playbook" && membershipTier === "BASIC" ? (
+        <section className="mt-6 rounded-xl border border-[#22c55e]/40 bg-[#22c55e]/10 px-5 py-4 text-sm text-[#bafccf]">
+          Payment successful. The Next Level Playbook is unlocked and ready on your dashboard.
+        </section>
+      ) : null}
+
+      {checkoutStatus === "success" &&
+      checkoutProduct !== "playbook" &&
+      isTwelveWeekProgramMember(membershipTier) ? (
+        <section className="mt-6 rounded-xl border border-[#22c55e]/40 bg-[#22c55e]/10 px-5 py-4 text-sm text-[#bafccf]">
+          Payment successful. Your 12-Week Coaching Program is active and your dashboard access has
+          been updated.
+        </section>
+      ) : null}
+
+      {checkoutStatus === "success" &&
+      checkoutProduct !== "playbook" &&
+      !isTwelveWeekProgramMember(membershipTier) &&
+      membershipTier !== "BASIC" ? (
         <section className="mt-6 rounded-xl border border-[#22c55e]/40 bg-[#22c55e]/10 px-5 py-4 text-sm text-[#bafccf]">
           Payment successful. Your membership is active and your dashboard access has been updated.
         </section>
@@ -373,39 +382,54 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         </section>
       )}
 
-      <div className="mt-8 space-y-4 sm:space-y-5">
-        <DashboardMembershipCard
+      {isTwelveWeekProgramMember(membershipTier) ? (
+        <DashboardEnrolledHomeSection
+          userId={session.user.id}
           membershipTier={membershipTier}
-          isPaidMember={isPaidMember}
-          isManualMembership={isManualMembership}
-          subscriptionCurrentPeriodEnd={userRecord.subscriptionCurrentPeriodEnd}
-          subscriptionCancelAtPeriodEnd={userRecord.subscriptionCancelAtPeriodEnd}
+          calendlyBookingUrl={calendlyBookingUrl}
+          callBooked={userRecord.twelveWeekCallBooked}
+          callScheduledAt={userRecord.twelveWeekCallScheduledAt}
+          currentMonthGoalCheckin={currentMonthGoalCheckin}
+          layout="desktop"
         />
+      ) : (
+        <>
+          <div className="mt-8 space-y-4 sm:space-y-5">
+            <DashboardMembershipCard
+              membershipTier={membershipTier}
+              isPaidMember={isPaidMember}
+              isManualMembership={isManualMembership}
+              subscriptionCurrentPeriodEnd={userRecord.subscriptionCurrentPeriodEnd}
+              subscriptionCancelAtPeriodEnd={userRecord.subscriptionCancelAtPeriodEnd}
+            />
 
-        <DashboardCoachingCard
-          membershipTier={membershipTier}
-          coachingAvailability={coachingAvailability}
-          freeSubmissionUsed={freeSubmissionUsed}
-          assessmentCallBooked={userRecord.assessmentCallBooked}
-          assessmentCallDate={userRecord.assessmentCallDate}
-        />
-      </div>
-
-      {canAccessCoachingNav(membershipTier) ? (
-        <section className="mt-10 border-t border-[#18243a] pt-10 sm:mt-12 sm:pt-12">
-          <div className="mb-5 sm:mb-6">
-            <h2 className="text-xl font-semibold text-zinc-100 sm:text-2xl">Monthly Goal Progress</h2>
-            <p className="mt-2 text-sm text-zinc-400">
-              Track and complete your goals for this month without leaving the dashboard.
-            </p>
+            <DashboardCoachingCard
+              membershipTier={membershipTier}
+              coachingAvailability={coachingAvailability}
+              freeSubmissionUsed={freeSubmissionUsed}
+              assessmentCallBooked={userRecord.assessmentCallBooked}
+              assessmentCallDate={userRecord.assessmentCallDate}
+            />
           </div>
-          <MonthlyGoalProgressCard
-            hasCheckin={Boolean(currentMonthGoalCheckin)}
-            goals={currentMonthGoalCheckin?.goals ?? []}
-          />
-        </section>
-      ) : null}
 
+          {canAccessCoachingNav(membershipTier) ? (
+            <section className="mt-10 border-t border-[#18243a] pt-10 sm:mt-12 sm:pt-12">
+              <div className="mb-5 sm:mb-6">
+                <h2 className="text-xl font-semibold text-zinc-100 sm:text-2xl">Monthly Goal Progress</h2>
+                <p className="mt-2 text-sm text-zinc-400">
+                  Track and complete your goals for this month without leaving the dashboard.
+                </p>
+              </div>
+              <MonthlyGoalProgressCard
+                hasCheckin={Boolean(currentMonthGoalCheckin)}
+                goals={currentMonthGoalCheckin?.goals ?? []}
+              />
+            </section>
+          ) : null}
+        </>
+      )}
+
+      {!isTwelveWeekProgramMember(membershipTier) ? (
       <section className="mt-8">
         <h2 className="text-lg font-semibold text-zinc-100 sm:text-xl">Quick Links</h2>
         <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -421,8 +445,9 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           ))}
         </div>
       </section>
+      ) : null}
 
-      {canAccessCoachingNav(membershipTier) ? (
+      {!isTwelveWeekProgramMember(membershipTier) && canAccessCoachingNav(membershipTier) ? (
         <section className="mt-8 rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-lg font-semibold text-zinc-100 sm:text-xl">Coaching Submissions</h2>
@@ -489,7 +514,9 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         </section>
       ) : null}
 
-      <DashboardUpgradeSection membershipTier={membershipTier} />
+      {!isTwelveWeekProgramMember(membershipTier) ? (
+        <DashboardUpgradeSection membershipTier={membershipTier} />
+      ) : null}
       </div>
     </>
   );

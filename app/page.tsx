@@ -10,6 +10,7 @@ import BrandStorySection from "@/components/BrandStorySection";
 import CoachBioSection from "@/components/CoachBioSection";
 import { authOptions } from "@/lib/auth";
 import { BRAND_PRIMARY_SLOGAN, BRAND_SECONDARY_TAGLINE } from "@/lib/brand-copy";
+import { PLAYBOOK_STANDALONE_DESCRIPTION } from "@/lib/playbook-branding";
 import {
   TWELVE_WEEK_PROGRAM_NAME,
   twelveWeekProgramLandingHighlights,
@@ -284,12 +285,11 @@ export default async function Home() {
           <div className="mx-auto mt-6 grid max-w-3xl gap-4 sm:grid-cols-2">
             <article className="rounded-xl border border-[#2b3650] bg-[#0A1628]/60 p-5">
               <h3 className="text-base font-semibold text-zinc-200">The Next Level Playbook</h3>
-              <p className="mt-2 text-sm text-zinc-400">
-                One-time purchase with lifetime access to the full Playbook content library.
+              <p className="mt-2 text-sm leading-relaxed text-zinc-400">
+                {PLAYBOOK_STANDALONE_DESCRIPTION}
               </p>
-              <p className="mt-3 text-lg font-semibold text-[#98b144]">$59 one-time</p>
               <Link
-                href="/auth?tier=basic"
+                href="/playbook"
                 className="mt-4 inline-flex items-center justify-center rounded-full border border-[#52B788]/60 px-4 py-2 text-sm font-semibold text-[#52B788] transition hover:bg-[#52B788]/10"
               >
                 Unlock The Playbook

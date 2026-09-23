@@ -6,6 +6,7 @@ import {
   validDatabaseTiers,
 } from "@/lib/membership";
 import { memberProfileSelect, serializeMemberProfile } from "@/lib/player-profile";
+import { getTwelveWeekProgramEndDate } from "@/lib/twelve-week-program";
 
 export const adminMemberListSelect = {
   id: true,
@@ -50,7 +51,7 @@ type AdminMemberListRecord = {
 };
 
 export function buildManualTierUpdateData(tier: DatabaseTier) {
-  return {
+  const baseUpdate = {
     membershipTier: tier,
     subscriptionStatus: "NONE" as SubscriptionStatus,
     stripeCustomerId: null,
@@ -58,6 +59,23 @@ export function buildManualTierUpdateData(tier: DatabaseTier) {
     stripePriceId: null,
     subscriptionCurrentPeriodEnd: null,
     subscriptionCancelAtPeriodEnd: false,
+  };
+
+  if (tier === "TWELVE_WEEK") {
+    const startedAt = new Date();
+    return {
+      ...baseUpdate,
+      twelveWeekProgramStartedAt: startedAt,
+      twelveWeekProgramEndsAt: getTwelveWeekProgramEndDate(startedAt),
+    };
+  }
+
+  return {
+    ...baseUpdate,
+    twelveWeekProgramStartedAt: null,
+    twelveWeekProgramEndsAt: null,
+    twelveWeekCallBooked: false,
+    twelveWeekCallScheduledAt: null,
   };
 }
 

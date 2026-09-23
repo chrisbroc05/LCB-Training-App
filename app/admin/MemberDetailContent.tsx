@@ -205,7 +205,11 @@ export default function MemberDetailContent({
             )}
           </p>
         )}
-        {detail.monthlySubmissionsRemaining !== null ? (
+        {isTwelveWeekMember ? (
+          <p className="mt-2">
+            <span className="font-semibold text-zinc-100">Coaching submissions:</span> Unlimited
+          </p>
+        ) : detail.monthlySubmissionsRemaining !== null ? (
           <p className="mt-2">
             <span className="font-semibold text-zinc-100">Monthly submissions remaining:</span>{" "}
             {detail.monthlySubmissionsRemaining}

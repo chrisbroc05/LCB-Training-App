@@ -1,5 +1,5 @@
+import DashboardEnrolledHomeSection from "@/app/dashboard/DashboardEnrolledHomeSection";
 import DashboardPlaybookProgressCard from "@/app/dashboard/DashboardPlaybookProgressCard";
-import DashboardTwelveWeekProgramCard from "@/app/dashboard/DashboardTwelveWeekProgramCard";
 import DashboardUpgradeSection from "@/app/dashboard/DashboardUpgradeSection";
 import MobileCoachingStatusCard from "@/app/dashboard/MobileCoachingStatusCard";
 import MonthlyGoalProgressCard from "@/app/dashboard/MonthlyGoalProgressCard";
@@ -28,9 +28,9 @@ type MobileDashboardViewProps = {
     }>;
   } | null;
   checkoutStatus: string | null;
+  checkoutProduct: string | null;
   upgradeStatus: string | null;
   unreadResponse: UnreadResponseNotification | null;
-  twelveWeekProgramEndsAt: Date | null;
   twelveWeekCallBooked: boolean;
   twelveWeekCallScheduledAt: Date | null;
   calendlyBookingUrl: string;
@@ -43,32 +43,36 @@ export default function MobileDashboardView({
   freeSubmissionUsed,
   currentMonthGoalCheckin,
   checkoutStatus,
+  checkoutProduct,
   upgradeStatus,
   unreadResponse,
-  twelveWeekProgramEndsAt,
   twelveWeekCallBooked,
   twelveWeekCallScheduledAt,
   calendlyBookingUrl,
 }: MobileDashboardViewProps) {
+  const isEnrolled = isTwelveWeekProgramMember(membershipTier);
+
   return (
     <div className="mobile-card-stack px-4 pb-4 pt-4 md:hidden">
-      {isTwelveWeekProgramMember(membershipTier) ? (
-        <DashboardTwelveWeekProgramCard
-          programEndsAt={twelveWeekProgramEndsAt}
-          calendlyBookingUrl={calendlyBookingUrl}
-          callBooked={twelveWeekCallBooked}
-          callScheduledAt={twelveWeekCallScheduledAt}
-        />
+      {checkoutStatus === "success" && checkoutProduct === "playbook" && membershipTier === "BASIC" ? (
+        <article className="mobile-card border-[#22c55e]/40 bg-[#22c55e]/10 text-sm text-[#bafccf]">
+          Payment successful. The Next Level Playbook is unlocked and ready on your dashboard.
+        </article>
       ) : null}
 
-      <MobileCoachingStatusCard
-        membershipTier={membershipTier}
-        coachingAvailability={coachingAvailability}
-        freeSubmissionUsed={freeSubmissionUsed}
-        unreadResponse={unreadResponse}
-      />
+      {checkoutStatus === "success" &&
+      checkoutProduct !== "playbook" &&
+      isEnrolled ? (
+        <article className="mobile-card border-[#22c55e]/40 bg-[#22c55e]/10 text-sm text-[#bafccf]">
+          Payment successful. Your 12-Week Coaching Program is active and your dashboard access has
+          been updated.
+        </article>
+      ) : null}
 
-      {checkoutStatus === "success" && membershipTier !== "BASIC" && membershipTier !== "TWELVE_WEEK" ? (
+      {checkoutStatus === "success" &&
+      checkoutProduct !== "playbook" &&
+      !isEnrolled &&
+      membershipTier !== "BASIC" ? (
         <article className="mobile-card border-[#22c55e]/40 bg-[#22c55e]/10 text-sm text-[#bafccf]">
           Payment successful. Your membership is active and your dashboard access has been updated.
         </article>
@@ -87,22 +91,43 @@ export default function MobileDashboardView({
         </article>
       )}
 
-      <DashboardPlaybookProgressCard membershipTier={membershipTier} userId={userId} />
-
-      {canAccessCoachingNav(membershipTier) ? (
-        <div className="mobile-card [&_article]:border-0 [&_article]:bg-transparent [&_article]:p-0">
-          <MonthlyGoalProgressCard
-            hasCheckin={Boolean(currentMonthGoalCheckin)}
-            goals={currentMonthGoalCheckin?.goals ?? []}
+      {isEnrolled ? (
+        <DashboardEnrolledHomeSection
+          userId={userId}
+          membershipTier={membershipTier}
+          calendlyBookingUrl={calendlyBookingUrl}
+          callBooked={twelveWeekCallBooked}
+          callScheduledAt={twelveWeekCallScheduledAt}
+          currentMonthGoalCheckin={currentMonthGoalCheckin}
+          layout="mobile"
+        />
+      ) : (
+        <>
+          <MobileCoachingStatusCard
+            membershipTier={membershipTier}
+            coachingAvailability={coachingAvailability}
+            freeSubmissionUsed={freeSubmissionUsed}
+            unreadResponse={unreadResponse}
           />
-        </div>
-      ) : null}
 
-      {membershipTier === "FREE" || membershipTier === "BASIC" ? (
-        <div className="[&_section]:mt-0 [&_section]:rounded-2xl [&_section]:border [&_section]:border-[#18243a] [&_section]:p-4">
-          <DashboardUpgradeSection membershipTier={membershipTier} />
-        </div>
-      ) : null}
+          <DashboardPlaybookProgressCard membershipTier={membershipTier} userId={userId} />
+
+          {canAccessCoachingNav(membershipTier) ? (
+            <div className="mobile-card [&_article]:border-0 [&_article]:bg-transparent [&_article]:p-0">
+              <MonthlyGoalProgressCard
+                hasCheckin={Boolean(currentMonthGoalCheckin)}
+                goals={currentMonthGoalCheckin?.goals ?? []}
+              />
+            </div>
+          ) : null}
+
+          {membershipTier === "FREE" || membershipTier === "BASIC" ? (
+            <div className="[&_section]:mt-0 [&_section]:rounded-2xl [&_section]:border [&_section]:border-[#18243a] [&_section]:p-4">
+              <DashboardUpgradeSection membershipTier={membershipTier} />
+            </div>
+          ) : null}
+        </>
+      )}
     </div>
   );
 }

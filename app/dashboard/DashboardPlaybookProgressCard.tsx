@@ -6,22 +6,31 @@ import { ensurePlaybookProgress, serializePlaybookProgress } from "@/lib/playboo
 type DashboardPlaybookProgressCardProps = {
   membershipTier: DatabaseTier;
   userId: string;
+  className?: string;
+  showForEnrolled?: boolean;
 };
 
 export default async function DashboardPlaybookProgressCard({
   membershipTier,
   userId,
+  className = "",
+  showForEnrolled = false,
 }: DashboardPlaybookProgressCardProps) {
+  const visibilityClass = showForEnrolled ? "" : "md:hidden";
+  const articleClassName = ["rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-5 sm:p-6", visibilityClass, className]
+    .filter(Boolean)
+    .join(" ");
+
   if (!canAccessPlaybook(membershipTier)) {
     return (
-      <article className="mobile-card md:hidden">
-        <h2 className="text-base font-semibold text-zinc-100">The Next Level Playbook</h2>
+      <article className={articleClassName}>
+        <h2 className="text-lg font-semibold text-zinc-100 sm:text-xl">The Next Level Playbook</h2>
         <p className="mt-2 text-sm text-zinc-400">
           Unlock the playbook with a Basic membership to start working through all four chapters.
         </p>
         <Link
-          href="/upgrade?reason=basic-required"
-          className="mt-4 inline-flex h-12 w-full items-center justify-center rounded-full bg-[#22c55e] px-5 text-sm font-semibold text-[#0A1628]"
+          href="/playbook"
+          className="mt-4 inline-flex items-center justify-center rounded-full bg-[#22c55e] px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-[#35db72]"
         >
           Unlock The Playbook
         </Link>
@@ -36,8 +45,8 @@ export default async function DashboardPlaybookProgressCard({
   );
 
   return (
-    <article className="mobile-card md:hidden">
-      <h2 className="text-base font-semibold text-zinc-100">Playbook Progress</h2>
+    <article className={articleClassName}>
+      <h2 className="text-lg font-semibold text-zinc-100 sm:text-xl">Playbook Progress</h2>
       <div className="mt-3 flex items-center justify-between text-sm text-zinc-300">
         <span>
           {progress.completedCount} of {progress.totalCount} chapters complete
@@ -71,7 +80,7 @@ export default async function DashboardPlaybookProgressCard({
       </div>
       <Link
         href="/playbook"
-        className="mt-4 inline-flex h-12 w-full items-center justify-center rounded-full bg-[#22c55e] px-5 text-sm font-semibold text-[#0A1628]"
+        className="mt-4 inline-flex w-full items-center justify-center rounded-full bg-[#22c55e] px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-[#35db72] sm:w-auto"
       >
         {hasStarted ? "Continue Reading" : "Begin Chapter 1"}
       </Link>

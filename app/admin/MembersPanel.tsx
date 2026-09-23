@@ -18,8 +18,30 @@ type MemberSummary = {
   submissionCount: number;
   assessmentCallBooked: boolean;
   assessmentCallDate: string | null;
+  twelveWeekCallBooked: boolean;
+  twelveWeekCallScheduledAt: string | null;
   monthlySubmissionsRemaining: number | null;
 };
+
+function formatRemainingSubmissions(member: MemberSummary) {
+  if (member.membershipTier === "TWELVE_WEEK") {
+    return "Unlimited";
+  }
+
+  if (member.monthlySubmissionsRemaining === null) {
+    return "--";
+  }
+
+  return member.monthlySubmissionsRemaining;
+}
+
+function getMemberCallBooked(member: MemberSummary) {
+  if (member.membershipTier === "TWELVE_WEEK") {
+    return member.twelveWeekCallBooked && Boolean(member.twelveWeekCallScheduledAt);
+  }
+
+  return member.assessmentCallBooked && Boolean(member.assessmentCallDate);
+}
 
 type TierFilter = "ALL" | DatabaseTier;
 
@@ -538,8 +560,7 @@ export default function MembersPanel() {
             <>
               <div className="mt-4 space-y-3 md:hidden">
                 {filteredMembers.map((member) => {
-                  const callBooked =
-                    member.assessmentCallBooked && Boolean(member.assessmentCallDate);
+                  const callBooked = getMemberCallBooked(member);
 
                   return (
                     <button
@@ -613,14 +634,10 @@ export default function MembersPanel() {
                           </td>
                           <td className="px-3 py-3 text-zinc-300">{member.submissionCount}</td>
                           <td className="px-3 py-3 text-zinc-300">
-                            {member.assessmentCallBooked && member.assessmentCallDate
-                              ? "Booked"
-                              : "Not Booked"}
+                            {getMemberCallBooked(member) ? "Booked" : "Not Booked"}
                           </td>
                           <td className="px-3 py-3 text-zinc-300">
-                            {member.monthlySubmissionsRemaining === null
-                              ? "--"
-                              : member.monthlySubmissionsRemaining}
+                            {formatRemainingSubmissions(member)}
                           </td>
                         </tr>
                       );

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import { getServerSession } from "next-auth";
 import BrandLogo from "@/app/BrandLogo";
-import RemoteCheckoutButton from "@/app/components/RemoteCheckoutButton";
+import RemoteCheckoutSection from "@/app/remote/RemoteCheckoutSection";
+import { authOptions } from "@/lib/auth";
 import {
   REMOTE_SESSION_DURATION,
   REMOTE_SESSION_PRICE,
@@ -14,6 +16,10 @@ export const metadata: Metadata = {
   title: "Book a Remote Training Session | LCB Training",
   description:
     "Book a live 60-minute remote training session with Coach Broc for hitting, fielding, or mental game feedback.",
+};
+
+type RemoteSessionPageProps = {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
 function CheckIcon() {
@@ -35,7 +41,11 @@ function CheckIcon() {
   );
 }
 
-export default function RemoteSessionPage() {
+export default async function RemoteSessionPage({ searchParams }: RemoteSessionPageProps) {
+  const session = await getServerSession(authOptions);
+  const resolvedSearchParams = searchParams ? await searchParams : {};
+  const autoStartCheckout = resolvedSearchParams.startCheckout === "1";
+
   return (
     <div className="min-h-screen bg-black text-zinc-100">
       <div className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6 sm:py-14 md:py-16">
@@ -104,7 +114,10 @@ export default function RemoteSessionPage() {
           </p>
 
           <div className="mx-auto mt-5 max-w-sm">
-            <RemoteCheckoutButton label="Book Now" />
+            <RemoteCheckoutSection
+              isLoggedIn={Boolean(session?.user)}
+              autoStartCheckout={autoStartCheckout}
+            />
           </div>
         </section>
 

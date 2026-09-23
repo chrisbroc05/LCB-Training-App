@@ -3,6 +3,12 @@ export const PLAYBOOK_NAME = "The Next Level Playbook";
 export const PLAYBOOK_LANDING_SUBHEADLINE =
   "Written by Coach Broc from 12+ years of player development. Everything he knows about getting to the next level in one place.";
 
+export const PLAYBOOK_STANDALONE_DESCRIPTION =
+  "A self-paced digital hitting and fielding guide packed with drills, breakdowns, and the same frameworks Coach Broc uses in his in-person sessions, yours to keep forever for a one-time purchase of $59.";
+
+export const PLAYBOOK_PROGRAM_INCLUDED_DESCRIPTION =
+  "The Next Level Playbook is included in your 12-Week Coaching Program. It is a self-paced digital hitting and fielding guide packed with drills, breakdowns, and the same frameworks Coach Broc uses in his in-person sessions. You get full lifetime access as part of your program enrollment, no separate purchase needed.";
+
 export const PLAYBOOK_PURCHASE_BUTTON_LABEL = "Unlock The Playbook -- $59";
 
 export const PLAYBOOK_PURCHASE_PRICE_SUBTITLE = "One-time payment. Lifetime access.";
