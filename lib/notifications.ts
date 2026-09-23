@@ -774,7 +774,7 @@ Log in: ${loginUrl}
       heading: "Welcome to LCB Training!",
       intro: `Hi ${escapeHtml(params.displayName)}, welcome aboard.`,
       bodyHtml: `<p style="margin: 0 0 12px;">${escapeHtml(introVideosText)}</p>
-        <p style="margin: 0 0 12px;">${escapeHtml(dashboardGuidance)}</p>
+        <p style="margin: 0 0 12px;">${escapeHtml(dashboardGuidance ?? "")}</p>
         <p style="margin: 0 0 16px;"><strong style="color:#98b144;">Current Membership:</strong> ${escapeHtml(
           tierLabel,
         )}</p>
