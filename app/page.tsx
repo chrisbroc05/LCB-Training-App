@@ -251,12 +251,12 @@ export default async function Home() {
           </p>
 
           {landingHeroEmbedUrl ? (
-            <div className="mx-auto mt-8 w-full max-w-5xl sm:mt-10 md:mt-12">
-              <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-[#2b3650] bg-black shadow-2xl shadow-black/40">
+            <div className="mx-auto mt-8 w-full sm:mt-10 md:mt-12 md:max-w-[400px]">
+              <div className="relative aspect-[9/16] w-full overflow-hidden rounded-2xl border border-[#2b3650] bg-black shadow-2xl shadow-black/40">
                 <iframe
                   src={landingHeroEmbedUrl}
                   title="LCB Training intro video"
-                  className="absolute inset-0 h-full w-full"
+                  className="absolute inset-0 h-full w-full border-0"
                   allow="fullscreen; picture-in-picture"
                   allowFullScreen
                 />
