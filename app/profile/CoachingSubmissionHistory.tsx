@@ -2,6 +2,7 @@ import Link from "next/link";
 import ProfileCard from "@/app/profile/ProfileCard";
 import MemberSubmissionVideo, { CoachResponseVideo } from "@/app/profile/MemberSubmissionVideo";
 import RecommendedDrillsSection from "@/app/profile/RecommendedDrillsSection";
+import type { DatabaseTier } from "@/lib/membership";
 
 type SubmissionStatus = "PENDING" | "REVIEWING" | "COMPLETED";
 type SubmissionType = "SWING" | "MENTAL";
@@ -25,6 +26,7 @@ type CoachingSubmissionHistoryProps = {
   submissions: ProfileSubmission[];
   selectedSubmission: ProfileSubmission | null;
   recommendedDrillThumbnailMap: Record<string, string | null>;
+  viewerMembershipTier: DatabaseTier;
 };
 
 function formatDateTime(date: Date) {
@@ -41,6 +43,7 @@ export default function CoachingSubmissionHistory({
   submissions,
   selectedSubmission,
   recommendedDrillThumbnailMap,
+  viewerMembershipTier,
 }: CoachingSubmissionHistoryProps) {
   return (
     <ProfileCard title="Coaching Submission History">
@@ -132,6 +135,23 @@ export default function CoachingSubmissionHistory({
                       recommendedDrillIds={selectedSubmission.recommendedDrillIds}
                       thumbnailMap={recommendedDrillThumbnailMap}
                     />
+                    {viewerMembershipTier === "FREE" ? (
+                      <div className="rounded-xl border border-[#52B788]/30 bg-[#22c55e]/5 p-4">
+                        <p className="text-sm font-semibold text-zinc-100">
+                          Ready to keep building with Coach Broc?
+                        </p>
+                        <p className="mt-2 text-sm leading-relaxed text-zinc-300">
+                          The Twelve Week Coaching Program includes unlimited submissions, full
+                          Playbook access, workout programs, and weekly check-in calls.
+                        </p>
+                        <Link
+                          href="/program"
+                          className="mt-4 inline-flex items-center justify-center rounded-full bg-[#22c55e] px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-[#35db72]"
+                        >
+                          Explore the Twelve Week Program
+                        </Link>
+                      </div>
+                    ) : null}
                   </div>
                 ) : (
                   <p className="mt-3 text-sm text-zinc-300">

@@ -91,6 +91,19 @@ export function getCoachingSubmissionAvailability(
   const syncedUser = applyPeriodResetIfNeeded(user, periodKey);
   const resetsOnLabel = getNextCoachingSubmissionResetLabel(now);
 
+  if (syncedUser.membershipTier === "TWELVE_WEEK") {
+    return {
+      canSubmit: true,
+      lockReason: null,
+      remaining: 999,
+      monthlyRemaining: null,
+      rolloverCredits: null,
+      monthlyLimit: null,
+      periodKey,
+      resetsOnLabel,
+    };
+  }
+
   if (syncedUser.membershipTier === "BASIC") {
     return {
       canSubmit: false,
@@ -252,6 +265,18 @@ export async function consumeCoachingSubmission(
   const availability = getCoachingSubmissionAvailability(syncedUser);
   if (!availability.canSubmit) {
     return { ok: false as const, availability, membershipTier: syncedUser.membershipTier };
+  }
+
+  if (syncedUser.membershipTier === "TWELVE_WEEK") {
+    await tx.user.update({
+      where: { id: userId },
+      data: {
+        coachingSubmissionPeriod: syncedUser.coachingSubmissionPeriod,
+        coachingSubmissionsUsedThisMonth: syncedUser.coachingSubmissionsUsedThisMonth,
+        eliteRolloverCredits: syncedUser.eliteRolloverCredits,
+      },
+    });
+    return { ok: true as const, availability, membershipTier: syncedUser.membershipTier };
   }
 
   if (syncedUser.membershipTier === "FREE") {

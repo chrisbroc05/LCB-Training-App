@@ -65,6 +65,7 @@ export const authOptions: NextAuthOptions = {
         const pendingCheckoutTier = dbUser?.pendingCheckoutTier;
         token.pendingCheckoutTier =
           pendingCheckoutTier === "BASIC" ||
+          pendingCheckoutTier === "TWELVE_WEEK" ||
           pendingCheckoutTier === "MEMORABLE" ||
           pendingCheckoutTier === "ELITE"
             ? pendingCheckoutTier
@@ -77,9 +78,21 @@ export const authOptions: NextAuthOptions = {
       if (session.user && token.sub) {
         session.user.id = token.sub;
         session.user.membershipTier =
-          (token.membershipTier as "FREE" | "BASIC" | "MEMORABLE" | "ELITE" | undefined) ?? "FREE";
+          (token.membershipTier as
+            | "FREE"
+            | "BASIC"
+            | "TWELVE_WEEK"
+            | "MEMORABLE"
+            | "ELITE"
+            | undefined) ?? "FREE";
         session.user.pendingCheckoutTier =
-          (token.pendingCheckoutTier as "BASIC" | "MEMORABLE" | "ELITE" | null | undefined) ?? null;
+          (token.pendingCheckoutTier as
+            | "BASIC"
+            | "TWELVE_WEEK"
+            | "MEMORABLE"
+            | "ELITE"
+            | null
+            | undefined) ?? null;
       }
       return session;
     },

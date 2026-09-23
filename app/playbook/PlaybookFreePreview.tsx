@@ -1,6 +1,6 @@
 "use client";
 
-import PlaybookPurchaseCta from "@/app/components/PlaybookPurchaseCta";
+import Link from "next/link";
 import {
   PLAYBOOK_LANDING_SUBHEADLINE,
   PLAYBOOK_NAME,
@@ -95,7 +95,12 @@ export default function PlaybookFreePreview() {
         <div className="mx-auto flex max-w-md flex-col items-center gap-4">
           <LockIcon />
           <p className="text-base text-zinc-200">{playbookLockedMessage}</p>
-          <PlaybookPurchaseCta useCheckout align="center" />
+          <Link
+            href="/program"
+            className="inline-flex items-center justify-center rounded-full bg-[#22c55e] px-6 py-3 text-sm font-semibold text-black transition hover:bg-[#35db72]"
+          >
+            Explore the Twelve Week Program
+          </Link>
         </div>
       </section>
     </div>

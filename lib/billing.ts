@@ -30,6 +30,10 @@ export const tierPricing: Record<TierKey, Record<BillingFrequency, TierPricing>>
     monthly: basicOneTimePricing,
     annual: basicOneTimePricing,
   },
+  twelveWeek: {
+    monthly: { primary: "$599 one-time" },
+    annual: { primary: "$599 one-time" },
+  },
   memorable: {
     monthly: { primary: "$149/month" },
     annual: { primary: "$1,490/year", secondary: "just $124.17/mo" },

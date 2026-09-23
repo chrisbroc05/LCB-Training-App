@@ -42,7 +42,7 @@ export default function CoachingSubmissionConfirmation({
       {summary ? <div className="mt-5">{summary}</div> : null}
 
       <div className="mt-8 border-t border-[#2b3650] pt-8">
-        <FreeMemberWhileYouWaitSection usePlaybookCheckout />
+        <FreeMemberWhileYouWaitSection />
       </div>
 
       <div className="mt-6 flex justify-end">

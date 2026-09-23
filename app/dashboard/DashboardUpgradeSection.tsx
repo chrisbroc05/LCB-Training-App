@@ -6,7 +6,6 @@ import AnnualSavingsBadge from "@/app/AnnualSavingsBadge";
 import OneTimePaymentBadge from "@/app/OneTimePaymentBadge";
 import BillingFrequencyToggle from "@/app/BillingFrequencyToggle";
 import UpgradeActions from "@/app/upgrade/UpgradeActions";
-import PlaybookPurchaseCta from "@/app/components/PlaybookPurchaseCta";
 import { getAnnualSavings, getTierPricing, isOneTimeTier, usesBillingFrequencyToggle, type BillingFrequency } from "@/lib/billing";
 import {
   eliteUpgradePitch,
@@ -32,8 +31,8 @@ const upgradeSectionByTier: Partial<Record<DatabaseTier, UpgradeSectionConfig>> 
   FREE: {
     title: "Ready to Level Up?",
     description:
-      "Choose a paid plan to unlock the full drill library, resources, and coaching support.",
-    upgradeTiers: ["basic", "memorable", "elite"],
+      "Start with the Twelve Week Coaching Program or choose a monthly Memorable or Elite membership.",
+    upgradeTiers: ["memorable", "elite"],
   },
   BASIC: {
     title: "Unlock Coaching Submissions",
@@ -81,6 +80,22 @@ export default function DashboardUpgradeSection({
         </h2>
         <p className="mt-2 text-zinc-300">{config.description}</p>
       </div>
+
+      {membershipTier === "FREE" ? (
+        <article className="mx-auto mt-8 max-w-xl rounded-2xl border border-[#52B788]/40 bg-[#0b1324]/80 p-5 sm:p-6">
+          <h3 className="text-xl font-semibold text-zinc-100">Twelve Week Coaching Program</h3>
+          <p className="mt-3 text-sm text-zinc-300">
+            Unlimited submissions, full Playbook access, workout programs, and weekly check-in calls
+            with Coach Broc.
+          </p>
+          <Link
+            href="/program"
+            className="mt-5 inline-flex w-full items-center justify-center rounded-full bg-[#22c55e] px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-[#35db72]"
+          >
+            Explore the Program
+          </Link>
+        </article>
+      ) : null}
 
       {membershipTier === "FREE" && freeTier ? (
         <article className="mx-auto mt-8 max-w-xl rounded-2xl border border-[#22c55e]/40 bg-[#22c55e]/10 p-5 sm:p-6">
@@ -151,10 +166,6 @@ export default function DashboardUpgradeSection({
                 >
                   Upgrade to {tier.name}
                 </Link>
-              ) : tier.key === "basic" ? (
-                <div className="mt-6">
-                  <PlaybookPurchaseCta useCheckout />
-                </div>
               ) : (
                 <div className="mt-6 [&_button]:w-full">
                   <UpgradeActions tier={databaseTier} billingFrequency={billingFrequency} />

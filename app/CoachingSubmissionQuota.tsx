@@ -1,9 +1,10 @@
 import type { CoachingSubmissionAvailability } from "@/lib/coaching-submissions";
 import { getCoachingSubmissionPeriodLabel } from "@/lib/coaching-submissions";
+import type { DatabaseTier } from "@/lib/membership";
 
 type CoachingSubmissionQuotaProps = {
   availability: CoachingSubmissionAvailability;
-  membershipTier: "FREE" | "BASIC" | "MEMORABLE" | "ELITE";
+  membershipTier: DatabaseTier;
 };
 
 export default function CoachingSubmissionQuota({
@@ -25,6 +26,17 @@ export default function CoachingSubmissionQuota({
         ) : (
           <p>You have used your one free coaching submission.</p>
         )}
+      </div>
+    );
+  }
+
+  if (membershipTier === "TWELVE_WEEK") {
+    return (
+      <div className="mt-4 rounded-xl border border-[#52B788]/30 bg-[#22c55e]/5 px-4 py-3 text-sm text-zinc-300">
+        <p>
+          <span className="font-semibold text-[#9df3bd]">Unlimited coaching submissions</span>{" "}
+          included with your Twelve Week Program.
+        </p>
       </div>
     );
   }

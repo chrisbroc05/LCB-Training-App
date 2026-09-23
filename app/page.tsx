@@ -8,74 +8,13 @@ import Link from "next/link";
 import { getServerSession } from "next-auth";
 import BrandStorySection from "@/components/BrandStorySection";
 import CoachBioSection from "@/components/CoachBioSection";
-import PlaybookPurchaseCta from "@/app/components/PlaybookPurchaseCta";
-import RemoteSessionHeroCard from "@/app/components/RemoteSessionHeroCard";
 import { authOptions } from "@/lib/auth";
 import { BRAND_PRIMARY_SLOGAN, BRAND_SECONDARY_TAGLINE } from "@/lib/brand-copy";
-import { toVimeoEmbedUrl } from "@/lib/vimeo";
 import {
-  PLAYBOOK_NAME,
-  PLAYBOOK_PURCHASE_PRICE_SUBTITLE,
-  playbookHeroPrimaryButtonClassName,
-  playbookHeroSecondaryButtonClassName,
-} from "@/lib/playbook-branding";
-import { heroOfferCardClassName } from "@/lib/remote-session-branding";
-
-const playbookChapters = [
-  {
-    number: 1,
-    title: "The Mental Game",
-    description:
-      "How to build confidence that does not break, handle slumps without falling apart, and develop the mindset that separates good players from great ones.",
-    pullQuotes: [
-      "The day I stopped trying to be perfect was the day I started actually playing.",
-      "A slump is temporary. It is not permanent.",
-      "Going 0 for 4 is just as valuable as going 4 for 4.",
-    ],
-  },
-  {
-    number: 2,
-    title: "The Physical Game",
-    description:
-      "The hitting progressions, fielding fundamentals, strength philosophy, and mobility work that builds a complete baseball athlete.",
-    pullQuotes: [
-      "Become an athlete first. The baseball will come.",
-      "If you make practice harder than the game, the game becomes easy.",
-      "Good feet make everything else easier.",
-    ],
-  },
-  {
-    number: 3,
-    title: "The Preparation Game",
-    description:
-      "How championships are built in practice, what a real pre-game routine looks like, and why the off season decides everything.",
-    pullQuotes: [
-      "We did not win that championship on game day. We won it in practice.",
-      "Your pre-game routine tells your body and your mind that it is time to compete.",
-      "The off season is where championships are built.",
-    ],
-  },
-  {
-    number: 4,
-    title: "The Life Game",
-    description:
-      "What baseball is really teaching you beyond the stats, and why the lessons you learn on this field will follow you everywhere.",
-    pullQuotes: [
-      "This game is not just about baseball. It is about becoming the person you want to be.",
-      "Don't wait for someone to help you. Go out and do it yourself.",
-      "Enjoy every moment. One day it is going to be over.",
-    ],
-  },
-];
-
-const playbookIncludes = [
-  "Interactive chapter experience with reflection questions you can save and revisit",
-  "Full hitting, fielding, and mindset video drill library",
-  "8 downloadable workout programs",
-  "Pre-Game Warmup Routine, Nutrition Guide, Mental Game Workbook, and Parent Guide",
-  "Downloadable PDF of your completed playbook with your personal reflection answers",
-  "New content added regularly as Coach Broc keeps building",
-];
+  TWELVE_WEEK_PROGRAM_NAME,
+  twelveWeekProgramLandingHighlights,
+} from "@/lib/twelve-week-program";
+import { toVimeoEmbedUrl } from "@/lib/vimeo";
 
 const testimonials = [
   {
@@ -177,53 +116,6 @@ function CheckIcon() {
   );
 }
 
-function PlaybookAlsoIncludesBox({ items }: { items: string[] }) {
-  return (
-    <div className="mx-auto mt-12 max-w-2xl rounded-2xl border border-[#2b3650] border-l-4 border-l-[#52B788] bg-[#0A1628]/20 px-6 py-8 sm:px-8 sm:py-10">
-      <h3 className="text-lg font-bold text-[#52B788] sm:text-xl">Also Includes</h3>
-      <ul className="mt-6 space-y-4">
-        {items.map((item) => (
-          <li key={item} className="flex items-start gap-3">
-            <span className="mt-0.5">
-              <CheckIcon />
-            </span>
-            <span className="text-sm leading-relaxed text-zinc-200 sm:text-base">{item}</span>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-function PlaybookChapterCard({
-  number,
-  title,
-  description,
-  pullQuotes,
-}: {
-  number: number;
-  title: string;
-  description: string;
-  pullQuotes: string[];
-}) {
-  return (
-    <article className="flex h-full flex-col rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-5 shadow-lg shadow-black/40 sm:p-6">
-      <p className="text-sm font-semibold uppercase tracking-wide text-[#52B788]">
-        Chapter {number}
-      </p>
-      <h3 className="mt-2 text-xl font-bold text-zinc-100">{title}</h3>
-      <p className="mt-3 text-sm leading-relaxed text-zinc-300">{description}</p>
-      <div className="mt-5 space-y-3">
-        {pullQuotes.map((quote) => (
-          <p key={quote} className="text-sm italic leading-relaxed text-[#52B788]/90">
-            &ldquo;{quote}&rdquo;
-          </p>
-        ))}
-      </div>
-    </article>
-  );
-}
-
 export default async function Home() {
   const session = await getServerSession(authOptions);
   const isLoggedIn = Boolean(session?.user);
@@ -271,66 +163,48 @@ export default async function Home() {
       <div className="mx-auto w-full max-w-6xl px-4 pb-10 pt-10 sm:px-6 sm:pb-14 sm:pt-12 md:pb-20 md:pt-14">
         <CoachBioSection />
 
-        <section id="training-options" className="mt-14 scroll-mt-24">
-          <div className="text-center">
-            <h2 className="text-2xl font-semibold text-zinc-100 sm:text-3xl">Start Training</h2>
-            <p className="mx-auto mt-3 max-w-2xl text-zinc-300">
-              Choose how you want to work with Coach Broc -- on your own, live, or with a free swing
-              review.
-            </p>
-          </div>
-
-          <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-2 md:items-stretch">
-            <article className={heroOfferCardClassName}>
-              <h3 className="text-left text-3xl font-bold tracking-tight text-zinc-100 sm:text-4xl">
-                {PLAYBOOK_NAME}
-              </h3>
-              <p className="mt-4 text-left text-base leading-relaxed text-zinc-300 sm:text-lg">
-                Everything I know about this game in one place. The mental game. The physical game.
-                The preparation. The life lessons. Written from 12+ years of player development and
-                my own experience as a player.
+        <section id="twelve-week-program" className="mt-14 scroll-mt-24">
+          <div className="rounded-3xl border border-[#52B788]/30 bg-[#0A1628] px-5 py-10 sm:px-8 sm:py-12 md:px-10">
+            <div className="mx-auto max-w-3xl text-center">
+              <h2 className="text-2xl font-semibold text-zinc-100 sm:text-3xl md:text-4xl">
+                {TWELVE_WEEK_PROGRAM_NAME}
+              </h2>
+              <p className="mt-4 text-base leading-relaxed text-zinc-300 sm:text-lg">
+                Twelve weeks of structured coaching with Coach Broc. Train with purpose, get personal
+                feedback on every swing and mental game submission, and build habits that last beyond
+                the season.
               </p>
+            </div>
 
-              <div className="mt-auto flex w-full flex-col gap-3 pt-6">
-                <PlaybookPurchaseCta
-                  showSubtitle={false}
-                  buttonClassName={playbookHeroPrimaryButtonClassName}
-                />
-                <a href="#playbook-chapters" className={playbookHeroSecondaryButtonClassName}>
-                  See What Is Inside
-                </a>
-                <p className="text-center text-xs text-zinc-400">{PLAYBOOK_PURCHASE_PRICE_SUBTITLE}</p>
-              </div>
-            </article>
+            <ul className="mx-auto mt-8 grid max-w-3xl gap-4 sm:grid-cols-2">
+              {twelveWeekProgramLandingHighlights.map((item) => (
+                <li
+                  key={item}
+                  className="flex items-start gap-3 rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 text-left"
+                >
+                  <span className="mt-0.5">
+                    <CheckIcon />
+                  </span>
+                  <span className="text-sm leading-relaxed text-zinc-200 sm:text-base">{item}</span>
+                </li>
+              ))}
+            </ul>
 
-            <RemoteSessionHeroCard />
+            <div className="mt-10 flex flex-col items-center gap-4">
+              <Link
+                href="/program"
+                className="inline-flex w-full items-center justify-center rounded-full bg-[#22c55e] px-6 py-3 text-sm font-semibold text-black transition hover:bg-[#35db72] sm:w-auto"
+              >
+                Get Started
+              </Link>
+              <p className="max-w-xl text-center text-sm text-zinc-400">
+                Not ready yet? Start with one free coaching submission from Coach Broc.{" "}
+                <Link href="/auth?tier=free" className="font-semibold text-[#52B788] hover:text-[#9df3bd]">
+                  Submit My Swing Free
+                </Link>
+              </p>
+            </div>
           </div>
-        </section>
-
-        <section id="playbook-chapters" className="mt-14 scroll-mt-24">
-          <div className="text-center">
-            <h2 className="text-2xl font-semibold text-zinc-100 sm:text-3xl">
-              What Is Inside The Playbook
-            </h2>
-            <p className="mx-auto mt-3 max-w-2xl text-zinc-300">
-              Four chapters covering everything it takes to become the player and person you want
-              to be.
-            </p>
-          </div>
-
-          <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2">
-            {playbookChapters.map((chapter) => (
-              <PlaybookChapterCard
-                key={chapter.number}
-                number={chapter.number}
-                title={chapter.title}
-                description={chapter.description}
-                pullQuotes={chapter.pullQuotes}
-              />
-            ))}
-          </div>
-
-          <PlaybookAlsoIncludesBox items={playbookIncludes} />
         </section>
 
         <section className="mt-14">
@@ -399,73 +273,6 @@ export default async function Home() {
         </section>
       </div>
 
-      <section className="w-full bg-[#0A1628] px-4 py-14 sm:px-6 sm:py-16 md:py-20">
-        <div className="mx-auto max-w-3xl text-center">
-          <h2 className="text-2xl font-bold text-zinc-100 sm:text-3xl md:text-4xl">
-            Ready to get to work?
-          </h2>
-          <p className="mt-4 text-base text-zinc-300 sm:text-lg">
-            One time. Lifetime access. Everything Coach Broc knows about this game.
-          </p>
-          <div className="mt-8">
-            <PlaybookPurchaseCta align="center" />
-          </div>
-          <p className="mt-5 text-sm text-zinc-400">
-            Not ready to commit? Start free and get one personal coaching submission from Coach
-            Broc.{" "}
-            <Link href="/auth?tier=free" className="font-semibold text-[#52B788] hover:text-[#9df3bd]">
-              Start Free
-            </Link>
-          </p>
-        </div>
-      </section>
-
-      <section className="mx-auto w-full max-w-6xl border-t border-[#52B788]/30 px-4 pb-14 pt-20 sm:px-6 sm:pb-20 sm:pt-24 md:pb-24">
-        <div className="text-center">
-          <h2 className="text-2xl font-semibold text-zinc-100 sm:text-3xl">
-            Want More Than The Playbook?
-          </h2>
-          <p className="mx-auto mt-3 max-w-2xl text-zinc-300">
-            Take your development further with personal 1-on-1 coaching from Coach Broc.
-          </p>
-        </div>
-
-        <div className="mt-8 grid grid-cols-1 gap-5 md:grid-cols-2">
-          <article className="flex h-full flex-col rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-6">
-            <h3 className="text-xl font-bold text-zinc-100">Memorable</h3>
-            <p className="mt-2 text-2xl font-bold text-[#98b144]">$149/month</p>
-            <p className="mt-4 flex-1 text-sm leading-relaxed text-zinc-300">
-              Everything in the Playbook plus 2 personal coaching submissions per month, monthly goal
-              setting, weekly accountability check-ins, and direct access to Coach Broc.
-            </p>
-            <Link
-              href="/auth?tier=memorable"
-              className="mt-6 inline-flex w-full items-center justify-center rounded-full border border-[#52B788] px-5 py-2.5 text-sm font-semibold text-[#52B788] transition hover:bg-[#52B788]/10 sm:w-auto"
-            >
-              Add Coaching
-            </Link>
-          </article>
-
-          <article className="flex h-full flex-col rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-6">
-            <h3 className="text-xl font-bold text-zinc-100">Elite</h3>
-            <p className="mt-2 text-2xl font-bold text-[#98b144]">$249/month</p>
-            <p className="mt-4 flex-1 text-sm leading-relaxed text-zinc-300">
-              Everything in Memorable plus 4 submissions with rollover, priority 24-hour response,
-              personalized monthly development plan, and monthly group coaching call.
-            </p>
-            <Link
-              href="/auth?tier=elite"
-              className="mt-6 inline-flex w-full items-center justify-center rounded-full border border-[#52B788] px-5 py-2.5 text-sm font-semibold text-[#52B788] transition hover:bg-[#52B788]/10 sm:w-auto"
-            >
-              Go Elite
-            </Link>
-          </article>
-        </div>
-
-        <p className="mt-6 text-center text-sm text-zinc-400">
-          All coaching memberships include full Playbook access.
-        </p>
-      </section>
     </>
   );
 }

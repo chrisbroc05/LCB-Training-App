@@ -1,0 +1,94 @@
+import Link from "next/link";
+import { getServerSession } from "next-auth";
+import ProgramCheckoutSection from "@/app/program/ProgramCheckoutSection";
+import { authOptions } from "@/lib/auth";
+import {
+  TWELVE_WEEK_PROGRAM_NAME,
+  TWELVE_WEEK_PROGRAM_PRICE_LABEL,
+  twelveWeekProgramIncludes,
+} from "@/lib/twelve-week-program";
+
+type ProgramPageProps = {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
+
+function CheckIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className="shrink-0 text-[#52B788]"
+    >
+      <path d="M20 6 9 17l-5-5" />
+    </svg>
+  );
+}
+
+export default async function ProgramPage({ searchParams }: ProgramPageProps) {
+  const session = await getServerSession(authOptions);
+  const resolvedSearchParams = searchParams ? await searchParams : {};
+  const autoStartCheckout = resolvedSearchParams.startCheckout === "1";
+
+  return (
+    <div className="mx-auto w-full max-w-4xl px-4 py-12 sm:px-6 sm:py-16 md:py-20">
+      <section className="rounded-3xl border border-[#18243a] bg-[#0b1324]/80 p-6 sm:p-8 md:p-10">
+        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#52B788]">
+          Flagship Coaching Program
+        </p>
+        <h1 className="mt-3 text-3xl font-bold tracking-tight text-zinc-100 sm:text-4xl md:text-5xl">
+          {TWELVE_WEEK_PROGRAM_NAME}
+        </h1>
+        <p className="mt-4 max-w-2xl text-base leading-relaxed text-zinc-300 sm:text-lg">
+          Twelve weeks of structured coaching with Coach Broc. Everything you need to train with
+          purpose, get personal feedback, and build habits that last beyond the season.
+        </p>
+
+        <div className="mt-8 rounded-2xl border border-[#2b3650] bg-black/30 p-6 sm:p-8">
+          <p className="text-sm uppercase tracking-wide text-zinc-400">Full program investment</p>
+          <p className="mt-2 text-4xl font-bold text-[#98b144] sm:text-5xl">
+            {TWELVE_WEEK_PROGRAM_PRICE_LABEL}
+          </p>
+          <p className="mt-2 text-sm text-zinc-400">One-time payment for the full twelve weeks</p>
+        </div>
+
+        <div className="mt-8">
+          <h2 className="text-xl font-semibold text-zinc-100 sm:text-2xl">Everything included</h2>
+          <ul className="mt-5 space-y-4">
+            {twelveWeekProgramIncludes.map((item) => (
+              <li key={item} className="flex items-start gap-3">
+                <span className="mt-0.5">
+                  <CheckIcon />
+                </span>
+                <span className="text-sm leading-relaxed text-zinc-200 sm:text-base">{item}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="mt-10">
+          <ProgramCheckoutSection
+            isLoggedIn={Boolean(session?.user)}
+            autoStartCheckout={autoStartCheckout}
+          />
+          <p className="mt-4 text-sm text-zinc-400">
+            New here? You will create your account first, then continue to secure checkout.
+          </p>
+        </div>
+      </section>
+
+      <p className="mt-8 text-center text-sm text-zinc-400">
+        Want to try Coach Broc first?{" "}
+        <Link href="/auth?tier=free" className="font-semibold text-[#52B788] hover:text-[#9df3bd]">
+          Submit a free swing review
+        </Link>
+      </p>
+    </div>
+  );
+}

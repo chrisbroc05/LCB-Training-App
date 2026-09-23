@@ -4,6 +4,7 @@ export default function TierBadge({ tier }: { tier: DatabaseTier }) {
   const styles: Record<DatabaseTier, string> = {
     FREE: "border-zinc-500/40 bg-zinc-500/15 text-zinc-200",
     BASIC: "border-blue-400/40 bg-blue-500/15 text-blue-100",
+    TWELVE_WEEK: "border-[#52B788]/40 bg-[#52B788]/15 text-[#9df3bd]",
     MEMORABLE: "border-[#22c55e]/40 bg-[#22c55e]/15 text-[#9df3bd]",
     ELITE: "border-yellow-400/40 bg-yellow-500/15 text-yellow-100",
   };

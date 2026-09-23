@@ -1,9 +1,10 @@
 import DashboardPlaybookProgressCard from "@/app/dashboard/DashboardPlaybookProgressCard";
+import DashboardTwelveWeekProgramCard from "@/app/dashboard/DashboardTwelveWeekProgramCard";
 import DashboardUpgradeSection from "@/app/dashboard/DashboardUpgradeSection";
 import MobileCoachingStatusCard from "@/app/dashboard/MobileCoachingStatusCard";
 import MonthlyGoalProgressCard from "@/app/dashboard/MonthlyGoalProgressCard";
 import type { CoachingSubmissionAvailability } from "@/lib/coaching-submissions";
-import { canAccessCoachingNav, type DatabaseTier } from "@/lib/membership";
+import { canAccessCoachingNav, isTwelveWeekProgramMember, type DatabaseTier } from "@/lib/membership";
 
 type UnreadResponseNotification = {
   id: number;
@@ -30,6 +31,7 @@ type MobileDashboardViewProps = {
   upgradeStatus: string | null;
   hasSubscription: boolean;
   unreadResponse: UnreadResponseNotification | null;
+  twelveWeekProgramEndsAt: Date | null;
 };
 
 export default function MobileDashboardView({
@@ -42,9 +44,14 @@ export default function MobileDashboardView({
   upgradeStatus,
   hasSubscription,
   unreadResponse,
+  twelveWeekProgramEndsAt,
 }: MobileDashboardViewProps) {
   return (
     <div className="mobile-card-stack px-4 pb-4 pt-4 md:hidden">
+      {isTwelveWeekProgramMember(membershipTier) ? (
+        <DashboardTwelveWeekProgramCard programEndsAt={twelveWeekProgramEndsAt} />
+      ) : null}
+
       <MobileCoachingStatusCard
         membershipTier={membershipTier}
         coachingAvailability={coachingAvailability}
@@ -52,7 +59,7 @@ export default function MobileDashboardView({
         unreadResponse={unreadResponse}
       />
 
-      {checkoutStatus === "success" && membershipTier !== "BASIC" ? (
+      {checkoutStatus === "success" && membershipTier !== "BASIC" && membershipTier !== "TWELVE_WEEK" ? (
         <article className="mobile-card border-[#22c55e]/40 bg-[#22c55e]/10 text-sm text-[#bafccf]">
           Payment successful. Your membership is active and your dashboard access has been updated.
         </article>

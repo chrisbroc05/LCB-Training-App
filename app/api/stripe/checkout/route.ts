@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { parseBillingFrequency } from "@/lib/billing";
-import { getBasicOneTimePriceId, getSubscriptionPriceId, stripe } from "@/lib/stripe";
+import { getSubscriptionPriceId, stripe } from "@/lib/stripe";
 import { isDatabaseTier } from "@/lib/membership";
 
 type CheckoutBody = {
@@ -51,27 +51,11 @@ export async function POST(request: Request) {
     const checkoutSource = body.checkoutSource?.toLowerCase() ?? "standard";
     const cancelTierParam = checkoutSource === "playbook" ? "basic" : membershipTier.toLowerCase();
 
-    if (membershipTier === "BASIC") {
-      const priceId = getBasicOneTimePriceId();
-      const checkoutSession = await stripe.checkout.sessions.create({
-        mode: "payment",
-        customer_email: session.user.email,
-        line_items: [{ price: priceId, quantity: 1 }],
-        success_url: `${baseUrl}/dashboard?checkout=success`,
-        cancel_url: `${baseUrl}/auth?tier=${cancelTierParam}&checkout=cancelled`,
-        client_reference_id: session.user.id,
-        metadata: {
-          userId: session.user.id,
-          membershipTier,
-          purchaseType: "one_time_basic",
-        },
-      });
-
-      if (!checkoutSession.url) {
-        return NextResponse.json({ error: "Unable to create checkout session." }, { status: 500 });
-      }
-
-      return NextResponse.json({ url: checkoutSession.url });
+    if (membershipTier === "BASIC" || membershipTier === "TWELVE_WEEK") {
+      return NextResponse.json(
+        { error: "This membership tier uses a dedicated checkout route." },
+        { status: 400 },
+      );
     }
 
     const billingFrequency = parseBillingFrequency(body.billingFrequency);

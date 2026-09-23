@@ -1,5 +1,5 @@
-export type TierKey = "free" | "basic" | "memorable" | "elite";
-export type DatabaseTier = "FREE" | "BASIC" | "MEMORABLE" | "ELITE";
+export type TierKey = "free" | "basic" | "twelveWeek" | "memorable" | "elite";
+export type DatabaseTier = "FREE" | "BASIC" | "TWELVE_WEEK" | "MEMORABLE" | "ELITE";
 
 export const memorableSignupDescription =
   "Everything in the Playbook plus 2 personal coaching submissions per month with 48-hour feedback, weekly goal setting check-ins, weekly accountability check-ins, and direct access to Coach Broc.";
@@ -92,6 +92,7 @@ export function getCoachingResponseTimeLabel(tier: DatabaseTier) {
 export const tierRank: Record<TierKey, number> = {
   free: 0,
   basic: 1,
+  twelveWeek: 2,
   memorable: 2,
   elite: 3,
 };
@@ -99,6 +100,7 @@ export const tierRank: Record<TierKey, number> = {
 export const keyToDatabaseTier: Record<TierKey, DatabaseTier> = {
   free: "FREE",
   basic: "BASIC",
+  twelveWeek: "TWELVE_WEEK",
   memorable: "MEMORABLE",
   elite: "ELITE",
 };
@@ -106,18 +108,33 @@ export const keyToDatabaseTier: Record<TierKey, DatabaseTier> = {
 export const databaseTierToKey: Record<DatabaseTier, TierKey> = {
   FREE: "free",
   BASIC: "basic",
+  TWELVE_WEEK: "twelveWeek",
   MEMORABLE: "memorable",
   ELITE: "elite",
 };
 
-export const validDatabaseTiers: DatabaseTier[] = ["FREE", "BASIC", "MEMORABLE", "ELITE"];
+export const validDatabaseTiers: DatabaseTier[] = [
+  "FREE",
+  "BASIC",
+  "TWELVE_WEEK",
+  "MEMORABLE",
+  "ELITE",
+];
 
 export function formatDatabaseTierLabel(tier: DatabaseTier): string {
   if (tier === "MEMORABLE") {
     return "Memorable";
   }
 
+  if (tier === "TWELVE_WEEK") {
+    return "Twelve Week Program";
+  }
+
   return tier.charAt(0) + tier.slice(1).toLowerCase();
+}
+
+export function isTwelveWeekProgramMember(tier: DatabaseTier) {
+  return tier === "TWELVE_WEEK";
 }
 
 export function isDatabaseTier(value: string): value is DatabaseTier {
@@ -141,14 +158,14 @@ export function canAccessPlaybook(userTier: DatabaseTier) {
 }
 
 export const playbookLockedMessage =
-  "Unlock The Next Level Playbook and all four chapters with a one-time Basic membership.";
+  "Unlock The Next Level Playbook and all four chapters with the Twelve Week Coaching Program.";
 
 export function canAccessWorkoutPrograms(userTier: DatabaseTier) {
   return hasDatabaseTierAccess(userTier, "basic");
 }
 
 export function canAccessCoachingNav(userTier: DatabaseTier) {
-  return hasDatabaseTierAccess(userTier, "memorable");
+  return userTier === "TWELVE_WEEK" || hasDatabaseTierAccess(userTier, "memorable");
 }
 
 export function isLifetimeBasicMember(

@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import DashboardCoachingCard from "@/app/dashboard/DashboardCoachingCard";
 import DashboardMembershipCard from "@/app/dashboard/DashboardMembershipCard";
 import DashboardPlaybookWelcomeCard from "@/app/dashboard/DashboardPlaybookWelcomeCard";
+import DashboardTwelveWeekProgramCard from "@/app/dashboard/DashboardTwelveWeekProgramCard";
 import DashboardUpgradeSection from "@/app/dashboard/DashboardUpgradeSection";
 import MobileDashboardView from "@/app/dashboard/MobileDashboardView";
 import MonthlyGoalProgressCard from "@/app/dashboard/MonthlyGoalProgressCard";
@@ -20,7 +21,9 @@ import {
   canAccessPlaybook,
   canAccessWorkoutPrograms,
   databaseTierToKey,
+  formatDatabaseTierLabel,
   isManualMembershipMember,
+  isTwelveWeekProgramMember,
   membershipTiers,
   type DatabaseTier,
 } from "@/lib/membership";
@@ -80,7 +83,7 @@ function getQuickLinks(membershipTier: DatabaseTier, hasFreeSubmissionRemaining:
     });
   }
 
-  if (membershipTier === "MEMORABLE" || membershipTier === "ELITE") {
+  if (membershipTier === "TWELVE_WEEK" || membershipTier === "MEMORABLE" || membershipTier === "ELITE") {
     links.push({
       href: "/coaching-submissions",
       label: "Coaching Submissions",
@@ -152,6 +155,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       coachingSubmissionPeriod: true,
       eliteRolloverCredits: true,
       membershipTier: true,
+      twelveWeekProgramEndsAt: true,
       pendingCheckoutTier: true,
       subscriptionStatus: true,
       subscriptionCurrentPeriodEnd: true,
@@ -167,7 +171,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   }
 
   if (userRecord.pendingCheckoutTier && userRecord.membershipTier === "FREE") {
-    redirect("/auth?tier=basic&checkout=pending");
+    redirect("/program?startCheckout=1");
   }
 
   const membershipTier = userRecord.membershipTier as DatabaseTier;
@@ -177,7 +181,8 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     : null;
   const freeSubmissionUsed = userRecord.freeSubmissionUsed;
   const userTier = databaseTierToKey[membershipTier];
-  const currentTier = membershipTiers.find((tier) => tier.key === userTier) ?? membershipTiers[0];
+  const currentTier = membershipTiers.find((tier) => tier.key === userTier);
+  const membershipLabel = currentTier?.name ?? formatDatabaseTierLabel(membershipTier);
   const firstName = getFirstName(userRecord.name, session.user.email);
   const quickLinks = getQuickLinks(
     membershipTier,
@@ -299,6 +304,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         checkoutStatus={checkoutStatus}
         upgradeStatus={upgradeStatus}
         unreadResponse={unreadResponse}
+        twelveWeekProgramEndsAt={userRecord.twelveWeekProgramEndsAt}
       />
 
       <div className="mx-auto hidden w-full max-w-6xl px-4 py-10 sm:px-6 sm:py-14 md:block md:py-20">
@@ -312,6 +318,15 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
               Your playbook, drill library, and resources are ready whenever you are.
             </p>
           </>
+        ) : isTwelveWeekProgramMember(membershipTier) ? (
+          <>
+            <h1 className="text-2xl font-semibold leading-tight text-zinc-100 sm:text-3xl">
+              Welcome to your Twelve Week Coaching Program
+            </h1>
+            <p className="mt-2 text-zinc-300">
+              Your playbook, coaching submissions, and weekly check-ins are ready whenever you are.
+            </p>
+          </>
         ) : (
           <>
             <h1 className="text-2xl font-semibold leading-tight text-zinc-100 sm:text-3xl">
@@ -319,11 +334,17 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
             </h1>
             <p className="mt-2 text-zinc-300">
               Your LCB Training home base. Jump into the tools included with your{" "}
-              <span className="font-semibold text-[#98b144]">{currentTier.name}</span> membership.
+              <span className="font-semibold text-[#98b144]">{membershipLabel}</span> membership.
             </p>
           </>
         )}
       </section>
+
+      {isTwelveWeekProgramMember(membershipTier) ? (
+        <div className="mt-6">
+          <DashboardTwelveWeekProgramCard programEndsAt={userRecord.twelveWeekProgramEndsAt} />
+        </div>
+      ) : null}
 
       {membershipTier === "BASIC" ? <DashboardPlaybookWelcomeCard /> : null}
 

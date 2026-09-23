@@ -3,7 +3,7 @@
 import { useState } from "react";
 import BillingFrequencyToggle from "@/app/BillingFrequencyToggle";
 import UpgradeActions from "@/app/upgrade/UpgradeActions";
-import PlaybookPurchaseCta from "@/app/components/PlaybookPurchaseCta";
+import Link from "next/link";
 import AnnualSavingsBadge from "@/app/AnnualSavingsBadge";
 import OneTimePaymentBadge from "@/app/OneTimePaymentBadge";
 import {
@@ -20,18 +20,13 @@ import {
 } from "@/lib/membership";
 
 const paidTierCardStyles: Record<
-  Exclude<TierKey, "free">,
+  "memorable" | "elite",
   {
     cardClassName: string;
     textClassName: string;
     listClassName: string;
   }
 > = {
-  basic: {
-    cardClassName: "rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6",
-    textClassName: "text-zinc-300",
-    listClassName: "text-zinc-200",
-  },
   memorable: {
     cardClassName: "rounded-2xl border border-[#22c55e]/40 bg-[#22c55e]/10 p-4 sm:p-6",
     textClassName: "text-zinc-200",
@@ -57,7 +52,23 @@ export default function UpgradePricingSection() {
       </div>
 
       <section className="mt-8 grid gap-4 sm:gap-5 lg:grid-cols-3">
-        {paidMembershipTiers.map((tier) => {
+        <article className="rounded-2xl border border-[#52B788]/40 bg-[#0b1324]/80 p-4 sm:p-6 lg:col-span-3">
+          <h2 className="text-xl font-semibold text-zinc-100 sm:text-2xl">
+            Twelve Week Coaching Program
+          </h2>
+          <p className="mt-3 text-zinc-300">
+            Unlimited submissions, full Playbook access, workout programs, and weekly check-in calls
+            with Coach Broc.
+          </p>
+          <Link
+            href="/program"
+            className="mt-5 inline-flex items-center justify-center rounded-full bg-[#22c55e] px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-[#35db72]"
+          >
+            View Program Details
+          </Link>
+        </article>
+
+        {paidMembershipTiers.filter((tier) => tier.key !== "basic").map((tier) => {
           const pricing = getTierPricing(tier.key, billingFrequency);
           const styles = paidTierCardStyles[tier.key];
           const databaseTier = keyToDatabaseTier[tier.key] as "BASIC" | "MEMORABLE" | "ELITE";
@@ -89,13 +100,7 @@ export default function UpgradePricingSection() {
                   <li key={feature}>{feature}</li>
                 ))}
               </ul>
-              {tier.key === "basic" ? (
-                <div className="mt-4">
-                  <PlaybookPurchaseCta useCheckout />
-                </div>
-              ) : (
-                <UpgradeActions tier={databaseTier} billingFrequency={billingFrequency} />
-              )}
+              <UpgradeActions tier={databaseTier} billingFrequency={billingFrequency} />
             </article>
           );
         })}

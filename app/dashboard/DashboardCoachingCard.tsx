@@ -108,7 +108,7 @@ export default function DashboardCoachingCard({
                 <p className="text-sm font-medium text-zinc-200">
                   While you wait -- here is what else is waiting for you.
                 </p>
-                <FreeMemberWhileYouWaitCards usePlaybookCheckout />
+                <FreeMemberWhileYouWaitCards />
               </div>
             </>
           )}

@@ -133,9 +133,11 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
     ? getCoachingSubmissionAvailability(coachingFields)
     : null;
   const submissionsRemaining =
-    membershipTier === "MEMORABLE" || membershipTier === "ELITE"
-      ? (availability?.remaining ?? 0)
-      : null;
+    membershipTier === "TWELVE_WEEK"
+      ? null
+      : membershipTier === "MEMORABLE" || membershipTier === "ELITE"
+        ? (availability?.remaining ?? 0)
+        : null;
   const showLifetimeAccess = isLifetimeBasicMember(membershipTier, user.stripeSubscriptionId);
 
   let playbookProgress = null;
@@ -171,6 +173,7 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
           submissions={merged}
           selectedSubmission={selectedSubmission ?? null}
           recommendedDrillThumbnailMap={recommendedDrillThumbnailMap}
+          viewerMembershipTier={membershipTier}
         />
 
         <ProfileGoalCheckinHistory hasAccess={canAccessCoachingNav(membershipTier)} />

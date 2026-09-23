@@ -4,19 +4,19 @@ declare module "next-auth" {
   interface Session {
     user: {
       id: string;
-      membershipTier: "FREE" | "BASIC" | "MEMORABLE" | "ELITE";
-      pendingCheckoutTier: "BASIC" | "MEMORABLE" | "ELITE" | null;
+      membershipTier: "FREE" | "BASIC" | "TWELVE_WEEK" | "MEMORABLE" | "ELITE";
+      pendingCheckoutTier: "BASIC" | "TWELVE_WEEK" | "MEMORABLE" | "ELITE" | null;
     } & DefaultSession["user"];
   }
 
   interface User {
-    membershipTier?: "FREE" | "BASIC" | "MEMORABLE" | "ELITE";
+    membershipTier?: "FREE" | "BASIC" | "TWELVE_WEEK" | "MEMORABLE" | "ELITE";
   }
 }
 
 declare module "next-auth/jwt" {
   interface JWT {
-    membershipTier?: "FREE" | "BASIC" | "MEMORABLE" | "ELITE";
-    pendingCheckoutTier?: "BASIC" | "MEMORABLE" | "ELITE" | null;
+    membershipTier?: "FREE" | "BASIC" | "TWELVE_WEEK" | "MEMORABLE" | "ELITE";
+    pendingCheckoutTier?: "BASIC" | "TWELVE_WEEK" | "MEMORABLE" | "ELITE" | null;
   }
 }

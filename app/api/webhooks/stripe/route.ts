@@ -3,11 +3,16 @@ import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 import { isDatabaseTier } from "@/lib/membership";
 import { stripe } from "@/lib/stripe";
+import { getTwelveWeekProgramEndDate } from "@/lib/twelve-week-program";
 import { sendPaymentFailedEmail, sendEliteWelcomeEmail, sendMemorableWelcomeEmail } from "@/lib/notifications";
 
 function mapPriceIdToTier(priceId?: string | null) {
   if (!priceId) {
     return null;
+  }
+
+  if (priceId === process.env.TWELVE_WEEK_PROGRAM_PRICE_ID) {
+    return "TWELVE_WEEK";
   }
 
   if (
@@ -94,6 +99,23 @@ export async function POST(request: Request) {
             subscriptionCancelAtPeriodEnd: false,
           },
         });
+      } else if (checkoutSession.mode === "payment" && membershipTier === "TWELVE_WEEK") {
+        const startedAt = new Date();
+        await prisma.user.updateMany({
+          where: { id: userId },
+          data: {
+            membershipTier: "TWELVE_WEEK",
+            pendingCheckoutTier: null,
+            subscriptionStatus: "NONE",
+            stripeCustomerId,
+            stripeSubscriptionId: null,
+            stripePriceId: process.env.TWELVE_WEEK_PROGRAM_PRICE_ID ?? null,
+            subscriptionCurrentPeriodEnd: null,
+            subscriptionCancelAtPeriodEnd: false,
+            twelveWeekProgramStartedAt: startedAt,
+            twelveWeekProgramEndsAt: getTwelveWeekProgramEndDate(startedAt),
+          },
+        });
       } else if (checkoutSession.mode === "subscription") {
         await prisma.user.updateMany({
           where: { id: userId },
@@ -165,7 +187,7 @@ export async function POST(request: Request) {
       subscriptionCurrentPeriodEnd: Date | null;
       subscriptionCancelAtPeriodEnd: boolean;
       subscriptionStatus: "ACTIVE" | "CANCEL_AT_PERIOD_END" | "CANCELED" | "NONE";
-      membershipTier?: "BASIC" | "MEMORABLE" | "ELITE";
+      membershipTier?: "BASIC" | "TWELVE_WEEK" | "MEMORABLE" | "ELITE";
     } = {
       stripeSubscriptionId,
       subscriptionCurrentPeriodEnd: currentPeriodEnd,
@@ -181,7 +203,7 @@ export async function POST(request: Request) {
       data.stripePriceId = stripePriceId;
     }
 
-    if (mappedTier && status !== "CANCELED") {
+    if (mappedTier && mappedTier !== "TWELVE_WEEK" && status !== "CANCELED") {
       data.membershipTier = mappedTier;
     }
 

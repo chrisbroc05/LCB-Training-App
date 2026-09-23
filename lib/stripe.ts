@@ -10,7 +10,7 @@ if (!stripeSecretKey) {
 
 export const stripe = new Stripe(stripeSecretKey);
 
-type SubscriptionDatabaseTier = Exclude<DatabaseTier, "FREE" | "BASIC">;
+type SubscriptionDatabaseTier = Exclude<DatabaseTier, "FREE" | "BASIC" | "TWELVE_WEEK">;
 
 const stripeMonthlyPriceIds: Record<SubscriptionDatabaseTier, string | undefined> = {
   MEMORABLE: process.env.STRIPE_MEMORABLE_PRICE_ID,
@@ -31,10 +31,12 @@ export function getBasicOneTimePriceId() {
   return priceId;
 }
 
-export function getRemoteSessionPriceId() {
-  const priceId = process.env.STRIPE_REMOTE_PRICE_ID;
+export function getTwelveWeekProgramPriceId() {
+  const priceId = process.env.TWELVE_WEEK_PROGRAM_PRICE_ID;
   if (!priceId) {
-    throw new Error("Missing Stripe price ID for remote sessions. Configure STRIPE_REMOTE_PRICE_ID.");
+    throw new Error(
+      "Missing Stripe price ID for the Twelve Week Program. Configure TWELVE_WEEK_PROGRAM_PRICE_ID.",
+    );
   }
 
   return priceId;

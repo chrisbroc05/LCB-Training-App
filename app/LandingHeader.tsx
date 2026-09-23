@@ -35,8 +35,8 @@ export default function LandingHeader({ isLoggedIn }: LandingHeaderProps) {
               <Link href="/auth?mode=login" className={landingOutlineButtonClassName}>
                 Log In
               </Link>
-              <Link href="/auth?tier=basic" className={landingPrimaryButtonClassName}>
-                Unlock The Playbook
+              <Link href="/program" className={landingPrimaryButtonClassName}>
+                Get Started
               </Link>
             </>
           )}
