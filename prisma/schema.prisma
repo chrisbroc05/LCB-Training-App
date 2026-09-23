@@ -57,6 +57,8 @@ model User {
   eliteRolloverCredits             Int          @default(0)
   assessmentCallBooked             Boolean      @default(false)
   assessmentCallDate               DateTime?
+  twelveWeekCallBooked             Boolean      @default(false)
+  twelveWeekCallScheduledAt        DateTime?
   membershipTier         MembershipTier         @default(FREE)
   twelveWeekProgramStartedAt DateTime?
   twelveWeekProgramEndsAt    DateTime?

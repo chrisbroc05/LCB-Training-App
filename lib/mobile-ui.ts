@@ -31,14 +31,10 @@ export function getMobileTierBadge(tier: DatabaseTier) {
         className: "mobile-tier-pill-memorable",
       };
     case "MEMORABLE":
-      return {
-        label: "Memorable",
-        className: "mobile-tier-pill-memorable",
-      };
     case "ELITE":
       return {
-        label: "Elite",
-        className: "mobile-tier-pill-elite",
+        label: "Member",
+        className: "mobile-tier-pill-memorable",
       };
     default:
       return {

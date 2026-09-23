@@ -15,6 +15,8 @@ export const adminMemberListSelect = {
   signupDate: true,
   assessmentCallBooked: true,
   assessmentCallDate: true,
+  twelveWeekCallBooked: true,
+  twelveWeekCallScheduledAt: true,
   freeSubmissionUsed: true,
   coachingSubmissionsUsedThisMonth: true,
   coachingSubmissionPeriod: true,
@@ -35,6 +37,8 @@ type AdminMemberListRecord = {
   signupDate: Date;
   assessmentCallBooked: boolean;
   assessmentCallDate: Date | null;
+  twelveWeekCallBooked: boolean;
+  twelveWeekCallScheduledAt: Date | null;
   freeSubmissionUsed: boolean;
   coachingSubmissionsUsedThisMonth: number;
   coachingSubmissionPeriod: string | null;
@@ -78,6 +82,8 @@ export function serializeAdminMemberSummary(user: AdminMemberListRecord) {
     submissionCount,
     assessmentCallBooked: user.assessmentCallBooked,
     assessmentCallDate: user.assessmentCallDate?.toISOString() ?? null,
+    twelveWeekCallBooked: user.twelveWeekCallBooked,
+    twelveWeekCallScheduledAt: user.twelveWeekCallScheduledAt?.toISOString() ?? null,
     monthlySubmissionsRemaining:
       user.membershipTier === "MEMORABLE" || user.membershipTier === "ELITE"
         ? availability.remaining
@@ -117,6 +123,8 @@ export const adminMemberDetailSelect = {
   signupDate: true,
   assessmentCallBooked: true,
   assessmentCallDate: true,
+  twelveWeekCallBooked: true,
+  twelveWeekCallScheduledAt: true,
   adminNotes: true,
   freeSubmissionUsed: true,
   coachingSubmissionsUsedThisMonth: true,
@@ -194,6 +202,8 @@ type AdminMemberDetailRecord = {
   signupDate: Date;
   assessmentCallBooked: boolean;
   assessmentCallDate: Date | null;
+  twelveWeekCallBooked: boolean;
+  twelveWeekCallScheduledAt: Date | null;
   adminNotes: string | null;
   freeSubmissionUsed: boolean;
   coachingSubmissionsUsedThisMonth: number;

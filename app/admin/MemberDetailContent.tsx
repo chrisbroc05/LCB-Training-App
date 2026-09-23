@@ -18,6 +18,8 @@ export type MemberDetail = {
   submissionCount: number;
   assessmentCallBooked: boolean;
   assessmentCallDate: string | null;
+  twelveWeekCallBooked: boolean;
+  twelveWeekCallScheduledAt: string | null;
   monthlySubmissionsRemaining: number | null;
   adminNotes: string | null;
   hasStripeSubscription: boolean;
@@ -121,6 +123,7 @@ type MemberDetailContentProps = {
   onSaveNotes: () => void;
   onSavePlaybookNotes: () => void;
   onSaveCall: () => void;
+  onClearCall: () => void;
   onOpenCallEditForm: () => void;
   onCancelCallForm: () => void;
 };
@@ -155,9 +158,18 @@ export default function MemberDetailContent({
   onSaveNotes,
   onSavePlaybookNotes,
   onSaveCall,
+  onClearCall,
   onOpenCallEditForm,
   onCancelCallForm,
 }: MemberDetailContentProps) {
+  const isTwelveWeekMember = detail.membershipTier === "TWELVE_WEEK";
+  const callBooked = isTwelveWeekMember
+    ? detail.twelveWeekCallBooked
+    : detail.assessmentCallBooked;
+  const callScheduledAt = isTwelveWeekMember
+    ? detail.twelveWeekCallScheduledAt
+    : detail.assessmentCallDate;
+  const callSectionTitle = isTwelveWeekMember ? "Scheduled Check-In Call" : "Assessment Call";
   return (
     <div className="space-y-5">
       <div>
@@ -183,14 +195,16 @@ export default function MemberDetailContent({
           <span className="font-semibold text-zinc-100">Submission count:</span>{" "}
           {detail.submissionCount}
         </p>
-        <p className="mt-2">
-          <span className="font-semibold text-zinc-100">Call status:</span>{" "}
-          {detail.assessmentCallBooked && detail.assessmentCallDate ? (
-            <>Booked - {formatAssessmentCallDateTime(new Date(detail.assessmentCallDate))}</>
-          ) : (
-            "Not Booked"
-          )}
-        </p>
+        {(detail.membershipTier === "FREE" || isTwelveWeekMember) && (
+          <p className="mt-2">
+            <span className="font-semibold text-zinc-100">Call status:</span>{" "}
+            {callBooked && callScheduledAt ? (
+              <>Booked - {formatAssessmentCallDateTime(new Date(callScheduledAt))}</>
+            ) : (
+              "Not Booked"
+            )}
+          </p>
+        )}
         {detail.monthlySubmissionsRemaining !== null ? (
           <p className="mt-2">
             <span className="font-semibold text-zinc-100">Monthly submissions remaining:</span>{" "}
@@ -206,17 +220,29 @@ export default function MemberDetailContent({
 
       <MemberProfileCard profile={detail.memberProfile} />
 
-      {detail.membershipTier === "FREE" ? (
+      {detail.membershipTier === "FREE" || isTwelveWeekMember ? (
         <div className="rounded-xl border border-[#2b3650] bg-[#0b1324]/70 p-4">
-          <p className="text-sm font-semibold text-zinc-100">Assessment Call</p>
+          <p className="text-sm font-semibold text-zinc-100">{callSectionTitle}</p>
           {!showCallForm ? (
-            <button
-              type="button"
-              onClick={onOpenCallEditForm}
-              className="mt-3 inline-flex rounded-full bg-[#22c55e] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[#35db72]"
-            >
-              {detail.assessmentCallBooked ? "Edit Call Booking" : "Mark Call Booked"}
-            </button>
+            <div className="mt-3 flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={onOpenCallEditForm}
+                className="inline-flex rounded-full bg-[#22c55e] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[#35db72]"
+              >
+                {callBooked ? "Edit Call Booking" : "Mark Call Booked"}
+              </button>
+              {callBooked ? (
+                <button
+                  type="button"
+                  onClick={onClearCall}
+                  disabled={isSavingCall}
+                  className="inline-flex rounded-full border border-[#2b3650] bg-black/40 px-4 py-2 text-sm font-semibold text-zinc-200 transition hover:border-[#7f9434] hover:text-[#98b144] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Clear Call
+                </button>
+              ) : null}
+            </div>
           ) : (
             <div className="mt-4 space-y-4">
               <p className="text-xs text-zinc-400">

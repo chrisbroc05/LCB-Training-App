@@ -46,7 +46,7 @@ export function MobileAppProvider({
   );
 
   const defaultMessage = hasBasicAccess
-    ? "Upgrade to Memorable or Elite for personal coaching from Coach Broc."
+    ? "Join the 12-Week Coaching Program for personal coaching from Coach Broc."
     : `Unlock ${PLAYBOOK_NAME}, the drill library, and training resources with a Basic membership.`;
 
   return (

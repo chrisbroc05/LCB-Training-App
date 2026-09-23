@@ -1,10 +1,9 @@
 import Link from "next/link";
 import FreeMemberWhileYouWaitCards from "@/app/components/FreeMemberWhileYouWaitCards";
-import { memorableUpgradePitch } from "@/lib/membership";
 import CoachingSubmissionQuota from "@/app/CoachingSubmissionQuota";
 import type { CoachingSubmissionAvailability } from "@/lib/coaching-submissions";
 import { formatAssessmentCallDateTime } from "@/lib/assessment-call";
-import type { DatabaseTier } from "@/lib/membership";
+import { canAccessCoachingNav, type DatabaseTier } from "@/lib/membership";
 
 type DashboardCoachingCardProps = {
   membershipTier: DatabaseTier;
@@ -21,7 +20,7 @@ export default function DashboardCoachingCard({
   assessmentCallBooked,
   assessmentCallDate,
 }: DashboardCoachingCardProps) {
-  if (membershipTier === "MEMORABLE" || membershipTier === "ELITE") {
+  if (canAccessCoachingNav(membershipTier) && membershipTier !== "FREE") {
     return (
       <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
         <h2 className="text-lg font-semibold text-zinc-100">Coaching Submissions</h2>
@@ -42,12 +41,10 @@ export default function DashboardCoachingCard({
           </Link>
         ) : (
           <Link
-            href={membershipTier === "MEMORABLE" ? "/upgrade" : "/settings"}
+            href="/settings"
             className="mt-4 inline-flex rounded-full border border-[#2b3650] bg-black/40 px-4 py-2 text-sm font-semibold text-zinc-300 transition hover:border-[#7f9434] hover:text-[#98b144]"
           >
-            {membershipTier === "MEMORABLE"
-              ? "Upgrade for more submissions"
-              : "View membership details"}
+            View membership details
           </Link>
         )}
       </article>
@@ -101,8 +98,8 @@ export default function DashboardCoachingCard({
                 Your submission has been sent. Coach Broc will be in touch within 48 hours.
               </p>
               <p className="mt-3 text-sm text-zinc-300">
-                Want unlimited coaching submissions and personal feedback every month? Upgrade to
-                Memorable.
+                Want unlimited coaching submissions and personal feedback? Join the 12-Week Coaching
+                Program.
               </p>
               <div className="mt-6 space-y-4">
                 <p className="text-sm font-medium text-zinc-200">
@@ -165,13 +162,14 @@ export default function DashboardCoachingCard({
     <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
       <h2 className="text-lg font-semibold text-zinc-100">Coaching Submissions</h2>
       <p className="mt-3 text-sm text-zinc-300">
-        Upgrade to Memorable for {memorableUpgradePitch}
+        Join the 12-Week Coaching Program for unlimited coaching submissions and personal feedback
+        from Coach Broc.
       </p>
       <Link
-        href="/upgrade?reason=memorable-required"
+        href="/program"
         className="mt-4 inline-flex rounded-full bg-[#22c55e] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[#35db72]"
       >
-        Upgrade to Memorable
+        Join the 12-Week Program
       </Link>
     </article>
   );

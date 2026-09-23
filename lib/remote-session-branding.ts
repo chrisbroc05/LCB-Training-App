@@ -2,8 +2,11 @@ export const REMOTE_SESSION_PRICE = 60;
 
 export const REMOTE_SESSION_DURATION = "60 minutes";
 
-export const REMOTE_SESSION_CALENDLY_URL =
-  "https://calendly.com/chrisbroc05/remote-training-session";
+import { getCalendlyBookingUrl } from "@/lib/calendly-booking";
+
+export function getRemoteSessionCalendlyUrl() {
+  return getCalendlyBookingUrl();
+}
 
 export const heroOfferCardClassName =
   "flex h-full flex-col rounded-2xl border border-[#52B788] bg-[#0A1628] p-6 shadow-lg shadow-black/40 sm:p-7";

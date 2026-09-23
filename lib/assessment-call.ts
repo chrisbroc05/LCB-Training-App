@@ -71,6 +71,17 @@ function zonedLocalTimeToUtc(
   return new Date(utcMillis);
 }
 
+export function formatScheduledCallDateTime(date: Date) {
+  return new Intl.DateTimeFormat("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: ASSESSMENT_CALL_TIMEZONE,
+  }).format(date);
+}
+
 export function formatAssessmentCallDateTime(date: Date) {
   const formatted = new Intl.DateTimeFormat("en-US", {
     weekday: "long",

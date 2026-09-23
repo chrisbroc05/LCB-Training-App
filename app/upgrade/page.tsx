@@ -1,5 +1,6 @@
+import Link from "next/link";
 import UpgradePricingSection from "@/app/upgrade/UpgradePricingSection";
-import { eliteUpgradePitch, membershipTiers, memorableUpgradePitch } from "@/lib/membership";
+import { membershipTiers } from "@/lib/membership";
 
 const freeTier = membershipTiers.find((tier) => tier.key === "free")!;
 
@@ -16,11 +17,11 @@ export default async function UpgradePage({ searchParams }: UpgradePageProps) {
       <section className="rounded-3xl border border-[#18243a] bg-[#0b1324]/80 p-5 sm:p-8">
         <h1 className="text-2xl font-semibold leading-tight text-zinc-100 sm:text-3xl">Keep Training Momentum</h1>
         <p className="mt-2 text-zinc-300">
-          Upgrade to unlock more support and continue your development with LCB Training.
+          Join the 12-Week Coaching Program to unlock full coaching support and training resources.
         </p>
         {reason === "free-submission-used" && (
           <p className="mt-4 rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-100">
-            Your one free submission has been used. Choose Basic, Memorable, or Elite below to continue.
+            Your one free submission has been used. Join the 12-Week Coaching Program to continue.
           </p>
         )}
         {reason === "basic-required" && (
@@ -32,28 +33,24 @@ export default async function UpgradePage({ searchParams }: UpgradePageProps) {
         {reason === "playbook" && (
           <p className="mt-4 rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-100">
             Unlock The Next Level Playbook and all four chapters with a one-time Basic
-            membership ($59).
+            membership ($59), or get full Playbook access with the 12-Week Coaching Program.
           </p>
         )}
-        {(reason === "memorable-required" || reason === "pro-required") && (
+        {(reason === "memorable-required" ||
+          reason === "pro-required" ||
+          reason === "elite-required") && (
           <p className="mt-4 rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-100">
-            Memorable or Elite membership is required for coaching submissions and accountability
-            check-ins with Coach Broc.
-          </p>
-        )}
-        {(reason === "elite-required") && (
-          <p className="mt-4 rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-100">
-            Elite membership is required for the College Recruiting Guide and priority coaching support.
+            The 12-Week Coaching Program includes coaching submissions, accountability check-ins,
+            and personal feedback from Coach Broc.
           </p>
         )}
         <p className="mt-4 text-sm text-zinc-300">
           <span className="font-semibold text-[#9df3bd]">Free</span> includes a Player Assessment
           Call, one coaching submission with personal feedback, and no credit card required.{" "}
           <span className="font-semibold text-[#9df3bd]">Basic</span> is a $59 one-time purchase with
-          lifetime access to the full content library, drill library, workout programs, and bonus
-          resources. <span className="font-semibold text-[#9df3bd]">Memorable</span> includes{" "}
-          {memorableUpgradePitch}{" "}
-          <span className="font-semibold text-[#9df3bd]">Elite</span> includes {eliteUpgradePitch}
+          lifetime access to the full content library. The{" "}
+          <span className="font-semibold text-[#9df3bd]">12-Week Coaching Program</span> includes
+          unlimited submissions, full Playbook access, workout programs, and weekly check-in calls.
         </p>
       </section>
 
@@ -72,6 +69,27 @@ export default async function UpgradePage({ searchParams }: UpgradePageProps) {
       </section>
 
       <UpgradePricingSection />
+
+      <section className="mt-8 rounded-2xl border border-[#18243a] bg-[#0b1324]/60 p-5 sm:p-6">
+        <h2 className="text-lg font-semibold text-zinc-100">Not ready for the full program?</h2>
+        <p className="mt-2 text-sm text-zinc-400">
+          Start with a standalone Playbook purchase or book a single remote session.
+        </p>
+        <div className="mt-4 flex flex-wrap gap-3">
+          <Link
+            href="/auth?tier=basic"
+            className="inline-flex items-center justify-center rounded-full border border-[#52B788] px-5 py-2.5 text-sm font-semibold text-[#52B788] transition hover:bg-[#52B788]/10"
+          >
+            Unlock The Playbook -- $59
+          </Link>
+          <Link
+            href="/remote"
+            className="inline-flex items-center justify-center rounded-full border border-[#52B788] px-5 py-2.5 text-sm font-semibold text-[#52B788] transition hover:bg-[#52B788]/10"
+          >
+            Book a Remote Session -- $60
+          </Link>
+        </div>
+      </section>
     </div>
   );
 }

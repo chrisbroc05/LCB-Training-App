@@ -46,14 +46,14 @@ export default function MobileCoachingStatusCard({
       <article className="mobile-card">
         <h2 className="text-lg font-semibold text-zinc-100">Coaching Submissions</h2>
         <p className="mt-2 text-sm text-zinc-300">
-          Upgrade to Memorable for monthly coaching submissions and personal feedback from Coach
-          Broc.
+          Join the 12-Week Coaching Program for unlimited coaching submissions and personal feedback
+          from Coach Broc.
         </p>
         <Link
-          href="/upgrade?reason=memorable-required"
+          href="/program"
           className="mt-4 inline-flex h-11 w-full items-center justify-center rounded-full bg-[#22c55e] px-4 text-sm font-semibold text-black"
         >
-          Upgrade to Memorable
+          Join the 12-Week Program
         </Link>
       </article>
     );
@@ -82,13 +82,14 @@ export default function MobileCoachingStatusCard({
       <article className="mobile-card">
         <h2 className="text-lg font-semibold text-zinc-100">Coaching Submissions</h2>
         <p className="mt-2 text-sm text-zinc-300">
-          Your free submission has been used. Upgrade to Memorable for monthly coaching feedback.
+          Your free submission has been used. Join the 12-Week Coaching Program for unlimited
+          coaching feedback.
         </p>
         <Link
-          href="/upgrade?reason=memorable-required"
+          href="/program"
           className="mt-4 inline-flex h-11 w-full items-center justify-center rounded-full border border-[#2b3650] px-4 text-sm font-semibold text-zinc-200"
         >
-          Upgrade to Memorable
+          Join the 12-Week Program
         </Link>
       </article>
     );
@@ -125,16 +126,16 @@ export default function MobileCoachingStatusCard({
       {coachingAvailability ? (
         <p className="mt-2 text-xs text-zinc-400">
           Resets on {coachingAvailability.resetsOnLabel}.
-          {membershipTier === "ELITE"
-            ? ` Rollover credits: ${coachingAvailability.rolloverCredits ?? 0}.`
+          {coachingAvailability.rolloverCredits
+            ? ` Rollover credits: ${coachingAvailability.rolloverCredits}.`
             : null}
         </p>
       ) : null}
       <Link
-        href={membershipTier === "MEMORABLE" ? "/upgrade" : "/settings"}
+        href="/settings"
         className="mt-4 inline-flex h-11 w-full items-center justify-center rounded-full border border-[#2b3650] px-4 text-sm font-semibold text-zinc-200"
       >
-        {membershipTier === "MEMORABLE" ? "Upgrade for more submissions" : "View membership"}
+        View membership
       </Link>
     </article>
   );

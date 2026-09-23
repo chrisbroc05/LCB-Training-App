@@ -170,7 +170,7 @@ export default async function Home() {
                 {TWELVE_WEEK_PROGRAM_NAME}
               </h2>
               <p className="mt-4 text-base leading-relaxed text-zinc-300 sm:text-lg">
-                Twelve weeks of structured coaching with Coach Broc. Train with purpose, get personal
+                12 weeks of structured coaching with Coach Broc. Train with purpose, get personal
                 feedback on every swing and mental game submission, and build habits that last beyond
                 the season.
               </p>
@@ -269,6 +269,45 @@ export default async function Home() {
                 </p>
               </article>
             ))}
+          </div>
+        </section>
+
+        <section className="mt-10 rounded-2xl border border-[#18243a] bg-[#0b1324]/50 px-5 py-8 sm:px-8">
+          <div className="mx-auto max-w-3xl text-center">
+            <h2 className="text-lg font-semibold text-zinc-300 sm:text-xl">
+              Not ready for the full program? Start here.
+            </h2>
+            <p className="mt-2 text-sm text-zinc-500">
+              Two standalone options if you want to begin without the full 12-week commitment.
+            </p>
+          </div>
+          <div className="mx-auto mt-6 grid max-w-3xl gap-4 sm:grid-cols-2">
+            <article className="rounded-xl border border-[#2b3650] bg-[#0A1628]/60 p-5">
+              <h3 className="text-base font-semibold text-zinc-200">The Next Level Playbook</h3>
+              <p className="mt-2 text-sm text-zinc-400">
+                One-time purchase with lifetime access to the full Playbook content library.
+              </p>
+              <p className="mt-3 text-lg font-semibold text-[#98b144]">$59 one-time</p>
+              <Link
+                href="/auth?tier=basic"
+                className="mt-4 inline-flex items-center justify-center rounded-full border border-[#52B788]/60 px-4 py-2 text-sm font-semibold text-[#52B788] transition hover:bg-[#52B788]/10"
+              >
+                Unlock The Playbook
+              </Link>
+            </article>
+            <article className="rounded-xl border border-[#2b3650] bg-[#0A1628]/60 p-5">
+              <h3 className="text-base font-semibold text-zinc-200">Remote Session</h3>
+              <p className="mt-2 text-sm text-zinc-400">
+                Book a single live 60-minute video session with Coach Broc.
+              </p>
+              <p className="mt-3 text-lg font-semibold text-[#98b144]">$60 / session</p>
+              <Link
+                href="/remote"
+                className="mt-4 inline-flex items-center justify-center rounded-full border border-[#52B788]/60 px-4 py-2 text-sm font-semibold text-[#52B788] transition hover:bg-[#52B788]/10"
+              >
+                Book a Remote Session
+              </Link>
+            </article>
           </div>
         </section>
       </div>

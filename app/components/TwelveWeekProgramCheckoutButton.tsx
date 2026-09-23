@@ -17,7 +17,7 @@ const defaultButtonClassName =
 export default function TwelveWeekProgramCheckoutButton({
   isLoggedIn,
   buttonClassName = defaultButtonClassName,
-  label = "Enroll in the Twelve Week Program",
+  label = "Enroll in the 12-Week Program",
   autoStartCheckout = false,
 }: TwelveWeekProgramCheckoutButtonProps) {
   const searchParams = useSearchParams();

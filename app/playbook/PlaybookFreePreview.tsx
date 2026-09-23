@@ -99,7 +99,7 @@ export default function PlaybookFreePreview() {
             href="/program"
             className="inline-flex items-center justify-center rounded-full bg-[#22c55e] px-6 py-3 text-sm font-semibold text-black transition hover:bg-[#35db72]"
           >
-            Explore the Twelve Week Program
+            Explore the 12-Week Program
           </Link>
         </div>
       </section>

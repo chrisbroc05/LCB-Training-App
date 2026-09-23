@@ -10,9 +10,10 @@ import {
   settingsWarningTextClass,
 } from "@/app/settings/settings-styles";
 import {
-  formatDatabaseTierLabel,
+  formatUserFacingMembershipLabel,
   isLifetimeBasicMember,
   isManualMembershipMember,
+  isTwelveWeekProgramMember,
   type DatabaseTier,
 } from "@/lib/membership";
 
@@ -39,6 +40,7 @@ export default function BillingSection({
   const lifetimeBasic = isLifetimeBasicMember(membershipTier, stripeSubscriptionId);
   const manualMembership = isManualMembershipMember(membershipTier, stripeSubscriptionId);
   const isPaidSubscriptionTier = membershipTier === "MEMORABLE" || membershipTier === "ELITE";
+  const isTwelveWeekMember = isTwelveWeekProgramMember(membershipTier);
 
   return (
     <SettingsCard title="Billing">
@@ -50,6 +52,14 @@ export default function BillingSection({
           <Link href="/upgrade" className={`inline-flex ${settingsPrimaryButtonClass}`}>
             Upgrade
           </Link>
+        </div>
+      ) : isTwelveWeekMember ? (
+        <div className="space-y-3">
+          <p className={settingsAccentTextClass}>12-Week Coaching Program</p>
+          <p className={settingsMutedTextClass}>
+            Your program enrollment is a one-time purchase with access to coaching submissions, the
+            Playbook, and weekly check-in calls for the duration of the program.
+          </p>
         </div>
       ) : lifetimeBasic ? (
         <div className="space-y-3">
@@ -64,7 +74,7 @@ export default function BillingSection({
           <p className={settingsBodyTextClass}>
             Current plan:{" "}
             <span className={settingsAccentTextClass}>
-              {formatDatabaseTierLabel(membershipTier)}
+              {formatUserFacingMembershipLabel(membershipTier)}
             </span>
           </p>
           <p className={settingsMutedTextClass}>Billing: Manual</p>
@@ -74,7 +84,7 @@ export default function BillingSection({
           <p className={settingsBodyTextClass}>
             Current plan:{" "}
             <span className={settingsAccentTextClass}>
-              {formatDatabaseTierLabel(membershipTier)}
+              {formatUserFacingMembershipLabel(membershipTier)}
             </span>
           </p>
           <p className={settingsMutedTextClass}>

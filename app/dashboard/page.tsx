@@ -15,16 +15,15 @@ import {
   getCoachingSubmissionAvailability,
 } from "@/lib/coaching-submissions";
 import { getCurrentMonthGoalCheckin } from "@/lib/goal-check-in";
+import { getCalendlyBookingUrl } from "@/lib/calendly-booking";
 import {
   canAccessCoachingNav,
   canAccessDrillLibrary,
   canAccessPlaybook,
   canAccessWorkoutPrograms,
-  databaseTierToKey,
-  formatDatabaseTierLabel,
+  formatUserFacingMembershipLabel,
   isManualMembershipMember,
   isTwelveWeekProgramMember,
-  membershipTiers,
   type DatabaseTier,
 } from "@/lib/membership";
 type DashboardPageProps = {
@@ -156,6 +155,8 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       eliteRolloverCredits: true,
       membershipTier: true,
       twelveWeekProgramEndsAt: true,
+      twelveWeekCallBooked: true,
+      twelveWeekCallScheduledAt: true,
       pendingCheckoutTier: true,
       subscriptionStatus: true,
       subscriptionCurrentPeriodEnd: true,
@@ -180,9 +181,8 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     ? getCoachingSubmissionAvailability(coachingFields)
     : null;
   const freeSubmissionUsed = userRecord.freeSubmissionUsed;
-  const userTier = databaseTierToKey[membershipTier];
-  const currentTier = membershipTiers.find((tier) => tier.key === userTier);
-  const membershipLabel = currentTier?.name ?? formatDatabaseTierLabel(membershipTier);
+  const membershipLabel = formatUserFacingMembershipLabel(membershipTier);
+  const calendlyBookingUrl = getCalendlyBookingUrl();
   const firstName = getFirstName(userRecord.name, session.user.email);
   const quickLinks = getQuickLinks(
     membershipTier,
@@ -299,12 +299,14 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         membershipTier={membershipTier}
         coachingAvailability={coachingAvailability}
         freeSubmissionUsed={freeSubmissionUsed}
-        hasSubscription={hasSubscription}
         currentMonthGoalCheckin={currentMonthGoalCheckin}
         checkoutStatus={checkoutStatus}
         upgradeStatus={upgradeStatus}
         unreadResponse={unreadResponse}
         twelveWeekProgramEndsAt={userRecord.twelveWeekProgramEndsAt}
+        twelveWeekCallBooked={userRecord.twelveWeekCallBooked}
+        twelveWeekCallScheduledAt={userRecord.twelveWeekCallScheduledAt}
+        calendlyBookingUrl={calendlyBookingUrl}
       />
 
       <div className="mx-auto hidden w-full max-w-6xl px-4 py-10 sm:px-6 sm:py-14 md:block md:py-20">
@@ -321,7 +323,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         ) : isTwelveWeekProgramMember(membershipTier) ? (
           <>
             <h1 className="text-2xl font-semibold leading-tight text-zinc-100 sm:text-3xl">
-              Welcome to your Twelve Week Coaching Program
+              Welcome to your 12-Week Coaching Program
             </h1>
             <p className="mt-2 text-zinc-300">
               Your playbook, coaching submissions, and weekly check-ins are ready whenever you are.
@@ -342,7 +344,12 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
       {isTwelveWeekProgramMember(membershipTier) ? (
         <div className="mt-6">
-          <DashboardTwelveWeekProgramCard programEndsAt={userRecord.twelveWeekProgramEndsAt} />
+          <DashboardTwelveWeekProgramCard
+            programEndsAt={userRecord.twelveWeekProgramEndsAt}
+            calendlyBookingUrl={calendlyBookingUrl}
+            callBooked={userRecord.twelveWeekCallBooked}
+            callScheduledAt={userRecord.twelveWeekCallScheduledAt}
+          />
         </div>
       ) : null}
 
@@ -356,7 +363,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
       {(upgradeStatus === "memorable-required" || upgradeStatus === "pro-required") && (
         <section className="mt-6 rounded-xl border border-yellow-500/40 bg-yellow-500/10 px-5 py-4 text-sm text-yellow-100">
-          Memorable or Elite membership is required to access coaching submission forms.
+          The 12-Week Coaching Program is required to access coaching submission forms.
         </section>
       )}
       {upgradeStatus === "free-submission-used" && (
@@ -482,10 +489,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         </section>
       ) : null}
 
-      <DashboardUpgradeSection
-        membershipTier={membershipTier}
-        hasSubscription={hasSubscription}
-      />
+      <DashboardUpgradeSection membershipTier={membershipTier} />
       </div>
     </>
   );

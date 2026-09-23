@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { formatDatabaseTierLabel, type DatabaseTier } from "@/lib/membership";
+import { formatUserFacingMembershipLabel, type DatabaseTier } from "@/lib/membership";
 
 type DashboardMembershipCardProps = {
   membershipTier: DatabaseTier;
@@ -34,7 +34,7 @@ export default function DashboardMembershipCard({
     <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
       <h2 className="text-lg font-semibold text-zinc-100">Membership</h2>
       <div className="mt-3 inline-flex rounded-full border border-[#22c55e]/40 bg-[#22c55e]/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#9df3bd]">
-        {formatDatabaseTierLabel(membershipTier)}
+        {formatUserFacingMembershipLabel(membershipTier)}
       </div>
 
       {isPaidMember ? (

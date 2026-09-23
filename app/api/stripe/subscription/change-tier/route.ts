@@ -55,7 +55,7 @@ export async function POST(request: Request) {
     if (requestedTier === "TWELVE_WEEK") {
       return NextResponse.json(
         {
-          error: "The Twelve Week Coaching Program is a one-time purchase and cannot be selected as a subscription tier.",
+          error: "The 12-Week Coaching Program is a one-time purchase and cannot be selected as a subscription tier.",
         },
         { status: 400 },
       );

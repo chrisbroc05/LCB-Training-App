@@ -35,7 +35,7 @@ export default function CoachingSubmissionQuota({
       <div className="mt-4 rounded-xl border border-[#52B788]/30 bg-[#22c55e]/5 px-4 py-3 text-sm text-zinc-300">
         <p>
           <span className="font-semibold text-[#9df3bd]">Unlimited coaching submissions</span>{" "}
-          included with your Twelve Week Program.
+          included with your 12-Week Program.
         </p>
       </div>
     );

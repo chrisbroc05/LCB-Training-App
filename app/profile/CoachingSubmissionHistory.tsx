@@ -141,14 +141,14 @@ export default function CoachingSubmissionHistory({
                           Ready to keep building with Coach Broc?
                         </p>
                         <p className="mt-2 text-sm leading-relaxed text-zinc-300">
-                          The Twelve Week Coaching Program includes unlimited submissions, full
+                          The 12-Week Coaching Program includes unlimited submissions, full
                           Playbook access, workout programs, and weekly check-in calls.
                         </p>
                         <Link
                           href="/program"
                           className="mt-4 inline-flex items-center justify-center rounded-full bg-[#22c55e] px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-[#35db72]"
                         >
-                          Explore the Twelve Week Program
+                          Explore the 12-Week Program
                         </Link>
                       </div>
                     ) : null}

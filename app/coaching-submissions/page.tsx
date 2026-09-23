@@ -33,8 +33,8 @@ export default async function CoachingSubmissionsPage() {
         title="Coaching Submissions"
         description="Submit swing videos and mindset questions for personalized feedback from Coach Broc."
         message={memorableRequiredMessage}
-        upgradeLabel="Upgrade to Memorable"
-        upgradeHref="/upgrade?reason=memorable-required"
+        upgradeLabel="Join the 12-Week Program"
+        upgradeHref="/program"
       />
     );
   }
@@ -45,8 +45,8 @@ export default async function CoachingSubmissionsPage() {
         title="Coaching Submissions"
         description="Submit swing videos and mindset questions for personalized feedback from Coach Broc."
         message={freeSubmissionUsedUpgradeMessage}
-        upgradeLabel="Upgrade to Memorable or Elite"
-        upgradeHref="/upgrade?reason=free-submission-used"
+        upgradeLabel="Join the 12-Week Program"
+        upgradeHref="/program"
       />
     );
   }
@@ -57,12 +57,8 @@ export default async function CoachingSubmissionsPage() {
         title="Coaching Submissions"
         description="Submit swing videos and mindset questions for personalized feedback from Coach Broc."
         message={`You have used all coaching submissions for this month. Your count resets on ${availability.resetsOnLabel}.`}
-        upgradeLabel={
-          membershipTier === "MEMORABLE" ? "Upgrade to Elite for More" : "View Membership"
-        }
-        upgradeHref={
-          membershipTier === "MEMORABLE" ? "/upgrade?reason=memorable-required" : "/settings"
-        }
+        upgradeLabel="View Membership"
+        upgradeHref="/settings"
       />
     );
   }

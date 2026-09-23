@@ -122,7 +122,7 @@ export default function ProfileGoalCheckinHistory({ hasAccess }: ProfileGoalChec
     return (
       <ProfileCard title="Goal Check-In History">
         <p className={profileMutedTextClass}>
-          Goal check-ins are available on Memorable and Elite memberships.
+          Goal check-ins are available with the 12-Week Coaching Program.
         </p>
       </ProfileCard>
     );

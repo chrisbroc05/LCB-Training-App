@@ -27,8 +27,8 @@ export default async function GoalSettingPage() {
         title="Monthly Goal Check-In"
         description="Submit your monthly goals and get personal feedback from Coach Broc."
         message={goalCheckinRequiredMessage}
-        upgradeLabel="Upgrade to Memorable"
-        upgradeHref="/upgrade?reason=memorable-required"
+        upgradeLabel="Join the 12-Week Program"
+        upgradeHref="/program"
       />
     );
   }

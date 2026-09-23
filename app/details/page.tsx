@@ -51,7 +51,7 @@ const remoteTrainingHighlights = [
   "Membership plans starting at $59 one-time for lifetime library access",
   "Full hitting, fielding, and mindset drill library you can use from your phone",
   "Submit swing or mental game videos for personal feedback from Coach Broc",
-  "Memorable and Elite plans add monthly coaching submissions, goal setting, and accountability",
+  "The 12-Week Coaching Program adds unlimited coaching submissions, goal setting, and accountability",
   "Train on your schedule from anywhere -- no travel required",
 ];
 

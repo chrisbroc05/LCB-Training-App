@@ -1,12 +1,14 @@
-import { REMOTE_SESSION_CALENDLY_URL } from "@/lib/remote-session-branding";
+import { getCalendlyBookingUrl } from "@/lib/calendly-booking";
 
-export const TWELVE_WEEK_PROGRAM_NAME = "Twelve Week Coaching Program";
+export const TWELVE_WEEK_PROGRAM_NAME = "12-Week Coaching Program";
 
 export const TWELVE_WEEK_PROGRAM_PRICE_LABEL = "$599";
 
 export const TWELVE_WEEK_PROGRAM_DURATION_WEEKS = 12;
 
-export const TWELVE_WEEK_PROGRAM_CHECK_IN_CALENDLY_URL = REMOTE_SESSION_CALENDLY_URL;
+export function getTwelveWeekProgramCheckInCalendlyUrl() {
+  return getCalendlyBookingUrl();
+}
 
 export const twelveWeekProgramIncludes = [
   "Full access to The Next Level Playbook content library",

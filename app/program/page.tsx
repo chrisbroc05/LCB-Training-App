@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getServerSession } from "next-auth";
 import ProgramCheckoutSection from "@/app/program/ProgramCheckoutSection";
 import { authOptions } from "@/lib/auth";
+import { FREE_SWING_AUTH_URL } from "@/lib/free-swing-flow";
 import {
   TWELVE_WEEK_PROGRAM_NAME,
   TWELVE_WEEK_PROGRAM_PRICE_LABEL,
@@ -46,7 +47,7 @@ export default async function ProgramPage({ searchParams }: ProgramPageProps) {
           {TWELVE_WEEK_PROGRAM_NAME}
         </h1>
         <p className="mt-4 max-w-2xl text-base leading-relaxed text-zinc-300 sm:text-lg">
-          Twelve weeks of structured coaching with Coach Broc. Everything you need to train with
+          12 weeks of structured coaching with Coach Broc. Everything you need to train with
           purpose, get personal feedback, and build habits that last beyond the season.
         </p>
 
@@ -55,7 +56,7 @@ export default async function ProgramPage({ searchParams }: ProgramPageProps) {
           <p className="mt-2 text-4xl font-bold text-[#98b144] sm:text-5xl">
             {TWELVE_WEEK_PROGRAM_PRICE_LABEL}
           </p>
-          <p className="mt-2 text-sm text-zinc-400">One-time payment for the full twelve weeks</p>
+          <p className="mt-2 text-sm text-zinc-400">One-time payment for the full 12 weeks</p>
         </div>
 
         <div className="mt-8">
@@ -77,18 +78,44 @@ export default async function ProgramPage({ searchParams }: ProgramPageProps) {
             isLoggedIn={Boolean(session?.user)}
             autoStartCheckout={autoStartCheckout}
           />
-          <p className="mt-4 text-sm text-zinc-400">
-            New here? You will create your account first, then continue to secure checkout.
-          </p>
         </div>
       </section>
 
-      <p className="mt-8 text-center text-sm text-zinc-400">
-        Want to try Coach Broc first?{" "}
-        <Link href="/auth?tier=free" className="font-semibold text-[#52B788] hover:text-[#9df3bd]">
-          Submit a free swing review
-        </Link>
-      </p>
+      <section className="mt-10 rounded-2xl border border-[#18243a] bg-[#0b1324]/50 px-5 py-8 sm:px-8">
+        <div className="mx-auto max-w-2xl text-center">
+          <p className="text-sm text-zinc-400">
+            Want to try the program first?{" "}
+            <Link href={FREE_SWING_AUTH_URL} className="font-semibold text-[#52B788] hover:text-[#9df3bd]">
+              Submit a free swing review
+            </Link>
+          </p>
+        </div>
+
+        <div className="mx-auto mt-6 grid max-w-2xl gap-4 sm:grid-cols-2">
+          <article className="rounded-xl border border-[#2b3650] bg-[#0A1628]/60 p-5 text-center">
+            <h3 className="text-base font-semibold text-zinc-200">The Next Level Playbook</h3>
+            <p className="mt-2 text-sm text-zinc-400">One-time purchase with lifetime Playbook access.</p>
+            <p className="mt-3 text-lg font-semibold text-[#98b144]">$59 one-time</p>
+            <Link
+              href="/auth?tier=basic"
+              className="mt-4 inline-flex items-center justify-center rounded-full border border-[#52B788]/60 px-4 py-2 text-sm font-semibold text-[#52B788] transition hover:bg-[#52B788]/10"
+            >
+              Unlock The Playbook
+            </Link>
+          </article>
+          <article className="rounded-xl border border-[#2b3650] bg-[#0A1628]/60 p-5 text-center">
+            <h3 className="text-base font-semibold text-zinc-200">Remote Session</h3>
+            <p className="mt-2 text-sm text-zinc-400">Book a single live 60-minute video session with Coach Broc.</p>
+            <p className="mt-3 text-lg font-semibold text-[#98b144]">$60 / session</p>
+            <Link
+              href="/remote"
+              className="mt-4 inline-flex items-center justify-center rounded-full border border-[#52B788]/60 px-4 py-2 text-sm font-semibold text-[#52B788] transition hover:bg-[#52B788]/10"
+            >
+              Book a Remote Session
+            </Link>
+          </article>
+        </div>
+      </section>
     </div>
   );
 }

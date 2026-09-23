@@ -623,7 +623,7 @@ function getOnboardingWelcomeGuidance(membershipTier: DatabaseTier) {
     case "BASIC":
       return "You have lifetime Basic access to the drill library, all 8 workout programs, and your Pre-Game Warmup, Nutrition, Mental Game Workbook, and Parent Guide PDFs.";
     case "TWELVE_WEEK":
-      return "You have full access to the Twelve Week Coaching Program, including unlimited coaching submissions, the complete Playbook, workout programs, and weekly check-in calls with Coach Broc.";
+      return "You have full access to the 12-Week Coaching Program, including unlimited coaching submissions, the complete Playbook, workout programs, and weekly check-in calls with Coach Broc.";
     case "MEMORABLE":
       return "You have everything in Basic plus 1-on-1 coaching, monthly swing analysis and mental game support submissions, and accountability support.";
     case "ELITE":
@@ -708,8 +708,8 @@ Upgrade in Account settings: ${settingsUrl}`,
       };
     case "TWELVE_WEEK":
       return {
-        text: "You have unlimited coaching submissions during your Twelve Week Coaching Program. Submit a swing video or mindset request this week, explore the Playbook and workout programs, and book your weekly check-in call with Coach Broc from your dashboard.",
-        html: `<p style="margin: 0;">You have <strong>unlimited coaching submissions</strong> during your Twelve Week Coaching Program. Submit a swing video or mindset request this week, explore the Playbook and workout programs, and book your weekly check-in call with Coach Broc from your dashboard.</p>`,
+        text: "You have unlimited coaching submissions during your 12-Week Coaching Program. Submit a swing video or mindset request this week, explore the Playbook and workout programs, and book your weekly check-in call with Coach Broc from your dashboard.",
+        html: `<p style="margin: 0;">You have <strong>unlimited coaching submissions</strong> during your 12-Week Coaching Program. Submit a swing video or mindset request this week, explore the Playbook and workout programs, and book your weekly check-in call with Coach Broc from your dashboard.</p>`,
       };
     case "MEMORABLE":
       return {

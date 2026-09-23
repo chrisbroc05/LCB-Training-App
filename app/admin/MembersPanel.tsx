@@ -282,6 +282,9 @@ export default function MembersPanel() {
     }
   };
 
+  const getCallType = (membershipTier: DatabaseTier) =>
+    membershipTier === "TWELVE_WEEK" ? "twelve_week" : "assessment";
+
   const handleSaveCall = async () => {
     if (!detail) {
       return;
@@ -304,6 +307,7 @@ export default function MembersPanel() {
           userId: detail.id,
           callDate,
           callTime,
+          callType: getCallType(detail.membershipTier),
         }),
       });
 
@@ -328,7 +332,9 @@ export default function MembersPanel() {
         updateMemberInList(detailData.member);
       }
 
-      setCallSuccess("Assessment call saved.");
+      setCallSuccess(
+        detail.membershipTier === "TWELVE_WEEK" ? "Check-in call saved." : "Assessment call saved.",
+      );
       setShowCallForm(false);
       setCallDate("");
       setCallTime("");
@@ -339,15 +345,69 @@ export default function MembersPanel() {
     }
   };
 
+  const handleClearCall = async () => {
+    if (!detail) {
+      return;
+    }
+
+    setIsSavingCall(true);
+    setCallError("");
+    setCallSuccess("");
+
+    try {
+      const response = await fetch("/api/admin/mark-call-booked", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: detail.id,
+          callType: getCallType(detail.membershipTier),
+          clear: true,
+        }),
+      });
+
+      const data = (await response.json().catch(() => ({}))) as { error?: string };
+
+      if (!response.ok) {
+        setCallError(data.error ?? "Unable to clear call booking.");
+        return;
+      }
+
+      const detailResponse = await fetch(`/api/admin/members/${detail.id}`);
+      if (detailResponse.ok) {
+        const detailData = (await detailResponse.json()) as { member: MemberDetail };
+        setDetail(detailData.member);
+        updateMemberInList(detailData.member);
+      }
+
+      setCallSuccess("Call booking cleared.");
+      setShowCallForm(false);
+      setCallDate("");
+      setCallTime("");
+    } catch {
+      setCallError("Unable to clear call booking right now.");
+    } finally {
+      setIsSavingCall(false);
+    }
+  };
+
   const openCallEditForm = () => {
-    if (!detail?.assessmentCallDate) {
+    if (!detail) {
+      return;
+    }
+
+    const scheduledAt =
+      detail.membershipTier === "TWELVE_WEEK"
+        ? detail.twelveWeekCallScheduledAt
+        : detail.assessmentCallDate;
+
+    if (!scheduledAt) {
       setShowCallForm(true);
       setCallDate("");
       setCallTime("");
       return;
     }
 
-    const inputValues = toAssessmentCallInputValues(new Date(detail.assessmentCallDate));
+    const inputValues = toAssessmentCallInputValues(new Date(scheduledAt));
     setShowCallForm(true);
     setCallDate(inputValues.callDate);
     setCallTime(inputValues.callTime);
@@ -389,6 +449,7 @@ export default function MembersPanel() {
           onSaveNotes: handleSaveNotes,
           onSavePlaybookNotes: handleSavePlaybookNotes,
           onSaveCall: handleSaveCall,
+          onClearCall: handleClearCall,
           onOpenCallEditForm: openCallEditForm,
           onCancelCallForm: () => {
             setShowCallForm(false);

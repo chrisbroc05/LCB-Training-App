@@ -75,11 +75,16 @@ export const memorableUpgradePitch =
 export const eliteUpgradePitch =
   "Everything in Memorable plus 4 monthly submissions with rollover, priority 24-hour response, a personalized development plan, group coaching calls, and college recruiting guidance.";
 
-export const memorableRequiredMessage = `Coaching submissions are available on Memorable and Elite memberships. Upgrade to Memorable for ${memorableUpgradePitch}`;
+export const twelveWeekProgramRequiredMessage =
+  "Coaching submissions are available with the 12-Week Coaching Program.";
 
-export const goalCheckinRequiredMessage = `Monthly goal check-ins are available on Memorable and Elite memberships. Upgrade to Memorable for ${memorableUpgradePitch}`;
+export const memorableRequiredMessage = twelveWeekProgramRequiredMessage;
 
-export const freeSubmissionUsedUpgradeMessage = `Your one free submission has already been used. Upgrade to Memorable or Elite for ${memorableUpgradePitch}`;
+export const goalCheckinRequiredMessage =
+  "Monthly goal check-ins are available with the 12-Week Coaching Program.";
+
+export const freeSubmissionUsedUpgradeMessage =
+  "Your one free submission has already been used. Join the 12-Week Coaching Program for unlimited submissions and full coaching support.";
 
 export function getCoachingResponseTimeLabel(tier: DatabaseTier) {
   if (tier === "ELITE") {
@@ -127,10 +132,30 @@ export function formatDatabaseTierLabel(tier: DatabaseTier): string {
   }
 
   if (tier === "TWELVE_WEEK") {
-    return "Twelve Week Program";
+    return "12-Week Program";
   }
 
   return tier.charAt(0) + tier.slice(1).toLowerCase();
+}
+
+export function formatUserFacingMembershipLabel(tier: DatabaseTier): string {
+  if (tier === "TWELVE_WEEK") {
+    return "12-Week Coaching Program";
+  }
+
+  if (tier === "FREE") {
+    return "Free";
+  }
+
+  if (tier === "BASIC") {
+    return "Basic";
+  }
+
+  return "Member";
+}
+
+export function isTwelveWeekProgramEnrolled(tier: DatabaseTier) {
+  return tier === "TWELVE_WEEK";
 }
 
 export function isTwelveWeekProgramMember(tier: DatabaseTier) {
@@ -158,7 +183,7 @@ export function canAccessPlaybook(userTier: DatabaseTier) {
 }
 
 export const playbookLockedMessage =
-  "Unlock The Next Level Playbook and all four chapters with the Twelve Week Coaching Program.";
+  "Unlock The Next Level Playbook and all four chapters with the 12-Week Coaching Program.";
 
 export function canAccessWorkoutPrograms(userTier: DatabaseTier) {
   return hasDatabaseTierAccess(userTier, "basic");

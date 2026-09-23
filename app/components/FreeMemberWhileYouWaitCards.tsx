@@ -31,8 +31,8 @@ export default function FreeMemberWhileYouWaitCards({
       <article className="flex h-full flex-col rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-5 sm:p-6">
         <h3 className="text-lg font-semibold text-zinc-100">Monthly Coaching Memberships</h3>
         <p className="mt-3 flex-1 text-sm leading-relaxed text-zinc-300">
-          Memorable and Elite memberships are still available if you prefer ongoing monthly coaching
-          support instead of the twelve week program.
+          The 12-Week Coaching Program is the best path if you want ongoing coaching support with
+          unlimited submissions and weekly check-in calls.
         </p>
         <Link
           href={coachingHref}

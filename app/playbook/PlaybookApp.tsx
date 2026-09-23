@@ -448,10 +448,10 @@ export default function PlaybookApp() {
               {isSharingAll ? "Sharing..." : "Share Your Progress With Coach Broc"}
             </button>
             <Link
-              href="/upgrade?reason=memorable-required"
+              href="/program"
               className="inline-flex rounded-full border border-[#2b3650] bg-[#0A1628] px-6 py-3 text-sm font-semibold text-zinc-200 transition hover:border-[#52B788] hover:text-[#9df3bd]"
             >
-              Upgrade to Memorable
+              Join the 12-Week Program
             </Link>
           </div>
 

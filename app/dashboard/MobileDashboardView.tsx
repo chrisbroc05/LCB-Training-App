@@ -29,9 +29,11 @@ type MobileDashboardViewProps = {
   } | null;
   checkoutStatus: string | null;
   upgradeStatus: string | null;
-  hasSubscription: boolean;
   unreadResponse: UnreadResponseNotification | null;
   twelveWeekProgramEndsAt: Date | null;
+  twelveWeekCallBooked: boolean;
+  twelveWeekCallScheduledAt: Date | null;
+  calendlyBookingUrl: string;
 };
 
 export default function MobileDashboardView({
@@ -42,14 +44,21 @@ export default function MobileDashboardView({
   currentMonthGoalCheckin,
   checkoutStatus,
   upgradeStatus,
-  hasSubscription,
   unreadResponse,
   twelveWeekProgramEndsAt,
+  twelveWeekCallBooked,
+  twelveWeekCallScheduledAt,
+  calendlyBookingUrl,
 }: MobileDashboardViewProps) {
   return (
     <div className="mobile-card-stack px-4 pb-4 pt-4 md:hidden">
       {isTwelveWeekProgramMember(membershipTier) ? (
-        <DashboardTwelveWeekProgramCard programEndsAt={twelveWeekProgramEndsAt} />
+        <DashboardTwelveWeekProgramCard
+          programEndsAt={twelveWeekProgramEndsAt}
+          calendlyBookingUrl={calendlyBookingUrl}
+          callBooked={twelveWeekCallBooked}
+          callScheduledAt={twelveWeekCallScheduledAt}
+        />
       ) : null}
 
       <MobileCoachingStatusCard
@@ -67,14 +76,14 @@ export default function MobileDashboardView({
 
       {(upgradeStatus === "memorable-required" || upgradeStatus === "pro-required") && (
         <article className="mobile-card border-yellow-500/40 bg-yellow-500/10 text-sm text-yellow-100">
-          Memorable or Elite membership is required to access coaching submission forms.
+          The 12-Week Coaching Program is required to access coaching submission forms.
         </article>
       )}
 
       {upgradeStatus === "free-submission-used" && (
         <article className="mobile-card border-yellow-500/40 bg-yellow-500/10 text-sm text-yellow-100">
-          Your one free submission has already been used. Upgrade to continue with additional
-          submissions and unlocked training content.
+          Your one free submission has already been used. Join the 12-Week Coaching Program to
+          continue with additional submissions and unlocked training content.
         </article>
       )}
 
@@ -91,7 +100,7 @@ export default function MobileDashboardView({
 
       {membershipTier === "FREE" || membershipTier === "BASIC" ? (
         <div className="[&_section]:mt-0 [&_section]:rounded-2xl [&_section]:border [&_section]:border-[#18243a] [&_section]:p-4">
-          <DashboardUpgradeSection membershipTier={membershipTier} hasSubscription={hasSubscription} />
+          <DashboardUpgradeSection membershipTier={membershipTier} />
         </div>
       ) : null}
     </div>

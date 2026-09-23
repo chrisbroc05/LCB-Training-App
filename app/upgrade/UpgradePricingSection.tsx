@@ -1,111 +1,22 @@
-"use client";
-
-import { useState } from "react";
-import BillingFrequencyToggle from "@/app/BillingFrequencyToggle";
-import UpgradeActions from "@/app/upgrade/UpgradeActions";
 import Link from "next/link";
-import AnnualSavingsBadge from "@/app/AnnualSavingsBadge";
-import OneTimePaymentBadge from "@/app/OneTimePaymentBadge";
-import {
-  getAnnualSavings,
-  getTierPricing,
-  isOneTimeTier,
-  usesBillingFrequencyToggle,
-  type BillingFrequency,
-} from "@/lib/billing";
-import {
-  keyToDatabaseTier,
-  paidMembershipTiers,
-  type TierKey,
-} from "@/lib/membership";
-
-const paidTierCardStyles: Record<
-  "memorable" | "elite",
-  {
-    cardClassName: string;
-    textClassName: string;
-    listClassName: string;
-  }
-> = {
-  memorable: {
-    cardClassName: "rounded-2xl border border-[#22c55e]/40 bg-[#22c55e]/10 p-4 sm:p-6",
-    textClassName: "text-zinc-200",
-    listClassName: "text-zinc-100",
-  },
-  elite: {
-    cardClassName: "rounded-2xl border border-[#7f9434]/40 bg-[#7f9434]/10 p-4 sm:p-6",
-    textClassName: "text-zinc-200",
-    listClassName: "text-zinc-100",
-  },
-};
+import { TWELVE_WEEK_PROGRAM_NAME } from "@/lib/twelve-week-program";
 
 export default function UpgradePricingSection() {
-  const [billingFrequency, setBillingFrequency] = useState<BillingFrequency>("monthly");
-
   return (
-    <>
-      <div className="mt-8 flex flex-col items-center gap-2">
-        <BillingFrequencyToggle value={billingFrequency} onChange={setBillingFrequency} />
-        <p className="text-xs text-zinc-400">
-          Monthly and annual pricing applies to Memorable and Elite only.
+    <section className="mt-8">
+      <article className="rounded-2xl border border-[#52B788]/40 bg-[#0b1324]/80 p-4 sm:p-6">
+        <h2 className="text-xl font-semibold text-zinc-100 sm:text-2xl">{TWELVE_WEEK_PROGRAM_NAME}</h2>
+        <p className="mt-3 text-zinc-300">
+          Unlimited submissions, full Playbook access, workout programs, and weekly check-in calls
+          with Coach Broc.
         </p>
-      </div>
-
-      <section className="mt-8 grid gap-4 sm:gap-5 lg:grid-cols-3">
-        <article className="rounded-2xl border border-[#52B788]/40 bg-[#0b1324]/80 p-4 sm:p-6 lg:col-span-3">
-          <h2 className="text-xl font-semibold text-zinc-100 sm:text-2xl">
-            Twelve Week Coaching Program
-          </h2>
-          <p className="mt-3 text-zinc-300">
-            Unlimited submissions, full Playbook access, workout programs, and weekly check-in calls
-            with Coach Broc.
-          </p>
-          <Link
-            href="/program"
-            className="mt-5 inline-flex items-center justify-center rounded-full bg-[#22c55e] px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-[#35db72]"
-          >
-            View Program Details
-          </Link>
-        </article>
-
-        {paidMembershipTiers.filter((tier) => tier.key !== "basic").map((tier) => {
-          const pricing = getTierPricing(tier.key, billingFrequency);
-          const styles =
-            tier.key === "elite" ? paidTierCardStyles.elite : paidTierCardStyles.memorable;
-          const databaseTier = keyToDatabaseTier[tier.key] as "MEMORABLE" | "ELITE";
-          const oneTimeTier = isOneTimeTier(tier.key);
-          const annualSavings =
-            usesBillingFrequencyToggle(tier.key) && billingFrequency === "annual"
-              ? getAnnualSavings(tier.key)
-              : null;
-
-          return (
-            <article key={tier.key} className={styles.cardClassName}>
-              <h2 className="text-xl font-semibold text-zinc-100 sm:text-2xl">{tier.name}</h2>
-              {oneTimeTier ? (
-                <div className="mt-2">
-                  <OneTimePaymentBadge />
-                </div>
-              ) : annualSavings ? (
-                <div className="mt-2">
-                  <AnnualSavingsBadge amount={annualSavings} />
-                </div>
-              ) : null}
-              <p className="mt-2 text-2xl font-bold text-[#98b144]">{pricing.primary}</p>
-              {pricing.secondary ? (
-                <p className="mt-1 text-sm text-zinc-400">{pricing.secondary}</p>
-              ) : null}
-              <p className={`mt-3 ${styles.textClassName}`}>{tier.summary}</p>
-              <ul className={`mt-4 list-disc space-y-2 pl-5 text-sm ${styles.listClassName}`}>
-                {tier.features.map((feature) => (
-                  <li key={feature}>{feature}</li>
-                ))}
-              </ul>
-              <UpgradeActions tier={databaseTier} billingFrequency={billingFrequency} />
-            </article>
-          );
-        })}
-      </section>
-    </>
+        <Link
+          href="/program"
+          className="mt-5 inline-flex items-center justify-center rounded-full bg-[#22c55e] px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-[#35db72]"
+        >
+          View Program Details
+        </Link>
+      </article>
+    </section>
   );
 }
