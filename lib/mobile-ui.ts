@@ -25,6 +25,11 @@ export function getMobileTierBadge(tier: DatabaseTier) {
         label: "Basic",
         className: "mobile-tier-pill-basic",
       };
+    case "TWELVE_WEEK":
+      return {
+        label: "12-Week",
+        className: "mobile-tier-pill-memorable",
+      };
     case "MEMORABLE":
       return {
         label: "Memorable",

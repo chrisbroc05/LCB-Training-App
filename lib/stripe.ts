@@ -54,8 +54,15 @@ export function getSubscriptionPriceId(
     throw new Error("Basic tier uses a one-time payment price ID.");
   }
 
+  if (tier === "TWELVE_WEEK") {
+    throw new Error("Twelve Week tier uses a one-time payment price ID.");
+  }
+
+  const subscriptionTier = tier as SubscriptionDatabaseTier;
   const priceId =
-    billingFrequency === "annual" ? stripeAnnualPriceIds[tier] : stripeMonthlyPriceIds[tier];
+    billingFrequency === "annual"
+      ? stripeAnnualPriceIds[subscriptionTier]
+      : stripeMonthlyPriceIds[subscriptionTier];
   if (!priceId) {
     const suffix = billingFrequency === "annual" ? "_ANNUAL" : "";
     throw new Error(

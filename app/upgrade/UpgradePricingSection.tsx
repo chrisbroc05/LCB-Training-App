@@ -72,7 +72,7 @@ export default function UpgradePricingSection() {
           const pricing = getTierPricing(tier.key, billingFrequency);
           const styles =
             tier.key === "elite" ? paidTierCardStyles.elite : paidTierCardStyles.memorable;
-          const databaseTier = keyToDatabaseTier[tier.key] as "BASIC" | "MEMORABLE" | "ELITE";
+          const databaseTier = keyToDatabaseTier[tier.key] as "MEMORABLE" | "ELITE";
           const oneTimeTier = isOneTimeTier(tier.key);
           const annualSavings =
             usesBillingFrequencyToggle(tier.key) && billingFrequency === "annual"

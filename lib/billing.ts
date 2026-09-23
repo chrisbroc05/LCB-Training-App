@@ -45,7 +45,7 @@ export const tierPricing: Record<TierKey, Record<BillingFrequency, TierPricing>>
 };
 
 export function isOneTimeTier(tier: TierKey) {
-  return tier === "basic";
+  return tier === "basic" || tier === "twelveWeek";
 }
 
 export function usesBillingFrequencyToggle(tier: TierKey) {
@@ -53,7 +53,7 @@ export function usesBillingFrequencyToggle(tier: TierKey) {
 }
 
 export function getTierPricing(tier: TierKey, billingFrequency: BillingFrequency): TierPricing {
-  if (isOneTimeTier(tier)) {
+  if (tier === "basic") {
     return basicOneTimePricing;
   }
 

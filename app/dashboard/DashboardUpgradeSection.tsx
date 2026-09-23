@@ -128,7 +128,7 @@ export default function DashboardUpgradeSection({
             usesBillingFrequencyToggle(tier.key) && billingFrequency === "annual"
               ? getAnnualSavings(tier.key)
               : null;
-          const databaseTier = keyToDatabaseTier[tier.key] as "BASIC" | "MEMORABLE" | "ELITE";
+          const databaseTier = keyToDatabaseTier[tier.key] as "MEMORABLE" | "ELITE";
 
           return (
             <article
