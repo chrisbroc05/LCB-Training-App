@@ -829,7 +829,7 @@ export async function sendOnboardingEmail3(params: {
 
 Time to put your skills to the test!
 
-${weekOneMessage.text}
+${weekOneMessage?.text ?? ""}
 
 -LCB Training`,
     html: buildOnboardingEmailShell({
