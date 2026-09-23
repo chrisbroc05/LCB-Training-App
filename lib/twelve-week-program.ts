@@ -16,7 +16,7 @@ export const twelveWeekProgramIncludes = [
   "Downloadable workout programs and training resources",
   "Weekly check-in calls with Coach Broc",
   "Weekly goal setting and progress check-ins to keep you on track",
-  "Direct access to Coach Broc between sessionsóyour coach in your corner every day, not just on lesson days",
+  "Direct access to Coach Broc between sessions, your coach in your corner every day, not just on lesson days",
 ];
 
 export const twelveWeekProgramLandingHighlights = [
@@ -25,7 +25,7 @@ export const twelveWeekProgramLandingHighlights = [
   "Downloadable workout programs",
   "Weekly check-in calls with Coach Broc",
   "Weekly goal setting and progress check-ins to keep you on track",
-  "Direct access to Coach Broc between sessionsùyour coach in your corner every day, not just on lesson days",
+  "Direct access to Coach Broc between sessions, your coach in your corner every day, not just on lesson days",
 ];
 
 export function getTwelveWeekProgramEndDate(startDate: Date) {
