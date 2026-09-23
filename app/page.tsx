@@ -12,6 +12,7 @@ import PlaybookPurchaseCta from "@/app/components/PlaybookPurchaseCta";
 import RemoteSessionHeroCard from "@/app/components/RemoteSessionHeroCard";
 import { authOptions } from "@/lib/auth";
 import { BRAND_PRIMARY_SLOGAN, BRAND_SECONDARY_TAGLINE } from "@/lib/brand-copy";
+import { toVimeoEmbedUrl } from "@/lib/vimeo";
 import {
   PLAYBOOK_NAME,
   PLAYBOOK_PURCHASE_PRICE_SUBTITLE,
@@ -126,6 +127,9 @@ const physicalTrainingPillars = [
       "Athlete-focused strength programs built to add power, build durability, and keep you healthy all season long.",
   },
 ];
+
+const LANDING_HERO_VIMEO_URL = "https://player.vimeo.com/video/1229592201?h=0359db07df";
+const landingHeroEmbedUrl = toVimeoEmbedUrl(LANDING_HERO_VIMEO_URL);
 
 const mentalEdgePillars = [
   {
@@ -245,6 +249,20 @@ export default async function Home() {
           <p className="mt-5 text-xl font-medium text-[#52B788] sm:text-2xl md:text-3xl">
             {BRAND_SECONDARY_TAGLINE}
           </p>
+
+          {landingHeroEmbedUrl ? (
+            <div className="mx-auto mt-8 w-full max-w-5xl sm:mt-10 md:mt-12">
+              <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-[#2b3650] bg-black shadow-2xl shadow-black/40">
+                <iframe
+                  src={landingHeroEmbedUrl}
+                  title="LCB Training intro video"
+                  className="absolute inset-0 h-full w-full"
+                  allow="fullscreen; picture-in-picture"
+                  allowFullScreen
+                />
+              </div>
+            </div>
+          ) : null}
         </div>
       </section>
 
