@@ -70,7 +70,8 @@ export default function UpgradePricingSection() {
 
         {paidMembershipTiers.filter((tier) => tier.key !== "basic").map((tier) => {
           const pricing = getTierPricing(tier.key, billingFrequency);
-          const styles = paidTierCardStyles[tier.key];
+          const styles =
+            tier.key === "elite" ? paidTierCardStyles.elite : paidTierCardStyles.memorable;
           const databaseTier = keyToDatabaseTier[tier.key] as "BASIC" | "MEMORABLE" | "ELITE";
           const oneTimeTier = isOneTimeTier(tier.key);
           const annualSavings =
