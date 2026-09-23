@@ -764,7 +764,7 @@ export async function sendOnboardingEmail1(params: {
 Welcome to LCB Training!
 
 ${introVideosText}
-${dashboardGuidance}
+${dashboardGuidance ?? ""}
 
 Current membership: ${tierLabel}
 Log in: ${loginUrl}
@@ -835,7 +835,7 @@ ${weekOneMessage?.text ?? ""}
     html: buildOnboardingEmailShell({
       heading: "Time to put your skills to the test!",
       intro: `Hi ${escapeHtml(params.displayName)}, you are one week in.`,
-      bodyHtml: weekOneMessage.html,
+      bodyHtml: weekOneMessage?.html ?? "",
     }),
   });
 }
