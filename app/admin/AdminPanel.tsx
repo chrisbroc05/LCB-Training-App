@@ -84,6 +84,10 @@ function resolveInlineSubmissionVideoUrl(url: string) {
   return url;
 }
 
+function getSubmissionVideoDownloadUrl(videoUrl: string) {
+  return `${videoUrl}${videoUrl.includes("?") ? "&" : "?"}download=1`;
+}
+
 function getResponseVideoDisplayName(url: string | null | undefined) {
   if (!url || !isR2VideoReference(url)) {
     return null;
@@ -577,34 +581,33 @@ export default function AdminPanel() {
               ) : fallbackVideoUrl ? (
                 <div className="mt-4 space-y-3">
                   <div className="overflow-hidden rounded-xl border border-[#2b3650] bg-black">
-                    <div className="border-b border-[#2b3650] px-4 py-2">
-                      <div className="flex flex-wrap gap-3">
+                    <div className="aspect-video w-full">
+                      {canInlineFallbackVideo ? (
+                        <video src={fallbackVideoUrl} controls className="h-full w-full" />
+                      ) : (
+                        <div className="flex h-full items-center justify-center px-4 text-center text-sm text-zinc-400">
+                          Use the button below to download this submission video.
+                        </div>
+                      )}
+                    </div>
+                    <div className="border-t border-[#2b3650] px-4 py-3">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <a
+                          href={getSubmissionVideoDownloadUrl(fallbackVideoUrl)}
+                          download
+                          className="inline-flex items-center justify-center rounded-full bg-[#22c55e] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[#35db72]"
+                        >
+                          Download Video
+                        </a>
                         <a
                           href={fallbackVideoUrl}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-xs text-[#8fd7ff] underline"
                         >
-                          Open submission video link
-                        </a>
-                        <a
-                          href={`${fallbackVideoUrl}${fallbackVideoUrl.includes("?") ? "&" : "?"}download=1`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-[#8fd7ff] underline"
-                        >
-                          Download video
+                          Open in new tab
                         </a>
                       </div>
-                    </div>
-                    <div className="aspect-video w-full">
-                      {canInlineFallbackVideo ? (
-                        <video src={fallbackVideoUrl} controls className="h-full w-full" />
-                      ) : (
-                        <div className="flex h-full items-center justify-center px-4 text-center text-sm text-zinc-400">
-                          Use the links above to open or download this submission video.
-                        </div>
-                      )}
                     </div>
                   </div>
                 </div>

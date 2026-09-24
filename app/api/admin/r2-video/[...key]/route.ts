@@ -11,7 +11,7 @@ type RouteContext = {
   }>;
 };
 
-export async function GET(_request: Request, context: RouteContext) {
+export async function GET(request: Request, context: RouteContext) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.email || !isAdminEmail(session.user.email)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -27,6 +27,9 @@ export async function GET(_request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Invalid video key." }, { status: 400 });
   }
 
+  const asDownload = new URL(request.url).searchParams.get("download") === "1";
+  const filename = key.split("/").pop() ?? "submission-video.mp4";
+
   try {
     const { body, contentType, contentLength } = await getR2ObjectStream(key);
     const webStream = Readable.toWeb(body as Readable);
@@ -37,7 +40,7 @@ export async function GET(_request: Request, context: RouteContext) {
         "Content-Type": contentType,
         ...(contentLength ? { "Content-Length": contentLength.toString() } : {}),
         "Cache-Control": "private, max-age=0, no-store",
-        "Content-Disposition": `inline; filename="${key.split("/").pop() ?? "submission-video.mp4"}"`,
+        "Content-Disposition": `${asDownload ? "attachment" : "inline"}; filename="${filename}"`,
       },
     });
   } catch {

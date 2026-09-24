@@ -41,6 +41,13 @@ const withPWA = require("next-pwa")({
 });
 
 const nextConfig: NextConfig = {
+  experimental: {
+    proxyClientMaxBodySize: "500mb",
+    middlewareClientMaxBodySize: "500mb",
+    serverActions: {
+      bodySizeLimit: "500mb",
+    },
+  },
   async redirects() {
     return [
       {

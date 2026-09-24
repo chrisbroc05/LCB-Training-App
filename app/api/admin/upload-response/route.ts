@@ -4,7 +4,10 @@ import { authOptions } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
 import { formatR2VideoReference, uploadResponseVideoToR2 } from "@/lib/r2";
-import { MAX_SUBMISSION_VIDEO_BYTES } from "@/lib/submission-videos";
+import {
+  MAX_SUBMISSION_VIDEO_BYTES,
+  SUBMISSION_VIDEO_TOO_LARGE_MESSAGE,
+} from "@/lib/submission-videos";
 
 const MAX_RESPONSE_UPLOAD_BYTES = MAX_SUBMISSION_VIDEO_BYTES;
 
@@ -26,8 +29,7 @@ export async function POST(request: Request) {
   if (uploadedVideo.size > MAX_RESPONSE_UPLOAD_BYTES) {
     return NextResponse.json(
       {
-        error:
-          "Your video is too large. Please trim or compress it to under 100MB and try again.",
+        error: SUBMISSION_VIDEO_TOO_LARGE_MESSAGE,
       },
       { status: 413 },
     );

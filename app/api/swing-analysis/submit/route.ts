@@ -11,12 +11,22 @@ import { prisma } from "@/lib/prisma";
 import { sendSubmissionReceivedEmail, sendSwingSubmissionNotification } from "@/lib/notifications";
 import {
   formatR2VideoReference,
-  uploadSubmissionVideoToR2,
+  headR2Object,
+  isUserSubmissionVideoKey,
 } from "@/lib/r2";
-import { MAX_SUBMISSION_VIDEO_BYTES } from "@/lib/submission-videos";
 
 const DB_TIMEOUT_MS = 15000;
 const EMAIL_TIMEOUT_MS = 15000;
+
+type SwingSubmitRequestBody = {
+  playerName?: string;
+  pitchType?: string;
+  handedness?: string;
+  notes?: string;
+  responsePreference?: string;
+  videoUrl?: string;
+  r2Key?: string;
+};
 
 async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
   return await Promise.race([
@@ -25,6 +35,24 @@ async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: str
       setTimeout(() => reject(new Error(`${label} timed out after ${timeoutMs}ms`)), timeoutMs);
     }),
   ]);
+}
+
+function parseSubmitRequestBody(body: unknown): SwingSubmitRequestBody | null {
+  if (!body || typeof body !== "object") {
+    return null;
+  }
+
+  const record = body as Record<string, unknown>;
+  return {
+    playerName: typeof record.playerName === "string" ? record.playerName : undefined,
+    pitchType: typeof record.pitchType === "string" ? record.pitchType : undefined,
+    handedness: typeof record.handedness === "string" ? record.handedness : undefined,
+    notes: typeof record.notes === "string" ? record.notes : undefined,
+    responsePreference:
+      typeof record.responsePreference === "string" ? record.responsePreference : undefined,
+    videoUrl: typeof record.videoUrl === "string" ? record.videoUrl : undefined,
+    r2Key: typeof record.r2Key === "string" ? record.r2Key : undefined,
+  };
 }
 
 export async function POST(request: Request) {
@@ -42,46 +70,43 @@ export async function POST(request: Request) {
     const userEmail = session.user.email;
     console.log(`[swing-submit:${requestId}] Session validated for ${userEmail}`);
 
-    console.log(`[swing-submit:${requestId}] Parsing multipart form data`);
-    const formData = await request.formData();
-    const playerName = String(formData.get("playerName") ?? "").trim();
-    const pitchType = String(formData.get("pitchType") ?? "").trim();
-    const handedness = String(formData.get("handedness") ?? "").trim();
-    const notes = String(formData.get("notes") ?? "").trim();
-    const responsePreference = String(formData.get("responsePreference") ?? "")
-      .trim()
-      .toUpperCase();
-    const videoUrl = String(formData.get("videoUrl") ?? "").trim();
-    const uploadedVideo = formData.get("video");
+    let body: SwingSubmitRequestBody | null = null;
+    try {
+      body = parseSubmitRequestBody(await request.json());
+    } catch {
+      return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
+    }
+
+    const playerName = body?.playerName?.trim() ?? "";
+    const pitchType = body?.pitchType?.trim() ?? "";
+    const handedness = body?.handedness?.trim() ?? "";
+    const notes = body?.notes?.trim() ?? "";
+    const responsePreference = body?.responsePreference?.trim().toUpperCase() ?? "";
+    const videoUrl = body?.videoUrl?.trim() ?? "";
+    const r2Key = body?.r2Key?.trim() ?? "";
+
     let submittedVideo = videoUrl;
 
-    if (uploadedVideo instanceof File && uploadedVideo.size > 0) {
-      console.log(
-        `[swing-submit:${requestId}] Uploaded file detected (${uploadedVideo.name}, ${uploadedVideo.size} bytes)`,
-      );
-      if (uploadedVideo.size > MAX_SUBMISSION_VIDEO_BYTES) {
-        console.warn(
-          `[swing-submit:${requestId}] File too large (${uploadedVideo.size} > ${MAX_SUBMISSION_VIDEO_BYTES})`,
-        );
+    if (r2Key) {
+      if (!isUserSubmissionVideoKey(r2Key, userId)) {
+        console.warn(`[swing-submit:${requestId}] Invalid R2 key for user (${r2Key})`);
+        return NextResponse.json({ error: "Invalid uploaded video reference." }, { status: 400 });
+      }
+
+      try {
+        await headR2Object(r2Key);
+      } catch {
+        console.warn(`[swing-submit:${requestId}] Uploaded video not found in R2 (${r2Key})`);
         return NextResponse.json(
-          {
-            error:
-              "Your video is too large. Please trim or compress it to under 100MB and try again.",
-          },
-          { status: 413 },
+          { error: "Uploaded video was not found. Please upload your video again." },
+          { status: 400 },
         );
       }
 
-      const r2Key = await withTimeout(
-        uploadSubmissionVideoToR2(uploadedVideo),
-        EMAIL_TIMEOUT_MS,
-        "Video upload to R2",
-      );
-
       submittedVideo = formatR2VideoReference(r2Key);
-      console.log(`[swing-submit:${requestId}] Uploaded video to R2 (${r2Key})`);
-    } else {
-      console.log(`[swing-submit:${requestId}] No uploaded file, using provided video URL`);
+      console.log(`[swing-submit:${requestId}] Using presigned R2 upload (${r2Key})`);
+    } else if (videoUrl) {
+      console.log(`[swing-submit:${requestId}] Using provided video URL`);
     }
 
     if (!playerName || !pitchType || !handedness || !notes || !submittedVideo) {

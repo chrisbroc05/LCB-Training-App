@@ -1,5 +1,13 @@
+import { randomUUID } from "crypto";
 import { Readable } from "stream";
-import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import {
+  GetObjectCommand,
+  HeadObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { SUBMISSION_VIDEO_PRESIGNED_UPLOAD_EXPIRY_SECONDS } from "@/lib/submission-video-limits";
 
 export const R2_VIDEO_PREFIX = "r2:";
 
@@ -65,6 +73,62 @@ export function getStreamableR2VideoUrl(key: string) {
 
 export function isValidR2ObjectKey(key: string) {
   return (key.startsWith("submissions/") || key.startsWith("responses/")) && !key.includes("..");
+}
+
+export function buildUserSubmissionVideoKey(userId: string, fileName: string) {
+  return `submissions/${userId}/${Date.now()}-${randomUUID()}-${sanitizeFileName(fileName)}`;
+}
+
+export function isUserSubmissionVideoKey(key: string, userId: string) {
+  const prefix = `submissions/${userId}/`;
+  return key.startsWith(prefix) && isValidR2ObjectKey(key);
+}
+
+export function isAllowedSubmissionVideoContentType(contentType: string) {
+  return contentType.trim().toLowerCase().startsWith("video/");
+}
+
+export async function createPresignedSubmissionVideoUploadUrl(params: {
+  userId: string;
+  fileName: string;
+  contentType: string;
+  fileSize: number;
+}) {
+  const { bucketName } = getR2Config();
+  const key = buildUserSubmissionVideoKey(params.userId, params.fileName);
+  const contentType = params.contentType.trim() || "video/mp4";
+
+  const command = new PutObjectCommand({
+    Bucket: bucketName,
+    Key: key,
+    ContentType: contentType,
+    ContentLength: params.fileSize,
+    Metadata: {
+      userId: params.userId,
+    },
+  });
+
+  const uploadUrl = await getSignedUrl(getR2Client(), command, {
+    expiresIn: SUBMISSION_VIDEO_PRESIGNED_UPLOAD_EXPIRY_SECONDS,
+  });
+
+  return {
+    uploadUrl,
+    r2Key: key,
+    contentType,
+    expiresInSeconds: SUBMISSION_VIDEO_PRESIGNED_UPLOAD_EXPIRY_SECONDS,
+  };
+}
+
+export async function headR2Object(key: string) {
+  const { bucketName } = getR2Config();
+
+  return getR2Client().send(
+    new HeadObjectCommand({
+      Bucket: bucketName,
+      Key: key,
+    }),
+  );
 }
 
 export function isR2VideoReference(value: string) {

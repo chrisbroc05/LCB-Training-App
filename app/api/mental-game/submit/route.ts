@@ -13,6 +13,7 @@ import {
   createTemporaryVideoDownloadLink,
   EMAIL_VIDEO_ATTACHMENT_MAX_BYTES,
   MAX_SUBMISSION_VIDEO_BYTES,
+  SUBMISSION_VIDEO_TOO_LARGE_MESSAGE,
   persistSubmissionVideoFile,
 } from "@/lib/submission-videos";
 
@@ -105,7 +106,7 @@ export async function POST(request: Request) {
       );
       if (uploadedVideo.size > MAX_SUBMISSION_VIDEO_BYTES) {
         return NextResponse.json(
-          { error: "Uploaded video is too large. Please upload a file under 100MB." },
+          { error: SUBMISSION_VIDEO_TOO_LARGE_MESSAGE },
           { status: 413 },
         );
       }

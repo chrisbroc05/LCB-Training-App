@@ -2,7 +2,15 @@ import { createHmac, randomUUID, timingSafeEqual } from "crypto";
 import { mkdir, readFile, writeFile } from "fs/promises";
 import path from "path";
 
-export const MAX_SUBMISSION_VIDEO_BYTES = 100 * 1024 * 1024; // 100MB
+export {
+  MAX_SUBMISSION_VIDEO_BYTES,
+  SUBMISSION_VIDEO_TOO_LARGE_MESSAGE,
+  SUBMISSION_VIDEO_MAX_SIZE_LABEL,
+  SUBMISSION_VIDEO_CLIENT_UPLOAD_TIMEOUT_MS,
+  SUBMISSION_VIDEO_R2_UPLOAD_TIMEOUT_MS,
+  SUBMISSION_VIDEO_PRESIGNED_UPLOAD_EXPIRY_SECONDS,
+  SUBMISSION_VIDEO_UPLOAD_FAILED_MESSAGE,
+} from "@/lib/submission-video-limits";
 export const EMAIL_VIDEO_ATTACHMENT_MAX_BYTES = 10 * 1024 * 1024; // 10MB
 export const TEMP_VIDEO_LINK_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 

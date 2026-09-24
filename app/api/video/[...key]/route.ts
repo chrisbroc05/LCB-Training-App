@@ -35,7 +35,11 @@ async function userCanAccessR2Video(userId: string, reference: string) {
   return swingSubmitted + swingResponse + mentalSubmitted + mentalResponse > 0;
 }
 
-export async function GET(_request: Request, context: RouteContext) {
+function getVideoFilename(key: string) {
+  return key.split("/").pop() ?? "video.mp4";
+}
+
+export async function GET(request: Request, context: RouteContext) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id || !session.user.email) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -57,6 +61,9 @@ export async function GET(_request: Request, context: RouteContext) {
     }
   }
 
+  const asDownload = new URL(request.url).searchParams.get("download") === "1";
+  const filename = getVideoFilename(key);
+
   try {
     const { body, contentType, contentLength } = await getR2ObjectStream(key);
     const webStream = Readable.toWeb(body as Readable);
@@ -67,7 +74,7 @@ export async function GET(_request: Request, context: RouteContext) {
         "Content-Type": contentType,
         ...(contentLength ? { "Content-Length": contentLength.toString() } : {}),
         "Cache-Control": "private, max-age=3600",
-        "Content-Disposition": `inline; filename="${key.split("/").pop() ?? "video.mp4"}"`,
+        "Content-Disposition": `${asDownload ? "attachment" : "inline"}; filename="${filename}"`,
       },
     });
   } catch {

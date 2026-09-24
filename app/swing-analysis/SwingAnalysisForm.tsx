@@ -2,10 +2,17 @@
 
 import CoachingSubmissionConfirmation from "@/app/components/CoachingSubmissionConfirmation";
 import ResponsiveOverlay from "@/app/components/mobile/ResponsiveOverlay";
+import {
+  MAX_SUBMISSION_VIDEO_BYTES,
+  SUBMISSION_VIDEO_MAX_SIZE_LABEL,
+  SUBMISSION_VIDEO_TOO_LARGE_MESSAGE,
+  SUBMISSION_VIDEO_UPLOAD_FAILED_MESSAGE,
+} from "@/lib/submission-video-limits";
+import {
+  uploadVideoToPresignedUrl,
+  type PresignedSwingUploadResponse,
+} from "@/lib/swing-submission-upload-client";
 import { useState } from "react";
-
-const SUBMISSION_TIMEOUT_MS = 90000;
-const MAX_VIDEO_UPLOAD_BYTES = 100 * 1024 * 1024;
 
 type SwingAnalysisFormProps = {
   isFreeMember?: boolean;
@@ -23,13 +30,27 @@ export default function SwingAnalysisForm({ isFreeMember = false }: SwingAnalysi
     "VIDEO_RESPONSE",
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [submitError, setSubmitError] = useState("");
   const [submittedNotes, setSubmittedNotes] = useState("");
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
 
+  const submitButtonLabel = (() => {
+    if (!isSubmitting) {
+      return "Submit Coaching Submission";
+    }
+
+    if (uploadProgress !== null && uploadProgress < 100) {
+      return `Uploading video... ${uploadProgress}%`;
+    }
+
+    return "Submitting...";
+  })();
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setSubmitError("");
+    setUploadProgress(null);
 
     if (!playerName.trim()) {
       setSubmitError("Please provide the player name.");
@@ -41,46 +62,71 @@ export default function SwingAnalysisForm({ isFreeMember = false }: SwingAnalysi
       return;
     }
 
-    if (videoFile && videoFile.size > MAX_VIDEO_UPLOAD_BYTES) {
-      setSubmitError(
-        "Your video is too large. Please trim or compress it to under 100MB and try again.",
-      );
+    if (videoFile && videoFile.size > MAX_SUBMISSION_VIDEO_BYTES) {
+      setSubmitError(SUBMISSION_VIDEO_TOO_LARGE_MESSAGE);
       return;
     }
 
     setIsSubmitting(true);
     const trimmedNotes = notes.trim();
 
-    const formData = new FormData();
-    formData.set("playerName", playerName.trim());
-    formData.set("videoFileName", videoFileName);
-    formData.set("videoUrl", videoUrl.trim());
-    formData.set("pitchType", pitchType);
-    formData.set("handedness", handedness);
-    formData.set("notes", trimmedNotes);
-    formData.set("responsePreference", responsePreference);
-    if (videoFile) {
-      formData.set("video", videoFile);
-    }
-
-    const abortController = new AbortController();
-    const timeoutId = window.setTimeout(() => {
-      abortController.abort();
-    }, SUBMISSION_TIMEOUT_MS);
-
     try {
+      let r2Key: string | undefined;
+
+      if (videoFile) {
+        setUploadProgress(0);
+
+        const uploadUrlResponse = await fetch("/api/swing-analysis/upload-url", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fileName: videoFile.name,
+            contentType: videoFile.type || "video/mp4",
+            fileSize: videoFile.size,
+          }),
+        });
+
+        if (!uploadUrlResponse.ok) {
+          const data = (await uploadUrlResponse.json().catch(() => ({}))) as { error?: string };
+          setSubmitError(data.error ?? SUBMISSION_VIDEO_UPLOAD_FAILED_MESSAGE);
+          return;
+        }
+
+        const presignedUpload = (await uploadUrlResponse.json()) as PresignedSwingUploadResponse;
+
+        try {
+          await uploadVideoToPresignedUrl(
+            videoFile,
+            presignedUpload.uploadUrl,
+            presignedUpload.contentType,
+            setUploadProgress,
+          );
+        } catch {
+          setSubmitError(SUBMISSION_VIDEO_UPLOAD_FAILED_MESSAGE);
+          return;
+        }
+
+        r2Key = presignedUpload.r2Key;
+      }
+
       const response = await fetch("/api/swing-analysis/submit", {
         method: "POST",
-        body: formData,
-        signal: abortController.signal,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          playerName: playerName.trim(),
+          pitchType,
+          handedness,
+          notes: trimmedNotes,
+          responsePreference,
+          videoUrl: videoUrl.trim() || undefined,
+          r2Key,
+        }),
       });
-      window.clearTimeout(timeoutId);
 
       if (!response.ok) {
         const data = (await response.json().catch(() => ({}))) as { error?: string };
         setSubmitError(
-          data.error ??
-            "Unable to submit swing analysis. Please try again, or use a smaller video file.",
+          data.error ?? "Unable to submit swing analysis. Please try again.",
         );
         return;
       }
@@ -95,18 +141,11 @@ export default function SwingAnalysisForm({ isFreeMember = false }: SwingAnalysi
       setHandedness("Right-handed hitter");
       setNotes("");
       setResponsePreference("VIDEO_RESPONSE");
-    } catch (error) {
-      window.clearTimeout(timeoutId);
-      if (error instanceof DOMException && error.name === "AbortError") {
-        setSubmitError(
-          "Submission timed out while uploading. Please try again with a trimmed video file.",
-        );
-        return;
-      }
-
-      setSubmitError("Submission failed unexpectedly. Please try again.");
+    } catch {
+      setSubmitError(SUBMISSION_VIDEO_UPLOAD_FAILED_MESSAGE);
     } finally {
       setIsSubmitting(false);
+      setUploadProgress(null);
     }
   };
 
@@ -132,10 +171,8 @@ export default function SwingAnalysisForm({ isFreeMember = false }: SwingAnalysi
             className="mt-2 w-full rounded-lg border border-dashed border-[#3b4b6a] bg-black px-4 py-4 text-sm text-zinc-300 file:mr-4 file:rounded-md file:border-0 file:bg-[#22c55e] file:px-3 file:py-2 file:font-semibold file:text-black hover:file:bg-[#35db72]"
             onChange={(event) => {
               const file = event.target.files?.[0] ?? null;
-              if (file && file.size > MAX_VIDEO_UPLOAD_BYTES) {
-                setSubmitError(
-                  "Your video is too large. Please trim or compress it to under 100MB and try again.",
-                );
+              if (file && file.size > MAX_SUBMISSION_VIDEO_BYTES) {
+                setSubmitError(SUBMISSION_VIDEO_TOO_LARGE_MESSAGE);
                 setVideoFile(null);
                 setVideoFileName("");
                 return;
@@ -147,7 +184,7 @@ export default function SwingAnalysisForm({ isFreeMember = false }: SwingAnalysi
             }}
           />
           <p className="mt-2 text-xs text-zinc-400">
-            Max file size is 100MB. Please trim the video if it exceeds that limit.
+            Max file size is {SUBMISSION_VIDEO_MAX_SIZE_LABEL}. Please trim or compress larger videos before uploading.
           </p>
         </label>
 
@@ -229,6 +266,21 @@ export default function SwingAnalysisForm({ isFreeMember = false }: SwingAnalysi
           </div>
         </fieldset>
 
+        {uploadProgress !== null && isSubmitting ? (
+          <div className="rounded-lg border border-[#2b3650] bg-black/40 p-4">
+            <div className="flex items-center justify-between text-sm text-zinc-300">
+              <span>Uploading video</span>
+              <span>{uploadProgress}%</span>
+            </div>
+            <div className="mt-2 h-2 overflow-hidden rounded-full bg-[#1a253a]">
+              <div
+                className="h-full rounded-full bg-[#22c55e] transition-all duration-150"
+                style={{ width: `${uploadProgress}%` }}
+              />
+            </div>
+          </div>
+        ) : null}
+
         {submitError && <p className="text-sm text-red-300">{submitError}</p>}
 
         <button
@@ -236,7 +288,7 @@ export default function SwingAnalysisForm({ isFreeMember = false }: SwingAnalysi
           disabled={isSubmitting}
           className="w-full rounded-full bg-[#22c55e] px-6 py-3 font-semibold text-black transition hover:bg-[#35db72] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
         >
-          {isSubmitting ? "Submitting..." : "Submit Coaching Submission"}
+          {submitButtonLabel}
         </button>
       </form>
 
