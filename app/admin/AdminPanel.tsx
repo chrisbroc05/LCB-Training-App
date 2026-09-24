@@ -11,6 +11,7 @@ import {
   getDrillLibraryVideosByIds,
 } from "@/lib/drill-library-videos";
 import { toVimeoEmbedUrl } from "@/lib/vimeo";
+import AdminSubmissionVideoActions from "@/app/admin/AdminSubmissionVideoActions";
 import { getStreamableR2VideoUrl, isR2VideoReference, parseR2VideoReference } from "@/lib/r2";
 
 type TabType = "swing" | "mental" | "goal" | "members" | "playbook";
@@ -82,10 +83,6 @@ function resolveInlineSubmissionVideoUrl(url: string) {
   }
 
   return url;
-}
-
-function getSubmissionVideoDownloadUrl(videoUrl: string) {
-  return `${videoUrl}${videoUrl.includes("?") ? "&" : "?"}download=1`;
 }
 
 function getResponseVideoDisplayName(url: string | null | undefined) {
@@ -212,6 +209,7 @@ export default function AdminPanel() {
   }, [detail]);
 
   const canInlineFallbackVideo = fallbackVideoUrl ? canInlineResponseVideo(fallbackVideoUrl) : false;
+  const storedSubmissionVideo = detail?.submittedVideo || detail?.videoPath || null;
 
   const handleSendResponse = async () => {
     if (!detail) {
@@ -590,25 +588,12 @@ export default function AdminPanel() {
                         </div>
                       )}
                     </div>
-                    <div className="border-t border-[#2b3650] px-4 py-3">
-                      <div className="flex flex-wrap items-center gap-3">
-                        <a
-                          href={getSubmissionVideoDownloadUrl(fallbackVideoUrl)}
-                          download
-                          className="inline-flex items-center justify-center rounded-full bg-[#22c55e] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[#35db72]"
-                        >
-                          Download Video
-                        </a>
-                        <a
-                          href={fallbackVideoUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-[#8fd7ff] underline"
-                        >
-                          Open in new tab
-                        </a>
-                      </div>
-                    </div>
+                    {storedSubmissionVideo ? (
+                      <AdminSubmissionVideoActions
+                        storedVideo={storedSubmissionVideo}
+                        inlineVideoUrl={fallbackVideoUrl}
+                      />
+                    ) : null}
                   </div>
                 </div>
               ) : (

@@ -11,6 +11,8 @@ import { SUBMISSION_VIDEO_PRESIGNED_UPLOAD_EXPIRY_SECONDS } from "@/lib/submissi
 
 export const R2_VIDEO_PREFIX = "r2:";
 
+export const ADMIN_VIDEO_DOWNLOAD_EXPIRY_SECONDS = 10 * 60;
+
 function getR2Config() {
   const endpoint = process.env.CLOUDFLARE_R2_ENDPOINT;
   const accessKeyId = process.env.CLOUDFLARE_R2_ACCESS_KEY_ID;
@@ -129,6 +131,34 @@ export async function headR2Object(key: string) {
       Key: key,
     }),
   );
+}
+
+export function getR2ObjectFileName(key: string) {
+  return sanitizeFileName(key.split("/").pop() ?? "submission-video.mp4");
+}
+
+export async function createPresignedR2VideoDownloadUrl(key: string) {
+  const { bucketName } = getR2Config();
+  const fileName = getR2ObjectFileName(key);
+  const head = await headR2Object(key);
+
+  const command = new GetObjectCommand({
+    Bucket: bucketName,
+    Key: key,
+    ResponseContentDisposition: `attachment; filename="${fileName}"`,
+    ...(head.ContentType ? { ResponseContentType: head.ContentType } : {}),
+  });
+
+  const downloadUrl = await getSignedUrl(getR2Client(), command, {
+    expiresIn: ADMIN_VIDEO_DOWNLOAD_EXPIRY_SECONDS,
+  });
+
+  return {
+    downloadUrl,
+    fileName,
+    contentType: head.ContentType ?? "video/mp4",
+    expiresInSeconds: ADMIN_VIDEO_DOWNLOAD_EXPIRY_SECONDS,
+  };
 }
 
 export function isR2VideoReference(value: string) {
