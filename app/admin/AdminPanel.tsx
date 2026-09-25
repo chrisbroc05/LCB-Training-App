@@ -12,6 +12,7 @@ import {
 } from "@/lib/drill-library-videos";
 import { toVimeoEmbedUrl } from "@/lib/vimeo";
 import AdminSubmissionVideoActions from "@/app/admin/AdminSubmissionVideoActions";
+import R2PresignedVideoPlayer from "@/app/components/R2PresignedVideoPlayer";
 import { getStreamableR2VideoUrl, isR2VideoReference, parseR2VideoReference } from "@/lib/r2";
 import {
   ADMIN_RESPONSE_VIDEO_MAX_SIZE_LABEL,
@@ -699,6 +700,14 @@ export default function AdminPanel() {
                           allowFullScreen
                         />
                       </div>
+                    ) : isR2VideoReference(detail.responseVideoUrl) ? (
+                      <div className="aspect-video w-full">
+                        <R2PresignedVideoPlayer
+                          storedVideo={detail.responseVideoUrl}
+                          title="Coach response video"
+                          className="h-full w-full"
+                        />
+                      </div>
                     ) : (() => {
                       const inlineResponseUrl =
                         resolveInlineSubmissionVideoUrl(detail.responseVideoUrl ?? "") ??
@@ -775,15 +784,12 @@ export default function AdminPanel() {
 
                     {hasResponseVideoReady ? (
                       <div className="space-y-3">
-                        {detail.responseVideoUrl &&
-                        resolveInlineSubmissionVideoUrl(detail.responseVideoUrl) ? (
+                        {detail.responseVideoUrl && isR2VideoReference(detail.responseVideoUrl) ? (
                           <div className="overflow-hidden rounded-xl border border-[#2b3650] bg-black">
                             <div className="aspect-video w-full">
-                              <video
-                                src={
-                                  resolveInlineSubmissionVideoUrl(detail.responseVideoUrl) ?? undefined
-                                }
-                                controls
+                              <R2PresignedVideoPlayer
+                                storedVideo={detail.responseVideoUrl}
+                                title="Coach response video"
                                 className="h-full w-full"
                               />
                             </div>

@@ -13,6 +13,8 @@ export const R2_VIDEO_PREFIX = "r2:";
 
 export const ADMIN_VIDEO_DOWNLOAD_EXPIRY_SECONDS = 10 * 60;
 
+export const VIDEO_PLAYBACK_PRESIGNED_EXPIRY_SECONDS = 60 * 60;
+
 function getR2Config() {
   const endpoint = process.env.CLOUDFLARE_R2_ENDPOINT;
   const accessKeyId = process.env.CLOUDFLARE_R2_ACCESS_KEY_ID;
@@ -178,16 +180,63 @@ export function getR2ObjectFileName(key: string) {
   return sanitizeFileName(key.split("/").pop() ?? "submission-video.mp4");
 }
 
+export function inferVideoContentTypeFromKey(key: string): string {
+  const extension = key.split(".").pop()?.toLowerCase() ?? "";
+  const contentTypeByExtension: Record<string, string> = {
+    mp4: "video/mp4",
+    mov: "video/quicktime",
+    m4v: "video/mp4",
+    webm: "video/webm",
+    avi: "video/x-msvideo",
+    mkv: "video/x-matroska",
+    ogv: "video/ogg",
+  };
+
+  return contentTypeByExtension[extension] ?? "video/mp4";
+}
+
+function resolveVideoContentType(storedContentType: string | undefined, key: string) {
+  const normalized = storedContentType?.trim().toLowerCase() ?? "";
+  if (normalized.startsWith("video/") && normalized !== "application/octet-stream") {
+    return storedContentType!;
+  }
+
+  return inferVideoContentTypeFromKey(key);
+}
+
+export async function createPresignedR2VideoPlaybackUrl(key: string) {
+  const { bucketName } = getR2Config();
+  const head = await headR2Object(key);
+  const contentType = resolveVideoContentType(head.ContentType, key);
+
+  const command = new GetObjectCommand({
+    Bucket: bucketName,
+    Key: key,
+    ResponseContentType: contentType,
+  });
+
+  const playbackUrl = await getSignedUrl(getR2Client(), command, {
+    expiresIn: VIDEO_PLAYBACK_PRESIGNED_EXPIRY_SECONDS,
+  });
+
+  return {
+    playbackUrl,
+    contentType,
+    expiresInSeconds: VIDEO_PLAYBACK_PRESIGNED_EXPIRY_SECONDS,
+  };
+}
+
 export async function createPresignedR2VideoDownloadUrl(key: string) {
   const { bucketName } = getR2Config();
   const fileName = getR2ObjectFileName(key);
   const head = await headR2Object(key);
+  const contentType = resolveVideoContentType(head.ContentType, key);
 
   const command = new GetObjectCommand({
     Bucket: bucketName,
     Key: key,
     ResponseContentDisposition: `attachment; filename="${fileName}"`,
-    ...(head.ContentType ? { ResponseContentType: head.ContentType } : {}),
+    ResponseContentType: contentType,
   });
 
   const downloadUrl = await getSignedUrl(getR2Client(), command, {
@@ -197,7 +246,7 @@ export async function createPresignedR2VideoDownloadUrl(key: string) {
   return {
     downloadUrl,
     fileName,
-    contentType: head.ContentType ?? "video/mp4",
+    contentType,
     expiresInSeconds: ADMIN_VIDEO_DOWNLOAD_EXPIRY_SECONDS,
   };
 }

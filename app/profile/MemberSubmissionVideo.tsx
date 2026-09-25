@@ -1,3 +1,4 @@
+import R2PresignedVideoPlayer from "@/app/components/R2PresignedVideoPlayer";
 import { toVimeoEmbedUrl } from "@/lib/vimeo";
 import {
   getStreamableR2VideoUrl,
@@ -101,6 +102,18 @@ export function CoachResponseVideo({ responseVideoUrl }: { responseVideoUrl: str
           className="absolute inset-0 h-full w-full"
           allow="autoplay; fullscreen; picture-in-picture"
           allowFullScreen
+        />
+      </div>
+    );
+  }
+
+  if (isR2VideoReference(responseVideoUrl)) {
+    return (
+      <div className="overflow-hidden rounded-xl border border-[#2b3650]">
+        <R2PresignedVideoPlayer
+          storedVideo={responseVideoUrl}
+          title="Coach response video"
+          className="w-full rounded-lg"
         />
       </div>
     );
