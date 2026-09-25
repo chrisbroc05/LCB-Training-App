@@ -63,6 +63,18 @@ export default function MemberSubmissionVideo({
       );
     }
 
+    if (isR2VideoReference(originalVideoUrl)) {
+      return (
+        <div className="overflow-hidden rounded-xl border border-[#2b3650]">
+          <R2PresignedVideoPlayer
+            storedVideo={originalVideoUrl}
+            title="Original submission video"
+            className="w-full rounded-lg"
+          />
+        </div>
+      );
+    }
+
     const inlineVideoUrl = resolveInlineVideoUrl(originalVideoUrl);
     if (inlineVideoUrl && canInlineSubmissionVideo(inlineVideoUrl)) {
       return (

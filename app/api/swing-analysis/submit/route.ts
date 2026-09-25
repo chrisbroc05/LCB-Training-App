@@ -207,11 +207,15 @@ export async function POST(request: Request) {
 
     try {
       const firstName =
-        session.user.name?.trim().split(/\s+/)[0] ?? playerName.trim().split(/\s+/)[0] ?? "there";
+        session.user.name?.trim().split(/\s+/)[0] ?? playerName.trim().split(/\s+/)[0] ?? "";
       await withTimeout(
         sendSubmissionReceivedEmail({
           toEmail: userEmail,
           firstName,
+          submissionType: "SWING",
+          playerNotes: notes,
+          membershipTier,
+          submittedAt: createdSubmission.createdAt,
         }),
         EMAIL_TIMEOUT_MS,
         "User confirmation email",

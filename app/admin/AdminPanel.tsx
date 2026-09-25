@@ -651,7 +651,13 @@ export default function AdminPanel() {
                 <div className="mt-4 space-y-3">
                   <div className="overflow-hidden rounded-xl border border-[#2b3650] bg-black">
                     <div className="aspect-video w-full">
-                      {canInlineFallbackVideo ? (
+                      {storedSubmissionVideo && isR2VideoReference(storedSubmissionVideo) ? (
+                        <R2PresignedVideoPlayer
+                          storedVideo={storedSubmissionVideo}
+                          title="Member submission video"
+                          className="h-full w-full"
+                        />
+                      ) : canInlineFallbackVideo ? (
                         <video src={fallbackVideoUrl} controls className="h-full w-full" />
                       ) : (
                         <div className="flex h-full items-center justify-center px-4 text-center text-sm text-zinc-400">

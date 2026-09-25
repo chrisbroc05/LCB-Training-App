@@ -197,10 +197,14 @@ export async function POST(request: Request) {
 
     try {
       const firstName =
-        session.user.name?.trim().split(/\s+/)[0] ?? playerName.trim().split(/\s+/)[0] ?? "there";
+        session.user.name?.trim().split(/\s+/)[0] ?? playerName.trim().split(/\s+/)[0] ?? "";
       await sendSubmissionReceivedEmail({
         toEmail: submission.userEmail,
         firstName,
+        submissionType: "MENTAL",
+        playerNotes: submission.message,
+        membershipTier,
+        submittedAt: submission.createdAt,
       });
     } catch (error) {
       console.error("Failed to send mental game user confirmation email", error);
