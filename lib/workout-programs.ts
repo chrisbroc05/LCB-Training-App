@@ -130,3 +130,18 @@ export function getProgramsForAgeGroup(ageKey: AgeGroupKey): WorkoutProgramCard[
 export function isAgeGroupKey(value: string | null | undefined): value is AgeGroupKey {
   return value === "8-11" || value === "12-15" || value === "16-18";
 }
+
+export type {
+  WorkoutAgeGroup,
+  WorkoutCategory,
+  WorkoutExercise,
+  WorkoutId,
+  WorkoutPhase,
+  WorkoutProgram,
+  WorkoutSection,
+  WorkoutWeek,
+  WorkoutWithCues,
+  StructuredWorkout,
+} from "@/lib/workout-program-types";
+
+export { getWorkout, WORKOUT_PROGRAMS } from "@/lib/workout-program-training";

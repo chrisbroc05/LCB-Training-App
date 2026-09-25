@@ -3,42 +3,72 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
-import { formatR2VideoReference, uploadResponseVideoToR2 } from "@/lib/r2";
 import {
-  MAX_SUBMISSION_VIDEO_BYTES,
-  SUBMISSION_VIDEO_TOO_LARGE_MESSAGE,
-} from "@/lib/submission-videos";
+  formatR2VideoReference,
+  headR2Object,
+  isAdminResponseVideoKey,
+} from "@/lib/r2";
 
-const MAX_RESPONSE_UPLOAD_BYTES = MAX_SUBMISSION_VIDEO_BYTES;
+type UploadResponseRequestBody = {
+  submissionId?: string;
+  submissionType?: string;
+  r2Key?: string;
+};
+
+function parseRequestBody(body: unknown): UploadResponseRequestBody | null {
+  if (!body || typeof body !== "object") {
+    return null;
+  }
+
+  const record = body as Record<string, unknown>;
+  return {
+    submissionId: typeof record.submissionId === "string" ? record.submissionId : undefined,
+    submissionType: typeof record.submissionType === "string" ? record.submissionType : undefined,
+    r2Key: typeof record.r2Key === "string" ? record.r2Key : undefined,
+  };
+}
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
   if (!isAdminEmail(session?.user?.email)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const formData = await request.formData();
-  const uploadedVideo = formData.get("video");
-  const submissionId = String(formData.get("submissionId") ?? "").trim();
-  const submissionType = String(formData.get("submissionType") ?? "swing").trim().toLowerCase();
-
-  if (!(uploadedVideo instanceof File) || uploadedVideo.size === 0 || !submissionId) {
-    return NextResponse.json({ error: "Missing file or submissionId." }, { status: 400 });
+  let body: UploadResponseRequestBody | null = null;
+  try {
+    body = parseRequestBody(await request.json());
+  } catch {
+    return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   }
 
-  if (uploadedVideo.size > MAX_RESPONSE_UPLOAD_BYTES) {
-    return NextResponse.json(
-      {
-        error: SUBMISSION_VIDEO_TOO_LARGE_MESSAGE,
-      },
-      { status: 413 },
-    );
+  const submissionId = body?.submissionId?.trim() ?? "";
+  const submissionType = (body?.submissionType ?? "swing").trim().toLowerCase();
+  const r2Key = body?.r2Key?.trim() ?? "";
+
+  if (!submissionId || !r2Key) {
+    return NextResponse.json({ error: "Missing submissionId or r2Key." }, { status: 400 });
+  }
+
+  if (submissionType !== "swing" && submissionType !== "mental") {
+    return NextResponse.json({ error: "Invalid submission type." }, { status: 400 });
+  }
+
+  if (!isAdminResponseVideoKey(r2Key, submissionId)) {
+    return NextResponse.json({ error: "Invalid response video key." }, { status: 400 });
   }
 
   try {
-    const r2Key = await uploadResponseVideoToR2(uploadedVideo);
-    const responseVideoUrl = formatR2VideoReference(r2Key);
+    await headR2Object(r2Key);
+  } catch {
+    return NextResponse.json(
+      { error: "Uploaded video was not found. Please try uploading again." },
+      { status: 400 },
+    );
+  }
 
+  const responseVideoUrl = formatR2VideoReference(r2Key);
+
+  try {
     if (submissionType === "mental") {
       const existing = await prisma.mentalGameSubmission.findUnique({
         where: { id: submissionId },
@@ -71,7 +101,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, key: r2Key, responseVideoUrl });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unable to upload response video.";
+    const message = error instanceof Error ? error.message : "Unable to save response video.";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

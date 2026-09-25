@@ -1,9 +1,16 @@
 export const MAX_SUBMISSION_VIDEO_BYTES = 500 * 1024 * 1024; // 500MB
 
+export const MAX_ADMIN_RESPONSE_VIDEO_BYTES = 2 * 1024 * 1024 * 1024; // 2GB
+
 export const SUBMISSION_VIDEO_TOO_LARGE_MESSAGE =
   "Video file is too large. Please trim your video or compress it before uploading.";
 
+export const ADMIN_RESPONSE_VIDEO_TOO_LARGE_MESSAGE =
+  "Video file is too large. Maximum size is 2GB.";
+
 export const SUBMISSION_VIDEO_MAX_SIZE_LABEL = "500MB";
+
+export const ADMIN_RESPONSE_VIDEO_MAX_SIZE_LABEL = "2GB";
 
 export const SUBMISSION_VIDEO_CLIENT_UPLOAD_TIMEOUT_MS = 15 * 60 * 1000;
 

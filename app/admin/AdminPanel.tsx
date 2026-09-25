@@ -13,6 +13,16 @@ import {
 import { toVimeoEmbedUrl } from "@/lib/vimeo";
 import AdminSubmissionVideoActions from "@/app/admin/AdminSubmissionVideoActions";
 import { getStreamableR2VideoUrl, isR2VideoReference, parseR2VideoReference } from "@/lib/r2";
+import {
+  ADMIN_RESPONSE_VIDEO_MAX_SIZE_LABEL,
+  ADMIN_RESPONSE_VIDEO_TOO_LARGE_MESSAGE,
+  MAX_ADMIN_RESPONSE_VIDEO_BYTES,
+  SUBMISSION_VIDEO_UPLOAD_FAILED_MESSAGE,
+} from "@/lib/submission-video-limits";
+import {
+  uploadVideoToPresignedUrl,
+  type PresignedSwingUploadResponse,
+} from "@/lib/swing-submission-upload-client";
 
 type TabType = "swing" | "mental" | "goal" | "members" | "playbook";
 
@@ -122,6 +132,8 @@ export default function AdminPanel() {
   const [responseSummary, setResponseSummary] = useState("");
   const [memberVimeoPlayerKey, setMemberVimeoPlayerKey] = useState(0);
   const [uploadingResponseR2, setUploadingResponseR2] = useState(false);
+  const [responseUploadPreparing, setResponseUploadPreparing] = useState(false);
+  const [responseUploadProgress, setResponseUploadProgress] = useState<number | null>(null);
   const [responseR2UploadError, setResponseR2UploadError] = useState("");
   const [responseR2UploadSuccess, setResponseR2UploadSuccess] = useState(false);
   const [selectedRecommendedDrills, setSelectedRecommendedDrills] = useState<string[]>([]);
@@ -182,6 +194,20 @@ export default function AdminPanel() {
 
     void loadDetail();
   }, [selectedId, tab]);
+
+  useEffect(() => {
+    if (!uploadingResponseR2) {
+      return;
+    }
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [uploadingResponseR2]);
 
   const memberVimeoEmbedUrl = detail?.memberVimeoLink ? toVimeoEmbedUrl(detail.memberVimeoLink) : null;
 
@@ -291,35 +317,77 @@ export default function AdminPanel() {
       return;
     }
 
+    if (file.size > MAX_ADMIN_RESPONSE_VIDEO_BYTES) {
+      setResponseR2UploadError(ADMIN_RESPONSE_VIDEO_TOO_LARGE_MESSAGE);
+      return;
+    }
+
     setUploadingResponseR2(true);
+    setResponseUploadPreparing(true);
+    setResponseUploadProgress(null);
     setResponseR2UploadError("");
     setResponseR2UploadSuccess(false);
 
-    const formData = new FormData();
-    formData.set("video", file);
-    formData.set("submissionId", detail.id);
-    formData.set("submissionType", tab);
-
     try {
-      const response = await fetch("/api/admin/upload-response", {
+      const uploadUrlResponse = await fetch("/api/admin/response-upload-url", {
         method: "POST",
-        body: formData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          submissionId: detail.id,
+          filename: file.name,
+          contentType: file.type || "video/mp4",
+          fileSize: file.size,
+        }),
       });
 
-      const payload = (await response.json().catch(() => ({}))) as {
+      const uploadUrlPayload = (await uploadUrlResponse.json().catch(() => ({}))) as {
+        error?: string;
+      } & PresignedSwingUploadResponse;
+
+      if (!uploadUrlResponse.ok) {
+        throw new Error(uploadUrlPayload.error ?? "Unable to prepare response video upload.");
+      }
+
+      const presignedUpload = uploadUrlPayload;
+
+      setResponseUploadPreparing(false);
+      setResponseUploadProgress(0);
+
+      try {
+        await uploadVideoToPresignedUrl(
+          file,
+          presignedUpload.uploadUrl,
+          presignedUpload.contentType,
+          setResponseUploadProgress,
+        );
+      } catch {
+        throw new Error(SUBMISSION_VIDEO_UPLOAD_FAILED_MESSAGE);
+      }
+
+      const saveResponse = await fetch("/api/admin/upload-response", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          submissionId: detail.id,
+          submissionType: tab,
+          r2Key: presignedUpload.r2Key,
+        }),
+      });
+
+      const savePayload = (await saveResponse.json().catch(() => ({}))) as {
         error?: string;
         responseVideoUrl?: string;
       };
 
-      if (!response.ok) {
-        throw new Error(payload.error ?? "Unable to upload response video.");
+      if (!saveResponse.ok) {
+        throw new Error(savePayload.error ?? "Unable to save response video.");
       }
 
       setResponseR2UploadSuccess(true);
       setUploadedResponseFileName(file.name);
       setDetail({
         ...detail,
-        responseVideoUrl: payload.responseVideoUrl ?? detail.responseVideoUrl ?? null,
+        responseVideoUrl: savePayload.responseVideoUrl ?? detail.responseVideoUrl ?? null,
       });
     } catch (error) {
       setResponseR2UploadError(
@@ -327,6 +395,8 @@ export default function AdminPanel() {
       );
     } finally {
       setUploadingResponseR2(false);
+      setResponseUploadPreparing(false);
+      setResponseUploadProgress(null);
     }
   };
 
@@ -745,14 +815,36 @@ export default function AdminPanel() {
                       </button>
                     )}
 
+                    {responseUploadPreparing ? (
+                      <p className="text-sm text-zinc-400">Preparing video...</p>
+                    ) : null}
+
+                    {responseUploadProgress !== null && uploadingResponseR2 ? (
+                      <div className="rounded-lg border border-[#2b3650] bg-black/40 p-4">
+                        <div className="flex items-center justify-between text-sm text-zinc-300">
+                          <span>Uploading response video</span>
+                          <span>{responseUploadProgress}%</span>
+                        </div>
+                        <div className="mt-2 h-2 overflow-hidden rounded-full bg-[#1a253a]">
+                          <div
+                            className="h-full rounded-full bg-[#52B788] transition-all duration-150"
+                            style={{ width: `${responseUploadProgress}%` }}
+                          />
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {!uploadingResponseR2 && !hasResponseVideoReady ? (
+                      <p className="text-xs text-zinc-500">
+                        Max file size is {ADMIN_RESPONSE_VIDEO_MAX_SIZE_LABEL}.
+                      </p>
+                    ) : null}
+
                     {responseR2UploadError ? (
                       <p className="text-sm text-red-300">{responseR2UploadError}</p>
                     ) : null}
                     {responseR2UploadSuccess ? (
                       <p className="text-sm font-medium text-[#9df3bd]">Response video uploaded.</p>
-                    ) : null}
-                    {uploadingResponseR2 ? (
-                      <p className="text-sm text-zinc-400">Uploading response video...</p>
                     ) : null}
                   </div>
 

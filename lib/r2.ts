@@ -81,13 +81,54 @@ export function buildUserSubmissionVideoKey(userId: string, fileName: string) {
   return `submissions/${userId}/${Date.now()}-${randomUUID()}-${sanitizeFileName(fileName)}`;
 }
 
+export function buildAdminResponseVideoKey(submissionId: string, fileName: string) {
+  return `responses/${submissionId}/${Date.now()}-${randomUUID()}-${sanitizeFileName(fileName)}`;
+}
+
 export function isUserSubmissionVideoKey(key: string, userId: string) {
   const prefix = `submissions/${userId}/`;
   return key.startsWith(prefix) && isValidR2ObjectKey(key);
 }
 
+export function isAdminResponseVideoKey(key: string, submissionId: string) {
+  const prefix = `responses/${submissionId}/`;
+  return key.startsWith(prefix) && isValidR2ObjectKey(key);
+}
+
 export function isAllowedSubmissionVideoContentType(contentType: string) {
   return contentType.trim().toLowerCase().startsWith("video/");
+}
+
+export async function createPresignedAdminResponseVideoUploadUrl(params: {
+  submissionId: string;
+  fileName: string;
+  contentType: string;
+  fileSize: number;
+}) {
+  const { bucketName } = getR2Config();
+  const key = buildAdminResponseVideoKey(params.submissionId, params.fileName);
+  const contentType = params.contentType.trim() || "video/mp4";
+
+  const command = new PutObjectCommand({
+    Bucket: bucketName,
+    Key: key,
+    ContentType: contentType,
+    ContentLength: params.fileSize,
+    Metadata: {
+      submissionId: params.submissionId,
+    },
+  });
+
+  const uploadUrl = await getSignedUrl(getR2Client(), command, {
+    expiresIn: SUBMISSION_VIDEO_PRESIGNED_UPLOAD_EXPIRY_SECONDS,
+  });
+
+  return {
+    uploadUrl,
+    r2Key: key,
+    contentType,
+    expiresInSeconds: SUBMISSION_VIDEO_PRESIGNED_UPLOAD_EXPIRY_SECONDS,
+  };
 }
 
 export async function createPresignedSubmissionVideoUploadUrl(params: {
@@ -168,25 +209,6 @@ export function isR2VideoReference(value: string) {
 export async function uploadSubmissionVideoToR2(file: File) {
   const { bucketName } = getR2Config();
   const key = `submissions/${Date.now()}-${sanitizeFileName(file.name)}`;
-  const contentType = file.type || "video/mp4";
-  const body = Readable.fromWeb(file.stream() as Parameters<typeof Readable.fromWeb>[0]);
-
-  await getR2Client().send(
-    new PutObjectCommand({
-      Bucket: bucketName,
-      Key: key,
-      Body: body,
-      ContentType: contentType,
-      ContentLength: file.size,
-    }),
-  );
-
-  return key;
-}
-
-export async function uploadResponseVideoToR2(file: File) {
-  const { bucketName } = getR2Config();
-  const key = `responses/${Date.now()}-${sanitizeFileName(file.name)}`;
   const contentType = file.type || "video/mp4";
   const body = Readable.fromWeb(file.stream() as Parameters<typeof Readable.fromWeb>[0]);
 
