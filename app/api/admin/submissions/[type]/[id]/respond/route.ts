@@ -86,6 +86,7 @@ export async function POST(request: Request, context: RouteContext) {
       await sendSubmissionResponseEmail({
         toEmail: updated.userEmail,
         playerName: updated.playerName,
+        submissionId: updated.id,
         submissionType: "MENTAL_GAME",
         responseMode: finalVideoUrl ? "VIDEO" : "WRITTEN",
         membershipTier: user?.membershipTier,
@@ -149,6 +150,7 @@ export async function POST(request: Request, context: RouteContext) {
     await sendSubmissionResponseEmail({
       toEmail: updated.userEmail,
       playerName: updated.playerName,
+      submissionId: updated.id,
       submissionType: "SWING_ANALYSIS",
       responseMode: finalVideoUrl ? "VIDEO" : "WRITTEN",
       membershipTier: user?.membershipTier,

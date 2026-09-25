@@ -42,13 +42,24 @@ function formatDate(date: Date | null) {
   }).format(date);
 }
 
-export default async function ProfilePage({ searchParams }: ProfilePageProps) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    redirect("/auth");
+function buildProfileRedirectTarget(searchParams: Record<string, string | string[] | undefined>) {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(searchParams)) {
+    if (typeof value === "string") {
+      query.set(key, value);
+    }
   }
 
+  const queryString = query.toString();
+  return queryString ? `/profile?${queryString}` : "/profile";
+}
+
+export default async function ProfilePage({ searchParams }: ProfilePageProps) {
   const resolvedSearchParams = searchParams ? await searchParams : {};
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    redirect(`/auth?redirect=${encodeURIComponent(buildProfileRedirectTarget(resolvedSearchParams))}`);
+  }
   const selectedTypeParam =
     typeof resolvedSearchParams.type === "string" ? resolvedSearchParams.type.toUpperCase() : "";
   const selectedIdParam = typeof resolvedSearchParams.id === "string" ? resolvedSearchParams.id : "";

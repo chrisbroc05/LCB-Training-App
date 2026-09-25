@@ -22,5 +22,9 @@ export function getPostAuthRedirectPath(redirect: string | null) {
     return "/coaching-submissions";
   }
 
+  if (redirect && redirect.startsWith("/") && !redirect.startsWith("//")) {
+    return redirect;
+  }
+
   return "/dashboard";
 }

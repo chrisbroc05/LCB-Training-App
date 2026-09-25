@@ -5,6 +5,7 @@ import VideoLibrary from "@/app/dashboard/VideoLibrary";
 
 type DrillLibraryVideoSectionProps = {
   thumbnailMap: Record<string, string | null>;
+  initialDrillId?: string;
 };
 
 function VideoLibrarySkeleton() {
@@ -32,7 +33,10 @@ function VideoLibrarySkeleton() {
   );
 }
 
-export default function DrillLibraryVideoSection({ thumbnailMap }: DrillLibraryVideoSectionProps) {
+export default function DrillLibraryVideoSection({
+  thumbnailMap,
+  initialDrillId,
+}: DrillLibraryVideoSectionProps) {
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
@@ -43,5 +47,5 @@ export default function DrillLibraryVideoSection({ thumbnailMap }: DrillLibraryV
     return <VideoLibrarySkeleton />;
   }
 
-  return <VideoLibrary thumbnailMap={thumbnailMap} />;
+  return <VideoLibrary thumbnailMap={thumbnailMap} initialDrillId={initialDrillId} />;
 }

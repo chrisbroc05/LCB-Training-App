@@ -5,6 +5,7 @@ import VideoPlayer from "@/app/components/mobile/VideoPlayer";
 import {
   allDrillLibraryVideos,
   fieldingVideos,
+  getDrillLibraryVideoById,
   hittingVideos,
   mindsetVideos,
   type DrillLibraryVideoItem,
@@ -127,9 +128,10 @@ function VideoSection({
 
 type VideoLibraryProps = {
   thumbnailMap?: Record<string, string | null>;
+  initialDrillId?: string;
 };
 
-export default function VideoLibrary({ thumbnailMap = {} }: VideoLibraryProps) {
+export default function VideoLibrary({ thumbnailMap = {}, initialDrillId }: VideoLibraryProps) {
   const [playerState, setPlayerState] = useState<PlayerState | null>(null);
   const [desktopVideo, setDesktopVideo] = useState<DrillLibraryVideoItem | null>(null);
   const [mobileCategory, setMobileCategory] = useState<DrillCategoryFilter>("all");
@@ -160,6 +162,30 @@ export default function VideoLibrary({ thumbnailMap = {} }: VideoLibraryProps) {
   const closeVideo = () => {
     setPlayerState(null);
   };
+
+  useEffect(() => {
+    if (!initialDrillId) {
+      return;
+    }
+
+    const drill = getDrillLibraryVideoById(initialDrillId);
+    if (!drill) {
+      return;
+    }
+
+    if (window.matchMedia("(max-width: 767px)").matches) {
+      const categoryVideos = getVideosForCategory(drill.category);
+      const startIndex = categoryVideos.findIndex((entry) => entry.url === drill.url);
+      setPlayerState({
+        video: drill,
+        videos: categoryVideos,
+        startIndex: startIndex >= 0 ? startIndex : 0,
+      });
+      return;
+    }
+
+    setDesktopVideo(drill);
+  }, [initialDrillId]);
 
   useEffect(() => {
     if (!desktopVideo) {

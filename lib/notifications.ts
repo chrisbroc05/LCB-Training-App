@@ -1,5 +1,20 @@
 import nodemailer from "nodemailer";
-import { getDrillLibraryVideosByIds } from "@/lib/drill-library-videos";
+import {
+  buildDrillLibraryUrl,
+  buildEmailButton,
+  buildEmailDivider,
+  buildEmailFooterText,
+  buildEmailInfoBox,
+  buildEmailNonMemberUpsellHtml,
+  buildEmailNonMemberUpsellText,
+  buildEmailSectionLabel,
+  buildMemberEmailHtml,
+  buildSubmissionResponseUrl,
+  EMAIL_REPLY_TO,
+  escapeHtml,
+  getPublicAppUrl,
+} from "@/lib/email-layout";
+import { getDrillLibraryVideoId, getDrillLibraryVideosByIds } from "@/lib/drill-library-videos";
 import type { DatabaseTier } from "@/lib/membership";
 import { formatDatabaseTierLabel } from "@/lib/membership";
 
@@ -27,15 +42,6 @@ function getNotificationRecipient() {
   }
 
   return notificationEmail;
-}
-
-function escapeHtml(value: string) {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
 }
 
 function isHttpUrl(value: string) {
@@ -144,28 +150,6 @@ export async function sendNewMemberNotification(params: {
 
 type SubmissionConfirmationType = "SWING" | "MENTAL";
 
-const SUBMISSION_CONFIRMATION_TESTIMONIALS = [
-  {
-    quote:
-      "I hit around .350 this year and batted leadoff for most of the season. That's way better than it was in the past. I'm definitely happy with the season, especially my hitting.",
-    name: "",
-    detail: "Varsity infielder, Class of 2026",
-  },
-  {
-    quote:
-      "After your lesson with my son, he was so excited. The next game he went 3 for 3, got in the car, and said, 'I did what Coach Chris taught me, and it worked.'",
-    name: "",
-    detail: "Parent of a 13U player",
-  },
-  {
-    quote: "My team cannot stop talking about your training and would love to have you back again.",
-    name: "",
-    detail: "15U baseball coach",
-  },
-] as const;
-
-const SUBMISSION_CONFIRMATION_REPLY_TO = "chrisbroc05@gmail.com";
-
 function truncateSubmissionNotes(notes: string, maxLength = 300) {
   const trimmed = notes.trim();
   if (trimmed.length <= maxLength) {
@@ -190,52 +174,6 @@ function formatSubmittedAtChicago(date: Date) {
     parts.find((part) => part.type === type)?.value ?? "";
 
   return `${get("weekday")}, ${get("month")} ${get("day")} at ${get("hour")}:${get("minute")} ${get("dayPeriod")}`;
-}
-
-function buildSubmissionConfirmationButton(label: string, href: string) {
-  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:20px 0 0 0;">
-    <tr>
-      <td align="center" bgcolor="#2D6A4F" style="border-radius:8px; background-color:#2D6A4F;">
-        <a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer" style="display:inline-block; padding:14px 28px; font-family:Arial, Helvetica, sans-serif; font-size:16px; font-weight:700; color:#FFFFFF; text-decoration:none; border-radius:8px;">${escapeHtml(label)}</a>
-      </td>
-    </tr>
-  </table>`;
-}
-
-function buildSubmissionConfirmationSectionLabel(label: string) {
-  return `<p style="margin:28px 0 12px 0; font-family:Arial, Helvetica, sans-serif; font-size:12px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:#2D6A4F;">${escapeHtml(label)}</p>`;
-}
-
-function buildSubmissionConfirmationDivider() {
-  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:24px 0;">
-    <tr>
-      <td style="height:2px; background-color:#52B788; font-size:0; line-height:0;">&nbsp;</td>
-    </tr>
-  </table>`;
-}
-
-function buildSubmissionConfirmationTestimonialsHtml() {
-  return SUBMISSION_CONFIRMATION_TESTIMONIALS.map((entry) => {
-    const nameLine = entry.name
-      ? `<p style="margin:8px 0 0 0; font-family:Arial, Helvetica, sans-serif; font-size:13px; font-weight:700; color:#0A1628;">${escapeHtml(entry.name)}</p>`
-      : "";
-
-    return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 12px 0; border-collapse:collapse;">
-      <tr>
-        <td style="padding:16px; background-color:#F4F6F8; border-radius:8px;">
-          <p style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:1.6; font-style:italic; color:#0A1628;">"${escapeHtml(entry.quote)}"</p>
-          ${nameLine}
-          <p style="margin:8px 0 0 0; font-family:Arial, Helvetica, sans-serif; font-size:13px; font-weight:700; color:#2D6A4F;">${escapeHtml(entry.detail)}</p>
-        </td>
-      </tr>
-    </table>`;
-  }).join("");
-}
-
-function buildSubmissionConfirmationTestimonialsText() {
-  return SUBMISSION_CONFIRMATION_TESTIMONIALS.map(
-    (entry) => `"${entry.quote}"\n${entry.detail}`,
-  ).join("\n\n");
 }
 
 function buildSubmissionConfirmationEmailContent(params: {
@@ -291,81 +229,39 @@ function buildSubmissionConfirmationEmailContent(params: {
 
   const upsellSectionsHtml = params.isTwelveWeekEnrolled
     ? ""
-    : `${buildSubmissionConfirmationSectionLabel("WHAT PLAYERS AND PARENTS ARE SAYING")}
-      ${buildSubmissionConfirmationTestimonialsHtml()}
-      ${buildSubmissionConfirmationSectionLabel("THE OTHER SIX DAYS")}
-      <p style="margin:0 0 12px 0; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:1.7; color:#0A1628;">Lessons are one day a week. What happens the other six?</p>
-      <p style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:1.7; color:#0A1628;">My 12-Week Program puts me in your corner every day: a daily routine built for you, unlimited feedback on your swing and mindset, and weekly calls to keep you on track.</p>
-      ${buildSubmissionConfirmationButton("See the 12-Week Program", programUrl)}`;
+    : buildEmailNonMemberUpsellHtml({ programPitchVariant: "confirmation", programUrl });
 
   const upsellSectionsText = params.isTwelveWeekEnrolled
     ? ""
-    : `\n\nWHAT PLAYERS AND PARENTS ARE SAYING\n${buildSubmissionConfirmationTestimonialsText()}\n\nTHE OTHER SIX DAYS\nLessons are one day a week. What happens the other six?\nMy 12-Week Program puts me in your corner every day: a daily routine built for you, unlimited feedback on your swing and mindset, and weekly calls to keep you on track.\nSee the 12-Week Program: ${programUrl}`;
+    : buildEmailNonMemberUpsellText({ programPitchVariant: "confirmation", programUrl });
 
-  const html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<meta name="color-scheme" content="light" />
-<meta name="supported-color-schemes" content="light" />
-<title>${escapeHtml(subject)}</title>
-</head>
-<body style="margin:0; padding:0; background-color:#F4F6F8;">
-  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:#F4F6F8; border-collapse:collapse;">
-    <tr>
-      <td align="center" style="padding:24px 12px;">
-        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:600px; border-collapse:collapse;">
-          <tr>
-            <td style="padding:28px 24px; background-color:#0A1628; border-radius:12px 12px 0 0; text-align:center;">
-              <p style="margin:0 0 8px 0; font-family:Arial, Helvetica, sans-serif; font-size:24px; font-weight:700; letter-spacing:0.06em; color:#FFFFFF;">LCB TRAINING</p>
-              <p style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:14px; color:#FFFFFF;">Work Hard. Be Memorable.</p>
-            </td>
-          </tr>
-          <tr>
-            <td style="padding:32px 24px; background-color:#FFFFFF; border-radius:0 0 12px 12px;">
-              <h1 style="margin:0 0 20px 0; font-family:Arial, Helvetica, sans-serif; font-size:28px; line-height:1.3; font-weight:700; color:#0A1628;">${escapeHtml(headline)}</h1>
+  const submissionRecapHtml = buildEmailInfoBox(`<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;">
+                    <tr>
+                      <td style="padding:6px 0; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:1.6; color:#0A1628;"><strong style="color:#0A1628;">Type:</strong> ${escapeHtml(submissionLabel)}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:6px 0; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:1.6; color:#0A1628;"><strong style="color:#0A1628;">Submitted:</strong> ${escapeHtml(submittedAtLabel)}</td>
+                    </tr>
+                    ${notesHtml}
+                  </table>
+                  ${buildEmailButton("View in Your Dashboard", profileUrl)}`);
+
+  const bodyContentHtml = `<h1 style="margin:0 0 20px 0; font-family:Arial, Helvetica, sans-serif; font-size:28px; line-height:1.3; font-weight:700; color:#0A1628;">${escapeHtml(headline)}</h1>
               <p style="margin:0 0 24px 0; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:1.7; color:#0A1628;">Your ${escapeHtml(submissionKind)} just landed with me. I watch every submission myself, no assistants, no shortcuts. You'll have my personal breakdown within 48 hours.</p>
-              ${buildSubmissionConfirmationSectionLabel("YOUR SUBMISSION")}
-              <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse; background-color:#F4F6F8; border-radius:8px;">
-                <tr>
-                  <td style="padding:16px;">
-                    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;">
-                      <tr>
-                        <td style="padding:6px 0; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:1.6; color:#0A1628;"><strong style="color:#0A1628;">Type:</strong> ${escapeHtml(submissionLabel)}</td>
-                      </tr>
-                      <tr>
-                        <td style="padding:6px 0; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:1.6; color:#0A1628;"><strong style="color:#0A1628;">Submitted:</strong> ${escapeHtml(submittedAtLabel)}</td>
-                      </tr>
-                      ${notesHtml}
-                    </table>
-                    ${buildSubmissionConfirmationButton("View in Your Dashboard", profileUrl)}
-                  </td>
-                </tr>
-              </table>
-              ${buildSubmissionConfirmationSectionLabel("WHAT HAPPENS NEXT")}
+              ${buildEmailSectionLabel("YOUR SUBMISSION")}
+              ${submissionRecapHtml}
+              ${buildEmailSectionLabel("WHAT HAPPENS NEXT")}
               ${whatHappensNextHtml}
-              ${buildSubmissionConfirmationSectionLabel("WHILE YOU WAIT")}
+              ${buildEmailSectionLabel("WHILE YOU WAIT")}
               <p style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:1.7; color:#0A1628;">Don't wait on me to get better. Go get 50 good swings today. The players who improve fastest are the ones who work when nobody's watching.</p>
-              ${buildSubmissionConfirmationSectionLabel("QUICK TIP")}
+              ${buildEmailSectionLabel("QUICK TIP")}
               <p style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:1.7; color:#0A1628;">Filming another video? Shoot from the side at about hip height with your whole body in frame. 1080p is plenty, and it uploads a lot faster than 4K.</p>
-              ${buildSubmissionConfirmationDivider()}
-              ${buildSubmissionConfirmationSectionLabel("WHY I COACH THIS WAY")}
+              ${buildEmailDivider()}
+              ${buildEmailSectionLabel("WHY I COACH THIS WAY")}
               <p style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:1.7; color:#0A1628;">When I was 13, an opposing coach told my dad he remembered me. Not for a big game, but because I hustled down the line on a routine ground ball and was standing on second on a routine pop-up. Effort is a skill, and it's the kind that gets you remembered. So here's the question I ask every player I work with: what do you want to be known for?</p>
-              ${upsellSectionsHtml}
-              ${buildSubmissionConfirmationDivider()}
-              <p style="margin:0 0 8px 0; font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:1.6; color:#6B7280;">Coach Broc</p>
-              <p style="margin:0 0 8px 0; font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:1.6; color:#6B7280;">LCB Training | lcbtraining.com</p>
-              <p style="margin:0 0 8px 0; font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:1.6; color:#6B7280;">Instagram @lcbtraining | TikTok @cbroc05</p>
-              <p style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:1.6; color:#6B7280;">Questions? Just reply to this email.</p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`;
+              ${upsellSectionsHtml}`;
+
+  const html = buildMemberEmailHtml({ title: subject, bodyContentHtml });
 
   const text = `${headline}
 
@@ -389,10 +285,7 @@ Filming another video? Shoot from the side at about hip height with your whole b
 WHY I COACH THIS WAY
 When I was 13, an opposing coach told my dad he remembered me. Not for a big game, but because I hustled down the line on a routine ground ball and was standing on second on a routine pop-up. Effort is a skill, and it's the kind that gets you remembered. So here's the question I ask every player I work with: what do you want to be known for?${upsellSectionsText}
 
-Coach Broc
-LCB Training | lcbtraining.com
-Instagram @lcbtraining | TikTok @cbroc05
-Questions? Just reply to this email.`;
+${buildEmailFooterText()}`;
 
   return { subject, html, text };
 }
@@ -417,7 +310,7 @@ export async function sendSubmissionReceivedEmail(params: {
   await transporter.sendMail({
     from: process.env.NOTIFICATION_EMAIL,
     to: params.toEmail,
-    replyTo: SUBMISSION_CONFIRMATION_REPLY_TO,
+    replyTo: EMAIL_REPLY_TO,
     subject: emailContent.subject,
     text: emailContent.text,
     html: emailContent.html,
@@ -559,35 +452,124 @@ export async function sendMentalGameSubmissionNotification(params: {
   });
 }
 
-function buildRecommendedDrillsEmailSections(
-  recommendedDrillIds: string[] | undefined,
-  viewUrl: string,
-  viewResponseButtonHtml: string,
-) {
-  const recommendedDrills = getDrillLibraryVideosByIds(recommendedDrillIds ?? []);
-  if (recommendedDrills.length === 0) {
-    return { text: "", html: "" };
+function truncateCoachResponseNotes(notes: string, maxLength = 400) {
+  const trimmed = notes.trim();
+  if (trimmed.length <= maxLength) {
+    return { display: trimmed, truncated: false };
   }
 
-  const drillTitlesText = recommendedDrills.map((drill) => `- ${drill.title}`).join("\n");
-  const drillListHtml = recommendedDrills
-    .map((drill) => `<li style="margin:0 0 6px;">${escapeHtml(drill.title)}</li>`)
-    .join("");
-
   return {
-    text: `\n\nDrills Coach Broc recommends for you:\n${drillTitlesText}\n\nLog in to the app to watch these drills.\nOpen the app: ${viewUrl}\n`,
-    html: `<div style="margin-top:20px; padding:14px; border:1px solid #2b3650; border-radius:10px; background:#060b16;">
-        <p style="margin:0 0 10px; font-weight:700; color:#98b144;">Drills Coach Broc Recommends For You</p>
-        <ul style="margin:0 0 12px; padding-left:20px;">${drillListHtml}</ul>
-        <p style="margin:0 0 12px;">Log in to the app to watch these drills.</p>
-        ${viewResponseButtonHtml}
-      </div>`,
+    display: `${trimmed.slice(0, maxLength)}...`,
+    truncated: true,
   };
+}
+
+function buildSubmissionResponseEmailContent(params: {
+  firstName: string;
+  submissionType: "SWING_ANALYSIS" | "MENTAL_GAME";
+  submissionId: string;
+  writtenResponse?: string;
+  recommendedDrillIds?: string[];
+  isTwelveWeekEnrolled: boolean;
+}) {
+  const trimmedFirstName = params.firstName.trim();
+  const hasFirstName = trimmedFirstName.length > 0;
+  const isSwing = params.submissionType === "SWING_ANALYSIS";
+  const responseUrl = buildSubmissionResponseUrl(params.submissionType, params.submissionId);
+  const programUrl = `${getPublicAppUrl()}/program`;
+  const headline = "Your breakdown is ready.";
+  const subject = hasFirstName
+    ? isSwing
+      ? `Your breakdown is ready, ${trimmedFirstName}`
+      : `Your response is ready, ${trimmedFirstName}`
+    : isSwing
+      ? "Your breakdown is ready"
+      : "Your response is ready";
+  const intro = hasFirstName
+    ? isSwing
+      ? `${trimmedFirstName}, I watched your video and recorded a personal breakdown just for you. Watch it with a notebook nearby. There's a lot in there.`
+      : `${trimmedFirstName}, I read your question and recorded a personal response just for you.`
+    : isSwing
+      ? "I watched your video and recorded a personal breakdown just for you. Watch it with a notebook nearby. There's a lot in there."
+      : "I read your question and recorded a personal response just for you.";
+
+  const rawNotes = params.writtenResponse?.trim() ?? "";
+  const coachNotes = rawNotes ? truncateCoachResponseNotes(rawNotes) : null;
+  const coachNotesHtml = coachNotes
+    ? `${buildEmailSectionLabel("MY NOTES")}
+      <p style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:1.7; color:#0A1628; white-space:pre-wrap;">${escapeHtml(coachNotes.display)}${coachNotes.truncated ? `<br /><br /><span style="color:#0A1628;">Read the rest in the app.</span>` : ""}</p>`
+    : "";
+  const coachNotesText = coachNotes
+    ? `\n\nMY NOTES\n${coachNotes.display}${coachNotes.truncated ? "\n\nRead the rest in the app." : ""}`
+    : "";
+
+  const recommendedDrills = getDrillLibraryVideosByIds(params.recommendedDrillIds ?? []);
+  const drillsHtml =
+    recommendedDrills.length > 0
+      ? `${buildEmailSectionLabel("DRILLS I PICKED FOR YOU")}
+      <ul style="margin:0; padding-left:20px; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:1.7; color:#0A1628;">
+        ${recommendedDrills
+          .map((drill) => {
+            const drillId = getDrillLibraryVideoId(drill) ?? "";
+            const drillUrl = buildDrillLibraryUrl(drillId || undefined);
+            return `<li style="margin:0 0 8px 0; color:#0A1628;"><a href="${escapeHtml(drillUrl)}" target="_blank" rel="noopener noreferrer" style="color:#2D6A4F; font-weight:700; text-decoration:underline;">${escapeHtml(drill.title)}</a></li>`;
+          })
+          .join("")}
+      </ul>
+      <p style="margin:12px 0 0 0; font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:1.6; color:#6B7280;">Each drill opens in the app with the video and coaching cues.</p>`
+      : "";
+  const drillsText =
+    recommendedDrills.length > 0
+      ? `\n\nDRILLS I PICKED FOR YOU\n${recommendedDrills
+          .map((drill) => {
+            const drillId = getDrillLibraryVideoId(drill) ?? "";
+            return `- ${drill.title}: ${buildDrillLibraryUrl(drillId || undefined)}`;
+          })
+          .join("\n")}\n\nEach drill opens in the app with the video and coaching cues.`
+      : "";
+
+  const membershipSectionHtml = params.isTwelveWeekEnrolled
+    ? `${buildEmailSectionLabel("KEEP IT GOING")}
+      <p style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:1.7; color:#0A1628;">Got questions about anything in the breakdown? Bring them to our weekly call, or just reply to this email.</p>`
+    : buildEmailNonMemberUpsellHtml({ programPitchVariant: "response", programUrl });
+  const membershipSectionText = params.isTwelveWeekEnrolled
+    ? `\n\nKEEP IT GOING\nGot questions about anything in the breakdown? Bring them to our weekly call, or just reply to this email.`
+    : buildEmailNonMemberUpsellText({ programPitchVariant: "response", programUrl });
+
+  const bodyContentHtml = `<h1 style="margin:0 0 20px 0; font-family:Arial, Helvetica, sans-serif; font-size:28px; line-height:1.3; font-weight:700; color:#0A1628;">${escapeHtml(headline)}</h1>
+              <p style="margin:0 0 24px 0; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:1.7; color:#0A1628;">${escapeHtml(intro)}</p>
+              ${buildEmailButton("Watch Your Breakdown", responseUrl)}
+              ${coachNotesHtml}
+              ${drillsHtml}
+              ${buildEmailSectionLabel("YOUR NEXT STEP")}
+              <ol style="margin:0; padding-left:20px; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:1.7; color:#0A1628;">
+                <li style="margin:0 0 8px 0; color:#0A1628;">Watch the breakdown twice. You'll catch something new the second time.</li>
+                <li style="margin:0 0 8px 0; color:#0A1628;">Do these drills at least 3 times this week.</li>
+                <li style="margin:0; color:#0A1628;">Send me a new video in 2 weeks so we can see the change.</li>
+              </ol>
+              ${membershipSectionHtml}`;
+
+  const html = buildMemberEmailHtml({ title: subject, bodyContentHtml });
+  const text = `${headline}
+
+${intro}
+
+Watch Your Breakdown: ${responseUrl}${coachNotesText}${drillsText}
+
+YOUR NEXT STEP
+1. Watch the breakdown twice. You'll catch something new the second time.
+2. Do these drills at least 3 times this week.
+3. Send me a new video in 2 weeks so we can see the change.${membershipSectionText}
+
+${buildEmailFooterText()}`;
+
+  return { subject, html, text };
 }
 
 export async function sendSubmissionResponseEmail(params: {
   toEmail: string;
   playerName: string;
+  submissionId: string;
   submissionType: "SWING_ANALYSIS" | "MENTAL_GAME";
   responseMode: "VIDEO" | "WRITTEN";
   membershipTier?: DatabaseTier;
@@ -602,133 +584,23 @@ export async function sendSubmissionResponseEmail(params: {
   videoDownloadLink?: string;
 }) {
   const transporter = createTransporter();
-  const appUrl = (process.env.NEXTAUTH_URL || "https://www.lcbtraining.com").replace(/\/$/, "");
-  const viewUrl = `${appUrl}/dashboard?tab=submissions`;
-  const settingsUrl = `${appUrl}/settings`;
-  const isFreeTier = params.membershipTier === "FREE";
-  const freeTierCtaText = isFreeTier
-    ? `Want to keep progressing?
-
-Basic ($59 one-time) unlocks lifetime access to the full drill library, workout programs, and core training PDFs.
-Memorable ($149/month or $1,490/year): Everything in Basic plus 1-on-1 coaching, monthly swing analysis and mental game support submissions, and accountability support.
-Upgrade now in Settings: ${settingsUrl}
-`
-    : "";
-  const freeTierCtaHtml = isFreeTier
-    ? `<div style="margin-top:16px; padding:12px; border:1px solid #2b3650; border-radius:10px; background:#060b16;">
-        <p style="margin:0 0 8px; font-weight:700; color:#98b144;">Keep building your progress</p>
-        <p style="margin:0 0 6px;"><strong>Basic ($59 one-time):</strong> Lifetime access to the full drill library, workout programs, and core training PDFs.</p>
-        <p style="margin:0;"><strong>Memorable ($149/month or $1,490/year):</strong> Everything in Basic plus 1-on-1 coaching, monthly swing analysis and mental game support submissions, and accountability support.</p>
-        <p style="margin:8px 0 0;"><a href="${escapeHtml(
-          settingsUrl,
-        )}" target="_blank" rel="noopener noreferrer" style="color:#8fd7ff; text-decoration:underline;">Upgrade your membership in Settings</a></p>
-      </div>`
-    : "";
-  const generalSettingsCtaText = `Manage your membership and upgrades: ${settingsUrl}`;
-  const generalSettingsCtaHtml = `<p style="margin: 12px 0 0;"><a href="${escapeHtml(
-    settingsUrl,
-  )}" target="_blank" rel="noopener noreferrer" style="color:#8fd7ff; text-decoration:underline;">Manage or upgrade your membership in Settings</a></p>`;
-  const viewResponseButtonHtml = `<a href="${escapeHtml(
-    viewUrl,
-  )}" target="_blank" rel="noopener noreferrer" style="display:inline-block; margin:16px 0; padding:12px 24px; background:#52B788; color:#000000; font-weight:700; text-decoration:none; border-radius:9999px;">View My Response</a>`;
-  const recommendedDrillsEmail = buildRecommendedDrillsEmailSections(
-    params.recommendedDrillIds,
-    viewUrl,
-    viewResponseButtonHtml,
-  );
-
-  if (params.responseMode === "VIDEO") {
-    await transporter.sendMail({
-      from: process.env.NOTIFICATION_EMAIL,
-      to: params.toEmail,
-      subject: "Coach Broc sent you a video response",
-      text: `Hi ${params.playerName},
-
-Coach Broc has reviewed your submission and sent you a personal video response.
-
-Click below to watch it:
-
-View My Response: ${viewUrl}
-
-Log in to your account to watch the video and read any notes from Coach Broc.
-${recommendedDrillsEmail.text}
-Work Hard. Be Memorable.
--- Coach Broc
-${freeTierCtaText}${generalSettingsCtaText}`,
-      html: `<div style="font-family: Arial, sans-serif; color: #e5e7eb; background: #05070d; padding: 24px;">
-      <div style="max-width: 620px; margin: 0 auto; border: 1px solid #1f2c43; border-radius: 12px; overflow: hidden; background: #0b1324;">
-        <div style="background: linear-gradient(90deg, #000000 0%, #0f1d34 70%, #7fbf2f 100%); padding: 18px 20px; font-size: 18px; font-weight: 700; color: #f4f4f5;">
-          Coach Broc sent you a video response
-        </div>
-        <div style="padding: 20px; font-size: 14px; line-height: 1.65; color: #e5e7eb;">
-          <p style="margin: 0 0 12px;">Hi ${escapeHtml(params.playerName)},</p>
-          <p style="margin: 0 0 12px;">Coach Broc has reviewed your submission and sent you a personal video response.</p>
-          <p style="margin: 0 0 12px;">Click below to watch it:</p>
-          ${viewResponseButtonHtml}
-          <p style="margin: 0 0 12px;">Log in to your account to watch the video and read any notes from Coach Broc.</p>
-          ${recommendedDrillsEmail.html}
-          <p style="margin: 0 0 4px;">Work Hard. Be Memorable.</p>
-          <p style="margin: 0;">-- Coach Broc</p>
-          ${freeTierCtaHtml}
-          ${generalSettingsCtaHtml}
-        </div>
-      </div>
-    </div>`,
-      attachments: params.videoAttachment
-        ? [
-            {
-              filename: params.videoAttachment.fileName,
-              content: params.videoAttachment.content,
-              contentType: params.videoAttachment.contentType,
-            },
-          ]
-        : undefined,
-    });
-    return;
-  }
-
-  const writtenResponseBody = params.writtenResponse?.trim() ?? "";
-  const responseBody = writtenResponseBody
-    ? `Your coach has sent a written response:\n\n${writtenResponseBody}`
-    : "Your coach has sent a written response.";
-  const htmlResponseBody = writtenResponseBody
-    ? `Your coach has sent a written response:<br/><br/>${escapeHtml(writtenResponseBody)}`
-    : "Your coach has sent a written response.";
+  const firstName = params.playerName.trim().split(/\s+/)[0] ?? "";
+  const emailContent = buildSubmissionResponseEmailContent({
+    firstName,
+    submissionType: params.submissionType,
+    submissionId: params.submissionId,
+    writtenResponse: params.writtenResponse,
+    recommendedDrillIds: params.recommendedDrillIds,
+    isTwelveWeekEnrolled: params.membershipTier === "TWELVE_WEEK",
+  });
 
   await transporter.sendMail({
     from: process.env.NOTIFICATION_EMAIL,
     to: params.toEmail,
-    subject: "Your LCB Training Coach Response",
-    text: `Hi ${params.playerName},
-
-Thanks for your coaching submission.
-
-${responseBody}
-
-View your response in the app: ${viewUrl}
-${recommendedDrillsEmail.text}
-${freeTierCtaText}${generalSettingsCtaText}
-
--LCB Training`,
-    html: `<div style="font-family: Arial, sans-serif; color: #e5e7eb; background: #05070d; padding: 24px;">
-      <div style="max-width: 620px; margin: 0 auto; border: 1px solid #1f2c43; border-radius: 12px; overflow: hidden; background: #0b1324;">
-        <div style="background: linear-gradient(90deg, #000000 0%, #0f1d34 70%, #7fbf2f 100%); padding: 18px 20px; font-size: 18px; font-weight: 700; color: #f4f4f5;">
-          Your LCB Training Coach Response
-        </div>
-        <div style="padding: 20px; font-size: 14px; line-height: 1.65; color: #e5e7eb;">
-          <p style="margin: 0 0 12px;">Hi ${escapeHtml(params.playerName)},</p>
-          <p style="margin: 0 0 12px;">Thanks for your coaching submission.</p>
-          <p style="margin: 0 0 12px;">${htmlResponseBody}</p>
-          <p style="margin: 0 0 12px;"><a href="${escapeHtml(
-            viewUrl,
-          )}" target="_blank" rel="noopener noreferrer" style="color:#8fd7ff; text-decoration:underline;">View your response in the app</a></p>
-          ${recommendedDrillsEmail.html}
-          ${freeTierCtaHtml}
-          ${generalSettingsCtaHtml}
-          <p style="margin: 12px 0 0;">-LCB Training</p>
-        </div>
-      </div>
-    </div>`,
+    replyTo: EMAIL_REPLY_TO,
+    subject: emailContent.subject,
+    text: emailContent.text,
+    html: emailContent.html,
     attachments: params.videoAttachment
       ? [
           {
@@ -1096,11 +968,6 @@ ${weekOneMessage?.text ?? ""}
       bodyHtml: weekOneMessage?.html ?? "",
     }),
   });
-}
-
-function getPublicAppUrl() {
-  const appUrl = process.env.NEXTAUTH_URL?.replace(/\/$/, "");
-  return appUrl && !appUrl.includes("localhost") ? appUrl : "https://lcbtraining.com";
 }
 
 export async function sendGoalCheckinSubmissionNotification(params: {

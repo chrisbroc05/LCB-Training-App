@@ -11,10 +11,20 @@ import { canAccessDrillLibrary, type DatabaseTier } from "@/lib/membership";
 import { prisma } from "@/lib/prisma";
 import { fetchVimeoThumbnailMap } from "@/lib/vimeo-oembed";
 
-export default async function DrillLibraryPage() {
+type DrillLibraryPageProps = {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
+
+export default async function DrillLibraryPage({ searchParams }: DrillLibraryPageProps) {
+  const resolvedSearchParams = searchParams ? await searchParams : {};
+  const initialDrillId =
+    typeof resolvedSearchParams.drill === "string" ? resolvedSearchParams.drill : undefined;
   const session = await getServerSession(authOptions);
   if (!session?.user) {
-    redirect("/auth");
+    const redirectTarget = initialDrillId
+      ? `/drill-library?drill=${encodeURIComponent(initialDrillId)}`
+      : "/drill-library";
+    redirect(`/auth?redirect=${encodeURIComponent(redirectTarget)}`);
   }
 
   const user = await prisma.user.findUnique({
@@ -57,13 +67,13 @@ export default async function DrillLibraryPage() {
         </section>
 
         <DrillLibraryErrorBoundary>
-          <VideoLibrary thumbnailMap={thumbnailMap} />
+          <VideoLibrary thumbnailMap={thumbnailMap} initialDrillId={initialDrillId} />
         </DrillLibraryErrorBoundary>
       </div>
 
       <div className="md:hidden">
         <DrillLibraryErrorBoundary>
-          <DrillLibraryVideoSection thumbnailMap={thumbnailMap} />
+          <DrillLibraryVideoSection thumbnailMap={thumbnailMap} initialDrillId={initialDrillId} />
         </DrillLibraryErrorBoundary>
         <DrillLibraryMobileResources membershipTier={membershipTier} />
       </div>
