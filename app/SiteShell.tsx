@@ -18,6 +18,7 @@ type SiteShellProps = {
   isLoggedIn: boolean;
   membershipTier: DatabaseTier;
   hasBasicAccess: boolean;
+  hasProgramEnrollment: boolean;
   userDisplayName: string;
   userEmail?: string | null;
 };
@@ -30,6 +31,7 @@ export default function SiteShell({
   isLoggedIn,
   membershipTier,
   hasBasicAccess,
+  hasProgramEnrollment,
   userDisplayName,
   userEmail,
 }: SiteShellProps) {
@@ -62,7 +64,10 @@ export default function SiteShell({
             userDisplayName={userDisplayName}
             userEmail={userEmail}
           />
-          <MobileBottomNav hasBasicAccess={hasBasicAccess} />
+          <MobileBottomNav
+            hasBasicAccess={hasBasicAccess}
+            hasProgramEnrollment={hasProgramEnrollment}
+          />
         </>
       ) : null}
       {adminToggle}

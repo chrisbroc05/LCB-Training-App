@@ -268,7 +268,7 @@ export default function ProgramStartWizard({
   const handleFinish = async () => {
     const saved = await patchEnrollment({ completeOnboarding: true });
     if (saved) {
-      router.push("/dashboard");
+      router.push("/dashboard/today");
       router.refresh();
     }
   };

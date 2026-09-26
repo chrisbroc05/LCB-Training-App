@@ -7,10 +7,11 @@ import { useOptionalMobileApp } from "@/app/components/mobile/MobileAppProvider"
 
 type MobileBottomNavProps = {
   hasBasicAccess: boolean;
+  hasProgramEnrollment: boolean;
 };
 
 type NavTab = {
-  key: "home" | "playbook" | "train" | "resources" | "account";
+  key: "today" | "home" | "playbook" | "train" | "resources" | "account";
   label: string;
   href: string;
   locked?: boolean;
@@ -18,7 +19,43 @@ type NavTab = {
   icon: (active: boolean) => React.ReactNode;
 };
 
-const prefetchRoutes = ["/dashboard", "/playbook", "/drill-library", "/resources", "/profile"];
+const prefetchRoutes = [
+  "/dashboard/today",
+  "/dashboard",
+  "/playbook",
+  "/drill-library",
+  "/resources",
+  "/profile",
+];
+
+function TodayIcon({ active }: { active: boolean }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect
+        x="4"
+        y="5"
+        width="16"
+        height="16"
+        rx="2"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        fill={active ? "currentColor" : "none"}
+      />
+      <path
+        d="M8 3v4M16 3v4M4 10h16"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+      <path
+        d="M8 14h2M8 17h2M14 14h2M14 17h2"
+        stroke={active ? "#0A1628" : "currentColor"}
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
 
 function HomeIcon({ active }: { active: boolean }) {
   return (
@@ -143,13 +180,27 @@ function isTabActive(pathname: string, tab: NavTab) {
   return tab.isActive(pathname);
 }
 
-export default function MobileBottomNav({ hasBasicAccess }: MobileBottomNavProps) {
+export default function MobileBottomNav({
+  hasBasicAccess,
+  hasProgramEnrollment,
+}: MobileBottomNavProps) {
   const pathname = usePathname();
   const router = useRouter();
   const mobileApp = useOptionalMobileApp();
   const [optimisticPath, setOptimisticPath] = useState<string | null>(null);
 
   const tabs: NavTab[] = [
+    ...(hasProgramEnrollment
+      ? [
+          {
+            key: "today" as const,
+            label: "Today",
+            href: "/dashboard/today",
+            isActive: (path: string) => path.startsWith("/dashboard/today"),
+            icon: (active: boolean) => <TodayIcon active={active} />,
+          },
+        ]
+      : []),
     {
       key: "home",
       label: "Home",
@@ -226,7 +277,7 @@ export default function MobileBottomNav({ hasBasicAccess }: MobileBottomNavProps
 
   return (
     <nav className="mobile-bottom-nav md:hidden" aria-label="Mobile app navigation">
-      <div className="mobile-bottom-nav-pill">
+      <div className={`mobile-bottom-nav-pill${hasProgramEnrollment ? " is-six-tabs" : ""}`}>
         {tabs.map((tab) => {
           const active = resolveActive(tab);
           const content = (

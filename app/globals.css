@@ -309,6 +309,14 @@ body {
     box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
   }
 
+  .mobile-bottom-nav-pill.is-six-tabs {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .mobile-bottom-nav-pill.is-six-tabs .mobile-bottom-nav-label {
+    font-size: 10px;
+  }
+
   .mobile-bottom-nav-tab {
     display: flex;
     min-height: 48px;

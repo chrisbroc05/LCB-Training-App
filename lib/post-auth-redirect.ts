@@ -35,7 +35,7 @@ export async function resolvePostAuthDestination(
       return "/program/start";
     }
 
-    return "/dashboard";
+    return "/dashboard/today";
   }
 
   return getPostAuthRedirectPath(redirectParam, callbackUrlParam);

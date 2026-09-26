@@ -52,7 +52,7 @@ export default async function ProgramPage({ searchParams }: ProgramPageProps) {
         select: { onboardingCompletedAt: true },
       });
 
-      redirect(enrollment?.onboardingCompletedAt ? "/dashboard" : "/program/start");
+      redirect(enrollment?.onboardingCompletedAt ? "/dashboard/today" : "/program/start");
     }
   }
 

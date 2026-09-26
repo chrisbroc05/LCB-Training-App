@@ -11,6 +11,7 @@ type TopNavigationProps = {
   isAdmin: boolean;
   hasBasicAccess: boolean;
   hasCoachingAccess: boolean;
+  hasProgramEnrollment: boolean;
   userDisplayName?: string;
 };
 
@@ -370,6 +371,7 @@ export default function TopNavigation({
   isAdmin,
   hasBasicAccess,
   hasCoachingAccess,
+  hasProgramEnrollment,
   userDisplayName,
 }: TopNavigationProps) {
   const pathname = usePathname();
@@ -421,12 +423,22 @@ export default function TopNavigation({
   return (
     <nav ref={navRef} className="flex justify-end md:justify-self-end">
       <div className="hidden items-center gap-1 md:flex">
+        {hasProgramEnrollment ? (
+          <Link
+            href="/dashboard/today"
+            onClick={closeMenus}
+            className={linkClass(pathname.startsWith("/dashboard/today"))}
+          >
+            Today
+          </Link>
+        ) : null}
+
         <Link
           href="/dashboard"
           onClick={closeMenus}
           className={linkClass(pathname === "/dashboard")}
         >
-          Dashboard
+          Home
         </Link>
 
         {hasBasicAccess ? (
@@ -491,13 +503,24 @@ export default function TopNavigation({
                 <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-400">
                   Dashboard
                 </p>
-                <Link
-                  href="/dashboard"
-                  onClick={closeMenus}
-                  className={linkClass(pathname === "/dashboard")}
-                >
-                  Dashboard
-                </Link>
+                <div className="space-y-1">
+                  {hasProgramEnrollment ? (
+                    <Link
+                      href="/dashboard/today"
+                      onClick={closeMenus}
+                      className={linkClass(pathname.startsWith("/dashboard/today"))}
+                    >
+                      Today
+                    </Link>
+                  ) : null}
+                  <Link
+                    href="/dashboard"
+                    onClick={closeMenus}
+                    className={linkClass(pathname === "/dashboard")}
+                  >
+                    Home
+                  </Link>
+                </div>
               </div>
 
               {hasBasicAccess ? (

@@ -85,6 +85,18 @@ export function parseProgramDateKey(dateKey: string) {
   return dateKeyToUtcNoon(dateKey);
 }
 
+export function getWeekdayLabelForProgramDay(startDate: Date, programDay: number) {
+  const startKey = getChicagoDateKey(startDate);
+  const day = dateKeyToUtcNoon(startKey);
+  day.setUTCDate(day.getUTCDate() + (programDay - 1));
+  const weekday = new Intl.DateTimeFormat("en-US", {
+    timeZone: CHICAGO_TIME_ZONE,
+    weekday: "short",
+  }).format(day);
+
+  return weekday.charAt(0);
+}
+
 export function formatProgramStartLabel(startDate: Date, now = new Date()) {
   const startKey = getChicagoDateKey(startDate);
   const todayKey = getChicagoTodayDateKey(now);

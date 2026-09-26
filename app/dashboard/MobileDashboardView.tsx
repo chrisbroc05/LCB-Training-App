@@ -1,4 +1,4 @@
-import ProgramDashboardTabs from "@/app/dashboard/ProgramDashboardTabs";
+import DashboardEnrolledHomeSection from "@/app/dashboard/DashboardEnrolledHomeSection";
 import ProgramSetupBanner from "@/app/dashboard/ProgramSetupBanner";
 import DashboardPlaybookProgressCard from "@/app/dashboard/DashboardPlaybookProgressCard";
 import DashboardUpgradeSection from "@/app/dashboard/DashboardUpgradeSection";
@@ -95,7 +95,7 @@ export default function MobileDashboardView({
       )}
 
       {isEnrolled && !showProgramSetupBanner ? (
-        <ProgramDashboardTabs
+        <DashboardEnrolledHomeSection
           userId={userId}
           membershipTier={membershipTier}
           calendlyBookingUrl={calendlyBookingUrl}

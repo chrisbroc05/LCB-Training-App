@@ -42,7 +42,7 @@ export default async function ProgramStartPage({ searchParams }: ProgramStartPag
   }
 
   if (enrollment.onboardingCompletedAt) {
-    redirect("/dashboard");
+    redirect("/dashboard/today");
   }
 
   const resolvedSearchParams = searchParams ? await searchParams : {};

@@ -43,12 +43,21 @@ export default async function RootLayout({
   const userDisplayName = session?.user?.name?.trim() ?? "";
 
   let membershipTier: DatabaseTier = "FREE";
+  let hasProgramEnrollment = false;
   if (session?.user?.id) {
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: { membershipTier: true },
     });
     membershipTier = (user?.membershipTier ?? "FREE") as DatabaseTier;
+
+    if (membershipTier === "TWELVE_WEEK") {
+      const enrollment = await prisma.programEnrollment.findUnique({
+        where: { userId: session.user.id },
+        select: { onboardingCompletedAt: true },
+      });
+      hasProgramEnrollment = Boolean(enrollment?.onboardingCompletedAt);
+    }
   }
 
   const hasBasicAccess = hasDatabaseTierAccess(membershipTier, "basic");
@@ -89,6 +98,7 @@ export default async function RootLayout({
           isLoggedIn={Boolean(session?.user)}
           membershipTier={membershipTier}
           hasBasicAccess={hasBasicAccess}
+          hasProgramEnrollment={hasProgramEnrollment}
           userDisplayName={userDisplayName}
           userEmail={session?.user?.email}
           header={
@@ -108,6 +118,7 @@ export default async function RootLayout({
                     isAdmin={hasAdminAccess}
                     hasBasicAccess={hasBasicAccess}
                     hasCoachingAccess={hasCoachingAccess}
+                    hasProgramEnrollment={hasProgramEnrollment}
                     userDisplayName={userDisplayName}
                   />
                 </div>

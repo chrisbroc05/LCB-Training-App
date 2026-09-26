@@ -13,6 +13,7 @@ import { computeProgramStreak, getDayOfWeekForProgramDay } from "@/lib/program-s
 import {
   getChicagoMondayStart,
   getProgramDay,
+  getWeekdayLabelForProgramDay,
   parseProgramDateKey,
   type ProgramDayInfo,
 } from "@/lib/program-schedule";
@@ -33,7 +34,10 @@ export type ProgramTodayTask = ProgramDailyTask & {
 export type ProgramWeekDayStatus = {
   programDay: number;
   dayOfWeek: number;
-  status: "complete" | "partial" | "missed" | "today" | "upcoming" | "rest";
+  weekdayLabel: string;
+  status: "complete" | "partial" | "missed" | "upcoming" | "rest";
+  isToday: boolean;
+  tappable: boolean;
   editable: boolean;
 };
 
@@ -233,6 +237,10 @@ export async function buildProgramTodayPayload(params: {
     viewedDayInfo.weekNumber > 0 ? (viewedDayInfo.weekNumber - 1) * 7 + 1 : 0;
   const weekDays: ProgramWeekDayStatus[] = [];
 
+  const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  const yesterdayInfo = getProgramDay({ startDate: params.enrollment.startDate }, yesterday);
+  const startDate = params.enrollment.startDate;
+
   for (let offset = 0; offset < 7; offset += 1) {
     const programDay = weekStartProgramDay + offset;
     const dayOfWeek = offset + 1;
@@ -240,11 +248,25 @@ export async function buildProgramTodayPayload(params: {
       break;
     }
 
+    const weekdayLabel =
+      startDate && programDay > 0
+        ? getWeekdayLabelForProgramDay(startDate, programDay)
+        : "?";
+    const isToday = programDay === todayInfo.programDay;
+    const tappable = programDay > 0 && programDay <= todayInfo.programDay;
+    const editable =
+      yesterdayInfo.programDay > 0 &&
+      programDay === yesterdayInfo.programDay &&
+      programDay !== todayInfo.programDay;
+
     if (dayOfWeek === 7) {
       weekDays.push({
         programDay,
         dayOfWeek,
-        status: programDay === todayInfo.programDay ? "today" : "rest",
+        weekdayLabel,
+        status: "rest",
+        isToday,
+        tappable,
         editable: false,
       });
       continue;
@@ -263,29 +285,30 @@ export async function buildProgramTodayPayload(params: {
     let status: ProgramWeekDayStatus["status"] = "upcoming";
     if (programDay > todayInfo.programDay) {
       status = "upcoming";
-    } else if (programDay === todayInfo.programDay) {
-      status = "today";
     } else if (expectedKeys.length > 0 && completedCount === expectedKeys.length) {
       status = "complete";
     } else if (completedCount > 0) {
       status = "partial";
-    } else {
+    } else if (programDay < todayInfo.programDay) {
       status = "missed";
+    } else {
+      status = "upcoming";
     }
-
-    const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-    const yesterdayInfo = getProgramDay({ startDate: params.enrollment.startDate }, yesterday);
 
     weekDays.push({
       programDay,
       dayOfWeek,
+      weekdayLabel,
       status,
-      editable:
-        yesterdayInfo.programDay > 0 &&
-        programDay === yesterdayInfo.programDay &&
-        programDay !== todayInfo.programDay,
+      isToday,
+      tappable,
+      editable,
     });
   }
+
+  const canCompleteTasks =
+    viewedDayInfo.programDay === todayInfo.programDay ||
+    (yesterdayInfo.programDay > 0 && viewedDayInfo.programDay === yesterdayInfo.programDay);
 
   const allTasksComplete =
     tasks.length > 0 && tasks.every((task) => task.completed) && viewedProgramDay === todayInfo.programDay;
@@ -307,6 +330,14 @@ export async function buildProgramTodayPayload(params: {
     isBeforeStart: todayInfo.isBeforeStart,
     isComplete: todayInfo.isComplete,
     isRestDay: viewedDayInfo.dayOfWeek === 7,
+    canCompleteTasks,
+    isViewingYesterday:
+      yesterdayInfo.programDay > 0 &&
+      viewedDayInfo.programDay === yesterdayInfo.programDay &&
+      viewedDayInfo.programDay !== todayInfo.programDay,
+    isViewingPastDay:
+      viewedDayInfo.programDay < todayInfo.programDay &&
+      viewedDayInfo.programDay !== yesterdayInfo.programDay,
   };
 }
 
