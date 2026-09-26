@@ -8,8 +8,8 @@ import {
   normalizeEquipment,
   normalizeFocusAreas,
   PROGRAM_POSITION_OPTIONS,
-  serializeProgramEnrollment,
-} from "@/lib/program-enrollment";
+} from "@/lib/program-enrollment-shared";
+import { serializeProgramEnrollment } from "@/lib/program-enrollment";
 import {
   getChicagoTodayDateKey,
   getChicagoTomorrowDateKey,

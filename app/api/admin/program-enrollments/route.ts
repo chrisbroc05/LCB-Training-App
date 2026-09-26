@@ -10,7 +10,7 @@ import {
   PROGRAM_STATUS_LABELS,
   type ProgramEquipmentOption,
   type ProgramFocusArea,
-} from "@/lib/program-enrollment";
+} from "@/lib/program-enrollment-shared";
 import { getProgramDay } from "@/lib/program-schedule";
 import { prisma } from "@/lib/prisma";
 

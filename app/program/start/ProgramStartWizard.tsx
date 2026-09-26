@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import type { ProgramAgeGroup, ProgramSeasonMode } from "@prisma/client";
 import {
   PROGRAM_AGE_GROUP_LABELS,
   PROGRAM_EQUIPMENT_LABELS,
@@ -11,9 +10,11 @@ import {
   PROGRAM_FOCUS_AREA_LABELS,
   PROGRAM_FOCUS_AREAS,
   PROGRAM_POSITION_OPTIONS,
+  type ProgramAgeGroup,
   type ProgramEquipmentOption,
   type ProgramFocusArea,
-} from "@/lib/program-enrollment";
+  type ProgramSeasonMode,
+} from "@/lib/program-enrollment-shared";
 import { formatProgramStartLabel, parseProgramDateKey } from "@/lib/program-schedule";
 
 type SerializedEnrollment = {
