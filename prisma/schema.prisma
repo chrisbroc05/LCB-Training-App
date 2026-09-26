@@ -126,6 +126,21 @@ model ProgramEnrollment {
   onboardingCompletedAt DateTime?
   createdAt             DateTime                @default(now())
   updatedAt             DateTime                @updatedAt
+  taskCompletions       TaskCompletion[]
+}
+
+model TaskCompletion {
+  id           String            @id @default(cuid())
+  enrollmentId String
+  enrollment   ProgramEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  programDay   Int
+  taskKey      String
+  taskType     String
+  note         String
+  completedAt  DateTime          @default(now())
+
+  @@unique([enrollmentId, programDay, taskKey])
+  @@index([enrollmentId, programDay])
 }
 
 model Notification {

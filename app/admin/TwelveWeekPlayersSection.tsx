@@ -9,6 +9,7 @@ type TwelveWeekEnrollmentRecord = {
   statusLabel: string;
   startDate: string | null;
   currentWeek: number;
+  currentProgramDay: number;
   phase: string;
   ageGroupLabel: string | null;
   position: string | null;
@@ -26,6 +27,8 @@ export default function TwelveWeekPlayersSection() {
   const [grantLoading, setGrantLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [startDateDrafts, setStartDateDrafts] = useState<Record<string, string>>({});
+  const [startDateSavingId, setStartDateSavingId] = useState<string | null>(null);
 
   const loadEnrollments = async () => {
     setLoading(true);
@@ -43,6 +46,14 @@ export default function TwelveWeekPlayersSection() {
       }
 
       setEnrollments(data.enrollments);
+      setStartDateDrafts(
+        Object.fromEntries(
+          data.enrollments.map((enrollment) => [
+            enrollment.id,
+            enrollment.startDate ?? "",
+          ]),
+        ),
+      );
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Unable to load 12-week players.");
     } finally {
@@ -83,6 +94,44 @@ export default function TwelveWeekPlayersSection() {
       setError(grantError instanceof Error ? grantError.message : "Unable to grant program access.");
     } finally {
       setGrantLoading(false);
+    }
+  };
+
+  const handleStartDateSave = async (enrollmentId: string) => {
+    const startDate = startDateDrafts[enrollmentId];
+    if (!startDate) {
+      setError("Choose a start date first.");
+      return;
+    }
+
+    setStartDateSavingId(enrollmentId);
+    setError("");
+    setSuccess("");
+
+    try {
+      const response = await fetch(`/api/admin/program-enrollments/${enrollmentId}/start-date`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ startDate }),
+      });
+
+      const data = (await response.json().catch(() => ({}))) as {
+        error?: string;
+        enrollment?: { currentProgramDay: number; startDate: string | null };
+      };
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "Unable to update start date.");
+      }
+
+      setSuccess(
+        `Start date saved. Current program day: ${data.enrollment?.currentProgramDay ?? "n/a"}.`,
+      );
+      await loadEnrollments();
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Unable to update start date.");
+    } finally {
+      setStartDateSavingId(null);
     }
   };
 
@@ -143,7 +192,29 @@ export default function TwelveWeekPlayersSection() {
               <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
                 <div>
                   <dt className="text-zinc-500">Start date</dt>
-                  <dd className="text-zinc-100">{enrollment.startDate ?? "Not set"}</dd>
+                  <dd className="text-zinc-100">
+                    <div className="mt-1 flex flex-col gap-2 sm:flex-row sm:items-center">
+                      <input
+                        type="date"
+                        value={startDateDrafts[enrollment.id] ?? ""}
+                        onChange={(event) =>
+                          setStartDateDrafts((current) => ({
+                            ...current,
+                            [enrollment.id]: event.target.value,
+                          }))
+                        }
+                        className="rounded-lg border border-[#2b3650] bg-black px-3 py-2 text-zinc-100"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => void handleStartDateSave(enrollment.id)}
+                        disabled={startDateSavingId === enrollment.id}
+                        className="rounded-lg bg-[#2D6A4F] px-4 py-2 text-sm font-semibold text-white disabled:opacity-70"
+                      >
+                        {startDateSavingId === enrollment.id ? "Saving..." : "Change start date"}
+                      </button>
+                    </div>
+                  </dd>
                 </div>
                 <div>
                   <dt className="text-zinc-500">Current week / phase</dt>
@@ -151,6 +222,12 @@ export default function TwelveWeekPlayersSection() {
                     {enrollment.setupComplete
                       ? `Week ${enrollment.currentWeek || 0} / ${enrollment.phase}`
                       : "Setup incomplete"}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-zinc-500">Current program day</dt>
+                  <dd className="text-zinc-100">
+                    {enrollment.setupComplete ? enrollment.currentProgramDay || 0 : "Setup incomplete"}
                   </dd>
                 </div>
                 <div>

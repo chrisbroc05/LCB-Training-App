@@ -63,6 +63,24 @@ export function getChicagoTomorrowDateKey(now = new Date()) {
   return getChicagoDateKey(today);
 }
 
+export function getChicagoWeekdayIndex(now = new Date()) {
+  const weekday = new Intl.DateTimeFormat("en-US", {
+    timeZone: CHICAGO_TIME_ZONE,
+    weekday: "short",
+  }).format(now);
+
+  return ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].indexOf(weekday);
+}
+
+export function getChicagoMondayStart(now = new Date()) {
+  const todayKey = getChicagoTodayDateKey(now);
+  const weekdayIndex = getChicagoWeekdayIndex(now);
+  const monday = dateKeyToUtcNoon(todayKey);
+  monday.setUTCDate(monday.getUTCDate() - weekdayIndex);
+  monday.setUTCHours(6, 0, 0, 0);
+  return monday;
+}
+
 export function parseProgramDateKey(dateKey: string) {
   return dateKeyToUtcNoon(dateKey);
 }

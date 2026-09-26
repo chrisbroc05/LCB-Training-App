@@ -4,7 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import DashboardCoachingCard from "@/app/dashboard/DashboardCoachingCard";
-import DashboardEnrolledHomeSection from "@/app/dashboard/DashboardEnrolledHomeSection";
+import ProgramDashboardTabs from "@/app/dashboard/ProgramDashboardTabs";
 import DashboardMembershipCard from "@/app/dashboard/DashboardMembershipCard";
 import DashboardPlaybookWelcomeCard from "@/app/dashboard/DashboardPlaybookWelcomeCard";
 import DashboardUpgradeSection from "@/app/dashboard/DashboardUpgradeSection";
@@ -391,8 +391,8 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         </section>
       )}
 
-      {isTwelveWeekProgramMember(membershipTier) ? (
-        <DashboardEnrolledHomeSection
+      {isTwelveWeekProgramMember(membershipTier) && !showProgramSetupBanner ? (
+        <ProgramDashboardTabs
           userId={session.user.id}
           membershipTier={membershipTier}
           calendlyBookingUrl={calendlyBookingUrl}

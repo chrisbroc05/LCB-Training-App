@@ -44,6 +44,7 @@ export async function GET() {
         statusLabel: PROGRAM_STATUS_LABELS[enrollment.status],
         startDate: enrollment.startDate?.toISOString().slice(0, 10) ?? null,
         currentWeek: schedule.weekNumber,
+        currentProgramDay: schedule.programDay,
         phase: schedule.phase,
         ageGroup: enrollment.ageGroup,
         ageGroupLabel: enrollment.ageGroup ? PROGRAM_AGE_GROUP_LABELS[enrollment.ageGroup] : null,

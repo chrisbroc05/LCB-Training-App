@@ -1,4 +1,4 @@
-import DashboardEnrolledHomeSection from "@/app/dashboard/DashboardEnrolledHomeSection";
+import ProgramDashboardTabs from "@/app/dashboard/ProgramDashboardTabs";
 import ProgramSetupBanner from "@/app/dashboard/ProgramSetupBanner";
 import DashboardPlaybookProgressCard from "@/app/dashboard/DashboardPlaybookProgressCard";
 import DashboardUpgradeSection from "@/app/dashboard/DashboardUpgradeSection";
@@ -94,14 +94,8 @@ export default function MobileDashboardView({
         </article>
       )}
 
-      {showProgramSetupBanner ? (
-        <div className="mobile-card p-0 [&_section]:mt-0">
-          <ProgramSetupBanner />
-        </div>
-      ) : null}
-
-      {isEnrolled ? (
-        <DashboardEnrolledHomeSection
+      {isEnrolled && !showProgramSetupBanner ? (
+        <ProgramDashboardTabs
           userId={userId}
           membershipTier={membershipTier}
           calendlyBookingUrl={calendlyBookingUrl}
@@ -110,6 +104,14 @@ export default function MobileDashboardView({
           currentMonthGoalCheckin={currentMonthGoalCheckin}
           layout="mobile"
         />
+      ) : isEnrolled ? (
+        <>
+          {showProgramSetupBanner ? (
+            <div className="mobile-card p-0 [&_section]:mt-0">
+              <ProgramSetupBanner />
+            </div>
+          ) : null}
+        </>
       ) : (
         <>
           <MobileCoachingStatusCard

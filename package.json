@@ -10,7 +10,8 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
-    "test:program-schedule": "npx --yes tsx scripts/test-program-schedule.ts"
+    "test:program-schedule": "npx --yes tsx scripts/test-program-schedule.ts",
+    "test:daily-plan": "npx --yes tsx scripts/test-daily-plan.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1127.0",
