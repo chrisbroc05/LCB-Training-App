@@ -11,9 +11,12 @@ import {
   HITTING_SWINGS_BY_AGE_PHASE,
   IN_SEASON_MOBILITY_NOTE,
   IN_SEASON_SPEED_STRENGTH_NOTE,
+  getMindsetPromptForDay,
   MINDSET_WEEK_CONTENT,
   SATURDAY_REFLECTION_FIELDS,
   SPRINT_TASK_BY_AGE,
+  SPRINT_TASK_IN_SEASON_BY_AGE,
+  IN_SEASON_SPRINT_NOTE,
   toContentPhase,
 } from "@/lib/program-content";
 import {
@@ -259,13 +262,14 @@ function buildMindsetTask(
   isFocusExtra: boolean,
 ): InternalTask {
   const content = MINDSET_WEEK_CONTENT[weekNumber] ?? MINDSET_WEEK_CONTENT[1];
+  const prompt = getMindsetPromptForDay(weekNumber, dayOfWeek);
 
   return {
     key: `p${programDay}-mindset${suffix}`,
     type: "mindset",
     title: content.theme,
-    target: content.prompt,
-    mindsetPrompt: content.prompt,
+    target: prompt,
+    mindsetPrompt: prompt,
     drills: getMindsetDrillsForDay(weekNumber, dayOfWeek),
     needsNote: true,
     dropRank: isFocusExtra ? DROP_RANK.extraMindset : DROP_RANK.keep,
@@ -316,12 +320,17 @@ function buildReflectionTask(programDay: number): InternalTask {
   };
 }
 
-function buildSprintTask(programDay: number, ageGroup: ProgramAgeGroup): InternalTask {
+function buildSprintTask(
+  programDay: number,
+  ageGroup: ProgramAgeGroup,
+  inSeason: boolean,
+): InternalTask {
   return {
     key: `p${programDay}-sprint`,
     type: "sprint",
     title: "Speed focus sprints",
-    target: SPRINT_TASK_BY_AGE[ageGroup],
+    target: inSeason ? SPRINT_TASK_IN_SEASON_BY_AGE[ageGroup] : SPRINT_TASK_BY_AGE[ageGroup],
+    inSeasonNote: inSeason ? IN_SEASON_SPRINT_NOTE : undefined,
     needsNote: true,
     dropRank: DROP_RANK.sprint,
     isFocusExtra: true,
@@ -442,7 +451,7 @@ function buildBaseTasks(
     );
     tasks.push(buildMobilityTask(programDay, "-wed", ageGroup, weekNumber, mobilityNote, !inSeason));
     if (hasFocus(focusAreas, "speed")) {
-      tasks.push(buildSprintTask(programDay, ageGroup));
+      tasks.push(buildSprintTask(programDay, ageGroup, inSeason));
     }
     if (hasFocus(focusAreas, "mental")) {
       tasks.push(buildMindsetTask(programDay, "-focus", weekNumber, dayOfWeek, true));
