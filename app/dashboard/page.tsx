@@ -160,7 +160,6 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       twelveWeekProgramEndsAt: true,
       twelveWeekCallBooked: true,
       twelveWeekCallScheduledAt: true,
-      pendingCheckoutTier: true,
       subscriptionStatus: true,
       subscriptionCurrentPeriodEnd: true,
       subscriptionCancelAtPeriodEnd: true,
@@ -172,10 +171,6 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
   if (!userRecord) {
     redirect("/auth");
-  }
-
-  if (userRecord.pendingCheckoutTier && userRecord.membershipTier === "FREE") {
-    redirect("/program?startCheckout=1");
   }
 
   const membershipTier = userRecord.membershipTier as DatabaseTier;

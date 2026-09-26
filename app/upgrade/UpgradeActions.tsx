@@ -26,13 +26,22 @@ export default function UpgradeActions({
     setError("");
 
     try {
-      const response = await fetch("/api/stripe/checkout", {
+      const checkoutPath =
+        tier === "BASIC"
+          ? "/api/stripe/checkout/basic"
+          : tier === "TWELVE_WEEK"
+            ? "/api/stripe/checkout/twelve-week"
+            : "/api/stripe/checkout";
+      const response = await fetch(checkoutPath, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          membershipTier: tier,
-          billingFrequency: tier === "BASIC" ? undefined : billingFrequency,
-        }),
+        headers: tier === "BASIC" || tier === "TWELVE_WEEK" ? undefined : { "Content-Type": "application/json" },
+        body:
+          tier === "BASIC" || tier === "TWELVE_WEEK"
+            ? undefined
+            : JSON.stringify({
+                membershipTier: tier,
+                billingFrequency,
+              }),
       });
       const data = (await response.json().catch(() => ({}))) as { error?: string; url?: string };
 

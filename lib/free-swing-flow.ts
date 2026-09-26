@@ -17,13 +17,19 @@ export function markPendingCoachingWelcome() {
   window.localStorage.setItem(PENDING_COACHING_WELCOME_KEY, "1");
 }
 
-export function getPostAuthRedirectPath(redirect: string | null) {
-  if (redirect === FREE_SWING_AUTH_REDIRECT) {
+export function getAuthRedirectParam(redirect: string | null, callbackUrl: string | null) {
+  return redirect ?? callbackUrl;
+}
+
+export function getPostAuthRedirectPath(redirect: string | null, callbackUrl?: string | null) {
+  const target = getAuthRedirectParam(redirect, callbackUrl ?? null);
+
+  if (target === FREE_SWING_AUTH_REDIRECT) {
     return "/coaching-submissions";
   }
 
-  if (redirect && redirect.startsWith("/") && !redirect.startsWith("//")) {
-    return redirect;
+  if (target && target.startsWith("/") && !target.startsWith("//")) {
+    return target;
   }
 
   return "/dashboard";

@@ -1,7 +1,9 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import ProgramCheckoutSection from "@/app/program/ProgramCheckoutSection";
 import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { FREE_SWING_AUTH_URL } from "@/lib/free-swing-flow";
 import { PLAYBOOK_PROGRAM_INCLUDED_DESCRIPTION } from "@/lib/playbook-branding";
 import {
@@ -37,6 +39,22 @@ export default async function ProgramPage({ searchParams }: ProgramPageProps) {
   const session = await getServerSession(authOptions);
   const resolvedSearchParams = searchParams ? await searchParams : {};
   const autoStartCheckout = resolvedSearchParams.startCheckout === "1";
+
+  if (session?.user?.id && autoStartCheckout) {
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { membershipTier: true },
+    });
+
+    if (user?.membershipTier === "TWELVE_WEEK") {
+      const enrollment = await prisma.programEnrollment.findUnique({
+        where: { userId: session.user.id },
+        select: { onboardingCompletedAt: true },
+      });
+
+      redirect(enrollment?.onboardingCompletedAt ? "/dashboard" : "/program/start");
+    }
+  }
 
   return (
     <div className="mx-auto w-full max-w-4xl px-4 py-12 sm:px-6 sm:py-16 md:py-20">

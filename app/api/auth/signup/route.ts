@@ -55,10 +55,6 @@ export async function POST(request: Request) {
         email,
         password: hashedPassword,
         membershipTier: "FREE",
-        pendingCheckoutTier:
-          signupSource === "playbook" && membershipTierForNotification !== "FREE"
-            ? membershipTierForNotification
-            : null,
         signupDate: new Date(),
       },
       select: {

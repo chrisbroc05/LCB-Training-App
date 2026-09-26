@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
+import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import { keyToDatabaseTier, membershipTiers, type TierKey } from "@/lib/membership";
@@ -9,12 +10,19 @@ import BrandLogo from "@/app/BrandLogo";
 import { parseBillingFrequency, type BillingFrequency } from "@/lib/billing";
 import {
   FREE_SWING_AUTH_REDIRECT,
+  getAuthRedirectParam,
   getPostAuthRedirectPath,
   isFreeSwingAuthFlow,
   markPendingCoachingWelcome,
 } from "@/lib/free-swing-flow";
-import { isPlaybookSignupFlow } from "@/lib/auth-flow";
+import {
+  buildAuthPageHref,
+  isPlaybookSignupFlow,
+  isProgramSignupFlow,
+} from "@/lib/auth-flow";
 import PlaybookSignupFlow from "@/app/auth/PlaybookSignupFlow";
+import GeneralAuthFlow from "@/app/auth/GeneralAuthFlow";
+import ProgramSignupFlow from "@/app/auth/ProgramSignupFlow";
 
 type AuthMode = "login" | "signup";
 
@@ -24,6 +32,34 @@ export default function AuthPage() {
       <AuthContent />
     </Suspense>
   );
+}
+
+async function startMembershipCheckout(
+  membershipTier: DatabaseTier,
+  billingFrequency: BillingFrequency,
+  checkoutSource: string,
+): Promise<{ url?: string; error?: string }> {
+  if (membershipTier === "BASIC") {
+    const response = await fetch("/api/stripe/checkout/basic", { method: "POST" });
+    return (await response.json().catch(() => ({}))) as { url?: string; error?: string };
+  }
+
+  if (membershipTier === "TWELVE_WEEK") {
+    const response = await fetch("/api/stripe/checkout/twelve-week", { method: "POST" });
+    return (await response.json().catch(() => ({}))) as { url?: string; error?: string };
+  }
+
+  const response = await fetch("/api/stripe/checkout", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      membershipTier,
+      billingFrequency,
+      checkoutSource,
+    }),
+  });
+
+  return (await response.json().catch(() => ({}))) as { url?: string; error?: string };
 }
 
 function AuthContent() {
@@ -42,35 +78,33 @@ function AuthContent() {
   const [resumeError, setResumeError] = useState("");
   const [sessionChecked, setSessionChecked] = useState(false);
   const [hasActiveSession, setHasActiveSession] = useState(false);
-  const [pendingCheckoutTier, setPendingCheckoutTier] = useState<
-    DatabaseTier | null
-  >(null);
+  const [pendingCheckoutTier, setPendingCheckoutTier] = useState<DatabaseTier | null>(null);
 
   const tierQueryParam = searchParams.get("tier");
   const normalizedTierQuery = tierQueryParam?.toLowerCase();
-  const preselectedTierFromQuery = membershipTiers.find(
-    (tier) => tier.key === normalizedTierQuery,
-  )?.key;
+  const preselectedTierFromQuery = membershipTiers.find((tier) => tier.key === normalizedTierQuery)?.key;
   const modeQuery = searchParams.get("mode")?.toLowerCase();
   const redirectParam = searchParams.get("redirect");
-  const isFreeSwingFlow = isFreeSwingAuthFlow(tierQueryParam, redirectParam);
-  const isPlaybookFlow = isPlaybookSignupFlow(tierQueryParam, redirectParam);
+  const callbackUrlParam = searchParams.get("callbackUrl");
+  const authRedirectParam = getAuthRedirectParam(redirectParam, callbackUrlParam);
+  const isFreeSwingFlow = isFreeSwingAuthFlow(tierQueryParam, authRedirectParam);
+  const isProgramFlow = isProgramSignupFlow(tierQueryParam, authRedirectParam);
+  const isPlaybookFlow = isPlaybookSignupFlow(tierQueryParam, authRedirectParam);
   const shouldStartOnSignup =
     modeQuery === "login"
       ? false
       : modeQuery === "signup" ||
         Boolean(preselectedTierFromQuery) ||
+        isProgramFlow ||
         (isPlaybookFlow && modeQuery !== "login");
   const [authMode, setAuthMode] = useState<AuthMode>(shouldStartOnSignup ? "signup" : "login");
   const checkoutStatus = searchParams.get("checkout");
   const billingQueryParam = searchParams.get("billing");
-  const postAuthPath = getPostAuthRedirectPath(redirectParam);
-  const playbookPreselectedTier =
-    preselectedTierFromQuery === "memorable" || preselectedTierFromQuery === "elite"
-      ? preselectedTierFromQuery
-      : null;
+  const postAuthPath = getPostAuthRedirectPath(redirectParam, callbackUrlParam);
+  const loginHref = buildAuthPageHref({ mode: "login", searchParams });
+  const signupHref = buildAuthPageHref({ mode: "signup", searchParams });
   const selectedTier: TierKey =
-    manuallySelectedTier ?? playbookPreselectedTier ?? "basic";
+    manuallySelectedTier ?? preselectedTierFromQuery ?? (isPlaybookFlow ? "basic" : "free");
   const selectedDatabaseTier: DatabaseTier = keyToDatabaseTier[selectedTier];
   const [billingFrequency, setBillingFrequency] = useState<BillingFrequency>(
     parseBillingFrequency(billingQueryParam),
@@ -82,10 +116,10 @@ function AuthContent() {
       return;
     }
 
-    if (modeQuery === "signup" || preselectedTierFromQuery || isPlaybookFlow) {
+    if (modeQuery === "signup" || preselectedTierFromQuery || isProgramFlow || isPlaybookFlow) {
       setAuthMode("signup");
     }
-  }, [modeQuery, preselectedTierFromQuery, isPlaybookFlow]);
+  }, [modeQuery, preselectedTierFromQuery, isProgramFlow, isPlaybookFlow]);
 
   useEffect(() => {
     if (!isFreeSwingFlow && !isPlaybookFlow) {
@@ -167,8 +201,7 @@ function AuthContent() {
   const isLoggedInWithPendingCheckout = Boolean(
     isPlaybookFlow && hasActiveSession && pendingCheckoutTier,
   );
-  const resumeCheckoutTier: DatabaseTier =
-    pendingCheckoutTier ?? selectedDatabaseTier;
+  const resumeCheckoutTier: DatabaseTier = pendingCheckoutTier ?? selectedDatabaseTier;
 
   const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -189,7 +222,23 @@ function AuthContent() {
       return;
     }
 
-    window.location.href = result.url ?? postAuthPath;
+    const destinationParams = new URLSearchParams();
+    if (redirectParam) {
+      destinationParams.set("redirect", redirectParam);
+    }
+    if (callbackUrlParam) {
+      destinationParams.set("callbackUrl", callbackUrlParam);
+    }
+
+    const destinationQuery = destinationParams.toString();
+    const destinationResponse = await fetch(
+      `/api/auth/post-login-redirect${destinationQuery ? `?${destinationQuery}` : ""}`,
+    );
+    const destinationPayload = (await destinationResponse.json().catch(() => ({}))) as {
+      path?: string;
+    };
+
+    window.location.href = destinationPayload.path ?? postAuthPath;
   };
 
   const freeSwingLoginForm = (
@@ -233,6 +282,9 @@ function AuthContent() {
     setSignupLoading(true);
     setSignupError("");
 
+    const membershipTierForSignup = isPlaybookFlow ? selectedDatabaseTier : "FREE";
+    const signupSource = isProgramFlow ? "program" : isPlaybookFlow ? "playbook" : "standard";
+
     const response = await fetch("/api/auth/signup", {
       method: "POST",
       headers: {
@@ -242,8 +294,8 @@ function AuthContent() {
         name: signupName,
         email: signupEmail,
         password: signupPassword,
-        selectedMembershipTier: selectedDatabaseTier,
-        signupSource: isPlaybookFlow ? "playbook" : "standard",
+        selectedMembershipTier: membershipTierForSignup,
+        signupSource,
       }),
     });
 
@@ -267,74 +319,60 @@ function AuthContent() {
       return;
     }
 
-    if (selectedDatabaseTier === "FREE") {
+    if (isFreeSwingFlow || authRedirectParam === FREE_SWING_AUTH_REDIRECT) {
       setSignupLoading(false);
-      if (redirectParam === FREE_SWING_AUTH_REDIRECT) {
-        markPendingCoachingWelcome();
-        window.location.href = "/coaching-submissions";
-      } else {
-        window.location.href = "/dashboard";
+      markPendingCoachingWelcome();
+      window.location.href = "/coaching-submissions";
+      return;
+    }
+
+    if (isProgramFlow) {
+      const checkoutData = await startMembershipCheckout("TWELVE_WEEK", billingFrequency, "program");
+      if (!checkoutData.url) {
+        setSignupLoading(false);
+        setSignupError(checkoutData.error ?? "Unable to start checkout. Please try again.");
+        return;
       }
+
+      setSignupLoading(false);
+      window.location.href = checkoutData.url;
       return;
     }
 
-    const checkoutResponse = await fetch("/api/stripe/checkout", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        membershipTier: selectedDatabaseTier,
+    if (isPlaybookFlow && selectedDatabaseTier !== "FREE") {
+      const checkoutData = await startMembershipCheckout(
+        selectedDatabaseTier,
         billingFrequency,
-        checkoutSource: isPlaybookFlow ? "playbook" : "standard",
-      }),
-    });
+        "playbook",
+      );
+      if (!checkoutData.url) {
+        setSignupLoading(false);
+        setSignupError(checkoutData.error ?? "Unable to start checkout. Please try again.");
+        return;
+      }
 
-    if (!checkoutResponse.ok) {
-      const data = (await checkoutResponse.json().catch(() => ({}))) as { error?: string };
       setSignupLoading(false);
-      setSignupError(data.error ?? "Unable to start checkout. Please try again.");
-      return;
-    }
-
-    const checkoutData = (await checkoutResponse.json()) as { url?: string };
-    if (!checkoutData.url) {
-      setSignupLoading(false);
-      setSignupError("Unable to start checkout. Please try again.");
+      window.location.href = checkoutData.url;
       return;
     }
 
     setSignupLoading(false);
-    window.location.href = checkoutData.url;
+    window.location.href = postAuthPath;
   };
 
   const handleResumeCheckout = async () => {
     setResumeLoading(true);
     setResumeError("");
 
-    const checkoutResponse = await fetch("/api/stripe/checkout", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        membershipTier: resumeCheckoutTier,
-        billingFrequency,
-        checkoutSource: isPlaybookFlow ? "playbook" : "standard",
-      }),
-    });
+    const checkoutData = await startMembershipCheckout(
+      resumeCheckoutTier,
+      billingFrequency,
+      "playbook",
+    );
 
-    if (!checkoutResponse.ok) {
-      const data = (await checkoutResponse.json().catch(() => ({}))) as { error?: string };
-      setResumeLoading(false);
-      setResumeError(data.error ?? "Unable to start checkout. Please try again.");
-      return;
-    }
-
-    const checkoutData = (await checkoutResponse.json()) as { url?: string };
     if (!checkoutData.url) {
       setResumeLoading(false);
-      setResumeError("Unable to start checkout. Please try again.");
+      setResumeError(checkoutData.error ?? "Unable to start checkout. Please try again.");
       return;
     }
 
@@ -367,17 +405,17 @@ function AuthContent() {
             <BrandLogo className="object-contain" />
           </div>
         </div>
-      {checkoutStatus === "cancelled" && !isPlaybookFlow ? (
-        <section className="mb-6 rounded-xl border border-yellow-500/40 bg-yellow-500/10 px-5 py-4 text-sm text-yellow-100">
-          Checkout was cancelled. Your account is ready, and you can choose a plan again any time.
-        </section>
-      ) : null}
+        {checkoutStatus === "cancelled" && isPlaybookFlow ? (
+          <section className="mb-6 rounded-xl border border-yellow-500/40 bg-yellow-500/10 px-5 py-4 text-sm text-yellow-100">
+            Checkout was cancelled. Your account is ready, and you can choose a plan again any time.
+          </section>
+        ) : null}
 
         {authMode === "login" && isFreeSwingFlow ? (
           <article className="mx-auto w-full max-w-lg rounded-2xl border border-[#18243a] bg-black/25 p-5 sm:p-7">
             <section className="rounded-2xl border border-[#2b3650] bg-[#0b1324] px-5 py-6 sm:px-7 sm:py-8">
               <h1 className="text-center text-2xl font-semibold text-zinc-100 sm:text-3xl">
-                Welcome back
+                Welcome back.
               </h1>
               <p className="mt-3 text-center text-sm text-zinc-400">
                 Log in to continue to your coaching submissions.
@@ -388,45 +426,10 @@ function AuthContent() {
 
             <p className="mt-5 text-center text-sm text-zinc-300">
               Don&apos;t have an account?{" "}
-              <button
-                type="button"
-                onClick={() => {
-                  setLoginError("");
-                  setSignupError("");
-                  setAuthMode("signup");
-                }}
-                className="underline-offset-2 transition hover:text-[#98b144] hover:underline"
-              >
+              <Link href={signupHref} className="underline-offset-2 transition hover:text-[#98b144] hover:underline">
                 Sign up
-              </button>
+              </Link>
             </p>
-          </article>
-        ) : isPlaybookFlow && authMode === "login" ? (
-          <article className="mx-auto w-full max-w-md rounded-2xl border border-[#18243a] bg-black/25 p-5 sm:p-7">
-            <h1 className="text-center text-2xl font-semibold text-zinc-100 sm:text-3xl">Welcome back</h1>
-            <p className="mt-2 text-center text-sm text-zinc-400">
-              Log in to continue unlocking The Next Level Playbook.
-            </p>
-            {freeSwingLoginForm}
-            <div className="mt-5 flex flex-col gap-2 text-center text-sm">
-              <a
-                href="mailto:chrisbroc05@gmail.com?subject=LCB%20Training%20Password%20Help"
-                className="text-zinc-300 underline-offset-2 transition hover:text-[#98b144] hover:underline"
-              >
-                Forgot password?
-              </a>
-              <button
-                type="button"
-                onClick={() => {
-                  setLoginError("");
-                  setSignupError("");
-                  setAuthMode("signup");
-                }}
-                className="text-zinc-300 underline-offset-2 transition hover:text-[#98b144] hover:underline"
-              >
-                Don&apos;t have an account? Sign up
-              </button>
-            </div>
           </article>
         ) : isFreeSwingFlow ? (
           <article className="mx-auto w-full max-w-lg rounded-2xl border border-[#18243a] bg-black/25 p-5 sm:p-7">
@@ -503,20 +506,25 @@ function AuthContent() {
 
             <p className="mt-5 text-center text-sm text-zinc-300">
               Already have an account?{" "}
-              <button
-                type="button"
-                onClick={() => {
-                  setLoginError("");
-                  setSignupError("");
-                  setAuthMode("login");
-                }}
-                className="underline-offset-2 transition hover:text-[#98b144] hover:underline"
-              >
+              <Link href={loginHref} className="underline-offset-2 transition hover:text-[#98b144] hover:underline">
                 Log in
-              </button>
+              </Link>
             </p>
           </article>
-        ) : isPlaybookFlow ? (
+        ) : authMode === "signup" && isProgramFlow ? (
+          <ProgramSignupFlow
+            loginHref={loginHref}
+            signupName={signupName}
+            onSignupNameChange={setSignupName}
+            signupEmail={signupEmail}
+            onSignupEmailChange={setSignupEmail}
+            signupPassword={signupPassword}
+            onSignupPasswordChange={setSignupPassword}
+            signupError={signupError}
+            signupLoading={signupLoading}
+            onSignupSubmit={handleSignup}
+          />
+        ) : authMode === "signup" && isPlaybookFlow ? (
           <PlaybookSignupFlow
             selectedTier={selectedTier}
             onSelectTier={setManuallySelectedTier}
@@ -536,13 +544,31 @@ function AuthContent() {
             onSignupSubmit={handleSignup}
             onResumeCheckout={handleResumeCheckout}
             onStartFreeLoggedIn={handleStartFreeLoggedIn}
-            onSwitchToLogin={() => {
-              setLoginError("");
-              setSignupError("");
-              setAuthMode("login");
-            }}
+            loginHref={loginHref}
           />
-        ) : null}
+        ) : (
+          <GeneralAuthFlow
+            authMode={authMode}
+            loginHref={loginHref}
+            signupHref={signupHref}
+            loginEmail={loginEmail}
+            onLoginEmailChange={setLoginEmail}
+            loginPassword={loginPassword}
+            onLoginPasswordChange={setLoginPassword}
+            loginError={loginError}
+            loginLoading={loginLoading}
+            onLoginSubmit={handleLogin}
+            signupName={signupName}
+            onSignupNameChange={setSignupName}
+            signupEmail={signupEmail}
+            onSignupEmailChange={setSignupEmail}
+            signupPassword={signupPassword}
+            onSignupPasswordChange={setSignupPassword}
+            signupError={signupError}
+            signupLoading={signupLoading}
+            onSignupSubmit={handleSignup}
+          />
+        )}
       </section>
     </div>
   );

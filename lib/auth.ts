@@ -56,6 +56,17 @@ export const authOptions: NextAuthOptions = {
         token.membershipTier = user.membershipTier;
       }
 
+      if (user?.id) {
+        await prisma.user.updateMany({
+          where: {
+            id: user.id,
+            pendingCheckoutTier: { not: null },
+          },
+          data: { pendingCheckoutTier: null },
+        });
+        token.pendingCheckoutTier = null;
+      }
+
       if (token.sub) {
         const dbUser = await prisma.user.findUnique({
           where: { id: token.sub },

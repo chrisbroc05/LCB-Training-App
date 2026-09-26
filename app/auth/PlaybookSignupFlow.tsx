@@ -30,7 +30,7 @@ type PlaybookSignupFlowProps = {
   onSignupSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
   onResumeCheckout: () => void;
   onStartFreeLoggedIn: () => void;
-  onSwitchToLogin: () => void;
+  loginHref: string;
 };
 
 function CheckmarkIcon() {
@@ -71,7 +71,7 @@ export default function PlaybookSignupFlow({
   onSignupSubmit,
   onResumeCheckout,
   onStartFreeLoggedIn,
-  onSwitchToLogin,
+  loginHref,
 }: PlaybookSignupFlowProps) {
   const isFreeSelected = selectedTier === "free";
   const isBasicSelected = selectedTier === "basic";
@@ -246,13 +246,9 @@ export default function PlaybookSignupFlow({
 
           <p className="mt-5 text-center text-sm text-zinc-300">
             Already have an account?{" "}
-            <button
-              type="button"
-              onClick={onSwitchToLogin}
-              className="underline-offset-2 transition hover:text-[#98b144] hover:underline"
-            >
+            <Link href={loginHref} className="underline-offset-2 transition hover:text-[#98b144] hover:underline">
               Log in
-            </button>
+            </Link>
           </p>
         </>
       )}
