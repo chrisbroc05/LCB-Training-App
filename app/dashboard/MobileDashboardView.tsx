@@ -1,4 +1,5 @@
 import DashboardEnrolledHomeSection from "@/app/dashboard/DashboardEnrolledHomeSection";
+import ProgramSetupBanner from "@/app/dashboard/ProgramSetupBanner";
 import DashboardPlaybookProgressCard from "@/app/dashboard/DashboardPlaybookProgressCard";
 import DashboardUpgradeSection from "@/app/dashboard/DashboardUpgradeSection";
 import MobileCoachingStatusCard from "@/app/dashboard/MobileCoachingStatusCard";
@@ -34,6 +35,7 @@ type MobileDashboardViewProps = {
   twelveWeekCallBooked: boolean;
   twelveWeekCallScheduledAt: Date | null;
   calendlyBookingUrl: string;
+  showProgramSetupBanner: boolean;
 };
 
 export default function MobileDashboardView({
@@ -49,6 +51,7 @@ export default function MobileDashboardView({
   twelveWeekCallBooked,
   twelveWeekCallScheduledAt,
   calendlyBookingUrl,
+  showProgramSetupBanner,
 }: MobileDashboardViewProps) {
   const isEnrolled = isTwelveWeekProgramMember(membershipTier);
 
@@ -90,6 +93,12 @@ export default function MobileDashboardView({
           continue with additional submissions and unlocked training content.
         </article>
       )}
+
+      {showProgramSetupBanner ? (
+        <div className="mobile-card p-0 [&_section]:mt-0">
+          <ProgramSetupBanner />
+        </div>
+      ) : null}
 
       {isEnrolled ? (
         <DashboardEnrolledHomeSection

@@ -42,6 +42,23 @@ enum MentalGameSubmissionStatus {
   COMPLETED
 }
 
+enum ProgramEnrollmentStatus {
+  ACTIVE
+  PAUSED
+  COMPLETED
+}
+
+enum ProgramAgeGroup {
+  AGE_8_11
+  AGE_12_15
+  AGE_16_18
+}
+
+enum ProgramSeasonMode {
+  IN_SEASON
+  OFF_SEASON
+}
+
 model User {
   id                     String                 @id @default(cuid())
   name                   String?
@@ -91,6 +108,24 @@ model User {
   goalCheckins           GoalCheckin[]
   playbookProgress       PlaybookProgress?
   notifications          Notification[]
+  programEnrollment      ProgramEnrollment?
+}
+
+model ProgramEnrollment {
+  id                    String                  @id @default(cuid())
+  userId                String                  @unique
+  user                  User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status                ProgramEnrollmentStatus @default(ACTIVE)
+  startDate             DateTime?               @db.Date
+  ageGroup              ProgramAgeGroup?
+  position              String?
+  focusAreas            String[]                @default([])
+  equipment             String[]                @default([])
+  seasonMode            ProgramSeasonMode?
+  knownFor              String?
+  onboardingCompletedAt DateTime?
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
 }
 
 model Notification {

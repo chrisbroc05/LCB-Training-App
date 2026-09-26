@@ -9,6 +9,7 @@ import DashboardMembershipCard from "@/app/dashboard/DashboardMembershipCard";
 import DashboardPlaybookWelcomeCard from "@/app/dashboard/DashboardPlaybookWelcomeCard";
 import DashboardUpgradeSection from "@/app/dashboard/DashboardUpgradeSection";
 import MobileDashboardView from "@/app/dashboard/MobileDashboardView";
+import ProgramSetupBanner from "@/app/dashboard/ProgramSetupBanner";
 import MonthlyGoalProgressCard from "@/app/dashboard/MonthlyGoalProgressCard";
 import {
   ensureCoachingSubmissionPeriod,
@@ -253,6 +254,16 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       })
     : [];
 
+  const programEnrollment =
+    membershipTier === "TWELVE_WEEK"
+      ? await prisma.programEnrollment.findUnique({
+          where: { userId: session.user.id },
+          select: { onboardingCompletedAt: true },
+        })
+      : null;
+  const showProgramSetupBanner =
+    membershipTier === "TWELVE_WEEK" && !programEnrollment?.onboardingCompletedAt;
+
   const recentResponses = canAccessCoachingNav(membershipTier)
     ? await Promise.all([
         prisma.swingAnalysisSubmission.findMany({
@@ -309,6 +320,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         twelveWeekCallBooked={userRecord.twelveWeekCallBooked}
         twelveWeekCallScheduledAt={userRecord.twelveWeekCallScheduledAt}
         calendlyBookingUrl={calendlyBookingUrl}
+        showProgramSetupBanner={showProgramSetupBanner}
       />
 
       <div className="mx-auto hidden w-full max-w-6xl px-4 py-10 sm:px-6 sm:py-14 md:block md:py-20">
@@ -343,6 +355,8 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           </>
         )}
       </section>
+
+      {showProgramSetupBanner ? <ProgramSetupBanner /> : null}
 
       {membershipTier === "BASIC" ? <DashboardPlaybookWelcomeCard /> : null}
 

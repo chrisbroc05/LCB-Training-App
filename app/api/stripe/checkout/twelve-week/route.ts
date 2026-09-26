@@ -31,7 +31,7 @@ export async function POST(request: Request) {
       mode: "payment",
       customer_email: session.user.email,
       line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `${baseUrl}/dashboard?checkout=success&program=twelve-week`,
+      success_url: `${baseUrl}/program/start?checkout=success`,
       cancel_url: `${baseUrl}/program?checkout=cancelled`,
       client_reference_id: session.user.id,
       metadata: {

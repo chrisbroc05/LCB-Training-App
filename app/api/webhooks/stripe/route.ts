@@ -3,6 +3,7 @@ import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 import { isDatabaseTier } from "@/lib/membership";
 import { stripe } from "@/lib/stripe";
+import { ensureProgramEnrollmentForUser } from "@/lib/program-enrollment";
 import { getTwelveWeekProgramEndDate } from "@/lib/twelve-week-program";
 import { sendPaymentFailedEmail, sendEliteWelcomeEmail, sendMemorableWelcomeEmail } from "@/lib/notifications";
 
@@ -116,6 +117,7 @@ export async function POST(request: Request) {
             twelveWeekProgramEndsAt: getTwelveWeekProgramEndDate(startedAt),
           },
         });
+        await ensureProgramEnrollmentForUser(userId);
       } else if (checkoutSession.mode === "subscription") {
         await prisma.user.updateMany({
           where: { id: userId },

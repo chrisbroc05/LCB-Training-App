@@ -5,6 +5,7 @@ import { isAdminEmail } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
 import AdminPanel from "@/app/admin/AdminPanel";
 import FreeMembersSection from "@/app/admin/FreeMembersSection";
+import TwelveWeekPlayersSection from "@/app/admin/TwelveWeekPlayersSection";
 import SignOutButton from "@/app/components/SignOutButton";
 
 export default async function AdminPage() {
@@ -35,6 +36,8 @@ export default async function AdminPage() {
         </p>
         <AdminPanel />
       </section>
+
+      <TwelveWeekPlayersSection />
 
       <FreeMembersSection
         initialMembers={freeMembers.map((member) => ({
