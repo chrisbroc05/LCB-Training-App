@@ -93,6 +93,16 @@ type TaskFormState = {
   editingTaskId: string | null;
 };
 
+const WEEKDAY_NAMES = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday",
+];
+
 const emptyTaskForm = (programDay: number): TaskFormState => ({
   programDay,
   title: "",
@@ -102,6 +112,71 @@ const emptyTaskForm = (programDay: number): TaskFormState => ({
   replacesTaskKey: null,
   editingTaskId: null,
 });
+
+function CustomTaskForm({
+  taskForm,
+  setTaskForm,
+  onSave,
+  onCancel,
+}: {
+  taskForm: TaskFormState;
+  setTaskForm: (form: TaskFormState) => void;
+  onSave: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div className="mt-3 space-y-3 rounded-xl border border-[#52B788]/40 bg-black/30 p-4">
+      <h4 className="text-sm font-semibold text-zinc-100">
+        {taskForm.editingTaskId ? "Edit custom task" : "Add custom task"}
+      </h4>
+      <p className="text-xs leading-relaxed text-zinc-400">
+        Shows on this player&apos;s Today screen for that day, labeled From Coach Broc. They check
+        it off with a note like any other task.
+      </p>
+      <input
+        value={taskForm.title}
+        onChange={(event) => setTaskForm({ ...taskForm, title: event.target.value })}
+        placeholder="Title"
+        className="w-full rounded-xl border border-[#2b3650] bg-black/30 px-4 py-3 text-sm text-zinc-100"
+      />
+      <input
+        value={taskForm.target}
+        onChange={(event) => setTaskForm({ ...taskForm, target: event.target.value })}
+        placeholder="Target"
+        className="w-full rounded-xl border border-[#2b3650] bg-black/30 px-4 py-3 text-sm text-zinc-100"
+      />
+      <textarea
+        value={taskForm.details}
+        onChange={(event) => setTaskForm({ ...taskForm, details: event.target.value })}
+        placeholder="Optional details"
+        className="min-h-20 w-full rounded-xl border border-[#2b3650] bg-black/30 px-4 py-3 text-sm text-zinc-100"
+      />
+      <RecommendDrillsPicker
+        selectedIds={taskForm.drillIds}
+        onChange={(ids) => setTaskForm({ ...taskForm, drillIds: ids })}
+      />
+      {taskForm.replacesTaskKey ? (
+        <p className="text-xs text-zinc-500">Replacing: {taskForm.replacesTaskKey}</p>
+      ) : null}
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => onSave()}
+          className="rounded-full bg-[#22c55e] px-4 py-2 text-sm font-semibold text-[#0A1628]"
+        >
+          Save task
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="rounded-full border border-[#2b3650] px-4 py-2 text-sm font-semibold text-zinc-300"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default function AdminProgramPlayerPanel({ enrollmentId }: { enrollmentId: string }) {
   const [detail, setDetail] = useState<PlayerDetail | null>(null);
@@ -114,7 +189,6 @@ export default function AdminProgramPlayerPanel({ enrollmentId }: { enrollmentId
   const [taskForm, setTaskForm] = useState<TaskFormState | null>(null);
 
   const loadDetail = useCallback(async (week?: number) => {
-    setLoading(true);
     setError("");
     try {
       const weekQuery = week != null && week >= 1 && week <= 12 ? `?week=${week}` : "";
@@ -137,6 +211,7 @@ export default function AdminProgramPlayerPanel({ enrollmentId }: { enrollmentId
   }, [enrollmentId]);
 
   useEffect(() => {
+    setLoading(true);
     void loadDetail();
   }, [loadDetail]);
 
@@ -379,17 +454,18 @@ export default function AdminProgramPlayerPanel({ enrollmentId }: { enrollmentId
       <section className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-5 space-y-4">
         <h2 className="text-lg font-semibold text-zinc-100">This week&apos;s focus</h2>
         <p className="text-sm text-zinc-300">
-          Current cue: <span className="font-semibold text-[#9df3bd]">{currentCueLabel}</span>
+          Current focus: <span className="font-semibold text-[#9df3bd]">{currentCueLabel}</span>
         </p>
         {detail.focus.override?.note ? (
           <p className="text-sm text-zinc-400">{detail.focus.override.note}</p>
         ) : null}
+        <label className="block text-sm font-semibold text-zinc-300">Hitting focus</label>
         <select
           value={focusCueId}
           onChange={(event) => setFocusCueId(event.target.value)}
           className="w-full rounded-xl border border-[#2b3650] bg-black/30 px-4 py-3 text-sm text-zinc-100"
         >
-          <option value="">Select cue</option>
+          <option value="">Select hitting focus</option>
           {detail.cues.map((cue) => (
             <option key={cue.id} value={cue.id}>
               {cue.displayLabel}
@@ -465,158 +541,130 @@ export default function AdminProgramPlayerPanel({ enrollmentId }: { enrollmentId
           </select>
         </div>
         <div className="mt-4 space-y-4">
-          {detail.weekDays.map((day) => (
-            <article key={day.programDay} className="rounded-xl border border-[#2b3650] p-4">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <h3 className="text-sm font-semibold text-zinc-100">
-                  Day {day.programDay}
-                  {day.isRestDay ? " . Rest day" : ""}
-                </h3>
+          {detail.weekDays.map((day) => {
+            const weekdayName = WEEKDAY_NAMES[day.dayOfWeek - 1] ?? "";
+            const isEditable =
+              !day.isRestDay && day.programDay >= detail.schedule.programDay;
+            const showForm = taskForm?.programDay === day.programDay;
+
+            return (
+              <article key={day.programDay} className="rounded-xl border border-[#2b3650] p-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h3 className="text-sm font-semibold text-zinc-100">
+                    Day {day.programDay} . {weekdayName}
+                    {day.isRestDay ? " . Rest day" : ""}
+                  </h3>
+                  {isEditable ? (
+                    <button
+                      type="button"
+                      onClick={() => setTaskForm(emptyTaskForm(day.programDay))}
+                      className="relative z-10 rounded-full border border-[#52B788] px-3 py-1.5 text-xs font-semibold text-[#52B788] touch-manipulation"
+                    >
+                      Add task
+                    </button>
+                  ) : null}
+                </div>
                 {!day.isRestDay ? (
-                  <button
-                    type="button"
-                    onClick={() => setTaskForm(emptyTaskForm(day.programDay))}
-                    className="rounded-full border border-[#52B788] px-3 py-1 text-xs font-semibold text-[#52B788]"
-                  >
-                    Add task
-                  </button>
-                ) : null}
-              </div>
-              {!day.isRestDay ? (
-                <div className="mt-3 space-y-3">
-                  {day.tasks.map((task) => (
-                    <div key={task.key} className="rounded-lg border border-[#18243a] bg-black/20 p-3">
-                      <div className="flex flex-wrap items-start justify-between gap-2">
-                        <div>
-                          <p className="text-sm font-semibold text-zinc-100">{task.title}</p>
-                          <p className="mt-1 text-sm text-zinc-400">{task.target}</p>
-                          {task.focus ? (
-                            <p className="mt-1 text-xs text-[#52B788]">{task.focus}</p>
-                          ) : null}
-                        </div>
-                        <span
-                          className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-                            task.completed
-                              ? "bg-[#22c55e]/20 text-[#9df3bd]"
-                              : "bg-[#2b3650] text-zinc-400"
-                          }`}
+                  <div className="mt-3 space-y-3">
+                    {day.tasks.map((task) => {
+                      const customTaskRecord = detail.customTasks.find(
+                        (item) =>
+                          item.programDay === day.programDay && task.key.endsWith(item.id),
+                      );
+
+                      return (
+                        <div
+                          key={task.key}
+                          className="rounded-lg border border-[#18243a] bg-black/20 p-3"
                         >
-                          {task.completed ? "Done" : "Open"}
-                        </span>
-                      </div>
-                      {task.note ? (
-                        <p className="mt-2 text-sm text-zinc-300">{task.note}</p>
-                      ) : null}
-                      {task.isCoachAdded ? (
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setTaskForm({
-                                programDay: day.programDay,
-                                title: task.title,
-                                target: task.target,
-                                details: task.targetDetail ?? "",
-                                drillIds: [],
-                                replacesTaskKey: null,
-                                editingTaskId:
-                                  detail.customTasks.find(
-                                    (item) =>
-                                      item.programDay === day.programDay &&
-                                      task.key.endsWith(item.id),
-                                  )?.id ?? null,
-                              })
-                            }
-                            className="text-xs font-semibold text-[#52B788]"
-                          >
-                            Edit
-                          </button>
-                          {detail.customTasks
-                            .filter((item) => item.programDay === day.programDay)
-                            .map((item) =>
-                              task.key.endsWith(item.id) ? (
+                          <div className="flex flex-wrap items-start justify-between gap-2">
+                            <div>
+                              <p className="text-sm font-semibold text-zinc-100">{task.title}</p>
+                              <p className="mt-1 text-sm text-zinc-400">{task.target}</p>
+                              {task.focus ? (
+                                <p className="mt-1 text-xs text-[#52B788]">{task.focus}</p>
+                              ) : null}
+                            </div>
+                            <span
+                              className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                                task.completed
+                                  ? "bg-[#22c55e]/20 text-[#9df3bd]"
+                                  : "bg-[#2b3650] text-zinc-400"
+                              }`}
+                            >
+                              {task.completed ? "Done" : "Open"}
+                            </span>
+                          </div>
+                          {task.note ? (
+                            <p className="mt-2 text-sm text-zinc-300">{task.note}</p>
+                          ) : null}
+                          {task.completedAt ? (
+                            <p className="mt-1 text-xs text-zinc-500">
+                              Completed {new Date(task.completedAt).toLocaleString()}
+                            </p>
+                          ) : null}
+                          {task.isCoachAdded && isEditable ? (
+                            <div className="relative z-10 mt-2 flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setTaskForm({
+                                    programDay: day.programDay,
+                                    title: task.title,
+                                    target: task.target,
+                                    details:
+                                      customTaskRecord?.details ?? task.targetDetail ?? "",
+                                    drillIds: customTaskRecord?.drillIds ?? [],
+                                    replacesTaskKey: null,
+                                    editingTaskId: customTaskRecord?.id ?? null,
+                                  })
+                                }
+                                className="text-xs font-semibold text-[#52B788] touch-manipulation"
+                              >
+                                Edit
+                              </button>
+                              {customTaskRecord ? (
                                 <button
-                                  key={item.id}
                                   type="button"
-                                  onClick={() => void deleteCustomTask(item.id)}
-                                  className="text-xs font-semibold text-red-300"
+                                  onClick={() => void deleteCustomTask(customTaskRecord.id)}
+                                  className="text-xs font-semibold text-red-300 touch-manipulation"
                                 >
                                   Delete
                                 </button>
-                              ) : null,
-                            )}
+                              ) : null}
+                            </div>
+                          ) : !task.isCoachAdded && isEditable ? (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setTaskForm({
+                                  ...emptyTaskForm(day.programDay),
+                                  replacesTaskKey: task.key,
+                                })
+                              }
+                              className="relative z-10 mt-2 text-xs font-semibold text-[#52B788] touch-manipulation"
+                            >
+                              Replace
+                            </button>
+                          ) : null}
                         </div>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setTaskForm({
-                              ...emptyTaskForm(day.programDay),
-                              replacesTaskKey: task.key,
-                            })
-                          }
-                          className="mt-2 text-xs font-semibold text-[#52B788]"
-                        >
-                          Replace
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : null}
-            </article>
-          ))}
+                      );
+                    })}
+                    {showForm && taskForm ? (
+                      <CustomTaskForm
+                        taskForm={taskForm}
+                        setTaskForm={setTaskForm}
+                        onSave={() => void saveCustomTask()}
+                        onCancel={() => setTaskForm(null)}
+                      />
+                    ) : null}
+                  </div>
+                ) : null}
+              </article>
+            );
+          })}
         </div>
       </section>
-
-      {taskForm ? (
-        <section className="rounded-2xl border border-[#52B788]/40 bg-[#0b1324]/90 p-5 space-y-4">
-          <h2 className="text-lg font-semibold text-zinc-100">
-            {taskForm.editingTaskId ? "Edit custom task" : "Add custom task"}
-          </h2>
-          <input
-            value={taskForm.title}
-            onChange={(event) => setTaskForm({ ...taskForm, title: event.target.value })}
-            placeholder="Title"
-            className="w-full rounded-xl border border-[#2b3650] bg-black/30 px-4 py-3 text-sm text-zinc-100"
-          />
-          <input
-            value={taskForm.target}
-            onChange={(event) => setTaskForm({ ...taskForm, target: event.target.value })}
-            placeholder="Target"
-            className="w-full rounded-xl border border-[#2b3650] bg-black/30 px-4 py-3 text-sm text-zinc-100"
-          />
-          <textarea
-            value={taskForm.details}
-            onChange={(event) => setTaskForm({ ...taskForm, details: event.target.value })}
-            placeholder="Optional details"
-            className="min-h-20 w-full rounded-xl border border-[#2b3650] bg-black/30 px-4 py-3 text-sm text-zinc-100"
-          />
-          <RecommendDrillsPicker
-            selectedIds={taskForm.drillIds}
-            onChange={(ids) => setTaskForm({ ...taskForm, drillIds: ids })}
-          />
-          {taskForm.replacesTaskKey ? (
-            <p className="text-xs text-zinc-500">Replacing: {taskForm.replacesTaskKey}</p>
-          ) : null}
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => void saveCustomTask()}
-              className="rounded-full bg-[#22c55e] px-4 py-2 text-sm font-semibold text-[#0A1628]"
-            >
-              Save task
-            </button>
-            <button
-              type="button"
-              onClick={() => setTaskForm(null)}
-              className="rounded-full border border-[#2b3650] px-4 py-2 text-sm font-semibold text-zinc-300"
-            >
-              Cancel
-            </button>
-          </div>
-        </section>
-      ) : null}
 
       <section className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-5">
         <h2 className="text-lg font-semibold text-zinc-100">This week&apos;s submissions</h2>

@@ -72,7 +72,7 @@ export default function AdminProgramOverview() {
               href="/admin/program/cues"
               className="inline-flex rounded-full border border-[#52B788] px-4 py-2 text-sm font-semibold text-[#52B788]"
             >
-              Manage cues
+              My Hitting Focuses
             </Link>
             <Link
               href="/admin"

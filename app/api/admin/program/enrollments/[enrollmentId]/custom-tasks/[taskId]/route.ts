@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin";
+import { getProgramDay } from "@/lib/program-schedule";
 import { prisma } from "@/lib/prisma";
 
 type RouteContext = {
@@ -25,10 +26,16 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   const existing = await prisma.customTask.findFirst({
     where: { id: taskId, enrollmentId },
+    include: { enrollment: true },
   });
 
   if (!existing) {
     return NextResponse.json({ error: "Custom task not found." }, { status: 404 });
+  }
+
+  const schedule = getProgramDay(existing.enrollment);
+  if (existing.programDay < schedule.programDay) {
+    return NextResponse.json({ error: "Cannot edit past custom tasks." }, { status: 400 });
   }
 
   const task = await prisma.customTask.update({
@@ -65,10 +72,16 @@ export async function DELETE(_request: Request, context: RouteContext) {
 
   const existing = await prisma.customTask.findFirst({
     where: { id: taskId, enrollmentId },
+    include: { enrollment: true },
   });
 
   if (!existing) {
     return NextResponse.json({ error: "Custom task not found." }, { status: 404 });
+  }
+
+  const schedule = getProgramDay(existing.enrollment);
+  if (existing.programDay < schedule.programDay) {
+    return NextResponse.json({ error: "Cannot delete past custom tasks." }, { status: 400 });
   }
 
   await prisma.customTask.delete({ where: { id: taskId } });

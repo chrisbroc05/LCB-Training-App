@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin";
+import { getProgramDay } from "@/lib/program-schedule";
 import { prisma } from "@/lib/prisma";
 
 type RouteContext = {
@@ -38,6 +39,12 @@ export async function POST(request: Request, context: RouteContext) {
   if (!programDay || programDay < 1 || programDay > 84) {
     return NextResponse.json({ error: "Valid program day is required." }, { status: 400 });
   }
+
+  const schedule = getProgramDay(enrollment);
+  if (programDay < schedule.programDay) {
+    return NextResponse.json({ error: "Cannot add tasks for past days." }, { status: 400 });
+  }
+
   if (!title || !target) {
     return NextResponse.json({ error: "Title and target are required." }, { status: 400 });
   }
