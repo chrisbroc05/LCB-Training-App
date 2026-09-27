@@ -20,6 +20,20 @@ import {
   buildProgramDayInfoForProgramDay,
   toEnrollmentPlanInput,
 } from "@/lib/program-today-server";
+import {
+  loadEnrollmentGameStats,
+  serializeDayLog,
+} from "@/lib/program-day-log-server";
+import {
+  aggregateGameStats,
+  computeAvg,
+  computeObp,
+  computeSlg,
+  formatGameLine,
+  formatGameSummary,
+  formatRate,
+} from "@/lib/program-stats";
+import { getWeekdayLabelForProgramDay } from "@/lib/program-schedule";
 import { prisma } from "@/lib/prisma";
 
 export async function buildAdminProgramPlayerDetail(enrollmentId: string, now = new Date()) {
@@ -112,8 +126,24 @@ export async function buildAdminProgramPlayerDetail(enrollmentId: string, now = 
   const currentWeekOverride = enrollment.weekFocusOverrides.find(
     (item) => item.weekNumber === schedule.weekNumber,
   );
+  const nextWeekNumber =
+    schedule.weekNumber > 0 && schedule.weekNumber < 12 ? schedule.weekNumber + 1 : null;
+  const nextWeekOverride =
+    nextWeekNumber != null
+      ? enrollment.weekFocusOverrides.find((item) => item.weekNumber === nextWeekNumber)
+      : null;
   const defaultCueLabel =
     HITTING_FOCUS_CUES[schedule.weekNumber] ?? HITTING_FOCUS_CUES[1];
+
+  const [gameLogs, dayLogs] = await Promise.all([
+    loadEnrollmentGameStats(enrollment.id),
+    prisma.dayLog.findMany({
+      where: { enrollmentId: enrollment.id },
+      include: { gameStats: true },
+      orderBy: [{ programDay: "desc" }, { createdAt: "desc" }],
+    }),
+  ]);
+  const statTotals = aggregateGameStats(gameLogs.map((log) => log.stats));
 
   return {
     enrollment: {
@@ -158,6 +188,15 @@ export async function buildAdminProgramPlayerDetail(enrollmentId: string, now = 
             note: currentWeekOverride.note,
           }
         : null,
+      nextWeekOverride: nextWeekOverride
+        ? {
+            weekNumber: nextWeekNumber!,
+            id: nextWeekOverride.id,
+            cueId: nextWeekOverride.cueId,
+            cueLabel: nextWeekOverride.cue.label,
+            note: nextWeekOverride.note,
+          }
+        : null,
     },
     weekSubmissions: [
       ...swingSubmissions.map((item) => ({
@@ -195,6 +234,39 @@ export async function buildAdminProgramPlayerDetail(enrollmentId: string, now = 
       note: item.note,
       completedAt: item.completedAt.toISOString(),
     })),
+    dayLogs: dayLogs.map((log) => serializeDayLog(log)),
+    stats: {
+      totals: {
+        games: statTotals.games,
+        atBats: statTotals.atBats,
+        hits: statTotals.hits,
+        doubles: statTotals.doubles,
+        triples: statTotals.triples,
+        homeRuns: statTotals.homeRuns,
+        walks: statTotals.walks,
+        hitByPitch: statTotals.hitByPitch,
+        runs: statTotals.runs,
+        rbis: statTotals.rbis,
+        strikeouts: statTotals.strikeouts,
+        stolenBases: statTotals.stolenBases,
+        errors: statTotals.errors,
+        avg: formatRate(computeAvg(statTotals)),
+        obp: formatRate(computeObp(statTotals)),
+        slg: formatRate(computeSlg(statTotals)),
+      },
+      gameLogs: gameLogs.map((log) => ({
+        id: log.id,
+        programDay: log.programDay,
+        note: log.note,
+        opponent: log.opponent,
+        line: formatGameLine(log.stats),
+        summary: formatGameSummary(log.stats, log.opponent),
+        weekdayLabel:
+          enrollment.startDate && log.programDay > 0
+            ? getWeekdayLabelForProgramDay(enrollment.startDate, log.programDay)
+            : "?",
+      })),
+    },
     planInput,
     overrideBundleLoaded: true,
   };

@@ -25,6 +25,18 @@ import {
   parseProgramDateKey,
   type ProgramDayInfo,
 } from "@/lib/program-schedule";
+import {
+  loadEnrollmentGameStats,
+  serializeDayLog,
+} from "@/lib/program-day-log-server";
+import {
+  aggregateGameStats,
+  computeAvg,
+  computeObp,
+  formatGameLine,
+  formatGameSummary,
+  formatRate,
+} from "@/lib/program-stats";
 import { prisma } from "@/lib/prisma";
 
 export type ProgramTaskCompletionRecord = {
@@ -37,6 +49,7 @@ export type ProgramTodayTask = ProgramDailyTask & {
   completed: boolean;
   note?: string;
   completedAt?: string;
+  countedFromLog?: "game" | "practice" | null;
 };
 
 export type ProgramWeekDayStatus = {
@@ -206,15 +219,29 @@ export async function buildProgramTodayPayload(params: {
       taskKey: true,
       note: true,
       completedAt: true,
+      sourceDayLogId: true,
+      sourceDayLog: {
+        select: { type: true },
+      },
     },
   });
 
-  const completionMap = new Map<string, ProgramTaskCompletionRecord>();
+  const completionMap = new Map<
+    string,
+    ProgramTaskCompletionRecord & {
+      countedFromLog?: "game" | "practice" | null;
+    }
+  >();
   for (const completion of completions) {
     completionMap.set(`${completion.programDay}:${completion.taskKey}`, {
       taskKey: completion.taskKey,
       note: completion.note,
       completedAt: completion.completedAt.toISOString(),
+      countedFromLog: completion.sourceDayLog
+        ? completion.sourceDayLog.type === "GAME"
+          ? "game"
+          : "practice"
+        : null,
     });
   }
 
@@ -225,8 +252,32 @@ export async function buildProgramTodayPayload(params: {
       completed: Boolean(saved),
       note: saved?.note,
       completedAt: saved?.completedAt,
+      countedFromLog: saved?.countedFromLog ?? null,
     };
   });
+
+  const dayLogs = await prisma.dayLog.findMany({
+    where: {
+      enrollmentId: params.enrollment.id,
+      programDay: viewedDayInfo.programDay,
+    },
+    include: { gameStats: true },
+    orderBy: { createdAt: "asc" },
+  });
+
+  const allGameLogs = await loadEnrollmentGameStats(params.enrollment.id);
+  const seasonTotals = aggregateGameStats(allGameLogs.map((log) => log.stats));
+  const seasonStats =
+    seasonTotals.games > 0
+      ? {
+          games: seasonTotals.games,
+          avg: formatRate(computeAvg(seasonTotals)),
+          obp: formatRate(computeObp(seasonTotals)),
+          hits: seasonTotals.hits,
+          rbis: seasonTotals.rbis,
+          stolenBases: seasonTotals.stolenBases,
+        }
+      : null;
 
   const completedWorkDays = new Set<number>();
   if (planInput && params.enrollment.startDate) {
@@ -373,6 +424,51 @@ export async function buildProgramTodayPayload(params: {
     weeklyVideoSent,
     weekFocusCue,
     weekFocusNote,
+    dayLogs: dayLogs.map((log) => ({
+      ...serializeDayLog(log),
+      summary:
+        log.type === "GAME" && log.gameStats
+          ? formatGameSummary(
+              {
+                atBats: log.gameStats.atBats,
+                hits: log.gameStats.hits,
+                doubles: log.gameStats.doubles,
+                triples: log.gameStats.triples,
+                homeRuns: log.gameStats.homeRuns,
+                walks: log.gameStats.walks,
+                hitByPitch: log.gameStats.hitByPitch,
+                runs: log.gameStats.runs,
+                rbis: log.gameStats.rbis,
+                strikeouts: log.gameStats.strikeouts,
+                stolenBases: log.gameStats.stolenBases,
+                errors: log.gameStats.errors,
+              },
+              log.gameStats.opponent,
+            )
+          : null,
+      line:
+        log.type === "GAME" && log.gameStats
+          ? formatGameLine({
+              atBats: log.gameStats.atBats,
+              hits: log.gameStats.hits,
+              doubles: log.gameStats.doubles,
+              triples: log.gameStats.triples,
+              homeRuns: log.gameStats.homeRuns,
+              walks: log.gameStats.walks,
+              hitByPitch: log.gameStats.hitByPitch,
+              runs: log.gameStats.runs,
+              rbis: log.gameStats.rbis,
+              strikeouts: log.gameStats.strikeouts,
+              stolenBases: log.gameStats.stolenBases,
+              errors: log.gameStats.errors,
+            })
+          : null,
+    })),
+    seasonStats,
+    canLogDay:
+      getAllowedCompletionProgramDays({ startDate: params.enrollment.startDate }, now).has(
+        viewedDayInfo.programDay,
+      ) && !todayInfo.isBeforeStart && !todayInfo.isComplete,
     knownFor: params.enrollment.knownFor,
     startDate: params.enrollment.startDate
       ? formatProgramStartDateKey(params.enrollment.startDate)

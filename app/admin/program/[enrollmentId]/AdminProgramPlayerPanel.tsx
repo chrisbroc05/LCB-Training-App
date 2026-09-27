@@ -67,6 +67,13 @@ type PlayerDetail = {
       cueLabel: string;
       note: string;
     } | null;
+    nextWeekOverride: {
+      weekNumber: number;
+      id: string;
+      cueId: string;
+      cueLabel: string;
+      note: string;
+    } | null;
   };
   weekSubmissions: Array<{ type: string; id: number; href: string; createdAt: string }>;
   selectedWeek: number;
@@ -81,6 +88,57 @@ type PlayerDetail = {
     drillIds: string[];
     replacesTaskKey: string | null;
   }>;
+  dayLogs?: Array<{
+    id: string;
+    programDay: number;
+    type: "GAME" | "PRACTICE";
+    note: string;
+    createdAt: string;
+    gameStats: {
+      opponent: string | null;
+      atBats: number;
+      hits: number;
+      doubles: number;
+      triples: number;
+      homeRuns: number;
+      walks: number;
+      hitByPitch: number;
+      runs: number;
+      rbis: number;
+      strikeouts: number;
+      stolenBases: number;
+      errors: number;
+    } | null;
+  }>;
+  stats?: {
+    totals: {
+      games: number;
+      atBats: number;
+      hits: number;
+      doubles: number;
+      triples: number;
+      homeRuns: number;
+      walks: number;
+      hitByPitch: number;
+      runs: number;
+      rbis: number;
+      strikeouts: number;
+      stolenBases: number;
+      errors: number;
+      avg: string;
+      obp: string;
+      slg: string;
+    };
+    gameLogs: Array<{
+      id: string;
+      programDay: number;
+      note: string;
+      opponent: string | null;
+      line: string;
+      summary: string;
+      weekdayLabel: string;
+    }>;
+  };
 };
 
 type TaskFormState = {
@@ -102,6 +160,11 @@ const WEEKDAY_NAMES = [
   "Saturday",
   "Sunday",
 ];
+
+function firstNoteLine(note: string) {
+  const line = note.split("\n")[0]?.trim();
+  return line || note.trim();
+}
 
 const emptyTaskForm = (programDay: number): TaskFormState => ({
   programDay,
@@ -186,6 +249,7 @@ export default function AdminProgramPlayerPanel({ enrollmentId }: { enrollmentId
   const [focusCueId, setFocusCueId] = useState("");
   const [focusNote, setFocusNote] = useState("");
   const [focusTarget, setFocusTarget] = useState<"this_week" | "next_week">("this_week");
+  const [focusSuccess, setFocusSuccess] = useState("");
   const [taskForm, setTaskForm] = useState<TaskFormState | null>(null);
 
   const loadDetail = useCallback(async (week?: number) => {
@@ -230,6 +294,14 @@ export default function AdminProgramPlayerPanel({ enrollmentId }: { enrollmentId
   };
 
   const saveFocusOverride = async () => {
+    if (!detail) {
+      return;
+    }
+
+    const currentFocusLabel =
+      detail.focus.override?.cueLabel ?? detail.focus.defaultCueLabel;
+    const savingForNextWeek = focusTarget === "next_week";
+
     const response = await fetch(
       `/api/admin/program/enrollments/${enrollmentId}/focus-override`,
       {
@@ -247,6 +319,46 @@ export default function AdminProgramPlayerPanel({ enrollmentId }: { enrollmentId
       setError(data.error ?? "Unable to save focus override.");
       return;
     }
+
+    setError("");
+    if (savingForNextWeek) {
+      setFocusSuccess(`Saved for next week. This week stays ${currentFocusLabel}.`);
+      setFocusCueId(detail.focus.override?.cueId ?? "");
+      setFocusNote(detail.focus.override?.note ?? "");
+      setFocusTarget("this_week");
+    } else {
+      setFocusSuccess("");
+    }
+
+    await loadDetail(selectedWeek);
+  };
+
+  const editNextWeekOverride = () => {
+    if (!detail?.focus.nextWeekOverride) {
+      return;
+    }
+    setFocusSuccess("");
+    setFocusCueId(detail.focus.nextWeekOverride.cueId);
+    setFocusNote(detail.focus.nextWeekOverride.note);
+    setFocusTarget("next_week");
+  };
+
+  const removeNextWeekOverride = async () => {
+    if (!detail?.focus.nextWeekOverride) {
+      return;
+    }
+
+    const response = await fetch(
+      `/api/admin/program/enrollments/${enrollmentId}/focus-override?weekNumber=${detail.focus.nextWeekOverride.weekNumber}`,
+      { method: "DELETE" },
+    );
+    if (!response.ok) {
+      const data = (await response.json().catch(() => ({}))) as { error?: string };
+      setError(data.error ?? "Unable to remove next week focus.");
+      return;
+    }
+
+    setFocusSuccess("");
     await loadDetail(selectedWeek);
   };
 
@@ -263,6 +375,7 @@ export default function AdminProgramPlayerPanel({ enrollmentId }: { enrollmentId
       setError(data.error ?? "Unable to reset focus.");
       return;
     }
+    setFocusSuccess("");
     await loadDetail(selectedWeek);
   };
 
@@ -459,6 +572,38 @@ export default function AdminProgramPlayerPanel({ enrollmentId }: { enrollmentId
         {detail.focus.override?.note ? (
           <p className="text-sm text-zinc-400">{detail.focus.override.note}</p>
         ) : null}
+        {detail.focus.nextWeekOverride ? (
+          <div className="rounded-xl border border-[#2b3650] bg-black/20 p-3">
+            <p className="text-sm text-zinc-300">
+              Next week:{" "}
+              <span className="font-semibold text-[#9df3bd]">
+                {detail.focus.nextWeekOverride.cueLabel}
+              </span>
+            </p>
+            {detail.focus.nextWeekOverride.note ? (
+              <p className="mt-1 text-sm text-zinc-400">
+                {firstNoteLine(detail.focus.nextWeekOverride.note)}
+              </p>
+            ) : null}
+            <div className="mt-2 flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={editNextWeekOverride}
+                className="text-xs font-semibold text-[#52B788]"
+              >
+                Edit
+              </button>
+              <button
+                type="button"
+                onClick={() => void removeNextWeekOverride()}
+                className="text-xs font-semibold text-red-300"
+              >
+                Remove
+              </button>
+            </div>
+          </div>
+        ) : null}
+        {focusSuccess ? <p className="text-sm text-[#9df3bd]">{focusSuccess}</p> : null}
         <label className="block text-sm font-semibold text-zinc-300">Hitting focus</label>
         <select
           value={focusCueId}
@@ -491,17 +636,19 @@ export default function AdminProgramPlayerPanel({ enrollmentId }: { enrollmentId
           >
             This week
           </button>
-          <button
-            type="button"
-            onClick={() => setFocusTarget("next_week")}
-            className={`rounded-full px-4 py-2 text-sm font-semibold ${
-              focusTarget === "next_week"
-                ? "bg-[#22c55e] text-[#0A1628]"
-                : "border border-[#2b3650] text-zinc-300"
-            }`}
-          >
-            Next week
-          </button>
+          {detail.focus.weekNumber < 12 ? (
+            <button
+              type="button"
+              onClick={() => setFocusTarget("next_week")}
+              className={`rounded-full px-4 py-2 text-sm font-semibold ${
+                focusTarget === "next_week"
+                  ? "bg-[#22c55e] text-[#0A1628]"
+                  : "border border-[#2b3650] text-zinc-300"
+              }`}
+            >
+              Next week
+            </button>
+          ) : null}
         </div>
         <div className="flex flex-wrap gap-2">
           <button
@@ -520,6 +667,49 @@ export default function AdminProgramPlayerPanel({ enrollmentId }: { enrollmentId
           </button>
         </div>
       </section>
+
+      {detail.stats && detail.stats.totals.games > 0 ? (
+        <section className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-5 space-y-4">
+          <h2 className="text-lg font-semibold text-zinc-100">Stats</h2>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {[
+              ["G", detail.stats.totals.games],
+              ["AB", detail.stats.totals.atBats],
+              ["H", detail.stats.totals.hits],
+              ["2B", detail.stats.totals.doubles],
+              ["3B", detail.stats.totals.triples],
+              ["HR", detail.stats.totals.homeRuns],
+              ["BB", detail.stats.totals.walks],
+              ["HBP", detail.stats.totals.hitByPitch],
+              ["R", detail.stats.totals.runs],
+              ["RBI", detail.stats.totals.rbis],
+              ["K", detail.stats.totals.strikeouts],
+              ["SB", detail.stats.totals.stolenBases],
+              ["E", detail.stats.totals.errors],
+              ["AVG", detail.stats.totals.avg],
+              ["OBP", detail.stats.totals.obp],
+              ["SLG", detail.stats.totals.slg],
+            ].map(([label, value]) => (
+              <div key={label} className="rounded-xl border border-[#2b3650] bg-black/20 px-3 py-2 text-center">
+                <p className="text-xs font-bold text-zinc-500">{label}</p>
+                <p className="mt-1 text-lg font-bold text-zinc-100">{value}</p>
+              </div>
+            ))}
+          </div>
+          <div className="space-y-2">
+            {detail.stats.gameLogs.map((log) => (
+              <article key={log.id} className="rounded-xl border border-[#2b3650] bg-black/20 p-3">
+                <p className="text-sm font-semibold text-zinc-100">
+                  {log.weekdayLabel} . Day {log.programDay}
+                  {log.opponent ? ` vs ${log.opponent}` : ""}
+                </p>
+                <p className="mt-1 text-sm text-[#9df3bd]">{log.line}</p>
+                <p className="mt-2 text-sm text-zinc-400">{log.note}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <section className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -546,6 +736,13 @@ export default function AdminProgramPlayerPanel({ enrollmentId }: { enrollmentId
             const isEditable =
               !day.isRestDay && day.programDay >= detail.schedule.programDay;
             const showForm = taskForm?.programDay === day.programDay;
+            const practiceLog = detail.dayLogs?.find(
+              (log) => log.programDay === day.programDay && log.type === "PRACTICE",
+            );
+            const gameLogsForDay =
+              detail.dayLogs?.filter(
+                (log) => log.programDay === day.programDay && log.type === "GAME",
+              ) ?? [];
 
             return (
               <article key={day.programDay} className="rounded-xl border border-[#2b3650] p-4">
@@ -553,6 +750,11 @@ export default function AdminProgramPlayerPanel({ enrollmentId }: { enrollmentId
                   <h3 className="text-sm font-semibold text-zinc-100">
                     Day {day.programDay} . {weekdayName}
                     {day.isRestDay ? " . Rest day" : ""}
+                    {practiceLog ? (
+                      <span className="ml-2 rounded-full bg-[#52B788]/15 px-2 py-0.5 text-xs font-semibold text-[#9df3bd]">
+                        Practice
+                      </span>
+                    ) : null}
                   </h3>
                   {isEditable ? (
                     <button
@@ -658,7 +860,18 @@ export default function AdminProgramPlayerPanel({ enrollmentId }: { enrollmentId
                         onCancel={() => setTaskForm(null)}
                       />
                     ) : null}
+                    {practiceLog ? (
+                      <p className="text-sm text-zinc-400">Practice note: {practiceLog.note}</p>
+                    ) : null}
+                    {gameLogsForDay.map((log) => (
+                      <p key={log.id} className="text-sm text-zinc-400">
+                        Game note: {log.note}
+                      </p>
+                    ))}
                   </div>
+                ) : null}
+                {day.isRestDay && practiceLog ? (
+                  <p className="mt-2 text-sm text-zinc-400">Practice note: {practiceLog.note}</p>
                 ) : null}
               </article>
             );

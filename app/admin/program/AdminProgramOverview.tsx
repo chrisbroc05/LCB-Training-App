@@ -18,6 +18,7 @@ type PlayerCard = {
   seasonMode: string | null;
   goneQuiet: boolean;
   finishedToday: boolean;
+  lastGameLabel: string | null;
 };
 
 type LatestNote = {
@@ -121,6 +122,7 @@ export default function AdminProgramOverview() {
               <span>
                 Season: {player.seasonMode === "IN_SEASON" ? "In season" : "Off season"}
               </span>
+              {player.lastGameLabel ? <span>{player.lastGameLabel}</span> : null}
             </div>
           </Link>
         ))}

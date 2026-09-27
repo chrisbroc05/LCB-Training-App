@@ -12,6 +12,8 @@ import {
   hasWeeklyVideoSent,
   toEnrollmentPlanInput,
 } from "@/lib/program-today-server";
+import { formatGameLine } from "@/lib/program-stats";
+import { getWeekdayLabelForProgramDay } from "@/lib/program-schedule";
 import { prisma } from "@/lib/prisma";
 
 function formatRelativeTime(iso: string | null, now = new Date()) {
@@ -168,6 +170,35 @@ export async function buildAdminProgramOverview(now = new Date()) {
         completedWorkDays,
       });
 
+      const lastGameLog = await prisma.dayLog.findFirst({
+        where: { enrollmentId: enrollment.id, type: "GAME" },
+        include: { gameStats: true },
+        orderBy: [{ programDay: "desc" }, { createdAt: "desc" }],
+      });
+
+      let lastGameLabel: string | null = null;
+      if (lastGameLog?.gameStats && enrollment.startDate) {
+        const line = formatGameLine({
+          atBats: lastGameLog.gameStats.atBats,
+          hits: lastGameLog.gameStats.hits,
+          doubles: lastGameLog.gameStats.doubles,
+          triples: lastGameLog.gameStats.triples,
+          homeRuns: lastGameLog.gameStats.homeRuns,
+          walks: lastGameLog.gameStats.walks,
+          hitByPitch: lastGameLog.gameStats.hitByPitch,
+          runs: lastGameLog.gameStats.runs,
+          rbis: lastGameLog.gameStats.rbis,
+          strikeouts: lastGameLog.gameStats.strikeouts,
+          stolenBases: lastGameLog.gameStats.stolenBases,
+          errors: lastGameLog.gameStats.errors,
+        });
+        const weekday = getWeekdayLabelForProgramDay(
+          enrollment.startDate,
+          lastGameLog.programDay,
+        );
+        lastGameLabel = `Last game: ${line} (${weekday})`;
+      }
+
       return {
         enrollmentId: enrollment.id,
         name: enrollment.user.name ?? enrollment.user.email,
@@ -183,6 +214,7 @@ export async function buildAdminProgramOverview(now = new Date()) {
         seasonMode: enrollment.seasonMode,
         goneQuiet,
         finishedToday,
+        lastGameLabel,
         sortBucket: goneQuiet ? 0 : finishedToday ? 2 : 1,
       };
     }),

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import ProgramDayLogSection from "@/app/dashboard/ProgramDayLogSection";
 import { escapeHtml } from "@/lib/escape-text";
 import { parseReflectionNote, SATURDAY_REFLECTION_FIELDS } from "@/lib/program-content";
 import { PROGRAM_PHASE_LABELS } from "@/lib/program-content";
@@ -47,6 +48,41 @@ type ProgramTodayTask = {
   isCoachAdded?: boolean;
   completed: boolean;
   note?: string;
+  countedFromLog?: "game" | "practice" | null;
+};
+
+type DayLogPayload = {
+  id: string;
+  programDay: number;
+  type: "GAME" | "PRACTICE";
+  note: string;
+  createdAt: string;
+  summary: string | null;
+  line: string | null;
+  gameStats: {
+    opponent: string | null;
+    atBats: number;
+    hits: number;
+    doubles: number;
+    triples: number;
+    homeRuns: number;
+    walks: number;
+    hitByPitch: number;
+    runs: number;
+    rbis: number;
+    strikeouts: number;
+    stolenBases: number;
+    errors: number;
+  } | null;
+};
+
+type SeasonStatsPayload = {
+  games: number;
+  avg: string;
+  obp: string;
+  hits: number;
+  rbis: number;
+  stolenBases: number;
 };
 
 type ProgramTodayPayload = {
@@ -78,6 +114,9 @@ type ProgramTodayPayload = {
   viewedWeekdayName: string;
   weekFocusCue?: string | null;
   weekFocusNote?: string | null;
+  dayLogs?: DayLogPayload[];
+  seasonStats?: SeasonStatsPayload | null;
+  canLogDay?: boolean;
 };
 
 type AnswerSheetState = {
@@ -362,6 +401,16 @@ function TaskCard({
             FROM COACH BROC
           </span>
         ) : null}
+        {task.countedFromLog === "game" ? (
+          <span className="rounded-full bg-[#52B788]/10 px-2 py-0.5 text-[10px] font-semibold text-[#9df3bd]">
+            COUNTED FROM GAME
+          </span>
+        ) : null}
+        {task.countedFromLog === "practice" ? (
+          <span className="rounded-full bg-[#52B788]/10 px-2 py-0.5 text-[10px] font-semibold text-[#9df3bd]">
+            COUNTED FROM PRACTICE
+          </span>
+        ) : null}
       </div>
 
       <h3 className="mt-3 text-lg font-semibold text-zinc-100">{task.title}</h3>
@@ -597,6 +646,15 @@ export default function ProgramTodayView() {
         </div>
       </section>
 
+      {!payload.isBeforeStart && !payload.isComplete ? (
+        <ProgramDayLogSection
+          programDay={payload.viewedProgramDay}
+          canLogDay={Boolean(payload.canLogDay)}
+          dayLogs={payload.dayLogs ?? []}
+          onSaved={() => void loadToday(viewedProgramDay ?? undefined)}
+        />
+      ) : null}
+
       {payload.knownFor ? (
         <section className={`${CARD} border-[#52B788]/40`}>
           <p className="text-xs font-bold tracking-wide text-[#52B788]">{BRAND_SECONDARY_TAGLINE}</p>
@@ -699,6 +757,27 @@ export default function ProgramTodayView() {
             ))}
           </div>
         </>
+      ) : null}
+
+      {payload.seasonStats ? (
+        <Link href="/program/stats" className={`${CARD} block`}>
+          <p className="text-xs font-bold tracking-wide text-[#52B788]">MY STATS</p>
+          <div className="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-6">
+            {[
+              ["Games", payload.seasonStats.games],
+              ["AVG", payload.seasonStats.avg],
+              ["OBP", payload.seasonStats.obp],
+              ["H", payload.seasonStats.hits],
+              ["RBI", payload.seasonStats.rbis],
+              ["SB", payload.seasonStats.stolenBases],
+            ].map(([label, value]) => (
+              <div key={label} className="text-center">
+                <p className="text-xs font-bold text-zinc-500">{label}</p>
+                <p className="mt-1 text-2xl font-bold text-zinc-100">{value}</p>
+              </div>
+            ))}
+          </div>
+        </Link>
       ) : null}
 
       {!payload.isBeforeStart && !payload.isRestDay && payload.programDayInfo.dayOfWeek !== 7 ? (
