@@ -64,11 +64,7 @@ export default function UpgradeActions({
         type="button"
         onClick={startCheckout}
         disabled={isLoading}
-        className={`w-full rounded-full bg-[#22c55e] text-sm font-semibold transition hover:bg-[#35db72] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto ${
-          tier === "BASIC"
-            ? "inline-flex h-12 items-center justify-center px-6 text-[#0A1628]"
-            : "px-5 py-2.5 text-black"
-        }`}
+        className={`inline-flex h-12 w-full items-center justify-center rounded-full bg-[#22c55e] px-6 text-sm font-semibold text-[#0A1628] transition hover:bg-[#35db72] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto`}
       >
         {isLoading
           ? "Redirecting..."

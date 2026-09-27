@@ -94,6 +94,141 @@ body {
   }
 }
 
+.app-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+}
+
+.app-header-left {
+  flex: 1;
+  min-width: 0;
+}
+
+.app-header-brand-block {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.app-header-brand-link {
+  display: flex;
+  min-width: 0;
+  text-decoration: none;
+}
+
+.app-header-brand-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.app-header-logo-mark {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.app-header-wordmark {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: #ffffff;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.app-header-greeting-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.app-header-greeting {
+  font-size: 12px;
+  font-weight: 400;
+  color: #cbd5e1;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.app-header-program-pill {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(82, 183, 136, 0.18);
+  color: #52b788;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.app-header-program-pill:hover {
+  background: rgba(82, 183, 136, 0.28);
+  color: #74d4ac;
+}
+
+.app-header-right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.app-header-account-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+  margin-left: 2px;
+}
+
+.app-header-account-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #f4f4f5;
+}
+
+.app-header-account-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background: #2d6a4f;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.app-header-settings-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  color: #f4f4f5;
+  transition: color 150ms ease-out;
+}
+
+.app-header-settings-button:hover {
+  color: #52b788;
+}
+
 @media (max-width: 767px) {
   .mobile-app-main {
     padding-top: calc(64px + env(safe-area-inset-top));
@@ -122,144 +257,24 @@ body {
   }
 
   .mobile-app-header-inner {
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
-    align-items: center;
-    gap: 8px;
     min-height: 64px;
-    padding: 6px 16px;
+    padding: 6px 12px;
   }
 
-  .mobile-app-header-left {
-    display: flex;
-    align-items: center;
-    min-width: 0;
+  @media (min-width: 376px) {
+    .app-header-right {
+      gap: 4px;
+    }
+
+    .mobile-app-header-inner {
+      padding: 6px 16px;
+    }
   }
 
-  .mobile-app-brand-link {
-    display: flex;
-    min-width: 0;
-    flex-direction: column;
-    gap: 2px;
-    text-decoration: none;
-  }
-
-  .mobile-app-brand-row {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    min-width: 0;
-  }
-
-  .mobile-app-logo-mark {
-    font-size: 16px;
-    line-height: 1;
-  }
-
-  .mobile-app-wordmark {
-    font-size: 15px;
-    font-weight: 700;
-    letter-spacing: 0.01em;
-    color: #ffffff;
-    line-height: 1.1;
-    white-space: nowrap;
-  }
-
-  .mobile-app-user-greeting {
-    font-size: 12px;
-    font-weight: 400;
-    color: #cbd5e1;
-    line-height: 1.2;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .mobile-app-header-center {
-    width: 24px;
-  }
-
-  .mobile-app-header-right {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 8px;
-  }
-
-  .mobile-account-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    text-decoration: none;
-  }
-
-  .mobile-account-name {
-    font-size: 13px;
-    font-weight: 600;
-    color: #f4f4f5;
-  }
-
-  .mobile-account-avatar {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    border-radius: 999px;
-    background: #2d6a4f;
-    color: #ffffff;
-    font-size: 14px;
-    font-weight: 700;
-  }
-
-  .mobile-tier-pill {
-    min-height: 26px;
-    padding: 0 8px;
-    border-radius: 999px;
-    font-size: 11px;
-    font-weight: 600;
-    line-height: 1;
-    letter-spacing: 0.02em;
-    border: 1px solid transparent;
-  }
-
-  .mobile-tier-pill-basic {
-    background: rgba(29, 78, 216, 0.28);
-    border-color: rgba(59, 130, 246, 0.35);
-    color: #dbeafe;
-  }
-
-  .mobile-tier-pill-memorable {
-    background: rgba(45, 106, 79, 0.32);
-    border-color: rgba(82, 183, 136, 0.35);
-    color: #d8f3dc;
-  }
-
-  .mobile-tier-pill-elite {
-    background: rgba(184, 134, 11, 0.24);
-    border-color: rgba(218, 165, 32, 0.35);
-    color: #fde68a;
-  }
-
-  .mobile-tier-pill-free {
-    background: rgba(75, 85, 99, 0.28);
-    border-color: rgba(148, 163, 184, 0.25);
-    color: #e2e8f0;
-  }
-
-  .mobile-settings-button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 36px;
-    height: 36px;
-    border-radius: 999px;
-    color: #f4f4f5;
-    transition: color 150ms ease-out;
-  }
-
-  .mobile-settings-button:hover {
-    color: #52b788;
+  @media (max-width: 374px) {
+    .app-header-account-name {
+      display: none;
+    }
   }
 
   .mobile-notification-button {
@@ -643,6 +658,32 @@ body {
 
 .resources-action-pill:hover {
   background: #45a074;
+}
+
+@media (min-width: 768px) {
+  .logged-in-site-header .app-header-bar-desktop {
+    min-height: 56px;
+  }
+
+  .app-header-desktop-logo {
+    display: block;
+    position: relative;
+    width: 7rem;
+    height: 2.5rem;
+  }
+
+  .app-header-bar-desktop .app-header-greeting {
+    font-size: 13px;
+  }
+
+  .app-header-bar-desktop .app-header-program-pill {
+    font-size: 11px;
+    padding: 3px 8px;
+  }
+
+  .app-header-bar-desktop .app-header-right {
+    gap: 6px;
+  }
 }
 
 input,

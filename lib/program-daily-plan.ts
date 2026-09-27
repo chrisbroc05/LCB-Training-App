@@ -20,6 +20,10 @@ import {
   toContentPhase,
 } from "@/lib/program-content";
 import {
+  applyDailyPlanOverrides,
+  type ProgramDailyPlanOverrides,
+} from "@/lib/program-plan-overrides";
+import {
   getFieldingDrillsForDay,
   getHittingDrillsForDay,
   getMindsetDrillsForDay,
@@ -45,7 +49,8 @@ export type ProgramTaskType =
   | "playbook"
   | "reflection"
   | "sprint"
-  | "core";
+  | "core"
+  | "custom";
 
 export type ProgramWorkoutRef = {
   category: WorkoutCategory;
@@ -73,6 +78,7 @@ export type ProgramDailyTask = {
   playbookHref?: string;
   mindsetPrompt?: string;
   reflectionFields?: Array<{ key: string; label: string }>;
+  isCoachAdded?: boolean;
 };
 
 export type ProgramEnrollmentPlanInput = {
@@ -658,9 +664,10 @@ function finalizeTasks(tasks: InternalTask[]): ProgramDailyTask[] {
 export function getDailyPlan(
   enrollment: ProgramEnrollmentPlanInput,
   programDayInfo: ProgramDayInfo,
+  overrides?: ProgramDailyPlanOverrides,
 ): ProgramDailyTask[] {
   if (programDayInfo.dayOfWeek === 7 || programDayInfo.isBeforeStart || programDayInfo.isComplete) {
-    return [];
+    return applyDailyPlanOverrides([], programDayInfo.programDay, overrides);
   }
 
   const inSeason = enrollment.seasonMode === "IN_SEASON";
@@ -672,20 +679,23 @@ export function getDailyPlan(
   }
 
   tasks = enforceMaxTasks(tasks, enrollment, programDayInfo, inSeason);
-  return finalizeTasks(tasks);
+  const finalized = finalizeTasks(tasks);
+  return applyDailyPlanOverrides(finalized, programDayInfo.programDay, overrides);
 }
 
 export function getTaskKeysForDay(
   enrollment: ProgramEnrollmentPlanInput,
   programDayInfo: ProgramDayInfo,
+  overrides?: ProgramDailyPlanOverrides,
 ) {
-  return getDailyPlan(enrollment, programDayInfo).map((task) => task.key);
+  return getDailyPlan(enrollment, programDayInfo, overrides).map((task) => task.key);
 }
 
 export function findDailyTask(
   enrollment: ProgramEnrollmentPlanInput,
   programDayInfo: ProgramDayInfo,
   taskKey: string,
+  overrides?: ProgramDailyPlanOverrides,
 ) {
-  return getDailyPlan(enrollment, programDayInfo).find((task) => task.key === taskKey) ?? null;
+  return getDailyPlan(enrollment, programDayInfo, overrides).find((task) => task.key === taskKey) ?? null;
 }

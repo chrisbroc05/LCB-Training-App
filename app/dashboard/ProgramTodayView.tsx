@@ -44,6 +44,7 @@ type ProgramTodayTask = {
   playbookIsRead?: boolean;
   mindsetPrompt?: string;
   reflectionFields?: Array<{ key: string; label: string }>;
+  isCoachAdded?: boolean;
   completed: boolean;
   note?: string;
 };
@@ -75,6 +76,8 @@ type ProgramTodayPayload = {
   isViewingYesterday: boolean;
   isViewingPastDay: boolean;
   viewedWeekdayName: string;
+  weekFocusCue?: string | null;
+  weekFocusNote?: string | null;
 };
 
 type AnswerSheetState = {
@@ -105,6 +108,8 @@ function getTaskCategory(type: string): TaskCategory {
       return { label: "MOBILITY", icon: "M" };
     case "reflection":
       return { label: "REFLECTION", icon: "R" };
+    case "custom":
+      return { label: "COACH", icon: "C" };
     default:
       return { label: "MINDSET", icon: "I" };
   }
@@ -352,6 +357,11 @@ function TaskCard({
           {category.icon}
         </span>
         <span className="text-xs font-bold tracking-wide text-[#52B788]">{category.label}</span>
+        {task.isCoachAdded ? (
+          <span className="rounded-full bg-[#52B788]/15 px-2 py-0.5 text-[10px] font-semibold text-[#52B788]">
+            FROM COACH BROC
+          </span>
+        ) : null}
       </div>
 
       <h3 className="mt-3 text-lg font-semibold text-zinc-100">{task.title}</h3>
@@ -660,6 +670,18 @@ export default function ProgramTodayView() {
           {payload.allTasksComplete ? (
             <section className="rounded-2xl border border-[#52B788]/40 bg-[#52B788]/10 px-5 py-4 text-center text-sm font-semibold text-[#9df3bd]">
               Day done. Work Hard. Be Memorable.
+            </section>
+          ) : null}
+
+          {payload.weekFocusNote ? (
+            <section className={`${CARD} border-[#52B788]/40`}>
+              <p className="text-xs font-bold tracking-wide text-[#52B788]">
+                THIS WEEK FROM COACH BROC
+              </p>
+              {payload.weekFocusCue ? (
+                <p className="mt-2 text-lg font-bold text-zinc-100">{payload.weekFocusCue}</p>
+              ) : null}
+              <p className="mt-2 text-sm leading-relaxed text-zinc-300">{payload.weekFocusNote}</p>
             </section>
           ) : null}
 

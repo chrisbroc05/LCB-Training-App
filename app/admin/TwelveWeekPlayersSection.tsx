@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 type TwelveWeekEnrollmentRecord = {
@@ -143,6 +144,12 @@ export default function TwelveWeekPlayersSection() {
           <p className="mt-2 text-zinc-300">
             Track program setup, start dates, and player answers for the 12-Week Program.
           </p>
+          <Link
+            href="/admin/program"
+            className="mt-3 inline-flex rounded-full border border-[#52B788] px-4 py-2 text-sm font-semibold text-[#52B788]"
+          >
+            Program overview
+          </Link>
         </div>
         <form onSubmit={handleGrantAccess} className="flex w-full flex-col gap-3 sm:flex-row lg:max-w-xl">
           <input

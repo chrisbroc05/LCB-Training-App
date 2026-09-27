@@ -1,6 +1,7 @@
 import { getDailyPlan } from "../lib/program-daily-plan";
-import { getProgramDay, parseProgramDateKey, type ProgramPhase } from "../lib/program-schedule";
 import type { ProgramEnrollmentPlanInput } from "../lib/program-daily-plan";
+import type { ProgramDailyPlanOverrides } from "../lib/program-plan-overrides";
+import { getProgramDay, parseProgramDateKey, type ProgramPhase } from "../lib/program-schedule";
 
 function makeDayInfo(weekNumber: number, dayOfWeek: number) {
   const programDay = (weekNumber - 1) * 7 + dayOfWeek;
@@ -121,5 +122,90 @@ printScenario("(c) 16-18, strength + speed, weights_gym, in season", scenarioC, 
   6,
   10,
 ]);
+
+function assertFocusOverrideCase() {
+  const enrollment: ProgramEnrollmentPlanInput = {
+    ageGroup: "AGE_12_15",
+    focusAreas: ["hitting"],
+    equipment: ["cage_field"],
+    seasonMode: "OFF_SEASON",
+  };
+  const dayInfo = makeDayInfo(3, 2);
+  const overrides: ProgramDailyPlanOverrides = {
+    focusOverride: {
+      cueLabel: "Stay on the back side",
+      drillIds: ["1207514238", "1200422500"],
+      note: "Keep the load centered this week.",
+    },
+  };
+
+  const tasks = getDailyPlan(enrollment, dayInfo, overrides);
+  const hittingTasks = tasks.filter((task) => task.type === "hitting");
+
+  if (hittingTasks.length === 0) {
+    throw new Error("Expected at least one hitting task for focus override test.");
+  }
+
+  for (const task of hittingTasks) {
+    if (task.focus !== "Focus: Stay on the back side") {
+      throw new Error(`Expected override focus on hitting task, got: ${task.focus}`);
+    }
+    if (!task.drills || task.drills.length === 0) {
+      throw new Error("Expected override drills on hitting task.");
+    }
+  }
+
+  console.log("Focus override test passed.");
+}
+
+function assertCustomTaskReplaceCase() {
+  const enrollment: ProgramEnrollmentPlanInput = {
+    ageGroup: "AGE_12_15",
+    focusAreas: ["hitting"],
+    equipment: ["cage_field"],
+    seasonMode: "OFF_SEASON",
+  };
+  const dayInfo = makeDayInfo(2, 1);
+  const baseTasks = getDailyPlan(enrollment, dayInfo);
+  const replacedKey = baseTasks[0]?.key;
+
+  if (!replacedKey) {
+    throw new Error("Expected a base task to replace.");
+  }
+
+  const overrides: ProgramDailyPlanOverrides = {
+    customTasks: [
+      {
+        id: "coach-task-1",
+        programDay: dayInfo.programDay,
+        title: "Coach tee drill",
+        target: "3 rounds of 10",
+        details: "Stay stacked through contact.",
+        drillIds: ["1207514238"],
+        replacesTaskKey: replacedKey,
+      },
+    ],
+  };
+
+  const tasks = getDailyPlan(enrollment, dayInfo, overrides);
+
+  if (tasks.some((task) => task.key === replacedKey)) {
+    throw new Error("Replaced task should have been removed from the daily plan.");
+  }
+
+  const customTask = tasks.find((task) => task.key === `d${dayInfo.programDay}-custom-coach-task-1`);
+  if (!customTask) {
+    throw new Error("Expected coach custom task in daily plan.");
+  }
+
+  if (!customTask.isCoachAdded) {
+    throw new Error("Custom task should be marked as coach-added.");
+  }
+
+  console.log("Custom replace test passed.");
+}
+
+assertFocusOverrideCase();
+assertCustomTaskReplaceCase();
 
 console.log("\nDaily plan self-tests completed.");

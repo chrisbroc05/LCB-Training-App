@@ -11,6 +11,7 @@ import {
 import { isAdminEmail } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
 import BrandLogo from "@/app/BrandLogo";
+import LoggedInSiteHeader from "@/app/components/LoggedInSiteHeader";
 import TopNavigation from "@/app/TopNavigation";
 import AdminViewToggle from "@/app/AdminViewToggle";
 import SiteShell from "@/app/SiteShell";
@@ -108,28 +109,39 @@ export default async function RootLayout({
           userDisplayName={userDisplayName}
           userEmail={session?.user?.email}
           header={
-            <header className="border-b border-[#18243a] bg-black/95 backdrop-blur">
-              <div className="mx-auto w-full max-w-6xl px-4 py-3 sm:px-6 sm:py-4">
-                <div className="flex items-center justify-between gap-3 md:grid md:grid-cols-[1fr_auto] md:items-center">
-                  <Link href="/" className="flex min-w-0 items-center gap-2 sm:gap-3">
-                    <div className="relative h-10 w-28 shrink-0 sm:h-12 sm:w-32">
-                      <BrandLogo className="object-contain" />
-                    </div>
-                    <span className="shrink-0 text-lg font-semibold tracking-tight text-zinc-100 sm:text-xl">
-                      LCB <span className="text-[#22c55e]">Training</span>
-                    </span>
-                  </Link>
-                  <TopNavigation
-                    isLoggedIn={Boolean(session?.user)}
-                    isAdmin={hasAdminAccess}
-                    hasBasicAccess={hasBasicAccess}
-                    hasCoachingAccess={hasCoachingAccess}
-                    hasProgramEnrollment={hasProgramEnrollment}
-                    userDisplayName={userDisplayName}
-                  />
+            session?.user ? (
+              <LoggedInSiteHeader
+                membershipTier={membershipTier}
+                userDisplayName={userDisplayName}
+                userEmail={session.user.email}
+                isAdmin={hasAdminAccess}
+                hasBasicAccess={hasBasicAccess}
+                hasCoachingAccess={hasCoachingAccess}
+                hasProgramEnrollment={hasProgramEnrollment}
+              />
+            ) : (
+              <header className="border-b border-[#18243a] bg-black/95 backdrop-blur">
+                <div className="mx-auto w-full max-w-6xl px-4 py-3 sm:px-6 sm:py-4">
+                  <div className="flex items-center justify-between gap-3 md:grid md:grid-cols-[1fr_auto] md:items-center">
+                    <Link href="/" className="flex min-w-0 items-center gap-2 sm:gap-3">
+                      <div className="relative h-10 w-28 shrink-0 sm:h-12 sm:w-32">
+                        <BrandLogo className="object-contain" />
+                      </div>
+                      <span className="shrink-0 text-lg font-semibold tracking-tight text-zinc-100 sm:text-xl">
+                        LCB <span className="text-[#22c55e]">Training</span>
+                      </span>
+                    </Link>
+                    <TopNavigation
+                      isLoggedIn={false}
+                      isAdmin={false}
+                      hasBasicAccess={false}
+                      hasCoachingAccess={false}
+                      hasProgramEnrollment={false}
+                    />
+                  </div>
                 </div>
-              </div>
-            </header>
+              </header>
+            )
           }
           adminToggle={<AdminViewToggle isAdmin={hasAdminAccess} />}
           footer={

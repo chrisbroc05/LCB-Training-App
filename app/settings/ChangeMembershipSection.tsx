@@ -25,11 +25,8 @@ export default function ChangeMembershipSection({
   if (isTwelveWeekProgramMember(currentTier)) {
     return (
       <SettingsCard title="Membership">
-        <p className={settingsBodyTextClass}>
-          Current plan:{" "}
-          <span className="font-semibold text-[#98b144]">
-            {formatUserFacingMembershipLabel(currentTier)}
-          </span>
+        <p className={`font-semibold text-[#98b144] ${settingsBodyTextClass}`}>
+          {formatUserFacingMembershipLabel(currentTier)}
         </p>
         <p className="mt-3 text-sm text-zinc-400">
           You are enrolled in the 12-Week Coaching Program with full access to coaching submissions,

@@ -8,6 +8,10 @@ import {
   toEnrollmentPlanInput,
   validateTaskNote,
 } from "@/lib/program-today-server";
+import {
+  buildOverridesForWeekAndDay,
+  loadEnrollmentPlanOverrideBundle,
+} from "@/lib/program-plan-overrides-server";
 import { prisma } from "@/lib/prisma";
 
 type CompleteBody = {
@@ -53,7 +57,13 @@ export async function POST(request: Request) {
   }
 
   const dayInfo = buildProgramDayInfoForProgramDay({ startDate: enrollment.startDate }, programDay);
-  const task = assertTaskExistsForDay(planInput, dayInfo, taskKey);
+  const overrideBundle = await loadEnrollmentPlanOverrideBundle(enrollment.id);
+  const overrides = buildOverridesForWeekAndDay(
+    overrideBundle,
+    dayInfo.weekNumber,
+    programDay,
+  );
+  const task = assertTaskExistsForDay(planInput, dayInfo, taskKey, overrides);
   if (!task) {
     return NextResponse.json({ error: "Task not found for this program day." }, { status: 400 });
   }

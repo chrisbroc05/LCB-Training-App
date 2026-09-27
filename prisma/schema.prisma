@@ -127,6 +127,49 @@ model ProgramEnrollment {
   createdAt             DateTime                @default(now())
   updatedAt             DateTime                @updatedAt
   taskCompletions       TaskCompletion[]
+  weekFocusOverrides    WeekFocusOverride[]
+  customTasks           CustomTask[]
+}
+
+model CoachCue {
+  id                 String              @id @default(cuid())
+  label              String
+  drillIds           String[]            @default([])
+  isDefault          Boolean             @default(false)
+  defaultWeek        Int?
+  archived           Boolean             @default(false)
+  createdAt          DateTime            @default(now())
+  weekFocusOverrides WeekFocusOverride[]
+}
+
+model WeekFocusOverride {
+  id           String            @id @default(cuid())
+  enrollmentId String
+  enrollment   ProgramEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  weekNumber   Int
+  cueId        String
+  cue          CoachCue          @relation(fields: [cueId], references: [id], onDelete: Restrict)
+  note         String            @db.VarChar(300)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  @@unique([enrollmentId, weekNumber])
+  @@index([enrollmentId])
+}
+
+model CustomTask {
+  id              String            @id @default(cuid())
+  enrollmentId    String
+  enrollment      ProgramEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  programDay      Int
+  title           String
+  target          String
+  details         String?
+  drillIds        String[]          @default([])
+  replacesTaskKey String?
+  createdAt       DateTime          @default(now())
+
+  @@index([enrollmentId, programDay])
 }
 
 model TaskCompletion {

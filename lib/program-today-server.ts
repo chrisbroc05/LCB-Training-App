@@ -8,6 +8,11 @@ import {
   type ProgramDailyTask,
   type ProgramEnrollmentPlanInput,
 } from "@/lib/program-daily-plan";
+import { getWeekFocusNote } from "@/lib/program-plan-overrides";
+import {
+  buildOverridesForWeekAndDay,
+  loadEnrollmentPlanOverrideBundle,
+} from "@/lib/program-plan-overrides-server";
 import type { ProgramFocusArea, ProgramEquipmentOption } from "@/lib/program-enrollment-shared";
 import { computeProgramStreak, getDayOfWeekForProgramDay } from "@/lib/program-streak-shared";
 import {
@@ -163,17 +168,36 @@ export async function buildProgramTodayPayload(params: {
       : todayInfo;
 
   const planInput = toEnrollmentPlanInput(params.enrollment);
+  const overrideBundle = await loadEnrollmentPlanOverrideBundle(params.enrollment.id);
+  const viewedOverrides =
+    viewedDayInfo.weekNumber > 0
+      ? buildOverridesForWeekAndDay(
+          overrideBundle,
+          viewedDayInfo.weekNumber,
+          viewedDayInfo.programDay,
+        )
+      : undefined;
   const viewedTasks =
     planInput && viewedDayInfo.programDay > 0 && viewedDayInfo.dayOfWeek !== 7
-      ? getDailyPlan(planInput, viewedDayInfo)
+      ? getDailyPlan(planInput, viewedDayInfo, viewedOverrides)
       : [];
 
   const previewDayInfo =
     todayInfo.isBeforeStart && params.enrollment.startDate
       ? buildProgramDayInfoForProgramDay({ startDate: params.enrollment.startDate }, 1)
       : null;
+  const previewOverrides =
+    previewDayInfo && previewDayInfo.weekNumber > 0
+      ? buildOverridesForWeekAndDay(
+          overrideBundle,
+          previewDayInfo.weekNumber,
+          previewDayInfo.programDay,
+        )
+      : undefined;
   const previewTasks =
-    planInput && previewDayInfo ? getDailyPlan(planInput, previewDayInfo) : [];
+    planInput && previewDayInfo
+      ? getDailyPlan(planInput, previewDayInfo, previewOverrides)
+      : [];
 
   const completions = await prisma.taskCompletion.findMany({
     where: { enrollmentId: params.enrollment.id },
@@ -215,7 +239,12 @@ export async function buildProgramTodayPayload(params: {
         { startDate: params.enrollment.startDate },
         day,
       );
-      const expectedKeys = getTaskKeysForDay(planInput, dayInfo);
+      const dayOverrides = buildOverridesForWeekAndDay(
+        overrideBundle,
+        dayInfo.weekNumber,
+        day,
+      );
+      const expectedKeys = getTaskKeysForDay(planInput, dayInfo, dayOverrides);
       if (expectedKeys.length === 0) {
         continue;
       }
@@ -283,8 +312,14 @@ export async function buildProgramTodayPayload(params: {
       { startDate: params.enrollment.startDate },
       programDay,
     );
+    const dayOverrides =
+      planInput && dayInfo.weekNumber > 0
+        ? buildOverridesForWeekAndDay(overrideBundle, dayInfo.weekNumber, programDay)
+        : undefined;
     const expectedKeys =
-      planInput && dayInfo.programDay > 0 ? getTaskKeysForDay(planInput, dayInfo) : [];
+      planInput && dayInfo.programDay > 0
+        ? getTaskKeysForDay(planInput, dayInfo, dayOverrides)
+        : [];
     const completedCount = expectedKeys.filter((key) =>
       completionMap.has(`${programDay}:${key}`),
     ).length;
@@ -323,6 +358,9 @@ export async function buildProgramTodayPayload(params: {
 
   const weeklyVideoSent = await hasWeeklyVideoSent(params.userId, now);
 
+  const weekFocusCue = viewedOverrides?.focusOverride?.cueLabel ?? null;
+  const weekFocusNote = getWeekFocusNote(viewedOverrides);
+
   return {
     todayProgramDay: todayInfo.programDay,
     viewedProgramDay: viewedDayInfo.programDay,
@@ -333,6 +371,8 @@ export async function buildProgramTodayPayload(params: {
     weekDays,
     allTasksComplete,
     weeklyVideoSent,
+    weekFocusCue,
+    weekFocusNote,
     knownFor: params.enrollment.knownFor,
     startDate: params.enrollment.startDate
       ? formatProgramStartDateKey(params.enrollment.startDate)
@@ -362,6 +402,7 @@ export function assertTaskExistsForDay(
   enrollmentPlan: ProgramEnrollmentPlanInput,
   programDayInfo: ProgramDayInfo,
   taskKey: string,
+  overrides?: Parameters<typeof findDailyTask>[3],
 ) {
-  return findDailyTask(enrollmentPlan, programDayInfo, taskKey);
+  return findDailyTask(enrollmentPlan, programDayInfo, taskKey, overrides);
 }
