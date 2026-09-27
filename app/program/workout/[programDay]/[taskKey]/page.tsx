@@ -75,7 +75,7 @@ export default async function ProgramWorkoutPage({ params }: ProgramWorkoutPageP
     (planInput.ageGroup === "AGE_12_15" || planInput.ageGroup === "AGE_16_18");
 
   return (
-    <div className="min-h-screen bg-[#F4F6F8]">
+    <div className="min-h-screen bg-black">
       <ProgramWorkoutChecklist
         programDay={programDay}
         taskKey={task.key}

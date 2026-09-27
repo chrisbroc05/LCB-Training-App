@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { escapeHtml } from "@/lib/escape-text";
 import type { WorkoutWithCues } from "@/lib/workout-program-types";
@@ -24,6 +25,7 @@ export default function ProgramWorkoutChecklist({
   initialNote = "",
   initialCompleted,
 }: ProgramWorkoutChecklistProps) {
+  const router = useRouter();
   const [checked, setChecked] = useState<Record<string, boolean>>({});
   const [note, setNote] = useState(initialNote);
   const [savedNote, setSavedNote] = useState(initialNote);
@@ -55,6 +57,7 @@ export default function ProgramWorkoutChecklist({
 
     setSavedNote(note);
     setCompleted(true);
+    router.push("/dashboard/today");
   };
 
   const undoCompletion = async () => {
@@ -79,22 +82,25 @@ export default function ProgramWorkoutChecklist({
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-8">
-      <Link href="/dashboard" className="text-sm font-medium text-[#2D6A4F] hover:text-[#52B788]">
+      <Link
+        href="/dashboard/today"
+        className="text-sm font-medium text-[#98b144] transition hover:text-[#b5d84f]"
+      >
         Back to Today
       </Link>
 
-      <header className="mt-4">
-        <h1 className="text-2xl font-semibold text-[#0A1628]">{workout.title}</h1>
-        <p className="mt-2 text-sm text-[#6B7280]">
+      <header className="mt-4 rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-5">
+        <h1 className="text-2xl font-semibold text-zinc-100">{workout.title}</h1>
+        <p className="mt-2 text-sm text-zinc-400">
           Week {workout.weekNumber} | {workout.ageGroup} | {workout.category.replace("_", " ")}
         </p>
         {inSeasonNote ? (
-          <p className="mt-3 rounded-xl border border-[#2D6A4F]/30 bg-[#2D6A4F]/10 px-4 py-3 text-sm text-[#0A1628]">
+          <p className="mt-3 rounded-xl border border-[#52B788]/40 bg-[#52B788]/10 px-4 py-3 text-sm text-[#9df3bd]">
             {inSeasonNote}
           </p>
         ) : null}
         {showBodyweightNote ? (
-          <p className="mt-3 rounded-xl border border-[#2D6A4F]/30 bg-[#2D6A4F]/10 px-4 py-3 text-sm text-[#0A1628]">
+          <p className="mt-3 rounded-xl border border-[#52B788]/40 bg-[#52B788]/10 px-4 py-3 text-sm text-[#9df3bd]">
             No gym today? Do what you can with bodyweight and tell me in your note. Bodyweight versions
             are coming soon.
           </p>
@@ -105,17 +111,17 @@ export default function ProgramWorkoutChecklist({
         {workout.sections.map((section) => (
           <section
             key={section.name}
-            className="rounded-2xl border border-[#D1D5DB] bg-white p-5 shadow-sm"
+            className="mobile-card rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-5"
           >
-            <h2 className="text-lg font-semibold text-[#0A1628]">{section.name}</h2>
+            <h2 className="text-lg font-semibold text-zinc-100">{section.name}</h2>
             {section.rounds ? (
-              <p className="mt-1 text-sm text-[#6B7280]">{section.rounds} rounds</p>
+              <p className="mt-1 text-sm text-zinc-400">{section.rounds} rounds</p>
             ) : null}
             <ul className="mt-4 space-y-4">
               {section.exercises.map((exercise) => {
                 const key = `${section.name}:${exercise.name}`;
                 return (
-                  <li key={key} className="rounded-xl border border-[#E5E7EB] p-4">
+                  <li key={key} className="rounded-xl border border-[#2b3650] bg-black/30 p-4">
                     <label className="flex items-start gap-3">
                       <input
                         type="checkbox"
@@ -126,19 +132,19 @@ export default function ProgramWorkoutChecklist({
                             [key]: event.target.checked,
                           }))
                         }
-                        className="mt-1 h-5 w-5 rounded border-[#6B7280]"
+                        className="mt-1 h-5 w-5 rounded border-zinc-500"
                       />
                       <span>
-                        <span className="block text-base font-semibold text-[#0A1628]">
+                        <span className="block text-base font-semibold text-zinc-100">
                           {exercise.name}
                         </span>
-                        <span className="mt-1 block text-sm text-[#6B7280]">
+                        <span className="mt-1 block text-sm text-zinc-300">
                           {exercise.sets ? `${exercise.sets} x ` : ""}
                           {exercise.repsOrTime}
                           {exercise.rest && exercise.rest !== "-" ? ` | Rest: ${exercise.rest}` : ""}
                         </span>
                         {exercise.formCue ? (
-                          <span className="mt-2 block text-sm text-[#2D6A4F]">{exercise.formCue}</span>
+                          <span className="mt-2 block text-sm text-[#52B788]">{exercise.formCue}</span>
                         ) : null}
                       </span>
                     </label>
@@ -150,31 +156,31 @@ export default function ProgramWorkoutChecklist({
         ))}
       </div>
 
-      <section className="mt-8 rounded-2xl border border-[#D1D5DB] bg-white p-5 shadow-sm">
-        <h2 className="text-lg font-semibold text-[#0A1628]">Finish this workout</h2>
+      <section className="mobile-card mt-8 rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-5">
+        <h2 className="text-lg font-semibold text-zinc-100">Finish this workout</h2>
         <label className="mt-4 block">
-          <span className="text-sm font-medium text-[#6B7280]">What did you do? How did it feel?</span>
+          <span className="text-sm font-medium text-zinc-300">What did you do? How did it feel?</span>
           <textarea
             value={note}
             onChange={(event) => setNote(event.target.value)}
             placeholder="What did you do? How did it feel?"
             rows={4}
-            className="mt-2 w-full rounded-xl border border-[#D1D5DB] px-4 py-3 text-[#0A1628]"
+            className="mt-2 w-full rounded-xl border border-[#2b3650] bg-black/30 px-4 py-3 text-zinc-100"
           />
         </label>
-        {error ? <p className="mt-2 text-sm text-red-600">{error}</p> : null}
+        {error ? <p className="mt-2 text-sm text-red-300">{error}</p> : null}
         {completed ? (
           <div className="mt-4 space-y-3">
-            <p className="text-sm font-semibold text-[#2D6A4F]">Workout logged.</p>
+            <p className="text-sm font-semibold text-[#9df3bd]">Workout logged.</p>
             <p
-              className="whitespace-pre-wrap text-sm text-[#6B7280]"
+              className="whitespace-pre-wrap text-sm text-zinc-300"
               dangerouslySetInnerHTML={{ __html: escapeHtml(savedNote) }}
             />
             <button
               type="button"
               onClick={() => void undoCompletion()}
               disabled={saving}
-              className="rounded-full border border-[#6B7280] px-5 py-3 text-sm font-semibold text-[#6B7280]"
+              className="rounded-full border border-[#2b3650] px-5 py-3 text-sm font-semibold text-zinc-300"
             >
               Undo
             </button>
@@ -184,9 +190,9 @@ export default function ProgramWorkoutChecklist({
             type="button"
             onClick={() => void saveCompletion()}
             disabled={saving || note.trim().length < 3}
-            className="mt-4 w-full rounded-full bg-[#2D6A4F] px-5 py-4 text-base font-semibold text-white disabled:opacity-50"
+            className="mt-4 flex h-12 w-full items-center justify-center rounded-full bg-[#2D6A4F] text-base font-semibold text-white disabled:opacity-50"
           >
-            {saving ? "Saving..." : "Save workout note"}
+            {saving ? "Saving..." : "Complete workout"}
           </button>
         )}
       </section>

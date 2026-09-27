@@ -6,6 +6,7 @@ import type {
   ProgramSeasonMode,
 } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { formatProgramStartDateKey } from "@/lib/program-schedule";
 import { getTwelveWeekProgramEndDate } from "@/lib/twelve-week-program";
 
 export * from "@/lib/program-enrollment-shared";
@@ -60,7 +61,9 @@ export function serializeProgramEnrollment(enrollment: {
     id: enrollment.id,
     userId: enrollment.userId,
     status: enrollment.status,
-    startDate: enrollment.startDate ? enrollment.startDate.toISOString().slice(0, 10) : null,
+    startDate: enrollment.startDate
+      ? formatProgramStartDateKey(enrollment.startDate)
+      : null,
     ageGroup: enrollment.ageGroup,
     position: enrollment.position,
     focusAreas: enrollment.focusAreas,

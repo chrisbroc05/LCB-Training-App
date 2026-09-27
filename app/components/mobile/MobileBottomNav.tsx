@@ -11,7 +11,7 @@ type MobileBottomNavProps = {
 };
 
 type NavTab = {
-  key: "today" | "home" | "playbook" | "train" | "resources" | "account";
+  key: "today" | "home" | "playbook" | "train" | "resources";
   label: string;
   href: string;
   locked?: boolean;
@@ -25,7 +25,6 @@ const prefetchRoutes = [
   "/playbook",
   "/drill-library",
   "/resources",
-  "/profile",
 ];
 
 function TodayIcon({ active }: { active: boolean }) {
@@ -128,28 +127,6 @@ function ResourcesIcon({ active }: { active: boolean }) {
   );
 }
 
-function PersonIcon({ active }: { active: boolean }) {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <circle
-        cx="12"
-        cy="8"
-        r="3.5"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        fill={active ? "currentColor" : "none"}
-      />
-      <path
-        d="M5 20a7 7 0 0 1 14 0"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        fill="none"
-      />
-    </svg>
-  );
-}
-
 function LockIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -232,13 +209,6 @@ export default function MobileBottomNav({
       isActive: (path) => path.startsWith("/resources"),
       icon: (active) => <ResourcesIcon active={active} />,
     },
-    {
-      key: "account",
-      label: "Account",
-      href: "/profile",
-      isActive: (path) => path.startsWith("/profile") || path.startsWith("/settings"),
-      icon: (active) => <PersonIcon active={active} />,
-    },
   ];
 
   useEffect(() => {
@@ -277,7 +247,11 @@ export default function MobileBottomNav({
 
   return (
     <nav className="mobile-bottom-nav md:hidden" aria-label="Mobile app navigation">
-      <div className={`mobile-bottom-nav-pill${hasProgramEnrollment ? " is-six-tabs" : ""}`}>
+      <div
+        className={`mobile-bottom-nav-pill${
+          tabs.length === 4 ? " is-four-tabs" : tabs.length === 5 ? " is-five-tabs" : ""
+        }`}
+      >
         {tabs.map((tab) => {
           const active = resolveActive(tab);
           const content = (

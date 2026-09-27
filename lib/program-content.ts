@@ -45,11 +45,41 @@ export const HITTING_FOCUS_CUES: Record<number, string> = {
   12: "Game at-bats: every rep is a count and a situation",
 };
 
-export const HITTING_IDEAS_BY_EQUIPMENT: Record<ProgramHittingEquipmentKey, string> = {
-  cage_field: "Mix tee, flips and machine or live arm however you want.",
-  tee_net: "All reps off the tee, same focus.",
-  always: "No setup? Dry swings, mirror work, or PVC pipe swings. Same number, slow and focused on the cue.",
-};
+export const HITTING_WAYS_OPTIONS = [
+  {
+    key: "cage_field" as const,
+    label: "Cage or field:",
+    text: "mix tee, flips, machine or live arm.",
+  },
+  {
+    key: "tee_net" as const,
+    label: "Tee and net:",
+    text: "tee work, or flips into the net.",
+  },
+  {
+    key: "always" as const,
+    label: "No setup:",
+    text: "dry swings, mirror work or PVC pipe swings.",
+  },
+];
+
+export const FIELDING_WAYS_OPTIONS = [
+  {
+    key: "glove_wall" as const,
+    label: "Glove and a wall:",
+    text: "tennis ball wall work.",
+  },
+  {
+    key: "always" as const,
+    label: "Partner:",
+    text: "rolled or hit ground balls.",
+  },
+  {
+    key: "cage_field" as const,
+    label: "Field:",
+    text: "live ground balls or fly balls with throws.",
+  },
+];
 
 export const FIELDING_EMPHASIS_BY_PHASE: Record<
   ProgramContentPhase,
@@ -275,34 +305,25 @@ export function toContentPhase(phase: ProgramPhase): ProgramContentPhase {
   return "foundation";
 }
 
+function orderWaysByEquipment<T extends { key: string }>(
+  options: T[],
+  equipment: ProgramEquipmentOption[],
+) {
+  const matched = options.filter((option) => equipment.includes(option.key as ProgramEquipmentOption));
+  const rest = options.filter((option) => !equipment.includes(option.key as ProgramEquipmentOption));
+  return [...matched, ...rest];
+}
+
 export function getHittingIdeasForEquipment(equipment: ProgramEquipmentOption[]) {
-  const ideas: string[] = [];
-
-  if (equipment.includes("cage_field")) {
-    ideas.push(HITTING_IDEAS_BY_EQUIPMENT.cage_field);
-  }
-
-  if (equipment.includes("tee_net")) {
-    ideas.push(HITTING_IDEAS_BY_EQUIPMENT.tee_net);
-  }
-
-  ideas.push(HITTING_IDEAS_BY_EQUIPMENT.always);
-  return ideas;
+  return orderWaysByEquipment(HITTING_WAYS_OPTIONS, equipment).map(
+    (option) => `${option.label} ${option.text}`,
+  );
 }
 
 export function getFieldingIdeasForEquipment(equipment: ProgramEquipmentOption[]) {
-  const ideas: string[] = [];
-
-  if (equipment.includes("glove_wall")) {
-    ideas.push(FIELDING_IDEAS_BY_EQUIPMENT.glove_wall);
-  }
-
-  if (equipment.includes("cage_field")) {
-    ideas.push(FIELDING_IDEAS_BY_EQUIPMENT.cage_field);
-  }
-
-  ideas.push(FIELDING_IDEAS_BY_EQUIPMENT.always);
-  return ideas;
+  return orderWaysByEquipment(FIELDING_WAYS_OPTIONS, equipment).map(
+    (option) => `${option.label} ${option.text}`,
+  );
 }
 
 export function getPlaybookChapterForWeek(weekNumber: number) {

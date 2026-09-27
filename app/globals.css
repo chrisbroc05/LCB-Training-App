@@ -111,7 +111,7 @@ body {
   }
 
   .mobile-app-header {
-    position: fixed;
+    position: sticky;
     top: 0;
     left: 0;
     right: 0;
@@ -119,6 +119,12 @@ body {
     background: rgba(10, 22, 40, 0.96);
     border-bottom: 1px solid #152238;
     padding-top: env(safe-area-inset-top);
+  }
+
+  @media (min-width: 768px) {
+    .mobile-app-header {
+      position: sticky;
+    }
   }
 
   .mobile-app-header-inner {
@@ -183,7 +189,33 @@ body {
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    gap: 6px;
+    gap: 8px;
+  }
+
+  .mobile-account-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+  }
+
+  .mobile-account-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #f4f4f5;
+  }
+
+  .mobile-account-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 999px;
+    background: #2d6a4f;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 700;
   }
 
   .mobile-tier-pill {
@@ -309,12 +341,12 @@ body {
     box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
   }
 
-  .mobile-bottom-nav-pill.is-six-tabs {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+  .mobile-bottom-nav-pill.is-four-tabs {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
-  .mobile-bottom-nav-pill.is-six-tabs .mobile-bottom-nav-label {
-    font-size: 10px;
+  .mobile-bottom-nav-pill.is-five-tabs {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 
   .mobile-bottom-nav-tab {

@@ -59,11 +59,7 @@ export default function SiteShell({
       </main>
       {useMobileChrome ? (
         <>
-          <MobileAppHeader
-            membershipTier={membershipTier}
-            userDisplayName={userDisplayName}
-            userEmail={userEmail}
-          />
+          <MobileAppHeader userDisplayName={userDisplayName} userEmail={userEmail} />
           <MobileBottomNav
             hasBasicAccess={hasBasicAccess}
             hasProgramEnrollment={hasProgramEnrollment}

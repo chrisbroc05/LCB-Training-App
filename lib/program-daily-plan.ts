@@ -59,8 +59,11 @@ export type ProgramDailyTask = {
   type: ProgramTaskType;
   title: string;
   target: string;
+  targetDetail?: string;
   focus?: string;
   ideas?: string[];
+  waysLabel?: string;
+  playbookIsRead?: boolean;
   drills?: ProgramDrillRef[];
   workout?: ProgramWorkoutRef;
   needsNote: boolean;
@@ -136,8 +139,10 @@ function buildHittingTask(
     key: `p${programDay}-hitting${suffix}`,
     type: "hitting",
     title: "Hitting",
-    target: `${reps} swings`,
+    target: `${reps} swings today`,
+    targetDetail: "Get them in any way you want.",
     focus: `Focus: ${cue}`,
+    waysLabel: "WAYS TO GET THEM",
     ideas: getHittingIdeasForEquipment(equipment),
     drills: getHittingDrillsForDay(weekNumber, dayOfWeek),
     needsNote: true,
@@ -168,8 +173,10 @@ function buildFieldingTask(
     key: `p${programDay}-fielding${suffix}`,
     type: "fielding",
     title: "Fielding",
-    target: `${reps} fielding reps`,
+    target: `${reps} fielding reps today`,
+    targetDetail: "Get them in any way you want.",
     focus: `${emphasis.summary} ${emphasis.example} ${FIELDING_FOOTWORK_LINE}`,
+    waysLabel: "WAYS TO GET THEM",
     ideas: getFieldingIdeasForEquipment(equipment),
     drills: getFieldingDrillsForDay(phase, weekNumber, dayOfWeek),
     needsNote: true,
@@ -293,8 +300,9 @@ function buildPlaybookTask(
       ? `Open chapter ${chapterNumber} in the playbook.`
       : "Write one takeaway from this chapter.",
     playbookChapter: chapterNumber,
-    playbookHref: "/playbook",
-    needsNote: !isRead,
+    playbookHref: `/playbook?chapter=${chapterNumber}`,
+    playbookIsRead: isRead,
+    needsNote: true,
     dropRank: DROP_RANK.keep,
     isFocusExtra: false,
     removable: false,

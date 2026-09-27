@@ -30,10 +30,8 @@ export default async function ProgramTodayPage() {
   }
 
   return (
-    <div className="min-h-full bg-[#F4F6F8]">
-      <div className="mx-auto w-full max-w-2xl px-4 pb-28 pt-4 md:max-w-3xl md:pb-10 md:pt-8">
-        <ProgramTodayView />
-      </div>
+    <div className="mobile-card-stack px-4 pb-28 pt-2 md:mx-auto md:max-w-3xl md:px-6 md:pb-10 md:pt-6">
+      <ProgramTodayView />
     </div>
   );
 }

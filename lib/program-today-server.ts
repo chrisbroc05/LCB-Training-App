@@ -11,9 +11,12 @@ import {
 import type { ProgramFocusArea, ProgramEquipmentOption } from "@/lib/program-enrollment-shared";
 import { computeProgramStreak, getDayOfWeekForProgramDay } from "@/lib/program-streak-shared";
 import {
+  formatProgramStartDateKey,
   getChicagoMondayStart,
+  getDateForProgramDay,
   getProgramDay,
   getWeekdayLabelForProgramDay,
+  getWeekdayNameForProgramDay,
   parseProgramDateKey,
   type ProgramDayInfo,
 } from "@/lib/program-schedule";
@@ -35,6 +38,7 @@ export type ProgramWeekDayStatus = {
   programDay: number;
   dayOfWeek: number;
   weekdayLabel: string;
+  weekdayName: string;
   status: "complete" | "partial" | "missed" | "upcoming" | "rest";
   isToday: boolean;
   tappable: boolean;
@@ -89,9 +93,7 @@ export function buildProgramDayInfoForProgramDay(
     return getProgramDay(enrollment);
   }
 
-  const startKey = enrollment.startDate.toISOString().slice(0, 10);
-  const start = parseProgramDateKey(startKey);
-  const target = new Date(start.getTime() + (programDay - 1) * 24 * 60 * 60 * 1000);
+  const target = getDateForProgramDay(enrollment.startDate, programDay);
   return getProgramDay(enrollment, target);
 }
 
@@ -252,6 +254,10 @@ export async function buildProgramTodayPayload(params: {
       startDate && programDay > 0
         ? getWeekdayLabelForProgramDay(startDate, programDay)
         : "?";
+    const weekdayName =
+      startDate && programDay > 0
+        ? getWeekdayNameForProgramDay(startDate, programDay)
+        : "Day";
     const isToday = programDay === todayInfo.programDay;
     const tappable = programDay > 0 && programDay <= todayInfo.programDay;
     const editable =
@@ -264,6 +270,7 @@ export async function buildProgramTodayPayload(params: {
         programDay,
         dayOfWeek,
         weekdayLabel,
+        weekdayName,
         status: "rest",
         isToday,
         tappable,
@@ -299,6 +306,7 @@ export async function buildProgramTodayPayload(params: {
       programDay,
       dayOfWeek,
       weekdayLabel,
+      weekdayName,
       status,
       isToday,
       tappable,
@@ -326,7 +334,16 @@ export async function buildProgramTodayPayload(params: {
     allTasksComplete,
     weeklyVideoSent,
     knownFor: params.enrollment.knownFor,
-    startDate: params.enrollment.startDate?.toISOString().slice(0, 10) ?? null,
+    startDate: params.enrollment.startDate
+      ? formatProgramStartDateKey(params.enrollment.startDate)
+      : null,
+    viewedWeekdayName:
+      params.enrollment.startDate && viewedDayInfo.programDay > 0
+        ? getWeekdayNameForProgramDay(
+            params.enrollment.startDate,
+            viewedDayInfo.programDay,
+          )
+        : "",
     isBeforeStart: todayInfo.isBeforeStart,
     isComplete: todayInfo.isComplete,
     isRestDay: viewedDayInfo.dayOfWeek === 7,

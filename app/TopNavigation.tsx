@@ -475,9 +475,18 @@ export default function TopNavigation({
         />
 
         {userDisplayName ? (
-          <span className="ml-2 border-l border-[#2b3650] pl-3 text-xs font-medium text-[#52B788]">
-            {userDisplayName}
-          </span>
+          <Link
+            href="/profile"
+            onClick={closeMenus}
+            className="ml-2 inline-flex items-center gap-2 border-l border-[#2b3650] pl-3"
+          >
+            <span className="text-xs font-medium text-zinc-200">
+              {userDisplayName.trim().split(/\s+/)[0]}
+            </span>
+            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#2D6A4F] text-sm font-bold text-white">
+              {userDisplayName.trim().charAt(0).toUpperCase()}
+            </span>
+          </Link>
         ) : null}
       </div>
 

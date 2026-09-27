@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   PLAYBOOK_CHAPTERS,
@@ -105,6 +106,7 @@ function chapterButtonLabel(status: PlaybookChapterProgress["status"]) {
 }
 
 export default function PlaybookApp() {
+  const searchParams = useSearchParams();
   const [progress, setProgress] = useState<PlaybookProgress | null>(null);
   const [view, setView] = useState<PlaybookView>("landing");
   const [activeChapter, setActiveChapter] = useState(1);
@@ -190,6 +192,21 @@ export default function PlaybookApp() {
       window.clearTimeout(timeoutId);
     };
   }, [loadProgress]);
+
+  useEffect(() => {
+    const chapterParam = searchParams.get("chapter");
+    if (!chapterParam) {
+      return;
+    }
+
+    const chapterNumber = Number(chapterParam);
+    if (!Number.isFinite(chapterNumber) || chapterNumber < 1 || chapterNumber > 4) {
+      return;
+    }
+
+    setActiveChapter(chapterNumber);
+    setView("chapter");
+  }, [searchParams]);
 
   const chapterContent = useMemo(
     () => PLAYBOOK_CHAPTERS.find((chapter) => chapter.number === activeChapter),

@@ -85,10 +85,22 @@ export function parseProgramDateKey(dateKey: string) {
   return dateKeyToUtcNoon(dateKey);
 }
 
-export function getWeekdayLabelForProgramDay(startDate: Date, programDay: number) {
-  const startKey = getChicagoDateKey(startDate);
+export function formatProgramStartDateKey(startDate: Date) {
+  const year = startDate.getUTCFullYear();
+  const month = String(startDate.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(startDate.getUTCDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+export function getDateForProgramDay(startDate: Date, programDay: number) {
+  const startKey = formatProgramStartDateKey(startDate);
   const day = dateKeyToUtcNoon(startKey);
   day.setUTCDate(day.getUTCDate() + (programDay - 1));
+  return day;
+}
+
+export function getWeekdayLabelForProgramDay(startDate: Date, programDay: number) {
+  const day = getDateForProgramDay(startDate, programDay);
   const weekday = new Intl.DateTimeFormat("en-US", {
     timeZone: CHICAGO_TIME_ZONE,
     weekday: "short",
@@ -97,20 +109,29 @@ export function getWeekdayLabelForProgramDay(startDate: Date, programDay: number
   return weekday.charAt(0);
 }
 
+export function getWeekdayNameForProgramDay(startDate: Date, programDay: number) {
+  const day = getDateForProgramDay(startDate, programDay);
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: CHICAGO_TIME_ZONE,
+    weekday: "long",
+  }).format(day);
+}
+
 export function formatProgramStartLabel(startDate: Date, now = new Date()) {
-  const startKey = getChicagoDateKey(startDate);
+  const startKey = formatProgramStartDateKey(startDate);
   const todayKey = getChicagoTodayDateKey(now);
 
   if (startKey === todayKey) {
     return "Today";
   }
 
+  const labelDate = parseProgramDateKey(startKey);
   return new Intl.DateTimeFormat("en-US", {
     timeZone: CHICAGO_TIME_ZONE,
     weekday: "long",
     month: "long",
     day: "numeric",
-  }).format(startDate);
+  }).format(labelDate);
 }
 
 export function getProgramDay(
@@ -128,8 +149,8 @@ export function getProgramDay(
     };
   }
 
-  const startKey = getChicagoDateKey(enrollment.startDate);
-  const todayKey = getChicagoDateKey(now);
+  const startKey = formatProgramStartDateKey(enrollment.startDate);
+  const todayKey = getChicagoTodayDateKey(now);
   const dayDiff = diffChicagoCalendarDays(startKey, todayKey);
 
   if (dayDiff < 0) {
@@ -224,5 +245,36 @@ export function runProgramScheduleSelfTests() {
     }
   }
 
-  return cases.length;
+  const adminStartDate = new Date("2026-01-05T00:00:00.000Z");
+  const adminDay1 = getProgramDay(
+    { startDate: adminStartDate },
+    dateKeyToUtcNoon("2026-01-05"),
+  );
+  if (adminDay1.programDay !== 1 || adminDay1.dayOfWeek !== 1) {
+    throw new Error(
+      `admin db midnight: expected programDay=1 dayOfWeek=1, got ${adminDay1.programDay}/${adminDay1.dayOfWeek}`,
+    );
+  }
+
+  const adminWeekday = getWeekdayLabelForProgramDay(adminStartDate, 1);
+  if (adminWeekday !== "M") {
+    throw new Error(`admin db midnight: expected weekday M, got ${adminWeekday}`);
+  }
+
+  const adminDay4 = getProgramDay(
+    { startDate: adminStartDate },
+    dateKeyToUtcNoon("2026-01-08"),
+  );
+  if (adminDay4.programDay !== 4 || adminDay4.dayOfWeek !== 4) {
+    throw new Error(
+      `admin db midnight day 4: expected programDay=4 dayOfWeek=4, got ${adminDay4.programDay}/${adminDay4.dayOfWeek}`,
+    );
+  }
+
+  const adminDay4Weekday = getWeekdayLabelForProgramDay(adminStartDate, 4);
+  if (adminDay4Weekday !== "T") {
+    throw new Error(`admin db midnight day 4: expected weekday T, got ${adminDay4Weekday}`);
+  }
+
+  return cases.length + 1;
 }
