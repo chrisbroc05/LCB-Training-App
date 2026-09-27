@@ -31,7 +31,7 @@ export async function requireGoalCheckinMember() {
   if (!canAccessCoachingNav(user.membershipTier)) {
     return {
       error: NextResponse.json(
-        { error: "Goal check-ins are available on Memorable and Elite memberships." },
+        { error: "Goal check-ins are available with the 12-Week Coaching Program." },
         { status: 403 },
       ),
     };

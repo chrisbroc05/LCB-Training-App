@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react
 import { escapeHtml } from "@/lib/escape-text";
 import { parseReflectionNote, SATURDAY_REFLECTION_FIELDS } from "@/lib/program-content";
 import { PROGRAM_PHASE_LABELS } from "@/lib/program-content";
+import { BRAND_SECONDARY_TAGLINE } from "@/lib/brand-copy";
 import { formatProgramStartLabel, parseProgramDateKey } from "@/lib/program-schedule";
 
 const CARD =
@@ -588,7 +589,7 @@ export default function ProgramTodayView() {
 
       {payload.knownFor ? (
         <section className={`${CARD} border-[#52B788]/40`}>
-          <p className="text-xs font-bold uppercase tracking-widest text-[#52B788]">YOUR GOAL</p>
+          <p className="text-xs font-bold tracking-wide text-[#52B788]">{BRAND_SECONDARY_TAGLINE}</p>
           <p className="mt-2 text-lg font-medium leading-snug text-zinc-100">{payload.knownFor}</p>
         </section>
       ) : null}

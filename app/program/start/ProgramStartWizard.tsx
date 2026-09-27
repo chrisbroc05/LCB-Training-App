@@ -15,6 +15,7 @@ import {
   type ProgramFocusArea,
   type ProgramSeasonMode,
 } from "@/lib/program-enrollment-shared";
+import { BRAND_SECONDARY_TAGLINE } from "@/lib/brand-copy";
 import { formatProgramStartLabel, parseProgramDateKey } from "@/lib/program-schedule";
 
 type SerializedEnrollment = {
@@ -470,8 +471,8 @@ export default function ProgramStartWizard({
                 </p>
               </div>
               <div className="rounded-2xl bg-[#F4F6F8] p-5">
-                <p className="text-xs font-bold uppercase tracking-[0.08em] text-[#2D6A4F]">
-                  YOUR GOAL
+                <p className="text-xs font-bold tracking-wide text-[#2D6A4F]">
+                  {BRAND_SECONDARY_TAGLINE}
                 </p>
                 <p className="mt-3 text-base leading-7 text-[#0A1628]">
                   {(enrollment.knownFor ?? knownFor).trim()}

@@ -50,6 +50,13 @@ export default function SiteShell({
 
   const shell = (
     <>
+      {useMobileChrome ? (
+        <MobileAppHeader
+          membershipTier={membershipTier}
+          userDisplayName={userDisplayName}
+          userEmail={userEmail}
+        />
+      ) : null}
       <div className={headerWrapperClass}>
         {isHomePage ? <LandingSwingBanner isLoggedIn={isLoggedIn} /> : null}
         {isHomePage ? <LandingHeader isLoggedIn={isLoggedIn} /> : header}
@@ -58,13 +65,10 @@ export default function SiteShell({
         {useMobileChrome ? <MobilePageTransition>{children}</MobilePageTransition> : children}
       </main>
       {useMobileChrome ? (
-        <>
-          <MobileAppHeader userDisplayName={userDisplayName} userEmail={userEmail} />
-          <MobileBottomNav
-            hasBasicAccess={hasBasicAccess}
-            hasProgramEnrollment={hasProgramEnrollment}
-          />
-        </>
+        <MobileBottomNav
+          hasBasicAccess={hasBasicAccess}
+          hasProgramEnrollment={hasProgramEnrollment}
+        />
       ) : null}
       {adminToggle}
       <div className={useMobileChrome ? "hidden md:block" : undefined}>{footer}</div>

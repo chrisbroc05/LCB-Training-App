@@ -1,4 +1,9 @@
-import { hasDatabaseTierAccess, type DatabaseTier, type TierKey } from "@/lib/membership";
+import {
+  hasDatabaseTierAccess,
+  isTwelveWeekProgramMember,
+  type DatabaseTier,
+  type TierKey,
+} from "@/lib/membership";
 
 export type WorkoutResourceTier = Extract<TierKey, "basic" | "memorable" | "elite">;
 
@@ -52,7 +57,7 @@ export const workoutResourceGroups: WorkoutResourceGroup[] = [
     ],
   },
   {
-    heading: "Elite Only",
+    heading: "12-Week Program",
     requiredTier: "elite",
     resources: [
       {
@@ -84,6 +89,10 @@ export function canAccessWorkoutResource(
   membershipTier: DatabaseTier,
   requiredTier: WorkoutResourceTier,
 ) {
+  if (requiredTier === "elite" && isTwelveWeekProgramMember(membershipTier)) {
+    return true;
+  }
+
   return hasDatabaseTierAccess(membershipTier, requiredTier);
 }
 
@@ -92,7 +101,7 @@ export function getWorkoutResourceUpgradeLabel(requiredTier: WorkoutResourceTier
     return "Upgrade to Basic";
   }
 
-  return "Upgrade to Elite";
+  return "See the program";
 }
 
 export function getWorkoutResourceUpgradeHref(requiredTier: WorkoutResourceTier) {
@@ -100,7 +109,7 @@ export function getWorkoutResourceUpgradeHref(requiredTier: WorkoutResourceTier)
     return "/upgrade?reason=basic-required";
   }
 
-  return "/upgrade";
+  return "/program";
 }
 
 export function getWorkoutResourceLockMessage(
@@ -111,5 +120,5 @@ export function getWorkoutResourceLockMessage(
     return `${title} is available on Basic and above. Upgrade to Basic to unlock this resource.`;
   }
 
-  return `${title} is available on Elite memberships only. Upgrade to Elite to unlock this resource.`;
+  return `Included in the 12-Week Program.`;
 }

@@ -111,7 +111,7 @@ body {
   }
 
   .mobile-app-header {
-    position: sticky;
+    position: fixed;
     top: 0;
     left: 0;
     right: 0;
@@ -119,12 +119,6 @@ body {
     background: rgba(10, 22, 40, 0.96);
     border-bottom: 1px solid #152238;
     padding-top: env(safe-area-inset-top);
-  }
-
-  @media (min-width: 768px) {
-    .mobile-app-header {
-      position: sticky;
-    }
   }
 
   .mobile-app-header-inner {
@@ -174,7 +168,7 @@ body {
   .mobile-app-user-greeting {
     font-size: 12px;
     font-weight: 400;
-    color: #94a3b8;
+    color: #cbd5e1;
     line-height: 1.2;
     white-space: nowrap;
     overflow: hidden;
@@ -260,12 +254,12 @@ body {
     width: 36px;
     height: 36px;
     border-radius: 999px;
-    color: #94a3b8;
+    color: #f4f4f5;
     transition: color 150ms ease-out;
   }
 
   .mobile-settings-button:hover {
-    color: #cbd5e1;
+    color: #52b788;
   }
 
   .mobile-notification-button {
@@ -276,12 +270,12 @@ body {
     width: 36px;
     height: 36px;
     border-radius: 999px;
-    color: #94a3b8;
+    color: #f4f4f5;
     transition: color 150ms ease-out;
   }
 
   .mobile-notification-button:hover {
-    color: #cbd5e1;
+    color: #52b788;
   }
 
   .mobile-notification-badge {
