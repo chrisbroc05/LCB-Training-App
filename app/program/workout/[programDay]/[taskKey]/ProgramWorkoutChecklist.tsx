@@ -3,7 +3,12 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import ProgramNoteField from "@/app/components/ProgramNoteField";
 import { escapeHtml } from "@/lib/escape-text";
+import {
+  canSaveProgramNote,
+  getWorkoutNotePlaceholder,
+} from "@/lib/program-note-shared";
 import type { WorkoutWithCues } from "@/lib/workout-program-types";
 
 type ProgramWorkoutChecklistProps = {
@@ -158,16 +163,13 @@ export default function ProgramWorkoutChecklist({
 
       <section className="mobile-card mt-8 rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-5">
         <h2 className="text-lg font-semibold text-zinc-100">Finish this workout</h2>
-        <label className="mt-4 block">
-          <span className="text-sm font-medium text-zinc-300">What did you do? How did it feel?</span>
-          <textarea
+        <div className="mt-4">
+          <ProgramNoteField
             value={note}
-            onChange={(event) => setNote(event.target.value)}
-            placeholder="What did you do? How did it feel?"
-            rows={4}
-            className="mt-2 w-full rounded-xl border border-[#2b3650] bg-black/30 px-4 py-3 text-zinc-100"
+            onChange={setNote}
+            placeholder={getWorkoutNotePlaceholder()}
           />
-        </label>
+        </div>
         {error ? <p className="mt-2 text-sm text-red-300">{error}</p> : null}
         {completed ? (
           <div className="mt-4 space-y-3">
@@ -189,7 +191,7 @@ export default function ProgramWorkoutChecklist({
           <button
             type="button"
             onClick={() => void saveCompletion()}
-            disabled={saving || note.trim().length < 3}
+            disabled={saving || !canSaveProgramNote(note)}
             className="mt-4 flex h-12 w-full items-center justify-center rounded-full bg-[#2D6A4F] text-base font-semibold text-white disabled:opacity-50"
           >
             {saving ? "Saving..." : "Complete workout"}

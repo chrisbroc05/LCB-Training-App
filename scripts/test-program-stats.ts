@@ -1,4 +1,9 @@
 import {
+  canSaveProgramNote,
+  validateDayLogNote,
+  validateProgramNote,
+} from "../lib/program-note-shared";
+import {
   aggregateGameStats,
   computeAvg,
   computeObp,
@@ -101,5 +106,15 @@ const line = formatGameLine({
   errors: 0,
 });
 assert(line === "2 for 4, 1 BB, 1 RBI", `Unexpected line: ${line}`);
+
+assert(!canSaveProgramNote("good"), "Expected low-effort note to fail");
+assert(
+  validateProgramNote("This was a solid session with real detail.").ok,
+  "Expected valid program note",
+);
+assert(
+  validateDayLogNote("This was a solid game with plenty of detail to review.").ok,
+  "Expected valid day log note",
+);
 
 console.log("Program stats self-tests passed.");

@@ -3,7 +3,17 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import ProgramDayLogSection from "@/app/dashboard/ProgramDayLogSection";
+import ProgramNoteField from "@/app/components/ProgramNoteField";
 import { escapeHtml } from "@/lib/escape-text";
+import {
+  canSaveProgramNote,
+  canSaveReflectionFields,
+  getTaskNotePlaceholder,
+  isLowEffortNote,
+  LOW_EFFORT_NOTE_MESSAGE,
+  MIN_PROGRAM_NOTE_LENGTH,
+  PROGRAM_NOTE_REMINDER,
+} from "@/lib/program-note-shared";
 import { parseReflectionNote, SATURDAY_REFLECTION_FIELDS } from "@/lib/program-content";
 import { PROGRAM_PHASE_LABELS } from "@/lib/program-content";
 import { BRAND_SECONDARY_TAGLINE } from "@/lib/brand-copy";
@@ -240,8 +250,8 @@ function AnswerBottomSheet({
   };
 
   const canSave = isReflection
-    ? reflection.bestRep.trim() && reflection.stillHard.trim() && reflection.knownForNext.trim()
-    : note.trim().length >= 3;
+    ? canSaveReflectionFields(reflection)
+    : canSaveProgramNote(note);
 
   if (!canComplete) {
     return null;
@@ -261,29 +271,49 @@ function AnswerBottomSheet({
         ) : null}
         <div className="mt-4 space-y-3">
           {isReflection ? (
-            SATURDAY_REFLECTION_FIELDS.map((field) => (
-              <label key={field.key} className="block">
-                <span className="text-sm font-medium text-zinc-300">{field.label}</span>
-                <textarea
-                  value={reflection[field.key as keyof typeof reflection]}
-                  onChange={(event) =>
-                    setReflection((current) => ({
-                      ...current,
-                      [field.key]: event.target.value,
-                    }))
-                  }
-                  rows={2}
-                  className="mt-2 w-full rounded-xl border border-[#2b3650] bg-black/30 px-4 py-3 text-zinc-100"
-                />
-              </label>
-            ))
+            SATURDAY_REFLECTION_FIELDS.map((field) => {
+              const value = reflection[field.key as keyof typeof reflection];
+              const trimmedLength = value.trim().length;
+              return (
+                <label key={field.key} className="block space-y-2">
+                  <span className="text-sm font-medium text-zinc-300">{field.label}</span>
+                  <p className="text-xs text-zinc-500">{PROGRAM_NOTE_REMINDER}</p>
+                  <textarea
+                    value={value}
+                    onChange={(event) =>
+                      setReflection((current) => ({
+                        ...current,
+                        [field.key]: event.target.value,
+                      }))
+                    }
+                    rows={2}
+                    maxLength={400}
+                    className="w-full rounded-xl border border-[#2b3650] bg-black/30 px-4 py-3 text-zinc-100"
+                  />
+                  <div className="flex items-start justify-between gap-3">
+                    {isLowEffortNote(value) ? (
+                      <p className="text-xs text-red-300">{LOW_EFFORT_NOTE_MESSAGE}</p>
+                    ) : (
+                      <span className="text-xs text-transparent">.</span>
+                    )}
+                    <span
+                      className={`shrink-0 text-xs font-medium ${
+                        trimmedLength >= MIN_PROGRAM_NOTE_LENGTH
+                          ? "text-[#9df3bd]"
+                          : "text-zinc-500"
+                      }`}
+                    >
+                      {trimmedLength}/{MIN_PROGRAM_NOTE_LENGTH}
+                    </span>
+                  </div>
+                </label>
+              );
+            })
           ) : (
-            <textarea
+            <ProgramNoteField
               value={note}
-              onChange={(event) => setNote(event.target.value)}
+              onChange={setNote}
               placeholder={sheet.placeholder}
-              rows={4}
-              className="w-full rounded-xl border border-[#2b3650] bg-black/30 px-4 py-3 text-zinc-100"
             />
           )}
         </div>
@@ -507,12 +537,7 @@ function TaskCard({
               onClick={() =>
                 onOpenAnswer({
                   task,
-                  placeholder:
-                    isPlaybookRead
-                      ? "One line: what stood out?"
-                      : task.type === "mindset" || task.type === "playbook"
-                        ? "Your answer"
-                        : "What did you do? How did it feel?",
+                  placeholder: getTaskNotePlaceholder(task),
                   rereadChapter:
                     task.type === "playbook" && !task.playbookIsRead
                       ? task.playbookChapter
@@ -529,8 +554,8 @@ function TaskCard({
               onClick={() =>
                 onOpenAnswer({
                   task,
-                  question: "One line: what stood out?",
-                  placeholder: "One line: what stood out?",
+                  question: "What stood out to you, and why?",
+                  placeholder: getTaskNotePlaceholder(task),
                 })
               }
               className={`${BTN_PRIMARY} mt-4`}
@@ -543,7 +568,7 @@ function TaskCard({
               onClick={() =>
                 onOpenAnswer({
                   task,
-                  placeholder: "What did you do? How did it feel?",
+                  placeholder: getTaskNotePlaceholder(task),
                 })
               }
               className={`${BTN_PRIMARY} mt-4`}

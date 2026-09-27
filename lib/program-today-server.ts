@@ -1,6 +1,7 @@
 import "server-only";
 
 import { formatReflectionNote, parseReflectionNote } from "@/lib/program-content";
+import { validateProgramNote } from "@/lib/program-note-shared";
 import {
   findDailyTask,
   getDailyPlan,
@@ -138,14 +139,18 @@ export async function hasWeeklyVideoSent(userId: string, now = new Date()) {
 
 export function validateTaskNote(task: ProgramDailyTask, note: string) {
   const trimmed = note.trim();
-  if (trimmed.length < 3 || trimmed.length > 400) {
-    return { ok: false as const, error: "Notes must be between 3 and 400 characters." };
-  }
 
   if (task.type === "reflection") {
     const parsed = parseReflectionNote(trimmed);
     if (!parsed.bestRep || !parsed.stillHard || !parsed.knownForNext) {
       return { ok: false as const, error: "All three reflection answers are required." };
+    }
+
+    for (const value of [parsed.bestRep, parsed.stillHard, parsed.knownForNext]) {
+      const validatedField = validateProgramNote(value);
+      if (!validatedField.ok) {
+        return validatedField;
+      }
     }
 
     return {
@@ -154,7 +159,12 @@ export function validateTaskNote(task: ProgramDailyTask, note: string) {
     };
   }
 
-  return { ok: true as const, note: trimmed };
+  const validated = validateProgramNote(trimmed);
+  if (!validated.ok) {
+    return validated;
+  }
+
+  return { ok: true as const, note: validated.note };
 }
 
 export async function buildProgramTodayPayload(params: {

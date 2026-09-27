@@ -1,6 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import ProgramNoteField, { MAX_DAY_LOG_NOTE_LENGTH } from "@/app/components/ProgramNoteField";
+import {
+  canSaveProgramNote,
+  GAME_PRACTICE_DIRECTION,
+  getGameNotePlaceholder,
+  getPracticeNotePlaceholder,
+} from "@/lib/program-note-shared";
 import {
   EMPTY_GAME_STATS,
   formatGameLine,
@@ -130,7 +137,7 @@ function DayLogSheet({
     onClose();
   };
 
-  const canSave = note.trim().length >= 3;
+  const canSave = canSaveProgramNote(note, MAX_DAY_LOG_NOTE_LENGTH);
 
   return (
     <div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/70 p-4">
@@ -157,13 +164,18 @@ function DayLogSheet({
         <label className="mt-4 block text-sm font-medium text-zinc-300">
           {mode.kind === "game" ? "How did it go?" : "How did practice go?"}
         </label>
-        <textarea
-          value={note}
-          onChange={(event) => setNote(event.target.value)}
-          rows={4}
-          maxLength={500}
-          className="mt-2 w-full rounded-xl border border-[#2b3650] bg-black/30 px-4 py-3 text-zinc-100"
-        />
+        <div className="mt-2">
+          <ProgramNoteField
+            value={note}
+            onChange={setNote}
+            placeholder={
+              mode.kind === "game"
+                ? getGameNotePlaceholder()
+                : getPracticeNotePlaceholder()
+            }
+            maxLength={MAX_DAY_LOG_NOTE_LENGTH}
+          />
+        </div>
 
         {mode.kind === "game" ? (
           <div className="mt-5 space-y-3">
@@ -311,7 +323,9 @@ export default function ProgramDayLogSection({
   return (
     <>
       {canLogDay ? (
-        <section className={`${CARD} flex gap-3`}>
+        <section className={`${CARD} space-y-3`}>
+          <p className="text-sm text-zinc-400">{GAME_PRACTICE_DIRECTION}</p>
+          <div className="flex gap-3">
           <button
             type="button"
             onClick={() => setSheet({ kind: "game" })}
@@ -327,6 +341,7 @@ export default function ProgramDayLogSection({
           >
             Practice day
           </button>
+          </div>
         </section>
       ) : null}
 

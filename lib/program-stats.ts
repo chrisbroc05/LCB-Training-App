@@ -47,13 +47,7 @@ const STAT_FIELDS: Array<keyof GameStatInput> = [
   "errors",
 ];
 
-export function validateDayLogNote(note: string) {
-  const trimmed = note.trim();
-  if (trimmed.length < 3 || trimmed.length > 500) {
-    return { ok: false as const, error: "Notes must be between 3 and 500 characters." };
-  }
-  return { ok: true as const, note: trimmed };
-}
+export { validateDayLogNote } from "@/lib/program-note-shared";
 
 export function validateGameStats(stats: GameStatInput) {
   for (const field of STAT_FIELDS) {
