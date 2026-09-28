@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin";
@@ -60,7 +61,9 @@ export default async function AdminPage() {
         <p className="mt-2 text-zinc-300">
           Review coaching submissions and goal check-ins, then send responses.
         </p>
-        <AdminPanel />
+        <Suspense fallback={<p className="text-zinc-400">Loading submissions...</p>}>
+          <AdminPanel />
+        </Suspense>
       </section>
 
       <TwelveWeekPlayersSection />

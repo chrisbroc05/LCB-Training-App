@@ -3,6 +3,13 @@ import { getServerSession } from "next-auth";
 import type { ProgramEmailType } from "@prisma/client";
 import { authOptions } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin";
+import {
+  sendTestCoachNewProgramPlayerPush,
+  sendTestCoachNewSubmissionPush,
+  sendTestCoachNightlySummaryPush,
+} from "@/lib/coach-push-scheduler";
+import { buildCoachDailySummaryData } from "@/lib/program-email-data";
+import { getChicagoDateTimeParts } from "@/lib/program-email-chicago";
 import { runProgramEmailScheduler, sendTestProgramEmail } from "@/lib/program-email-scheduler";
 import { sendPushToUser } from "@/lib/push-send";
 import { prisma } from "@/lib/prisma";
@@ -41,8 +48,10 @@ export async function POST(request: Request) {
   const body = (await request.json().catch(() => null)) as {
     action?: string;
     type?: string;
+    coachAlertType?: string;
     enrollmentId?: string;
     toEmail?: string;
+    playerName?: string;
   } | null;
 
   if (body?.action === "dryRun") {
@@ -90,6 +99,79 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ success: true });
+  }
+
+  if (body?.action === "sendTestCoachAlert") {
+    const playerName =
+      typeof body.playerName === "string" && body.playerName.trim()
+        ? body.playerName.trim()
+        : "Test Player";
+
+    try {
+      if (body.coachAlertType === "COACH_NEW_SUBMISSION_SWING") {
+        await sendTestCoachNewSubmissionPush({
+          submissionTab: "swing",
+          submissionId: "test",
+          playerName,
+        });
+      } else if (body.coachAlertType === "COACH_NEW_SUBMISSION_MENTAL") {
+        await sendTestCoachNewSubmissionPush({
+          submissionTab: "mental",
+          submissionId: "test",
+          playerName,
+        });
+      } else if (body.coachAlertType === "COACH_NEW_PROGRAM_PLAYER") {
+        if (typeof body.enrollmentId !== "string" || !body.enrollmentId.trim()) {
+          return NextResponse.json({ error: "Pick a player first." }, { status: 400 });
+        }
+
+        const enrollment = await prisma.programEnrollment.findUnique({
+          where: { id: body.enrollmentId.trim() },
+          include: {
+            user: {
+              select: {
+                name: true,
+                email: true,
+              },
+            },
+          },
+        });
+
+        if (!enrollment) {
+          return NextResponse.json({ error: "Enrollment not found." }, { status: 404 });
+        }
+
+        await sendTestCoachNewProgramPlayerPush({
+          enrollmentId: enrollment.id,
+          playerName: enrollment.user.name ?? playerName,
+          playerEmail: enrollment.user.email,
+        });
+      } else if (body.coachAlertType === "COACH_NIGHTLY_SUMMARY") {
+        const { dateKey } = getChicagoDateTimeParts();
+        const summaryData = await buildCoachDailySummaryData(dateKey);
+        if (!summaryData) {
+          return NextResponse.json(
+            { error: "No active players for nightly summary." },
+            { status: 400 },
+          );
+        }
+
+        await sendTestCoachNightlySummaryPush({
+          dateKey,
+          summaryData,
+        });
+      } else {
+        return NextResponse.json({ error: "Invalid coach alert type." }, { status: 400 });
+      }
+
+      return NextResponse.json({ success: true });
+    } catch (error) {
+      console.error("Failed to send test coach alert", error);
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : "Unable to send test coach alert." },
+        { status: 500 },
+      );
+    }
   }
 
   if (body?.action !== "sendTest") {

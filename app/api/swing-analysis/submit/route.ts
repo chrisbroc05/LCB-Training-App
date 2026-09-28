@@ -8,6 +8,7 @@ import {
   getCoachingSubmissionLimitError,
 } from "@/lib/coaching-submissions";
 import { prisma } from "@/lib/prisma";
+import { sendCoachNewSubmissionPush } from "@/lib/coach-push-instant";
 import { sendSubmissionReceivedEmail, sendSwingSubmissionNotification } from "@/lib/notifications";
 import {
   formatR2VideoReference,
@@ -204,6 +205,12 @@ export async function POST(request: Request) {
     } catch (emailError) {
       console.error(`[swing-submit:${requestId}] Notification failed`, emailError);
     }
+
+    void sendCoachNewSubmissionPush({
+      submissionId: createdSubmission.id,
+      submissionTab: "swing",
+      playerName,
+    });
 
     try {
       const firstName =

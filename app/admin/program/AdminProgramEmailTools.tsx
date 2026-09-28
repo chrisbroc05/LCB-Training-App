@@ -27,7 +27,16 @@ type DryRunPushPreview = {
   dateKey: string;
 };
 
-type DryRunPreview = DryRunEmailPreview | DryRunPushPreview;
+type DryRunCoachPushPreview = {
+  channel: "coach-push";
+  type: string;
+  title: string;
+  body: string;
+  url: string;
+  dateKey: string;
+};
+
+type DryRunPreview = DryRunEmailPreview | DryRunPushPreview | DryRunCoachPushPreview;
 
 const EMAIL_TYPES = [
   { value: "DAILY_ROUTINE", label: "A. Daily routine" },
@@ -40,12 +49,23 @@ const EMAIL_TYPES = [
   { value: "COACH_DAILY_SUMMARY", label: "Coach summary" },
 ] as const;
 
+const COACH_ALERT_TYPES = [
+  { value: "COACH_NEW_SUBMISSION_SWING", label: "Coach: new swing video" },
+  { value: "COACH_NEW_SUBMISSION_MENTAL", label: "Coach: new mental video" },
+  { value: "COACH_NEW_PROGRAM_PLAYER", label: "Coach: new program player" },
+  { value: "COACH_NIGHTLY_SUMMARY", label: "Coach: nightly summary" },
+] as const;
+
 type AdminProgramEmailToolsProps = {
   players: PlayerOption[];
 };
 
 function isPushPreview(preview: DryRunPreview): preview is DryRunPushPreview {
   return preview.channel === "push";
+}
+
+function isCoachPushPreview(preview: DryRunPreview): preview is DryRunCoachPushPreview {
+  return preview.channel === "coach-push";
 }
 
 export default function AdminProgramEmailTools({ players }: AdminProgramEmailToolsProps) {
@@ -56,6 +76,7 @@ export default function AdminProgramEmailTools({ players }: AdminProgramEmailToo
   const [testEmail, setTestEmail] = useState("");
   const [sendingType, setSendingType] = useState<string | null>(null);
   const [sendingPushTest, setSendingPushTest] = useState(false);
+  const [sendingCoachAlertType, setSendingCoachAlertType] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -64,6 +85,8 @@ export default function AdminProgramEmailTools({ players }: AdminProgramEmailToo
       setSelectedEnrollmentId(players[0].enrollmentId);
     }
   }, [players, selectedEnrollmentId]);
+
+  const selectedPlayer = players.find((player) => player.enrollmentId === selectedEnrollmentId);
 
   const runDryRun = async () => {
     setLoadingDryRun(true);
@@ -79,6 +102,7 @@ export default function AdminProgramEmailTools({ players }: AdminProgramEmailToo
     const data = (await response.json().catch(() => ({}))) as {
       previews?: DryRunEmailPreview[];
       pushPreviews?: DryRunPushPreview[];
+      coachPushPreviews?: DryRunCoachPushPreview[];
       dateKey?: string;
       hour?: number;
       error?: string;
@@ -94,6 +118,7 @@ export default function AdminProgramEmailTools({ players }: AdminProgramEmailToo
     const combined: DryRunPreview[] = [
       ...(data.previews ?? []),
       ...(data.pushPreviews ?? []),
+      ...(data.coachPushPreviews ?? []),
     ];
     setDryRunResults(combined);
     setDryRunMeta(`Chicago ${data.dateKey ?? ""} hour ${data.hour ?? ""}`);
@@ -173,12 +198,42 @@ export default function AdminProgramEmailTools({ players }: AdminProgramEmailToo
     setSuccess("Test push sent to the selected player.");
   };
 
+  const sendTestCoachAlert = async (coachAlertType: string) => {
+    setSendingCoachAlertType(coachAlertType);
+    setError("");
+    setSuccess("");
+
+    const response = await fetch("/api/admin/program/emails", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "sendTestCoachAlert",
+        coachAlertType,
+        enrollmentId: selectedEnrollmentId || undefined,
+        playerName: selectedPlayer?.name ?? "Test Player",
+      }),
+    });
+
+    const data = (await response.json().catch(() => ({}))) as {
+      error?: string;
+    };
+
+    setSendingCoachAlertType(null);
+
+    if (!response.ok) {
+      setError(data.error ?? "Test coach alert failed.");
+      return;
+    }
+
+    setSuccess("Test coach alert sent.");
+  };
+
   return (
     <section className="rounded-3xl border border-[#18243a] bg-[#0b1324]/80 p-5 sm:p-8">
       <h2 className="text-xl font-semibold text-zinc-100">Email tools</h2>
       <p className="mt-2 text-sm text-zinc-400">
-        Dry run shows what the next hourly cron would send (email and push). Test sends use real
-        player data and skip EmailLog/PushLog.
+        Dry run shows what the next hourly cron would send (email, player push, and coach push).
+        Test sends use real player data and skip EmailLog/PushLog.
       </p>
 
       <div className="mt-5 flex flex-wrap gap-3">
@@ -209,7 +264,17 @@ export default function AdminProgramEmailTools({ players }: AdminProgramEmailToo
               key={`${"channel" in preview ? preview.channel : "email"}-${preview.type}-${index}`}
               className="rounded-xl border border-[#2b3650] px-4 py-3 text-sm text-zinc-300"
             >
-              {isPushPreview(preview) ? (
+              {isCoachPushPreview(preview) ? (
+                <>
+                  <p>
+                    <span className="font-semibold text-[#52B788]">COACH PUSH</span>{" "}
+                    <span className="font-semibold text-zinc-100">{preview.type}</span>
+                  </p>
+                  <p className="text-zinc-400">
+                    {preview.title} - {preview.body}
+                  </p>
+                </>
+              ) : isPushPreview(preview) ? (
                 <>
                   <p>
                     <span className="font-semibold text-[#52B788]">PUSH</span>{" "}
@@ -273,6 +338,23 @@ export default function AdminProgramEmailTools({ players }: AdminProgramEmailToo
             {sendingType === entry.value ? "Sending..." : entry.label}
           </button>
         ))}
+      </div>
+
+      <div className="mt-6 border-t border-[#2b3650] pt-5">
+        <p className="text-sm font-semibold text-zinc-200">Send test coach alert</p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {COACH_ALERT_TYPES.map((entry) => (
+            <button
+              key={entry.value}
+              type="button"
+              onClick={() => void sendTestCoachAlert(entry.value)}
+              disabled={sendingCoachAlertType === entry.value}
+              className="rounded-full border border-[#52B788]/50 px-3 py-2 text-xs font-semibold text-[#52B788] disabled:opacity-60"
+            >
+              {sendingCoachAlertType === entry.value ? "Sending..." : entry.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {error ? <p className="mt-4 text-sm text-red-300">{error}</p> : null}

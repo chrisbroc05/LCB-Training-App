@@ -8,6 +8,7 @@ import {
   getCoachingSubmissionLimitError,
 } from "@/lib/coaching-submissions";
 import { prisma } from "@/lib/prisma";
+import { sendCoachNewSubmissionPush } from "@/lib/coach-push-instant";
 import { sendMentalGameSubmissionNotification, sendSubmissionReceivedEmail } from "@/lib/notifications";
 import {
   createTemporaryVideoDownloadLink,
@@ -194,6 +195,12 @@ export async function POST(request: Request) {
     } catch (error) {
       console.error("Failed to send mental game submission notification", error);
     }
+
+    void sendCoachNewSubmissionPush({
+      submissionId: submission.id,
+      submissionTab: "mental",
+      playerName: submission.playerName,
+    });
 
     try {
       const firstName =

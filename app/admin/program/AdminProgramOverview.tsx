@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import AdminProgramCoachAlerts from "@/app/admin/program/AdminProgramCoachAlerts";
 import AdminProgramEmailTools from "@/app/admin/program/AdminProgramEmailTools";
 
 type PlayerCard = {
@@ -158,6 +159,8 @@ export default function AdminProgramOverview() {
           ))}
         </div>
       </section>
+
+      <AdminProgramCoachAlerts />
 
       <AdminProgramEmailTools
         players={players.map((player) => ({

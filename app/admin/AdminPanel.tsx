@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import GoalCheckinsPanel from "@/app/admin/GoalCheckinsPanel";
 import MembersPanel from "@/app/admin/MembersPanel";
 import PlaybookReflectionsPanel from "@/app/admin/PlaybookReflectionsPanel";
@@ -116,6 +117,7 @@ function getResponseVideoDisplayName(url: string | null | undefined) {
 }
 
 export default function AdminPanel() {
+  const searchParams = useSearchParams();
   const [tab, setTab] = useState<TabType>("swing");
   const [items, setItems] = useState<SubmissionListItem[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -140,6 +142,13 @@ export default function AdminPanel() {
   const [selectedRecommendedDrills, setSelectedRecommendedDrills] = useState<string[]>([]);
 
   useEffect(() => {
+    const tabParam = searchParams.get("tab");
+    if (tabParam === "swing" || tabParam === "mental") {
+      setTab(tabParam);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
     if (tab === "goal" || tab === "members" || tab === "playbook") {
       return;
     }
@@ -155,7 +164,12 @@ export default function AdminPanel() {
 
       const data = (await response.json()) as { submissions: SubmissionListItem[] };
       setItems(data.submissions);
-      setSelectedId(null);
+      const submissionId = searchParams.get("submissionId");
+      if (submissionId && data.submissions.some((item) => item.id === submissionId)) {
+        setSelectedId(submissionId);
+      } else {
+        setSelectedId(null);
+      }
       setDetail(null);
       setSendError("");
       setShowResponseModal(false);
@@ -163,7 +177,7 @@ export default function AdminPanel() {
     };
 
     void loadList();
-  }, [tab]);
+  }, [tab, searchParams]);
 
   useEffect(() => {
     if (tab === "goal" || !selectedId) {

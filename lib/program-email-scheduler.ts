@@ -39,6 +39,11 @@ import {
   loadEnrollmentPlanOverrideBundle,
 } from "@/lib/program-plan-overrides-server";
 import { getTaskKeysForDay } from "@/lib/program-daily-plan";
+import { isCoachEmailSummaryEnabled } from "@/lib/coach-alert-settings";
+import {
+  maybeSendCoachNightlySummaryPush,
+  type ScheduledCoachPushPreview,
+} from "@/lib/coach-push-scheduler";
 import {
   runScheduledPushJobs,
   userHasPushSubscriptions,
@@ -62,6 +67,7 @@ export type ProgramEmailRunResult = {
   dryRun: boolean;
   previews: ScheduledEmailPreview[];
   pushPreviews: ScheduledPushPreview[];
+  coachPushPreviews: ScheduledCoachPushPreview[];
   sent: number;
   skipped: number;
   errors: string[];
@@ -561,6 +567,10 @@ async function maybeSendCoachDailySummary(
     return false;
   }
 
+  if (!(await isCoachEmailSummaryEnabled())) {
+    return false;
+  }
+
   const type = "COACH_DAILY_SUMMARY" as const;
   if (
     await hasProgramEmailBeenSent({
@@ -609,6 +619,7 @@ export async function runProgramEmailScheduler(params?: {
   const { dateKey, hour, minute, isSaturday, isSunday } = getChicagoDateTimeParts(now);
   const previews: ScheduledEmailPreview[] = [];
   const pushPreviews: ScheduledPushPreview[] = [];
+  const coachPushPreviews: ScheduledCoachPushPreview[] = [];
   const errors: string[] = [];
   let sent = 0;
   let skipped = 0;
@@ -675,9 +686,19 @@ export async function runProgramEmailScheduler(params?: {
     }
   }
 
-  if (hour === 20 && minute < 30) {
+  if (hour === 20 && minute >= 30) {
     await trySend("coach-daily-summary", () =>
       maybeSendCoachDailySummary(dateKey, now, dryRun, previews),
+    );
+
+    const summaryData = await buildCoachDailySummaryData(dateKey, now);
+    await trySend("coach-nightly-summary-push", () =>
+      maybeSendCoachNightlySummaryPush({
+        dateKey,
+        summaryData,
+        dryRun,
+        previews: coachPushPreviews,
+      }),
     );
   }
 
@@ -698,6 +719,7 @@ export async function runProgramEmailScheduler(params?: {
     dryRun,
     previews,
     pushPreviews,
+    coachPushPreviews,
     sent: dryRun ? 0 : sent,
     skipped,
     errors,

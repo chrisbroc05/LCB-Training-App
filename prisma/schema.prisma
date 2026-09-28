@@ -88,6 +88,9 @@ enum PushNotificationType {
   GONE_QUIET
   COACH_RESPONSE
   PLAN_UPDATE
+  COACH_NEW_SUBMISSION
+  COACH_NEW_PROGRAM_PLAYER
+  COACH_NIGHTLY_SUMMARY
   TEST
 }
 
@@ -143,6 +146,7 @@ model User {
   programEnrollment      ProgramEnrollment?
   pushSubscriptions      PushSubscription[]
   pushLogs               PushLog[]
+  coachAlertSettings     CoachAlertSettings?
 }
 
 model ProgramEnrollment {
@@ -190,7 +194,7 @@ model PushSubscription {
   id            String    @id @default(cuid())
   userId        String
   user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  endpoint      String    @unique
+  endpoint      String
   p256dh        String
   auth          String
   userAgent     String?
@@ -198,7 +202,20 @@ model PushSubscription {
   lastSuccessAt DateTime?
   failureCount  Int       @default(0)
 
+  @@unique([userId, endpoint])
   @@index([userId])
+  @@index([endpoint])
+}
+
+model CoachAlertSettings {
+  userId                     String   @id
+  user                       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  newVideosEnabled           Boolean  @default(true)
+  newProgramPlayersEnabled     Boolean  @default(true)
+  nightlySummaryPushEnabled    Boolean  @default(true)
+  emailNightlySummaryEnabled   Boolean  @default(true)
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
 }
 
 model PushLog {

@@ -30,7 +30,12 @@ export async function POST(request: Request) {
   const userAgent = request.headers.get("user-agent");
 
   await prisma.pushSubscription.upsert({
-    where: { endpoint },
+    where: {
+      userId_endpoint: {
+        userId: session.user.id,
+        endpoint,
+      },
+    },
     create: {
       userId: session.user.id,
       endpoint,
@@ -39,7 +44,6 @@ export async function POST(request: Request) {
       userAgent,
     },
     update: {
-      userId: session.user.id,
       p256dh,
       auth,
       userAgent,

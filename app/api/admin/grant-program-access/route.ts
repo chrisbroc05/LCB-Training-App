@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin";
+import { sendCoachNewProgramPlayerPushForUser } from "@/lib/coach-push-instant";
 import { activateTwelveWeekProgramAccess } from "@/lib/program-enrollment";
 import { prisma } from "@/lib/prisma";
 
@@ -28,6 +29,7 @@ export async function POST(request: Request) {
   }
 
   const enrollment = await activateTwelveWeekProgramAccess(user.id);
+  void sendCoachNewProgramPlayerPushForUser(user.id);
 
   return NextResponse.json({
     success: true,
