@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { GoalItemCategoryBadge } from "@/app/goal-setting/GoalTrackerList";
 import MemberProfileCard from "@/app/admin/MemberProfileCard";
+import { formatDateTime, formatOptionalDateTime } from "@/lib/format-date";
 import type { SerializedGoalItem } from "@/lib/goal-check-in-constants";
 
 type GoalCheckinListItem = {
@@ -32,20 +33,6 @@ type GoalCheckinDetail = GoalCheckinListItem & {
     playerBio: string | null;
   };
 };
-
-function formatResponseDateTime(value: string | null | undefined) {
-  if (!value) {
-    return "Not available";
-  }
-
-  return new Intl.DateTimeFormat("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(new Date(value));
-}
 
 export default function GoalCheckinsPanel() {
   const [items, setItems] = useState<GoalCheckinListItem[]>([]);
@@ -189,7 +176,7 @@ export default function GoalCheckinsPanel() {
               <p className="mt-1 text-xs uppercase tracking-wide text-zinc-400">{item.focusArea}</p>
               <p className="mt-2 text-xs text-zinc-400">{item.userEmail}</p>
               <p className="mt-1 text-xs text-zinc-500">
-                {new Date(item.createdAt).toLocaleString()}
+                {formatDateTime(item.createdAt)}
               </p>
             </button>
           ))}
@@ -207,7 +194,7 @@ export default function GoalCheckinsPanel() {
               </h2>
               <p className="mt-1 text-sm text-zinc-300">Submitted by {detail.userEmail}</p>
               <p className="mt-1 text-sm text-zinc-400">
-                {new Date(detail.createdAt).toLocaleString()} -{" "}
+                {formatDateTime(detail.createdAt)} -{" "}
                 {detail.badgeStatus === "PENDING" ? "Pending" : "Responded"}
               </p>
             </div>
@@ -272,7 +259,7 @@ export default function GoalCheckinsPanel() {
                       ) : null}
                       {goal.completed && goal.completedAt ? (
                         <p className="mt-2 text-xs text-[#9df3bd]">
-                          Completed {formatResponseDateTime(goal.completedAt)}
+                          Completed {formatOptionalDateTime(goal.completedAt)}
                         </p>
                       ) : null}
                     </div>
@@ -290,7 +277,7 @@ export default function GoalCheckinsPanel() {
                   </span>
                 </div>
                 <p className="mt-2 text-xs text-zinc-400">
-                  Sent {formatResponseDateTime(detail.respondedAt)}
+                  Sent {formatOptionalDateTime(detail.respondedAt)}
                 </p>
                 <p className="mt-4 whitespace-pre-wrap text-sm text-zinc-200">
                   {detail.coachResponse}

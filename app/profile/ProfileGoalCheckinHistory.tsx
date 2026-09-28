@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import GoalTrackerList from "@/app/goal-setting/GoalTrackerList";
 import ProfileCard from "@/app/profile/ProfileCard";
+import { formatLongDateTime, formatMonthYear } from "@/lib/format-date";
 import {
   profileMutedTextClass,
   profilePrimaryButtonClass,
@@ -27,23 +28,6 @@ type GoalHistoryEntry = {
 type ProfileGoalCheckinHistoryProps = {
   hasAccess: boolean;
 };
-
-function formatMonthYear(value: string) {
-  return new Intl.DateTimeFormat("en-US", {
-    month: "long",
-    year: "numeric",
-  }).format(new Date(value));
-}
-
-function formatResponseDate(value: string) {
-  return new Intl.DateTimeFormat("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(new Date(value));
-}
 
 function StatusBadge({ status }: { status: string }) {
   const isPending = status === "pending";
@@ -254,7 +238,7 @@ export default function ProfileGoalCheckinHistory({ hasAccess }: ProfileGoalChec
                         </p>
                         {entry.respondedAt ? (
                           <p className="mt-1 text-xs text-zinc-400">
-                            Responded {formatResponseDate(entry.respondedAt)}
+                            Responded {formatLongDateTime(entry.respondedAt)}
                           </p>
                         ) : null}
                         <p className="mt-3 whitespace-pre-wrap text-sm text-zinc-100">

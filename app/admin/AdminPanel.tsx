@@ -21,6 +21,7 @@ import {
   MAX_ADMIN_RESPONSE_VIDEO_BYTES,
   SUBMISSION_VIDEO_UPLOAD_FAILED_MESSAGE,
 } from "@/lib/submission-video-limits";
+import { formatDateTime, formatOptionalDateTime } from "@/lib/format-date";
 import {
   uploadVideoToPresignedUrl,
   type PresignedSwingUploadResponse,
@@ -67,20 +68,6 @@ type SubmissionDetail = SubmissionListItem & {
   memberVimeoLink?: string | null;
   memberProfile?: MemberProfileSummary;
 };
-
-function formatResponseDateTime(value: string | null | undefined) {
-  if (!value) {
-    return "Not available";
-  }
-
-  return new Intl.DateTimeFormat("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(new Date(value));
-}
 
 function canInlineResponseVideo(url: string) {
   return (
@@ -586,7 +573,7 @@ export default function AdminPanel() {
               )}
               <p className="mt-2 text-xs text-zinc-400">{item.userEmail}</p>
               <p className="mt-1 text-xs text-zinc-500">
-                {new Date(item.createdAt).toLocaleString()}
+                {formatDateTime(item.createdAt)}
               </p>
             </button>
           ))}
@@ -602,7 +589,7 @@ export default function AdminPanel() {
               <h2 className="break-words text-xl font-semibold leading-tight text-zinc-100 sm:text-2xl">{detail.playerName}</h2>
               <p className="mt-1 text-sm text-zinc-300">Submitted by {detail.userEmail}</p>
               <p className="mt-1 text-sm text-zinc-400">
-                {new Date(detail.createdAt).toLocaleString()} -{" "}
+                {formatDateTime(detail.createdAt)} -{" "}
                 {detail.badgeStatus === "PENDING" ? "Pending" : "Responded"}
               </p>
             </div>
@@ -724,7 +711,7 @@ export default function AdminPanel() {
                   </span>
                 </div>
                 <p className="mt-2 text-sm text-zinc-400">
-                  Sent {formatResponseDateTime(detail.respondedAt)}
+                  Sent {formatOptionalDateTime(detail.respondedAt)}
                 </p>
 
                 {detail.responseText ? (

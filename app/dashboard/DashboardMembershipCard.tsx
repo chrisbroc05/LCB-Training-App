@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { formatOptionalDate } from "@/lib/format-date";
 import { formatUserFacingMembershipLabel, type DatabaseTier } from "@/lib/membership";
 
 type DashboardMembershipCardProps = {
@@ -8,18 +9,6 @@ type DashboardMembershipCardProps = {
   subscriptionCurrentPeriodEnd: Date | null;
   subscriptionCancelAtPeriodEnd: boolean;
 };
-
-function formatDate(date: Date | null) {
-  if (!date) {
-    return "Not available";
-  }
-
-  return new Intl.DateTimeFormat("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  }).format(date);
-}
 
 export default function DashboardMembershipCard({
   membershipTier,
@@ -42,7 +31,7 @@ export default function DashboardMembershipCard({
           {isManualMembership ? (
             <p>Billing: Manual</p>
           ) : (
-            <p>Next billing date: {formatDate(subscriptionCurrentPeriodEnd)}</p>
+            <p>Next billing date: {formatOptionalDate(subscriptionCurrentPeriodEnd)}</p>
           )}
           {!isManualMembership && subscriptionCancelAtPeriodEnd ? (
             <p className="text-yellow-100">

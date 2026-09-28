@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { formatDateTime } from "@/lib/format-date";
 import { useCallback, useEffect, useState } from "react";
 import MobileBottomSheet from "@/app/components/mobile/MobileBottomSheet";
 
@@ -31,20 +32,6 @@ function BellIcon() {
       />
     </svg>
   );
-}
-
-function formatNotificationTime(value: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return "";
-  }
-
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(date);
 }
 
 export default function MobileNotificationBell() {
@@ -184,7 +171,7 @@ export default function MobileNotificationBell() {
                       <span className="mt-1 block text-xs text-zinc-400">{notification.body}</span>
                     ) : null}
                     <span className="mt-1 block text-xs text-zinc-500">
-                      {formatNotificationTime(notification.createdAt)}
+                      {formatDateTime(notification.createdAt)}
                     </span>
                   </span>
                 </button>

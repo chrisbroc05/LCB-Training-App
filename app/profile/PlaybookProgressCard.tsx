@@ -3,6 +3,7 @@
 import Link from "next/link";
 import ProfileCard from "@/app/profile/ProfileCard";
 import { PLAYBOOK_PDF_FILENAME } from "@/lib/playbook-branding";
+import { formatLongDate } from "@/lib/format-date";
 import {
   profileBodyTextClass,
   profileMutedTextClass,
@@ -33,11 +34,7 @@ function formatCompletedDate(value: string | null) {
     return null;
   }
 
-  return new Intl.DateTimeFormat("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  }).format(new Date(value));
+  return formatLongDate(value);
 }
 
 function ChapterStatusIcon({ completed, inProgress }: { completed: boolean; inProgress: boolean }) {

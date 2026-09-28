@@ -5,6 +5,7 @@ import {
   formatAssessmentCallDateTime,
   toAssessmentCallInputValues,
 } from "@/lib/assessment-call";
+import { formatOptionalDate, formatOptionalDateTime } from "@/lib/format-date";
 import { formatDatabaseTierLabel, validDatabaseTiers, type DatabaseTier } from "@/lib/membership";
 import TierBadge from "@/app/admin/TierBadge";
 
@@ -66,32 +67,6 @@ export type MemberDetail = {
     }>;
   } | null;
 };
-
-function formatDate(value: string | null | undefined) {
-  if (!value) {
-    return "Not available";
-  }
-
-  return new Intl.DateTimeFormat("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  }).format(new Date(value));
-}
-
-function formatDateTime(value: string | null | undefined) {
-  if (!value) {
-    return "Not available";
-  }
-
-  return new Intl.DateTimeFormat("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(new Date(value));
-}
 
 type MemberDetailContentProps = {
   detail: MemberDetail;
@@ -185,11 +160,11 @@ export default function MemberDetailContent({
       <div className="rounded-xl border border-[#2b3650] bg-[#0b1324]/70 p-4 text-sm text-zinc-300">
         <p>
           <span className="font-semibold text-zinc-100">Member since:</span>{" "}
-          {formatDate(detail.signupDate)}
+          {formatOptionalDate(detail.signupDate)}
         </p>
         <p className="mt-2">
           <span className="font-semibold text-zinc-100">Last active:</span>{" "}
-          {detail.lastActiveAt ? formatDateTime(detail.lastActiveAt) : "Not available"}
+          {detail.lastActiveAt ? formatOptionalDateTime(detail.lastActiveAt) : "Not available"}
         </p>
         <p className="mt-2">
           <span className="font-semibold text-zinc-100">Submission count:</span>{" "}
@@ -318,7 +293,7 @@ export default function MemberDetailContent({
                   {submission.type === "SWING" ? "Swing Analysis" : "Mental Game"} -{" "}
                   {submission.subtitle}
                 </p>
-                <p className="mt-1 text-xs text-zinc-500">{formatDateTime(submission.createdAt)}</p>
+                <p className="mt-1 text-xs text-zinc-500">{formatOptionalDateTime(submission.createdAt)}</p>
               </div>
             ))}
           </div>
@@ -342,7 +317,7 @@ export default function MemberDetailContent({
                     {checkin.status}
                   </span>
                 </div>
-                <p className="mt-1 text-xs text-zinc-500">{formatDateTime(checkin.createdAt)}</p>
+                <p className="mt-1 text-xs text-zinc-500">{formatOptionalDateTime(checkin.createdAt)}</p>
               </div>
             ))}
           </div>
@@ -387,7 +362,7 @@ export default function MemberDetailContent({
                         Chapter {chapter.chapterNumber}: {chapter.chapterTitle}
                       </p>
                       <p className="mt-1 text-xs text-zinc-500">
-                        Shared {formatDateTime(chapter.sharedAt)}
+                        Shared {formatOptionalDateTime(chapter.sharedAt)}
                       </p>
                       <div className="mt-3 space-y-3">
                         {chapter.sharedReflections.map((reflection) => (

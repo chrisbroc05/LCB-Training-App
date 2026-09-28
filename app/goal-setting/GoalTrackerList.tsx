@@ -1,4 +1,5 @@
 import type { SerializedGoalItem } from "@/lib/goal-check-in-constants";
+import { formatDateWithYear } from "@/lib/format-date";
 
 type GoalItemCategoryBadgeProps = {
   label: string;
@@ -33,14 +34,6 @@ function GoalCompletionIcon({ completed }: { completed: boolean }) {
   return (
     <span className="inline-flex h-6 w-6 rounded-full border-2 border-[#4f5f83] bg-transparent" />
   );
-}
-
-function formatCompletedDate(value: string) {
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(new Date(value));
 }
 
 type GoalTrackerListProps = {
@@ -103,7 +96,7 @@ export default function GoalTrackerList({
                 </p>
                 {goal.completed && goal.completedAt ? (
                   <p className="mt-1 text-xs text-[#9df3bd]">
-                    Completed {formatCompletedDate(goal.completedAt)}
+                    Completed {formatDateWithYear(goal.completedAt)}
                   </p>
                 ) : null}
               </div>

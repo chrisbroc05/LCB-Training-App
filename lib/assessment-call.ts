@@ -1,4 +1,9 @@
-export const ASSESSMENT_CALL_TIMEZONE = "America/Chicago";
+import {
+  CHICAGO_TIME_ZONE,
+  formatLongWeekdayDateTime,
+} from "@/lib/format-date";
+
+export const ASSESSMENT_CALL_TIMEZONE = CHICAGO_TIME_ZONE;
 
 type ZonedParts = {
   year: number;
@@ -72,27 +77,11 @@ function zonedLocalTimeToUtc(
 }
 
 export function formatScheduledCallDateTime(date: Date) {
-  return new Intl.DateTimeFormat("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    timeZone: ASSESSMENT_CALL_TIMEZONE,
-  }).format(date);
+  return formatLongWeekdayDateTime(date);
 }
 
 export function formatAssessmentCallDateTime(date: Date) {
-  const formatted = new Intl.DateTimeFormat("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    timeZone: ASSESSMENT_CALL_TIMEZONE,
-  }).format(date);
-
-  return `${formatted} ${getCentralTimeZoneAbbreviation(date)}`;
+  return `${formatLongWeekdayDateTime(date)} ${getCentralTimeZoneAbbreviation(date)}`;
 }
 
 export function parseAssessmentCallDateTime(callDate: string, callTime: string) {

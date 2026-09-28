@@ -11,6 +11,7 @@ import {
   formatGameSummary,
   formatRate,
 } from "@/lib/program-stats";
+import { formatWeekdayDate } from "@/lib/format-date";
 import {
   formatProgramStartDateKey,
   getDateForProgramDay,
@@ -69,12 +70,7 @@ export async function GET() {
       summary: formatGameSummary(log.stats, log.opponent),
       dateLabel:
         enrollment.startDate && log.programDay > 0
-          ? new Intl.DateTimeFormat("en-US", {
-              weekday: "short",
-              month: "short",
-              day: "numeric",
-              timeZone: "UTC",
-            }).format(getDateForProgramDay(enrollment.startDate, log.programDay))
+          ? formatWeekdayDate(getDateForProgramDay(enrollment.startDate, log.programDay))
           : `Day ${log.programDay}`,
       weekdayShort:
         enrollment.startDate && log.programDay > 0

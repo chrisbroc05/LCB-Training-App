@@ -6,6 +6,11 @@ import TierBadge from "@/app/admin/TierBadge";
 import MobileBottomSheet from "@/app/components/mobile/MobileBottomSheet";
 import { useIsMobile } from "@/app/components/mobile/useIsMobile";
 import { toAssessmentCallInputValues } from "@/lib/assessment-call";
+import {
+  formatDateWithYear,
+  formatOptionalDate,
+  formatOptionalDateTime,
+} from "@/lib/format-date";
 import { formatDatabaseTierLabel, validDatabaseTiers, type DatabaseTier } from "@/lib/membership";
 
 type MemberSummary = {
@@ -44,40 +49,6 @@ function getMemberCallBooked(member: MemberSummary) {
 }
 
 type TierFilter = "ALL" | DatabaseTier;
-
-function formatDate(value: string | null | undefined) {
-  if (!value) {
-    return "Not available";
-  }
-
-  return new Intl.DateTimeFormat("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  }).format(new Date(value));
-}
-
-function formatShortDate(value: string) {
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(new Date(value));
-}
-
-function formatDateTime(value: string | null | undefined) {
-  if (!value) {
-    return "Not available";
-  }
-
-  return new Intl.DateTimeFormat("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(new Date(value));
-}
 
 function CallStatusIndicator({ booked }: { booked: boolean }) {
   return (
@@ -579,7 +550,7 @@ export default function MembersPanel() {
                         <TierBadge tier={member.membershipTier} />
                       </div>
                       <div className="mt-3 flex items-center justify-between text-xs text-zinc-400">
-                        <span>Member since {formatShortDate(member.signupDate)}</span>
+                        <span>Member since {formatDateWithYear(member.signupDate)}</span>
                         <span>
                           {member.submissionCount}{" "}
                           {member.submissionCount === 1 ? "submission" : "submissions"}
@@ -625,11 +596,11 @@ export default function MembersPanel() {
                             <TierBadge tier={member.membershipTier} />
                           </td>
                           <td className="px-3 py-3 text-zinc-300">
-                            {formatDate(member.signupDate)}
+                            {formatOptionalDate(member.signupDate)}
                           </td>
                           <td className="px-3 py-3 text-zinc-300">
                             {member.lastActiveAt
-                              ? formatDateTime(member.lastActiveAt)
+                              ? formatOptionalDateTime(member.lastActiveAt)
                               : "Not available"}
                           </td>
                           <td className="px-3 py-3 text-zinc-300">{member.submissionCount}</td>

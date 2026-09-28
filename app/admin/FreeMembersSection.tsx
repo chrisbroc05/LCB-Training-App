@@ -5,6 +5,7 @@ import {
   formatAssessmentCallDateTime,
   toAssessmentCallInputValues,
 } from "@/lib/assessment-call";
+import { formatOptionalDate } from "@/lib/format-date";
 
 export type FreeMemberRecord = {
   id: string;
@@ -14,14 +15,6 @@ export type FreeMemberRecord = {
   assessmentCallBooked: boolean;
   assessmentCallDate: string | null;
 };
-
-function formatSignupDate(value: string) {
-  return new Intl.DateTimeFormat("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  }).format(new Date(value));
-}
 
 export default function FreeMembersSection({
   initialMembers,
@@ -141,7 +134,7 @@ export default function FreeMembersSection({
                     </p>
                     <p className="mt-1 text-sm text-zinc-300">{member.email}</p>
                     <p className="mt-2 text-sm text-zinc-400">
-                      Signed up: {formatSignupDate(member.signupDate)}
+                      Signed up: {formatOptionalDate(member.signupDate)}
                     </p>
                     <p className="mt-2 text-sm text-zinc-300">
                       Call status:{" "}

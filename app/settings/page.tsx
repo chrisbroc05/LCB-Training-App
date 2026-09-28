@@ -15,19 +15,8 @@ import {
 } from "@/app/settings/settings-styles";
 import { type DatabaseTier } from "@/lib/membership";
 import { prisma } from "@/lib/prisma";
+import { formatOptionalDate } from "@/lib/format-date";
 import { stripe } from "@/lib/stripe";
-
-function formatDate(date: Date | null) {
-  if (!date) {
-    return "Not available";
-  }
-
-  return new Intl.DateTimeFormat("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  }).format(date);
-}
 
 async function getStripeBillingDate(params: {
   stripeSubscriptionId: string | null;
@@ -116,7 +105,7 @@ export default async function SettingsPage() {
         <BillingSection
           membershipTier={membershipTier}
           subscriptionStatus={user.subscriptionStatus}
-          nextBillingDate={formatDate(nextBillingDate)}
+          nextBillingDate={formatOptionalDate(nextBillingDate)}
           isCancelScheduled={user.subscriptionCancelAtPeriodEnd}
           hasSubscription={Boolean(user.stripeSubscriptionId)}
           stripeCustomerId={user.stripeCustomerId}

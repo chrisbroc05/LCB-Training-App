@@ -10,6 +10,10 @@ import {
   escapeHtml,
   getPublicAppUrl,
 } from "@/lib/email-layout";
+import {
+  formatLongDate,
+  formatLongDateTime,
+} from "@/lib/format-date";
 import type { DatabaseTier } from "@/lib/membership";
 import { formatDatabaseTierLabel } from "@/lib/membership";
 import { getChicagoMondayStart } from "@/lib/program-schedule";
@@ -17,8 +21,6 @@ import {
   getSubmissionTypeLabelForEmail,
   type SubmissionVideoCategory,
 } from "@/lib/submission-form-shared";
-
-const CHICAGO_TIME_ZONE = "America/Chicago";
 
 export type CoachSubmissionNotificationEmailParams = {
   submissionId: string;
@@ -35,26 +37,6 @@ export type CoachSubmissionNotificationEmailParams = {
   submittedAt: Date;
 };
 
-function formatChicagoDate(date: Date) {
-  return new Intl.DateTimeFormat("en-US", {
-    timeZone: CHICAGO_TIME_ZONE,
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-  }).format(date);
-}
-
-function formatChicagoDateTime(date: Date) {
-  return new Intl.DateTimeFormat("en-US", {
-    timeZone: CHICAGO_TIME_ZONE,
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(date);
-}
-
 export function getCoachSubmissionResponseDueLabel(
   membershipTier: DatabaseTier,
   submittedAt: Date,
@@ -63,12 +45,12 @@ export function getCoachSubmissionResponseDueLabel(
     const monday = getChicagoMondayStart(submittedAt);
     const sunday = new Date(monday);
     sunday.setUTCDate(sunday.getUTCDate() + 6);
-    return formatChicagoDate(sunday);
+    return formatLongDate(sunday);
   }
 
   const hours = membershipTier === "ELITE" ? 24 : 48;
   const dueAt = new Date(submittedAt.getTime() + hours * 60 * 60 * 1000);
-  return formatChicagoDateTime(dueAt);
+  return formatLongDateTime(dueAt);
 }
 
 function buildCoachSubmissionContextLine(params: CoachSubmissionNotificationEmailParams) {

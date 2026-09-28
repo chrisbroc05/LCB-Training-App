@@ -2,6 +2,7 @@ import Link from "next/link";
 import ProfileCard from "@/app/profile/ProfileCard";
 import MemberSubmissionVideo, { CoachResponseVideo } from "@/app/profile/MemberSubmissionVideo";
 import RecommendedDrillsSection from "@/app/profile/RecommendedDrillsSection";
+import { formatDateTime } from "@/lib/format-date";
 import type { DatabaseTier } from "@/lib/membership";
 
 type SubmissionStatus = "PENDING" | "REVIEWING" | "COMPLETED";
@@ -28,16 +29,6 @@ type CoachingSubmissionHistoryProps = {
   recommendedDrillThumbnailMap: Record<string, string | null>;
   viewerMembershipTier: DatabaseTier;
 };
-
-function formatDateTime(date: Date) {
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(date);
-}
 
 export default function CoachingSubmissionHistory({
   submissions,

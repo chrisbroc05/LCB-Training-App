@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { formatDateTime } from "@/lib/format-date";
 import { useCallback, useEffect, useState } from "react";
 import RecommendDrillsPicker from "@/app/admin/RecommendDrillsPicker";
 import {
@@ -818,7 +819,7 @@ export default function AdminProgramPlayerPanel({ enrollmentId }: { enrollmentId
                           ) : null}
                           {task.completedAt ? (
                             <p className="mt-1 text-xs text-zinc-500">
-                              Completed {new Date(task.completedAt).toLocaleString()}
+                              Completed {formatDateTime(task.completedAt)}
                             </p>
                           ) : null}
                           {task.isCoachAdded && isEditable ? (

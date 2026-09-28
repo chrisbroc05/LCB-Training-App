@@ -1,3 +1,4 @@
+import { formatDateWithYear, formatMonthYear } from "@/lib/format-date";
 import type { DatabaseTier } from "@/lib/membership";
 import { prisma } from "@/lib/prisma";
 
@@ -39,21 +40,12 @@ export function getCoachingSubmissionPeriodLabel(periodKey: string) {
     return periodKey;
   }
 
-  return new Intl.DateTimeFormat("en-US", {
-    month: "long",
-    year: "numeric",
-    timeZone: "UTC",
-  }).format(new Date(Date.UTC(year, month - 1, 1)));
+  return formatMonthYear(new Date(Date.UTC(year, month - 1, 1)));
 }
 
 export function getNextCoachingSubmissionResetLabel(date = new Date()) {
   const nextMonth = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 1));
-  return new Intl.DateTimeFormat("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-    timeZone: "UTC",
-  }).format(nextMonth);
+  return formatDateWithYear(nextMonth);
 }
 
 function applyPeriodResetIfNeeded(

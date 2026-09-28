@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { formatOptionalDateTime } from "@/lib/format-date";
 import { formatDatabaseTierLabel, type DatabaseTier } from "@/lib/membership";
 
 type SharedReflection = {
@@ -24,20 +25,6 @@ type PlaybookReflectionMember = {
   latestSharedAt: string | null;
   chapters: SharedChapter[];
 };
-
-function formatDateTime(value: string | null | undefined) {
-  if (!value) {
-    return "Not available";
-  }
-
-  return new Intl.DateTimeFormat("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(new Date(value));
-}
 
 export default function PlaybookReflectionsPanel() {
   const [members, setMembers] = useState<PlaybookReflectionMember[]>([]);
@@ -136,7 +123,7 @@ export default function PlaybookReflectionsPanel() {
                 <p className="mt-1 text-xs text-zinc-400">
                   Chapter {row.chapterNumber}: {row.chapterTitle}
                 </p>
-                <p className="mt-1 text-xs text-zinc-500">{formatDateTime(row.sharedAt)}</p>
+                <p className="mt-1 text-xs text-zinc-500">{formatOptionalDateTime(row.sharedAt)}</p>
               </button>
             );
           })}
@@ -170,7 +157,7 @@ export default function PlaybookReflectionsPanel() {
                     <p className="text-sm font-semibold text-zinc-100">
                       Chapter {chapter.chapterNumber}: {chapter.chapterTitle}
                     </p>
-                    <p className="text-xs text-zinc-500">Shared {formatDateTime(chapter.sharedAt)}</p>
+                    <p className="text-xs text-zinc-500">Shared {formatOptionalDateTime(chapter.sharedAt)}</p>
                   </div>
                   <div className="mt-4 space-y-4">
                     {chapter.reflections.map((reflection) => (

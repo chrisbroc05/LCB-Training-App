@@ -24,23 +24,12 @@ import {
 import { getDrillLibraryVideosByIds } from "@/lib/drill-library-videos";
 import { ensurePlaybookProgress, serializePlaybookProgress } from "@/lib/playbook";
 import { prisma } from "@/lib/prisma";
+import { formatOptionalDate } from "@/lib/format-date";
 import { fetchVimeoThumbnailMap } from "@/lib/vimeo-oembed";
 
 type ProfilePageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
-
-function formatDate(date: Date | null) {
-  if (!date) {
-    return "Not available";
-  }
-
-  return new Intl.DateTimeFormat("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  }).format(date);
-}
 
 function buildProfileRedirectTarget(searchParams: Record<string, string | string[] | undefined>) {
   const query = new URLSearchParams();
@@ -179,7 +168,7 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
           name={user.name}
           email={user.email}
           membershipTier={membershipTier}
-          memberSince={formatDate(user.signupDate)}
+          memberSince={formatOptionalDate(user.signupDate)}
           submissionsRemaining={submissionsRemaining}
           showLifetimeAccess={showLifetimeAccess}
         />

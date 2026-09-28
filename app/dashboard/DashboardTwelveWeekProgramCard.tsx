@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { TWELVE_WEEK_PROGRAM_NAME } from "@/lib/twelve-week-program";
 import { formatScheduledCallDateTime } from "@/lib/assessment-call";
+import { formatOptionalDate } from "@/lib/format-date";
 
 type DashboardTwelveWeekProgramCardProps = {
   programEndsAt: Date | null;
@@ -8,18 +9,6 @@ type DashboardTwelveWeekProgramCardProps = {
   callBooked: boolean;
   callScheduledAt: Date | null;
 };
-
-function formatProgramEndDate(date: Date | null) {
-  if (!date) {
-    return "Active";
-  }
-
-  return new Intl.DateTimeFormat("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  }).format(date);
-}
 
 export default function DashboardTwelveWeekProgramCard({
   programEndsAt,
@@ -40,7 +29,7 @@ export default function DashboardTwelveWeekProgramCard({
             {TWELVE_WEEK_PROGRAM_NAME}
           </h2>
           <p className="mt-2 text-sm text-zinc-300">
-            Program access through {formatProgramEndDate(programEndsAt)}.
+            Program access through {programEndsAt ? formatOptionalDate(programEndsAt) : "Active"}.
           </p>
         </div>
         <span className="rounded-full bg-[#22c55e]/20 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#9df3bd]">

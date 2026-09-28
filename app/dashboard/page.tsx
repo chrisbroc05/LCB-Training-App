@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { formatDateTime } from "@/lib/format-date";
 import { prisma } from "@/lib/prisma";
 import DashboardCoachingCard from "@/app/dashboard/DashboardCoachingCard";
 import DashboardEnrolledHomeSection from "@/app/dashboard/DashboardEnrolledHomeSection";
@@ -45,16 +46,6 @@ function getFirstName(name: string | null | undefined, email: string | null | un
   }
 
   return email?.split("@")[0] || "Member";
-}
-
-function formatDateTime(date: Date) {
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(date);
 }
 
 function getQuickLinks(membershipTier: DatabaseTier, hasFreeSubmissionRemaining: boolean): QuickLink[] {

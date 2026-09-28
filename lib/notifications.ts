@@ -19,6 +19,7 @@ import {
   buildCoachSubmissionNotificationEmailContent,
   type CoachSubmissionNotificationEmailParams,
 } from "@/lib/coach-submission-notification-email";
+import { formatLongDate, formatWeekdayDateTime } from "@/lib/format-date";
 import type { DatabaseTier } from "@/lib/membership";
 import { formatDatabaseTierLabel } from "@/lib/membership";
 import { prisma } from "@/lib/prisma";
@@ -165,23 +166,6 @@ function truncateSubmissionNotes(notes: string, maxLength = 300) {
   return `${trimmed.slice(0, maxLength)}...`;
 }
 
-function formatSubmittedAtChicago(date: Date) {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: "America/Chicago",
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  }).formatToParts(date);
-
-  const get = (type: Intl.DateTimeFormatPartTypes) =>
-    parts.find((part) => part.type === type)?.value ?? "";
-
-  return `${get("weekday")}, ${get("month")} ${get("day")} at ${get("hour")}:${get("minute")} ${get("dayPeriod")}`;
-}
-
 function buildSubmissionConfirmationEmailContent(params: {
   firstName: string;
   submissionType: SubmissionConfirmationType;
@@ -196,7 +180,7 @@ function buildSubmissionConfirmationEmailContent(params: {
   const submissionKind = isSwing ? "swing video" : "mental game question";
   const profileUrl = `${getPublicAppUrl()}/profile`;
   const programUrl = `${getPublicAppUrl()}/program`;
-  const submittedAtLabel = formatSubmittedAtChicago(params.submittedAt);
+  const submittedAtLabel = formatWeekdayDateTime(params.submittedAt);
   const notes = truncateSubmissionNotes(params.playerNotes);
   const headline = hasFirstName
     ? `Got it, ${trimmedFirstName}. I'm on it.`
@@ -586,11 +570,7 @@ export async function sendSubscriptionCancellationEmail(params: {
   effectiveEndDate: Date;
 }) {
   const transporter = createTransporter();
-  const formattedDate = params.effectiveEndDate.toLocaleDateString("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
+  const formattedDate = formatLongDate(params.effectiveEndDate);
 
   await transporter.sendMail({
     from: process.env.NOTIFICATION_EMAIL,

@@ -13,29 +13,10 @@ import {
   hasWeeklyVideoSent,
   toEnrollmentPlanInput,
 } from "@/lib/program-today-server";
+import { formatRelativeTime } from "@/lib/format-date";
 import { formatGameLine } from "@/lib/program-stats";
 import { getWeekdayLabelForProgramDay } from "@/lib/program-schedule";
 import { prisma } from "@/lib/prisma";
-
-function formatRelativeTime(iso: string | null, now = new Date()) {
-  if (!iso) {
-    return "Never";
-  }
-
-  const diffMinutes = Math.floor((now.getTime() - new Date(iso).getTime()) / 60000);
-  if (diffMinutes < 1) {
-    return "Just now";
-  }
-  if (diffMinutes < 60) {
-    return `${diffMinutes} minute${diffMinutes === 1 ? "" : "s"} ago`;
-  }
-  const diffHours = Math.floor(diffMinutes / 60);
-  if (diffHours < 24) {
-    return `${diffHours} hour${diffHours === 1 ? "" : "s"} ago`;
-  }
-  const diffDays = Math.floor(diffHours / 24);
-  return `${diffDays} day${diffDays === 1 ? "" : "s"} ago`;
-}
 
 export async function buildAdminProgramOverview(now = new Date()) {
   const enrollments = await prisma.programEnrollment.findMany({
@@ -187,7 +168,7 @@ export async function buildAdminProgramOverview(now = new Date()) {
         todayDone,
         todayTotal,
         streak,
-        lastCheckIn: formatRelativeTime(lastCompletion?.toISOString() ?? null, now),
+        lastCheckIn: formatRelativeTime(lastCompletion ?? null, now),
         weeklyVideoSent,
         seasonMode: enrollment.seasonMode,
         goneQuiet,
@@ -257,7 +238,7 @@ export async function buildAdminProgramOverview(now = new Date()) {
         taskTitle,
         programDay: completion.programDay,
         note: completion.note,
-        relativeTime: formatRelativeTime(completion.completedAt.toISOString(), now),
+        relativeTime: formatRelativeTime(completion.completedAt, now),
       };
     }),
   );
