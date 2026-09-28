@@ -5,6 +5,7 @@ import SettingsCard from "@/app/settings/SettingsCard";
 import ToggleSwitch from "@/app/settings/ToggleSwitch";
 import {
   settingsErrorMessageClass,
+  settingsGreenButtonClass,
   settingsMutedTextClass,
   settingsSuccessMessageClass,
 } from "@/app/settings/settings-styles";
@@ -192,7 +193,7 @@ export default function PushNotificationsSection() {
             type="button"
             disabled={isSaving || !subscribed}
             onClick={() => void handleTest()}
-            className="rounded-full border border-[#0A1628]/15 px-5 py-2.5 text-sm font-semibold text-[#0A1628] disabled:opacity-60"
+            className={settingsGreenButtonClass}
           >
             Send me a test
           </button>

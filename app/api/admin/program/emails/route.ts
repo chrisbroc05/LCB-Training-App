@@ -51,31 +51,42 @@ export async function POST(request: Request) {
   }
 
   if (body?.action === "sendTestPush") {
-    const userId = session?.user?.id;
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (typeof body.enrollmentId !== "string" || !body.enrollmentId.trim()) {
+      return NextResponse.json({ error: "Pick a player first." }, { status: 400 });
+    }
+
+    const enrollment = await prisma.programEnrollment.findUnique({
+      where: { id: body.enrollmentId.trim() },
+      select: { userId: true },
+    });
+
+    if (!enrollment) {
+      return NextResponse.json({ error: "Enrollment not found." }, { status: 404 });
     }
 
     const result = await sendPushToUser(
-      userId,
+      enrollment.userId,
       {
         title: "LCB Training admin test",
         body: "Push notifications are working.",
-        url: "/admin/program",
+        url: "/dashboard",
       },
       {
         type: "TEST",
-        dedupeKey: `${userId}:TEST:admin:${Date.now()}`,
+        dedupeKey: `${enrollment.userId}:TEST:admin:${Date.now()}`,
         skipLog: true,
         skipDedupeCheck: true,
       },
     );
 
     if (result.sent === 0) {
-      return NextResponse.json(
-        { error: result.reason ?? "No push subscriptions found for your account." },
-        { status: 400 },
-      );
+      const message =
+        result.reason === "no_subscriptions"
+          ? "This player has not turned on notifications yet."
+          : result.reason === "push_not_configured"
+            ? "Push is not configured on the server."
+            : "Unable to send test push.";
+      return NextResponse.json({ error: message }, { status: 400 });
     }
 
     return NextResponse.json({ success: true });

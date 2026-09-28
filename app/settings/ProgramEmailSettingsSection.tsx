@@ -5,7 +5,11 @@ import SettingsCard from "@/app/settings/SettingsCard";
 import ToggleSwitch from "@/app/settings/ToggleSwitch";
 import {
   settingsErrorMessageClass,
+  settingsGreenButtonClass,
+  settingsInputClass,
+  settingsLabelClass,
   settingsMutedTextClass,
+  settingsSectionTitleClass,
   settingsSuccessMessageClass,
 } from "@/app/settings/settings-styles";
 
@@ -91,6 +95,9 @@ export default function ProgramEmailSettingsSection() {
     return true;
   };
 
+  const savedSecondEmail = settings?.parentEmail?.trim() ?? "";
+  const hasSavedSecondEmail = savedSecondEmail.length > 0;
+
   if (!showSection) {
     return null;
   }
@@ -115,9 +122,9 @@ export default function ProgramEmailSettingsSection() {
             }}
           />
 
-          <div className="space-y-3 border-t border-[#0A1628]/10 pt-6">
+          <div className="space-y-3 border-t border-[#2b3650] pt-6">
             <div>
-              <h3 className="text-base font-semibold text-[#0A1628]">Second email</h3>
+              <h3 className={settingsSectionTitleClass}>Second email</h3>
               <p className={`mt-1 ${settingsMutedTextClass}`}>
                 Add a parent email or your own if a parent signed you up. They get weekly recaps,
                 check-in emails, and copies of Coach Broc video responses.
@@ -129,48 +136,54 @@ export default function ProgramEmailSettingsSection() {
               ) : null}
             </div>
 
-            <label className="block space-y-2">
-              <span className="text-sm font-medium text-[#0A1628]">Name (optional)</span>
+            <label className="block">
+              <span className={settingsLabelClass}>Name (optional)</span>
               <input
                 type="text"
                 value={secondName}
                 onChange={(event) => setSecondName(event.target.value)}
-                className="w-full rounded-xl border border-[#0A1628]/15 px-4 py-3 text-sm text-[#0A1628]"
+                className={settingsInputClass}
                 placeholder="Optional"
               />
             </label>
 
-            <label className="block space-y-2">
-              <span className="text-sm font-medium text-[#0A1628]">Second email (optional)</span>
+            <label className="block">
+              <span className={settingsLabelClass}>Second email (optional)</span>
               <input
                 type="email"
                 value={secondEmail}
                 onChange={(event) => setSecondEmail(event.target.value)}
-                className="w-full rounded-xl border border-[#0A1628]/15 px-4 py-3 text-sm text-[#0A1628]"
-                placeholder="Optional"
+                className={settingsInputClass}
+                placeholder="name@example.com"
               />
             </label>
 
-            <ToggleSwitch
-              label="Second email enabled"
-              description="Weekly recaps and program check-in emails."
-              checked={settings.parentEmailsEnabled}
-              disabled={isSaving || !secondEmail.trim()}
-              onChange={(checked) => {
-                void saveSettings({ parentEmailsEnabled: checked });
-              }}
-            />
+            {hasSavedSecondEmail ? (
+              <ToggleSwitch
+                label="Second email enabled"
+                description="Weekly recaps and program check-in emails."
+                checked={settings.parentEmailsEnabled}
+                disabled={isSaving}
+                onChange={(checked) => {
+                  void saveSettings({ parentEmailsEnabled: checked });
+                }}
+              />
+            ) : (
+              <p className={settingsMutedTextClass}>Add an email first.</p>
+            )}
 
             <button
               type="button"
               disabled={isSaving}
               onClick={() => {
+                const trimmedEmail = secondEmail.trim();
                 void saveSettings({
                   parentName: secondName.trim() || null,
-                  parentEmail: secondEmail.trim() || null,
+                  parentEmail: trimmedEmail || null,
+                  ...(trimmedEmail ? {} : { parentEmailsEnabled: false }),
                 });
               }}
-              className="rounded-full bg-[#2D6A4F] px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+              className={settingsGreenButtonClass}
             >
               {isSaving ? "Saving..." : "Save second email"}
             </button>

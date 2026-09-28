@@ -28,6 +28,12 @@ export const settingsNavyButtonClass = settingsSaveButtonClass;
 export const settingsSecondaryButtonClass =
   "rounded-lg border border-[#2b3650] bg-black/40 px-5 py-2.5 text-sm font-semibold text-zinc-200 transition hover:border-[#7f9434] hover:text-[#98b144] disabled:cursor-not-allowed disabled:opacity-60";
 
+export const settingsGreenButtonClass =
+  "rounded-lg bg-[#2D6A4F] px-5 py-2.5 text-sm font-semibold text-[#F4F6F8] transition hover:bg-[#358f62] disabled:cursor-not-allowed disabled:opacity-60";
+
+export const settingsGreenOutlineButtonClass =
+  "rounded-lg border border-[#52B788] px-5 py-2.5 text-sm font-semibold text-[#52B788] transition hover:bg-[#52B788]/10 disabled:cursor-not-allowed disabled:opacity-60";
+
 export const settingsSuccessMessageClass = "text-sm font-medium text-[#9df3bd]";
 
 export const settingsErrorMessageClass = "text-sm font-medium text-red-300";

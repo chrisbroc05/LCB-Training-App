@@ -141,6 +141,11 @@ export default function AdminProgramEmailTools({ players }: AdminProgramEmailToo
   };
 
   const sendTestPush = async () => {
+    if (!selectedEnrollmentId) {
+      setError("Pick a player first.");
+      return;
+    }
+
     setSendingPushTest(true);
     setError("");
     setSuccess("");
@@ -148,7 +153,10 @@ export default function AdminProgramEmailTools({ players }: AdminProgramEmailToo
     const response = await fetch("/api/admin/program/emails", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "sendTestPush" }),
+      body: JSON.stringify({
+        action: "sendTestPush",
+        enrollmentId: selectedEnrollmentId,
+      }),
     });
 
     const data = (await response.json().catch(() => ({}))) as {
@@ -162,7 +170,7 @@ export default function AdminProgramEmailTools({ players }: AdminProgramEmailToo
       return;
     }
 
-    setSuccess("Test push sent to your subscriptions.");
+    setSuccess("Test push sent to the selected player.");
   };
 
   return (
@@ -188,7 +196,7 @@ export default function AdminProgramEmailTools({ players }: AdminProgramEmailToo
           disabled={sendingPushTest}
           className="rounded-full border border-[#2b3650] px-4 py-2 text-sm font-semibold text-zinc-200 disabled:opacity-60"
         >
-          {sendingPushTest ? "Sending..." : "Send test push to me"}
+          {sendingPushTest ? "Sending..." : "Send test push to player"}
         </button>
       </div>
 
