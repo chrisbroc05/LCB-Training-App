@@ -10,6 +10,7 @@ import {
   PROGRAM_POSITION_OPTIONS,
 } from "@/lib/program-enrollment-shared";
 import { serializeProgramEnrollment } from "@/lib/program-enrollment";
+import { validateSecondEmail } from "@/lib/second-email-shared";
 import {
   getChicagoTodayDateKey,
   getChicagoTomorrowDateKey,
@@ -94,6 +95,8 @@ export async function PATCH(request: Request) {
     seasonMode?: ProgramSeasonMode;
     knownFor?: string;
     startDate?: Date;
+    parentName?: string | null;
+    parentEmail?: string | null;
     onboardingCompletedAt?: Date;
   } = {};
 
@@ -184,6 +187,34 @@ export async function PATCH(request: Request) {
     const dateKey =
       body.startChoice === "today" ? getChicagoTodayDateKey() : getChicagoTomorrowDateKey();
     data.startDate = parseProgramDateKey(dateKey);
+  }
+
+  if ("parentName" in body) {
+    if (body.parentName === null || body.parentName === "") {
+      data.parentName = null;
+    } else if (typeof body.parentName === "string") {
+      const trimmed = body.parentName.trim();
+      data.parentName = trimmed || null;
+    } else {
+      return NextResponse.json({ error: "Invalid parent name." }, { status: 400 });
+    }
+  }
+
+  if ("parentEmail" in body) {
+    if (body.parentEmail === null || body.parentEmail === "") {
+      data.parentEmail = null;
+    } else if (typeof body.parentEmail === "string") {
+      const validated = validateSecondEmail({
+        secondEmail: body.parentEmail,
+        accountEmail: user.email,
+      });
+      if (!validated.ok) {
+        return NextResponse.json({ error: validated.error }, { status: 400 });
+      }
+      data.parentEmail = validated.email;
+    } else {
+      return NextResponse.json({ error: "Invalid second email." }, { status: 400 });
+    }
   }
 
   if (body.completeOnboarding === true) {

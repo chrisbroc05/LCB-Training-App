@@ -5,7 +5,9 @@ import { isAdminEmail } from "@/lib/admin";
 import { createAppNotification } from "@/lib/app-notifications";
 import { parseRecommendedDrillsFormValue } from "@/lib/drill-library-videos";
 import { sendSubmissionResponseEmail } from "@/lib/notifications";
+import { sendCoachResponsePush } from "@/lib/push-instant";
 import { prisma } from "@/lib/prisma";
+import { sendSecondEmailCoachResponseCopy } from "@/lib/second-email-send";
 import { shouldSendNotificationEmail } from "@/lib/user-notification-preferences";
 import { isValidVimeoUrl } from "@/lib/vimeo";
 
@@ -96,6 +98,24 @@ export async function POST(request: Request, context: RouteContext) {
       });
     }
 
+    void sendSecondEmailCoachResponseCopy({
+      userId: updated.userId,
+      playerName: updated.playerName,
+      submissionId: updated.id,
+      submissionType: "MENTAL_GAME",
+      responseMode: finalVideoUrl ? "VIDEO" : "WRITTEN",
+      membershipTier: user?.membershipTier,
+      writtenResponse: finalText ?? undefined,
+      videoResponseUrl: finalVideoUrl ?? undefined,
+      recommendedDrillIds: recommendedDrills,
+    });
+
+    void sendCoachResponsePush({
+      userId: updated.userId,
+      submissionType: "MENTAL_GAME",
+      submissionId: updated.id,
+    });
+
     await createAppNotification({
       userId: updated.userId,
       title: "Coach Broc responded",
@@ -159,6 +179,24 @@ export async function POST(request: Request, context: RouteContext) {
       recommendedDrillIds: recommendedDrills,
     });
   }
+
+  void sendSecondEmailCoachResponseCopy({
+    userId: updated.userId,
+    playerName: updated.playerName,
+    submissionId: updated.id,
+    submissionType: "SWING_ANALYSIS",
+    responseMode: finalVideoUrl ? "VIDEO" : "WRITTEN",
+    membershipTier: user?.membershipTier,
+    writtenResponse: finalText ?? undefined,
+    videoResponseUrl: finalVideoUrl ?? undefined,
+    recommendedDrillIds: recommendedDrills,
+  });
+
+  void sendCoachResponsePush({
+    userId: updated.userId,
+    submissionType: "SWING_ANALYSIS",
+    submissionId: updated.id,
+  });
 
   await createAppNotification({
     userId: updated.userId,

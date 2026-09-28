@@ -51,6 +51,10 @@ type PlayerDetail = {
     focusAreaLabels: string[];
     equipmentLabels: string[];
     seasonModeLabel: string | null;
+    parentName: string | null;
+    parentEmail: string | null;
+    parentEmailsEnabled: boolean;
+    dailyRoutineEmailsEnabled: boolean;
   };
   schedule: {
     weekNumber: number;
@@ -469,6 +473,18 @@ export default function AdminProgramPlayerPanel({ enrollmentId }: { enrollmentId
           <p>Age group: {detail.enrollment.ageGroupLabel ?? "Not set"}</p>
           <p>Focus: {detail.enrollment.focusAreaLabels.join(", ") || "Not set"}</p>
           <p>Equipment: {detail.enrollment.equipmentLabels.join(", ") || "Not set"}</p>
+          <p>
+            Daily routine emails:{" "}
+            {detail.enrollment.dailyRoutineEmailsEnabled ? "On" : "Off"}
+          </p>
+          <p>
+            Second email:{" "}
+            {detail.enrollment.parentEmail
+              ? `${detail.enrollment.parentName ?? "Contact"} (${detail.enrollment.parentEmail})${
+                  detail.enrollment.parentEmailsEnabled ? "" : ", emails off"
+                }`
+              : "Not set"}
+          </p>
         </div>
       </section>
 

@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import AdminProgramEmailTools from "@/app/admin/program/AdminProgramEmailTools";
 
 type PlayerCard = {
   enrollmentId: string;
   name: string;
   email: string;
+  hasPush: boolean;
   weekNumber: number;
   programDay: number;
   phase: string;
@@ -99,6 +101,13 @@ export default function AdminProgramOverview() {
               <div>
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="text-lg font-semibold text-zinc-100">{player.name}</h2>
+                  {player.hasPush ? (
+                    <span className="inline-flex text-[#52B788]" title="Push notifications on">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <path d="M12 22a2.5 2.5 0 0 0 2.45-2h-4.9A2.5 2.5 0 0 0 12 22Zm7-6V11a7 7 0 1 0-14 0v5l-2 2v1h18v-1l-2-2Z" />
+                      </svg>
+                    </span>
+                  ) : null}
                   {player.goneQuiet ? (
                     <span className="rounded-full bg-red-500/20 px-2.5 py-0.5 text-xs font-semibold text-red-200">
                       Gone quiet
@@ -149,6 +158,13 @@ export default function AdminProgramOverview() {
           ))}
         </div>
       </section>
+
+      <AdminProgramEmailTools
+        players={players.map((player) => ({
+          enrollmentId: player.enrollmentId,
+          name: player.name,
+        }))}
+      />
     </div>
   );
 }

@@ -26,6 +26,8 @@ type SerializedEnrollment = {
   seasonMode: ProgramSeasonMode | null;
   knownFor: string | null;
   startDate: string | null;
+  parentName: string | null;
+  parentEmail: string | null;
   onboardingCompletedAt: string | null;
 };
 
@@ -38,6 +40,7 @@ type WizardStep =
   | "season"
   | "known_for"
   | "start_date"
+  | "parent"
   | "confirmation";
 
 const STEP_ORDER: WizardStep[] = [
@@ -49,6 +52,7 @@ const STEP_ORDER: WizardStep[] = [
   "season",
   "known_for",
   "start_date",
+  "parent",
   "confirmation",
 ];
 
@@ -81,7 +85,7 @@ function getResumeStep(enrollment: SerializedEnrollment): WizardStep {
     return "start_date";
   }
 
-  return "confirmation";
+  return "parent";
 }
 
 type ProgramStartWizardProps = {
@@ -113,6 +117,8 @@ export default function ProgramStartWizard({
   const [seasonMode, setSeasonMode] = useState<ProgramSeasonMode | null>(initialEnrollment.seasonMode);
   const [knownFor, setKnownFor] = useState(initialEnrollment.knownFor ?? "");
   const [startDate, setStartDate] = useState<string | null>(initialEnrollment.startDate);
+  const [parentName, setParentName] = useState(initialEnrollment.parentName ?? "");
+  const [parentEmail, setParentEmail] = useState(initialEnrollment.parentEmail ?? "");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -262,8 +268,30 @@ export default function ProgramStartWizard({
     const saved = await patchEnrollment({ startChoice: choice });
     if (saved) {
       setStartDate(saved.startDate);
+      goToStep("parent");
+    }
+  };
+
+  const handleParentContinue = async () => {
+    const trimmedEmail = parentEmail.trim();
+    if (trimmedEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      setError("Enter a valid email or leave it blank.");
+      return;
+    }
+
+    const saved = await patchEnrollment({
+      parentName: parentName.trim() || null,
+      parentEmail: trimmedEmail || null,
+    });
+
+    if (saved) {
       goToStep("confirmation");
     }
+  };
+
+  const handleParentSkip = () => {
+    setError("");
+    goToStep("confirmation");
   };
 
   const handleFinish = async () => {
@@ -454,6 +482,59 @@ export default function ProgramStartWizard({
                   onClick={() => void handleStartSelect("tomorrow")}
                   disabled={saving}
                 />
+              </div>
+            </div>
+          ) : null}
+
+          {step === "parent" ? (
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-2xl font-bold text-[#0A1628]">Want someone else kept in the loop?</h2>
+                <p className="mt-3 text-sm leading-6 text-[#6B7280]">
+                  Add a parent email or your own if a parent signed you up. They get weekly recaps
+                  and a heads up if things slip.
+                </p>
+              </div>
+
+              <label className="block space-y-2">
+                <span className="text-sm font-semibold text-[#0A1628]">Name (optional)</span>
+                <input
+                  type="text"
+                  value={parentName}
+                  onChange={(event) => setParentName(event.target.value)}
+                  className="w-full rounded-2xl border border-[#0A1628]/15 px-4 py-3 text-sm text-[#0A1628]"
+                  placeholder="Optional"
+                />
+              </label>
+
+              <label className="block space-y-2">
+                <span className="text-sm font-semibold text-[#0A1628]">Second email (optional)</span>
+                <input
+                  type="email"
+                  value={parentEmail}
+                  onChange={(event) => setParentEmail(event.target.value)}
+                  className="w-full rounded-2xl border border-[#0A1628]/15 px-4 py-3 text-sm text-[#0A1628]"
+                  placeholder="Optional"
+                />
+              </label>
+
+              <div className="flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={() => void handleParentContinue()}
+                  disabled={saving}
+                  className="rounded-2xl bg-[#2D6A4F] px-6 py-3 text-sm font-bold text-white disabled:opacity-70"
+                >
+                  {saving ? "Saving..." : "Continue"}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleParentSkip}
+                  disabled={saving}
+                  className="rounded-2xl border border-[#0A1628]/15 px-6 py-3 text-sm font-semibold text-[#0A1628]"
+                >
+                  Skip
+                </button>
               </div>
             </div>
           ) : null}

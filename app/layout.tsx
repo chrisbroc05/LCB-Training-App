@@ -17,6 +17,7 @@ import AdminViewToggle from "@/app/AdminViewToggle";
 import SiteShell from "@/app/SiteShell";
 import AppSplashScreen from "@/components/AppSplashScreen";
 import PWAInstallHint from "@/components/PWAInstallHint";
+import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -164,6 +165,7 @@ export default async function RootLayout({
           {children}
         </SiteShell>
         <PWAInstallHint />
+        <ServiceWorkerRegister />
       </body>
     </html>
   );

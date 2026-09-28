@@ -64,6 +64,33 @@ enum ProgramSeasonMode {
   OFF_SEASON
 }
 
+enum ProgramEmailRecipient {
+  player
+  parent
+  coach
+}
+
+enum ProgramEmailType {
+  DAILY_ROUTINE
+  DAY_BEFORE_START
+  SATURDAY_VIDEO_REMINDER
+  GONE_QUIET
+  PARENT_SATURDAY_VIDEO
+  PARENT_GONE_QUIET
+  PARENT_WEEKLY_RECAP
+  COACH_DAILY_SUMMARY
+}
+
+enum PushNotificationType {
+  DAILY_WORK
+  DAY_BEFORE_START
+  SATURDAY_VIDEO
+  GONE_QUIET
+  COACH_RESPONSE
+  PLAN_UPDATE
+  TEST
+}
+
 model User {
   id                     String                 @id @default(cuid())
   name                   String?
@@ -114,6 +141,8 @@ model User {
   playbookProgress       PlaybookProgress?
   notifications          Notification[]
   programEnrollment      ProgramEnrollment?
+  pushSubscriptions      PushSubscription[]
+  pushLogs               PushLog[]
 }
 
 model ProgramEnrollment {
@@ -127,14 +156,62 @@ model ProgramEnrollment {
   focusAreas            String[]                @default([])
   equipment             String[]                @default([])
   seasonMode            ProgramSeasonMode?
-  knownFor              String?
-  onboardingCompletedAt DateTime?
-  createdAt             DateTime                @default(now())
-  updatedAt             DateTime                @updatedAt
-  taskCompletions       TaskCompletion[]
-  weekFocusOverrides    WeekFocusOverride[]
-  customTasks           CustomTask[]
-  dayLogs               DayLog[]
+  knownFor                   String?
+  onboardingCompletedAt      DateTime?
+  dailyRoutineEmailsEnabled  Boolean                 @default(true)
+  parentName                 String?
+  parentEmail                String?
+  parentEmailsEnabled        Boolean                 @default(true)
+  parentPromptDismissedAt    DateTime?
+  createdAt                  DateTime                @default(now())
+  updatedAt                  DateTime                @updatedAt
+  taskCompletions            TaskCompletion[]
+  weekFocusOverrides         WeekFocusOverride[]
+  customTasks                CustomTask[]
+  dayLogs                    DayLog[]
+  emailLogs                  EmailLog[]
+}
+
+model EmailLog {
+  id           String                @id @default(cuid())
+  enrollmentId String?
+  enrollment   ProgramEnrollment?    @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  recipient    ProgramEmailRecipient
+  type         ProgramEmailType
+  dateKey      String
+  dedupeKey    String                @unique
+  sentAt       DateTime              @default(now())
+
+  @@unique([enrollmentId, recipient, type, dateKey])
+  @@index([type, dateKey])
+}
+
+model PushSubscription {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint      String    @unique
+  p256dh        String
+  auth          String
+  userAgent     String?
+  createdAt     DateTime  @default(now())
+  lastSuccessAt DateTime?
+  failureCount  Int       @default(0)
+
+  @@index([userId])
+}
+
+model PushLog {
+  id        String               @id @default(cuid())
+  userId    String
+  user      User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      PushNotificationType
+  dedupeKey String               @unique
+  sentAt    DateTime             @default(now())
+  success   Boolean
+  error     String?
+
+  @@index([userId, type])
 }
 
 model CoachCue {

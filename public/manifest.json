@@ -1,6 +1,6 @@
 {
   "name": "LCB Training",
-  "short_name": "LCB Training",
+  "short_name": "LCB",
   "description": "The Next Level Playbook and personal baseball coaching from Coach Broc",
   "start_url": "/dashboard",
   "display": "standalone",

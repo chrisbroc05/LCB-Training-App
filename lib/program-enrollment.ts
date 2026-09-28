@@ -54,6 +54,11 @@ export function serializeProgramEnrollment(enrollment: {
   seasonMode: ProgramSeasonMode | null;
   knownFor: string | null;
   onboardingCompletedAt: Date | null;
+  dailyRoutineEmailsEnabled: boolean;
+  parentName: string | null;
+  parentEmail: string | null;
+  parentEmailsEnabled: boolean;
+  parentPromptDismissedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }) {
@@ -71,6 +76,11 @@ export function serializeProgramEnrollment(enrollment: {
     seasonMode: enrollment.seasonMode,
     knownFor: enrollment.knownFor,
     onboardingCompletedAt: enrollment.onboardingCompletedAt?.toISOString() ?? null,
+    dailyRoutineEmailsEnabled: enrollment.dailyRoutineEmailsEnabled,
+    parentName: enrollment.parentName,
+    parentEmail: enrollment.parentEmail,
+    parentEmailsEnabled: enrollment.parentEmailsEnabled,
+    parentPromptDismissedAt: enrollment.parentPromptDismissedAt?.toISOString() ?? null,
     createdAt: enrollment.createdAt.toISOString(),
     updatedAt: enrollment.updatedAt.toISOString(),
   };

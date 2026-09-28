@@ -4,6 +4,8 @@ import { authOptions } from "@/lib/auth";
 import BillingSection from "@/app/settings/BillingSection";
 import DeleteAccountSection from "@/app/settings/DeleteAccountSection";
 import NotificationPreferencesSection from "@/app/settings/NotificationPreferencesSection";
+import ProgramEmailSettingsSection from "@/app/settings/ProgramEmailSettingsSection";
+import PushNotificationsSection from "@/app/settings/PushNotificationsSection";
 import SecuritySection from "@/app/settings/SecuritySection";
 import {
   settingsCardClass,
@@ -108,6 +110,8 @@ export default async function SettingsPage() {
         </section>
 
         <NotificationPreferencesSection />
+        <PushNotificationsSection />
+        <ProgramEmailSettingsSection />
         <SecuritySection />
         <BillingSection
           membershipTier={membershipTier}

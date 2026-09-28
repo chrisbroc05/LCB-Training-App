@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin";
+import { sendPlanUpdatePush } from "@/lib/push-instant";
 import { getProgramDay } from "@/lib/program-schedule";
 import { prisma } from "@/lib/prisma";
 
@@ -69,6 +70,12 @@ export async function POST(request: Request, context: RouteContext) {
       note,
     },
     include: { cue: true },
+  });
+
+  void sendPlanUpdatePush({
+    userId: enrollment.userId,
+    enrollmentId,
+    dedupeSuffix: `focus-week-${weekNumber}`,
   });
 
   return NextResponse.json({ override });

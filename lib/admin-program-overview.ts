@@ -5,6 +5,7 @@ import {
   buildOverridesForWeekAndDay,
   loadEnrollmentPlanOverrideBundle,
 } from "@/lib/program-plan-overrides-server";
+import { isGoneQuiet } from "@/lib/program-gone-quiet";
 import { computeProgramStreak, getDayOfWeekForProgramDay } from "@/lib/program-streak-shared";
 import { getProgramDay } from "@/lib/program-schedule";
 import {
@@ -34,33 +35,6 @@ function formatRelativeTime(iso: string | null, now = new Date()) {
   }
   const diffDays = Math.floor(diffHours / 24);
   return `${diffDays} day${diffDays === 1 ? "" : "s"} ago`;
-}
-
-function getRecentWorkProgramDays(currentProgramDay: number, count: number) {
-  const days: number[] = [];
-  let cursor = currentProgramDay;
-
-  while (cursor > 0 && days.length < count) {
-    if (getDayOfWeekForProgramDay(cursor) !== 7) {
-      days.push(cursor);
-    }
-    cursor -= 1;
-  }
-
-  return days;
-}
-
-function isGoneQuiet(currentProgramDay: number, completionDays: Set<number>) {
-  if (currentProgramDay <= 0) {
-    return false;
-  }
-
-  const recentWorkDays = getRecentWorkProgramDays(currentProgramDay, 2);
-  if (recentWorkDays.length === 0) {
-    return false;
-  }
-
-  return recentWorkDays.every((day) => !completionDays.has(day));
 }
 
 export async function buildAdminProgramOverview(now = new Date()) {
@@ -176,6 +150,10 @@ export async function buildAdminProgramOverview(now = new Date()) {
         orderBy: [{ programDay: "desc" }, { createdAt: "desc" }],
       });
 
+      const pushCount = await prisma.pushSubscription.count({
+        where: { userId: enrollment.userId },
+      });
+
       let lastGameLabel: string | null = null;
       if (lastGameLog?.gameStats && enrollment.startDate) {
         const line = formatGameLine({
@@ -215,6 +193,7 @@ export async function buildAdminProgramOverview(now = new Date()) {
         goneQuiet,
         finishedToday,
         lastGameLabel,
+        hasPush: pushCount > 0,
         sortBucket: goneQuiet ? 0 : finishedToday ? 2 : 1,
       };
     }),

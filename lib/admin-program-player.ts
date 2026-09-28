@@ -171,6 +171,10 @@ export async function buildAdminProgramPlayerDetail(enrollmentId: string, now = 
         ? PROGRAM_SEASON_MODE_LABELS[enrollment.seasonMode]
         : null,
       knownFor: enrollment.knownFor,
+      parentName: enrollment.parentName,
+      parentEmail: enrollment.parentEmail,
+      parentEmailsEnabled: enrollment.parentEmailsEnabled,
+      dailyRoutineEmailsEnabled: enrollment.dailyRoutineEmailsEnabled,
     },
     schedule,
     streak: computeProgramStreak({

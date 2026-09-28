@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import ProgramDayLogSection from "@/app/dashboard/ProgramDayLogSection";
+import ProgramPushPrompt from "@/components/ProgramPushPrompt";
 import ProgramNoteField from "@/app/components/ProgramNoteField";
 import { escapeHtml } from "@/lib/escape-text";
 import {
@@ -582,8 +583,14 @@ function TaskCard({
   );
 }
 
+type ProgramEmailPromptState = {
+  parentEmail: string | null;
+  parentPromptDismissedAt: string | null;
+};
+
 export default function ProgramTodayView() {
   const [payload, setPayload] = useState<ProgramTodayPayload | null>(null);
+  const [emailPrompt, setEmailPrompt] = useState<ProgramEmailPromptState | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [viewedProgramDay, setViewedProgramDay] = useState<number | null>(null);
@@ -613,6 +620,44 @@ export default function ProgramTodayView() {
   useEffect(() => {
     void loadToday();
   }, [loadToday]);
+
+  useEffect(() => {
+    void (async () => {
+      const response = await fetch("/api/program/email-settings");
+      if (!response.ok) {
+        return;
+      }
+
+      const data = (await response.json().catch(() => ({}))) as {
+        enrollment?: ProgramEmailPromptState;
+      };
+
+      if (data.enrollment) {
+        setEmailPrompt(data.enrollment);
+      }
+    })();
+  }, []);
+
+  const dismissParentPrompt = async () => {
+    await fetch("/api/program/email-settings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ dismissParentPrompt: true }),
+    });
+    setEmailPrompt((current) =>
+      current
+        ? {
+            ...current,
+            parentPromptDismissedAt: new Date().toISOString(),
+          }
+        : current,
+    );
+  };
+
+  const showParentPrompt =
+    emailPrompt &&
+    !emailPrompt.parentEmail &&
+    !emailPrompt.parentPromptDismissedAt;
 
   const startLabel = useMemo(() => {
     if (!payload?.startDate) {
@@ -670,6 +715,31 @@ export default function ProgramTodayView() {
           />
         </div>
       </section>
+
+      <ProgramPushPrompt />
+
+      {showParentPrompt ? (
+        <section className={`${CARD} border-[#52B788]/40`}>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold text-zinc-100">Add a second email</p>
+              <p className="mt-1 text-sm text-zinc-400">
+                Optional. A parent or another email gets weekly recaps and a heads up if things slip.
+              </p>
+              <Link href="/program/parent" className="mt-3 inline-flex text-sm font-semibold text-[#52B788]">
+                Set up second email
+              </Link>
+            </div>
+            <button
+              type="button"
+              onClick={() => void dismissParentPrompt()}
+              className="rounded-full border border-[#2b3650] px-3 py-1 text-xs font-semibold text-zinc-400"
+            >
+              Dismiss
+            </button>
+          </div>
+        </section>
+      ) : null}
 
       {!payload.isBeforeStart && !payload.isComplete ? (
         <ProgramDayLogSection

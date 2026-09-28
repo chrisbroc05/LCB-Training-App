@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin";
+import { sendPlanUpdatePush } from "@/lib/push-instant";
 import { getProgramDay } from "@/lib/program-schedule";
 import { prisma } from "@/lib/prisma";
 
@@ -59,6 +60,12 @@ export async function POST(request: Request, context: RouteContext) {
       drillIds,
       replacesTaskKey: body?.replacesTaskKey?.trim() || null,
     },
+  });
+
+  void sendPlanUpdatePush({
+    userId: enrollment.userId,
+    enrollmentId,
+    dedupeSuffix: `custom-task-${task.id}`,
   });
 
   return NextResponse.json({ task });
