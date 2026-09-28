@@ -2,6 +2,12 @@
 
 import CoachingSubmissionConfirmation from "@/app/components/CoachingSubmissionConfirmation";
 import ResponsiveOverlay from "@/app/components/mobile/ResponsiveOverlay";
+import ProgramNoteField from "@/app/components/ProgramNoteField";
+import {
+  SUBMISSION_NOTE_LABEL,
+  SUBMISSION_NOTE_PLACEHOLDER,
+  validateSubmissionNote,
+} from "@/lib/submission-form-shared";
 import { useState } from "react";
 
 type ResponsePreference = "VIDEO_RESPONSE" | "WRITTEN_RESPONSE";
@@ -29,16 +35,23 @@ export default function MentalGameForm({ isFreeMember = false }: MentalGameFormP
     event.preventDefault();
     setSubmitError("");
 
-    if (!playerName.trim() || !playerAge.trim() || !message.trim()) {
+    if (!playerName.trim() || !playerAge.trim()) {
       setSubmitError("Please complete all required fields before submitting.");
       return;
     }
+
+    const noteValidation = validateSubmissionNote(message);
+    if (!noteValidation.ok) {
+      setSubmitError(noteValidation.error);
+      return;
+    }
+
     if (video && video.size > MAX_VIDEO_UPLOAD_BYTES) {
       setSubmitError("Video exceeds 100MB. Please trim the video and try again.");
       return;
     }
 
-    const trimmedMessage = message.trim();
+    const trimmedMessage = noteValidation.note;
     const formData = new FormData();
     formData.set("playerName", playerName.trim());
     formData.set("playerAge", playerAge.trim());
@@ -118,14 +131,15 @@ export default function MentalGameForm({ isFreeMember = false }: MentalGameFormP
       </label>
 
       <label className="block">
-        <span className="text-sm text-zinc-300">Describe in detail what is going on</span>
-        <textarea
-          rows={7}
-          value={message}
-          onChange={(event) => setMessage(event.target.value)}
-          className="mt-2 w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 placeholder:text-zinc-500 focus:border-[#22c55e]"
-          required
-        />
+        <span className="text-sm text-zinc-300">{SUBMISSION_NOTE_LABEL}</span>
+        <div className="mt-2">
+          <ProgramNoteField
+            value={message}
+            onChange={setMessage}
+            placeholder={SUBMISSION_NOTE_PLACEHOLDER}
+            rows={7}
+          />
+        </div>
       </label>
 
       <label className="block">

@@ -2,6 +2,23 @@
 
 import CoachingSubmissionConfirmation from "@/app/components/CoachingSubmissionConfirmation";
 import ResponsiveOverlay from "@/app/components/mobile/ResponsiveOverlay";
+import ProgramNoteField from "@/app/components/ProgramNoteField";
+import SubmissionChipGroup from "@/app/components/SubmissionChipGroup";
+import {
+  SUBMISSION_LOOK_AT_LABEL,
+  SUBMISSION_NOTE_LABEL,
+  SUBMISSION_NOTE_PLACEHOLDER,
+  SUBMISSION_VIDEO_CATEGORY_LABEL,
+  SUBMISSION_VIDEO_CATEGORY_OPTIONS,
+  SUBMISSION_WHERE_LABEL,
+  SUBMISSION_WHERE_OPTIONS,
+  getSubmissionLookAtOptions,
+  validateSubmissionLookAt,
+  validateSubmissionNote,
+  validateSubmissionVideoCategory,
+  validateSubmissionWhere,
+  type SubmissionVideoCategory,
+} from "@/lib/submission-form-shared";
 import {
   MAX_SUBMISSION_VIDEO_BYTES,
   SUBMISSION_VIDEO_MAX_SIZE_LABEL,
@@ -23,8 +40,10 @@ export default function SwingAnalysisForm({ isFreeMember = false }: SwingAnalysi
   const [videoFileName, setVideoFileName] = useState("");
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoUrl, setVideoUrl] = useState("");
-  const [pitchType, setPitchType] = useState("Fastball timing");
   const [handedness, setHandedness] = useState("Right-handed hitter");
+  const [whereWasThis, setWhereWasThis] = useState<string | null>(null);
+  const [videoCategory, setVideoCategory] = useState<SubmissionVideoCategory | null>(null);
+  const [lookAtFocus, setLookAtFocus] = useState<string | null>(null);
   const [notes, setNotes] = useState("");
   const [responsePreference, setResponsePreference] = useState<"VIDEO_RESPONSE" | "WRITTEN_RESPONSE">(
     "VIDEO_RESPONSE",
@@ -67,8 +86,35 @@ export default function SwingAnalysisForm({ isFreeMember = false }: SwingAnalysi
       return;
     }
 
+    const whereValidation = validateSubmissionWhere(whereWasThis ?? "");
+    if (!whereValidation.ok) {
+      setSubmitError(whereValidation.error);
+      return;
+    }
+
+    const categoryValidation = validateSubmissionVideoCategory(videoCategory ?? "");
+    if (!categoryValidation.ok) {
+      setSubmitError(categoryValidation.error);
+      return;
+    }
+
+    const lookAtValidation = validateSubmissionLookAt(
+      lookAtFocus ?? "",
+      categoryValidation.value,
+    );
+    if (!lookAtValidation.ok) {
+      setSubmitError(lookAtValidation.error);
+      return;
+    }
+
+    const noteValidation = validateSubmissionNote(notes);
+    if (!noteValidation.ok) {
+      setSubmitError(noteValidation.error);
+      return;
+    }
+
     setIsSubmitting(true);
-    const trimmedNotes = notes.trim();
+    const trimmedNotes = noteValidation.note;
 
     try {
       let r2Key: string | undefined;
@@ -114,8 +160,10 @@ export default function SwingAnalysisForm({ isFreeMember = false }: SwingAnalysi
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           playerName: playerName.trim(),
-          pitchType,
           handedness,
+          whereWasThis: whereValidation.value,
+          videoCategory: categoryValidation.value,
+          lookAtFocus: lookAtValidation.value,
           notes: trimmedNotes,
           responsePreference,
           videoUrl: videoUrl.trim() || undefined,
@@ -137,8 +185,10 @@ export default function SwingAnalysisForm({ isFreeMember = false }: SwingAnalysi
       setVideoFileName("");
       setVideoFile(null);
       setVideoUrl("");
-      setPitchType("Fastball timing");
       setHandedness("Right-handed hitter");
+      setWhereWasThis(null);
+      setVideoCategory(null);
+      setLookAtFocus(null);
       setNotes("");
       setResponsePreference("VIDEO_RESPONSE");
     } catch {
@@ -199,43 +249,67 @@ export default function SwingAnalysisForm({ isFreeMember = false }: SwingAnalysi
           />
         </label>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <label className="block">
-            <span className="text-sm text-zinc-300">Pitch Type Focus</span>
-            <select
-              value={pitchType}
-              onChange={(event) => setPitchType(event.target.value)}
-              className="mt-2 w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 focus:border-[#22c55e]"
-            >
-              <option>Fastball timing</option>
-              <option>Offspeed recognition</option>
-              <option>Inside pitch mechanics</option>
-              <option>Outside pitch approach</option>
-            </select>
-          </label>
-          <label className="block">
-            <span className="text-sm text-zinc-300">Handedness</span>
-            <select
-              value={handedness}
-              onChange={(event) => setHandedness(event.target.value)}
-              className="mt-2 w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 focus:border-[#22c55e]"
-            >
-              <option>Right-handed hitter</option>
-              <option>Left-handed hitter</option>
-              <option>Switch hitter</option>
-            </select>
-          </label>
-        </div>
+        <label className="block">
+          <span className="text-sm text-zinc-300">Handedness</span>
+          <select
+            value={handedness}
+            onChange={(event) => setHandedness(event.target.value)}
+            className="mt-2 w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 focus:border-[#22c55e]"
+          >
+            <option>Right-handed hitter</option>
+            <option>Left-handed hitter</option>
+            <option>Switch hitter</option>
+          </select>
+        </label>
+
+        <SubmissionChipGroup
+          label={SUBMISSION_WHERE_LABEL}
+          options={SUBMISSION_WHERE_OPTIONS}
+          value={whereWasThis}
+          onChange={setWhereWasThis}
+          required
+        />
+
+        <SubmissionChipGroup
+          label={SUBMISSION_VIDEO_CATEGORY_LABEL}
+          options={SUBMISSION_VIDEO_CATEGORY_OPTIONS.map((option) => option.label)}
+          value={
+            videoCategory
+              ? (SUBMISSION_VIDEO_CATEGORY_OPTIONS.find((option) => option.value === videoCategory)
+                  ?.label ?? null)
+              : null
+          }
+          onChange={(label) => {
+            const nextCategory = SUBMISSION_VIDEO_CATEGORY_OPTIONS.find(
+              (option) => option.label === label,
+            )?.value;
+            if (nextCategory) {
+              setVideoCategory(nextCategory);
+              setLookAtFocus(null);
+            }
+          }}
+          required
+        />
+
+        {videoCategory ? (
+          <SubmissionChipGroup
+            label={SUBMISSION_LOOK_AT_LABEL}
+            options={getSubmissionLookAtOptions(videoCategory)}
+            value={lookAtFocus}
+            onChange={setLookAtFocus}
+            required
+          />
+        ) : null}
 
         <label className="block">
-          <span className="text-sm text-zinc-300">Notes for coach</span>
-          <textarea
-            rows={5}
-            placeholder="Include what you are currently working on and where you feel inconsistent."
-            value={notes}
-            onChange={(event) => setNotes(event.target.value)}
-            className="mt-2 w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 placeholder:text-zinc-500 focus:border-[#22c55e]"
-          />
+          <span className="text-sm text-zinc-300">{SUBMISSION_NOTE_LABEL}</span>
+          <div className="mt-2">
+            <ProgramNoteField
+              value={notes}
+              onChange={setNotes}
+              placeholder={SUBMISSION_NOTE_PLACEHOLDER}
+            />
+          </div>
         </label>
 
         <fieldset>

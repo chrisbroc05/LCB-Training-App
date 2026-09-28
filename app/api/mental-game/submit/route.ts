@@ -9,14 +9,14 @@ import {
 } from "@/lib/coaching-submissions";
 import { prisma } from "@/lib/prisma";
 import { sendCoachNewSubmissionPush } from "@/lib/coach-push-instant";
+import { getCoachSubmissionEmailContext } from "@/lib/submission-coach-context";
 import { sendMentalGameSubmissionNotification, sendSubmissionReceivedEmail } from "@/lib/notifications";
 import {
-  createTemporaryVideoDownloadLink,
-  EMAIL_VIDEO_ATTACHMENT_MAX_BYTES,
   MAX_SUBMISSION_VIDEO_BYTES,
   SUBMISSION_VIDEO_TOO_LARGE_MESSAGE,
   persistSubmissionVideoFile,
 } from "@/lib/submission-videos";
+import { validateSubmissionNote } from "@/lib/submission-form-shared";
 
 type TopicValue =
   | "SLUMP"
@@ -75,22 +75,20 @@ export async function POST(request: Request) {
       .toUpperCase() as ResponsePreferenceValue;
     const videoUrl = String(formData.get("videoUrl") ?? "").trim();
     const uploadedVideo = formData.get("video");
-    let emailAttachment:
-      | {
-          fileName: string;
-          content: Buffer;
-          contentType: string;
-        }
-      | undefined;
-    let temporaryDownloadLink: string | undefined;
-    let temporaryDownloadExpiresAt: Date | undefined;
 
-    if (!playerName || !playerAge || !message) {
+    if (!playerName || !playerAge) {
       return NextResponse.json(
-        { error: "Player name, age, and detailed message are required." },
+        { error: "Player name and age are required." },
         { status: 400 },
       );
     }
+
+    const noteValidation = validateSubmissionNote(message);
+    if (!noteValidation.ok) {
+      return NextResponse.json({ error: noteValidation.error }, { status: 400 });
+    }
+
+    const validatedMessage = noteValidation.note;
 
     if (!validTopics.includes(topic)) {
       return NextResponse.json({ error: "Invalid topic selected." }, { status: 400 });
@@ -118,17 +116,6 @@ export async function POST(request: Request) {
         "Video file storage",
       );
       videoPath = storedVideo.relativeUrl;
-      if (storedVideo.sizeBytes <= EMAIL_VIDEO_ATTACHMENT_MAX_BYTES) {
-        emailAttachment = {
-          fileName: storedVideo.originalFileName,
-          content: storedVideo.fileBuffer,
-          contentType: storedVideo.mimeType,
-        };
-      } else {
-        const tempLink = createTemporaryVideoDownloadLink(storedVideo.videoId);
-        temporaryDownloadLink = tempLink.url;
-        temporaryDownloadExpiresAt = tempLink.expiresAt;
-      }
     }
 
     const transactionResult = await prisma.$transaction(async (tx) => {
@@ -148,7 +135,7 @@ export async function POST(request: Request) {
           playerName,
           playerAge,
           topic,
-          message,
+          message: validatedMessage,
           videoPath,
           responsePreference,
           status: "PENDING",
@@ -176,21 +163,19 @@ export async function POST(request: Request) {
 
     const submission = transactionResult.submission;
     const membershipTier = transactionResult.membershipTier;
+    const firstName =
+      session.user.name?.trim().split(/\s+/)[0] ?? playerName.trim().split(/\s+/)[0] ?? "";
+    const coachEmailContext = await getCoachSubmissionEmailContext(userId, membershipTier);
 
     try {
       await sendMentalGameSubmissionNotification({
-        userEmail: submission.userEmail,
+        submissionId: submission.id,
+        firstName,
+        fullName: submission.playerName,
         membershipTier,
-        playerName: submission.playerName,
-        playerAge: submission.playerAge,
-        topic: submission.topic,
-        message: submission.message,
-        videoPath: submission.videoPath,
-        responsePreference: submission.responsePreference,
-        status: submission.status,
-        videoAttachment: emailAttachment,
-        temporaryVideoLink: temporaryDownloadLink,
-        temporaryVideoLinkExpiresAt: temporaryDownloadExpiresAt,
+        note: submission.message,
+        submittedAt: submission.createdAt,
+        ...coachEmailContext,
       });
     } catch (error) {
       console.error("Failed to send mental game submission notification", error);
@@ -203,8 +188,6 @@ export async function POST(request: Request) {
     });
 
     try {
-      const firstName =
-        session.user.name?.trim().split(/\s+/)[0] ?? playerName.trim().split(/\s+/)[0] ?? "";
       await sendSubmissionReceivedEmail({
         toEmail: submission.userEmail,
         firstName,

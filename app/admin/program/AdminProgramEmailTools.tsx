@@ -56,6 +56,11 @@ const COACH_ALERT_TYPES = [
   { value: "COACH_NIGHTLY_SUMMARY", label: "Coach: nightly summary" },
 ] as const;
 
+const COACH_EMAIL_TYPES = [
+  { value: "COACH_NEW_SUBMISSION_SWING", label: "Coach: new swing email" },
+  { value: "COACH_NEW_SUBMISSION_MENTAL", label: "Coach: new mental email" },
+] as const;
+
 type AdminProgramEmailToolsProps = {
   players: PlayerOption[];
 };
@@ -77,6 +82,7 @@ export default function AdminProgramEmailTools({ players }: AdminProgramEmailToo
   const [sendingType, setSendingType] = useState<string | null>(null);
   const [sendingPushTest, setSendingPushTest] = useState(false);
   const [sendingCoachAlertType, setSendingCoachAlertType] = useState<string | null>(null);
+  const [sendingCoachEmailType, setSendingCoachEmailType] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -228,6 +234,42 @@ export default function AdminProgramEmailTools({ players }: AdminProgramEmailToo
     setSuccess("Test coach alert sent.");
   };
 
+  const sendTestCoachEmail = async (coachEmailType: string) => {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(testEmail.trim())) {
+      setError("Enter a valid test email address.");
+      return;
+    }
+
+    setSendingCoachEmailType(coachEmailType);
+    setError("");
+    setSuccess("");
+
+    const response = await fetch("/api/admin/program/emails", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "sendTestCoachEmail",
+        coachEmailType,
+        enrollmentId: selectedEnrollmentId || undefined,
+        toEmail: testEmail.trim(),
+      }),
+    });
+
+    const data = (await response.json().catch(() => ({}))) as {
+      subject?: string;
+      error?: string;
+    };
+
+    setSendingCoachEmailType(null);
+
+    if (!response.ok) {
+      setError(data.error ?? "Test coach email failed.");
+      return;
+    }
+
+    setSuccess(`Sent test: ${data.subject ?? coachEmailType}`);
+  };
+
   return (
     <section className="rounded-3xl border border-[#18243a] bg-[#0b1324]/80 p-5 sm:p-8">
       <h2 className="text-xl font-semibold text-zinc-100">Email tools</h2>
@@ -352,6 +394,23 @@ export default function AdminProgramEmailTools({ players }: AdminProgramEmailToo
               className="rounded-full border border-[#52B788]/50 px-3 py-2 text-xs font-semibold text-[#52B788] disabled:opacity-60"
             >
               {sendingCoachAlertType === entry.value ? "Sending..." : entry.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-6 border-t border-[#2b3650] pt-5">
+        <p className="text-sm font-semibold text-zinc-200">Send test coach submission email</p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {COACH_EMAIL_TYPES.map((entry) => (
+            <button
+              key={entry.value}
+              type="button"
+              onClick={() => void sendTestCoachEmail(entry.value)}
+              disabled={sendingCoachEmailType === entry.value}
+              className="rounded-full border border-[#52B788]/50 px-3 py-2 text-xs font-semibold text-[#52B788] disabled:opacity-60"
+            >
+              {sendingCoachEmailType === entry.value ? "Sending..." : entry.label}
             </button>
           ))}
         </div>

@@ -9,20 +9,29 @@ import {
 } from "@/lib/coaching-submissions";
 import { prisma } from "@/lib/prisma";
 import { sendCoachNewSubmissionPush } from "@/lib/coach-push-instant";
+import { getCoachSubmissionEmailContext } from "@/lib/submission-coach-context";
 import { sendSubmissionReceivedEmail, sendSwingSubmissionNotification } from "@/lib/notifications";
 import {
   formatR2VideoReference,
   headR2Object,
   isUserSubmissionVideoKey,
 } from "@/lib/r2";
+import {
+  validateSubmissionLookAt,
+  validateSubmissionNote,
+  validateSubmissionVideoCategory,
+  validateSubmissionWhere,
+} from "@/lib/submission-form-shared";
 
 const DB_TIMEOUT_MS = 15000;
 const EMAIL_TIMEOUT_MS = 15000;
 
 type SwingSubmitRequestBody = {
   playerName?: string;
-  pitchType?: string;
   handedness?: string;
+  whereWasThis?: string;
+  videoCategory?: string;
+  lookAtFocus?: string;
   notes?: string;
   responsePreference?: string;
   videoUrl?: string;
@@ -46,8 +55,10 @@ function parseSubmitRequestBody(body: unknown): SwingSubmitRequestBody | null {
   const record = body as Record<string, unknown>;
   return {
     playerName: typeof record.playerName === "string" ? record.playerName : undefined,
-    pitchType: typeof record.pitchType === "string" ? record.pitchType : undefined,
     handedness: typeof record.handedness === "string" ? record.handedness : undefined,
+    whereWasThis: typeof record.whereWasThis === "string" ? record.whereWasThis : undefined,
+    videoCategory: typeof record.videoCategory === "string" ? record.videoCategory : undefined,
+    lookAtFocus: typeof record.lookAtFocus === "string" ? record.lookAtFocus : undefined,
     notes: typeof record.notes === "string" ? record.notes : undefined,
     responsePreference:
       typeof record.responsePreference === "string" ? record.responsePreference : undefined,
@@ -79,12 +90,35 @@ export async function POST(request: Request) {
     }
 
     const playerName = body?.playerName?.trim() ?? "";
-    const pitchType = body?.pitchType?.trim() ?? "";
     const handedness = body?.handedness?.trim() ?? "";
-    const notes = body?.notes?.trim() ?? "";
     const responsePreference = body?.responsePreference?.trim().toUpperCase() ?? "";
     const videoUrl = body?.videoUrl?.trim() ?? "";
     const r2Key = body?.r2Key?.trim() ?? "";
+
+    const whereValidation = validateSubmissionWhere(body?.whereWasThis ?? "");
+    if (!whereValidation.ok) {
+      return NextResponse.json({ error: whereValidation.error }, { status: 400 });
+    }
+
+    const categoryValidation = validateSubmissionVideoCategory(body?.videoCategory ?? "");
+    if (!categoryValidation.ok) {
+      return NextResponse.json({ error: categoryValidation.error }, { status: 400 });
+    }
+
+    const lookAtValidation = validateSubmissionLookAt(
+      body?.lookAtFocus ?? "",
+      categoryValidation.value,
+    );
+    if (!lookAtValidation.ok) {
+      return NextResponse.json({ error: lookAtValidation.error }, { status: 400 });
+    }
+
+    const noteValidation = validateSubmissionNote(body?.notes ?? "");
+    if (!noteValidation.ok) {
+      return NextResponse.json({ error: noteValidation.error }, { status: 400 });
+    }
+
+    const notes = noteValidation.note;
 
     let submittedVideo = videoUrl;
 
@@ -110,7 +144,7 @@ export async function POST(request: Request) {
       console.log(`[swing-submit:${requestId}] Using provided video URL`);
     }
 
-    if (!playerName || !pitchType || !handedness || !notes || !submittedVideo) {
+    if (!playerName || !handedness || !submittedVideo) {
       console.warn(`[swing-submit:${requestId}] Validation failed for required fields`);
       return NextResponse.json(
         { error: "Player name, form details, and a video are required." },
@@ -140,8 +174,11 @@ export async function POST(request: Request) {
             userId,
             userEmail,
             playerName,
-            pitchType,
+            pitchType: "",
             handedness,
+            whereWasThis: whereValidation.value,
+            lookAtFocus: lookAtValidation.value,
+            videoCategory: categoryValidation.value,
             notes,
             submittedVideo,
             responsePreference: responsePreference as "VIDEO_RESPONSE" | "WRITTEN_RESPONSE",
@@ -183,20 +220,26 @@ export async function POST(request: Request) {
       );
     }
 
+    const firstName =
+      session.user.name?.trim().split(/\s+/)[0] ?? playerName.trim().split(/\s+/)[0] ?? "";
+    const coachEmailContext = await getCoachSubmissionEmailContext(userId, membershipTier);
+
     console.log(
       `[swing-submit:${requestId}] Sending submission notification`,
     );
     try {
       await withTimeout(
         sendSwingSubmissionNotification({
-          userEmail,
+          submissionId: createdSubmission.id,
+          firstName,
+          fullName: playerName,
           membershipTier,
-          playerName,
-          pitchType,
-          handedness,
-          notes,
-          responsePreference: responsePreference as "VIDEO_RESPONSE" | "WRITTEN_RESPONSE",
-          submittedVideo,
+          whereWasThis: whereValidation.value,
+          lookAtFocus: lookAtValidation.value,
+          videoCategory: categoryValidation.value,
+          note: notes,
+          submittedAt: createdSubmission.createdAt,
+          ...coachEmailContext,
         }),
         EMAIL_TIMEOUT_MS,
         "Notification email",
@@ -213,8 +256,6 @@ export async function POST(request: Request) {
     });
 
     try {
-      const firstName =
-        session.user.name?.trim().split(/\s+/)[0] ?? playerName.trim().split(/\s+/)[0] ?? "";
       await withTimeout(
         sendSubmissionReceivedEmail({
           toEmail: userEmail,

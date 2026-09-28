@@ -12,6 +12,7 @@ import { buildCoachDailySummaryData } from "@/lib/program-email-data";
 import { getChicagoDateTimeParts } from "@/lib/program-email-chicago";
 import { runProgramEmailScheduler, sendTestProgramEmail } from "@/lib/program-email-scheduler";
 import { sendPushToUser } from "@/lib/push-send";
+import { sendTestCoachSubmissionNotificationEmail } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 
 const EMAIL_TYPES: ProgramEmailType[] = [
@@ -49,6 +50,7 @@ export async function POST(request: Request) {
     action?: string;
     type?: string;
     coachAlertType?: string;
+    coachEmailType?: string;
     enrollmentId?: string;
     toEmail?: string;
     playerName?: string;
@@ -99,6 +101,36 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ success: true });
+  }
+
+  if (body?.action === "sendTestCoachEmail") {
+    if (typeof body.toEmail !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.toEmail.trim())) {
+      return NextResponse.json({ error: "Valid test email is required." }, { status: 400 });
+    }
+
+    const coachEmailType = body.coachEmailType;
+    if (coachEmailType !== "COACH_NEW_SUBMISSION_SWING" && coachEmailType !== "COACH_NEW_SUBMISSION_MENTAL") {
+      return NextResponse.json({ error: "Invalid coach email type." }, { status: 400 });
+    }
+
+    try {
+      const subject = await sendTestCoachSubmissionNotificationEmail({
+        submissionTab: coachEmailType === "COACH_NEW_SUBMISSION_SWING" ? "swing" : "mental",
+        toEmail: body.toEmail.trim(),
+        enrollmentId:
+          typeof body.enrollmentId === "string" && body.enrollmentId.trim()
+            ? body.enrollmentId.trim()
+            : undefined,
+      });
+
+      return NextResponse.json({ success: true, subject });
+    } catch (error) {
+      console.error("Failed to send test coach submission email", error);
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : "Unable to send test coach email." },
+        { status: 500 },
+      );
+    }
   }
 
   if (body?.action === "sendTestCoachAlert") {

@@ -378,6 +378,8 @@ model MentalGameSubmission {
   playerAge          String
   topic              MentalGameTopic
   message            String
+  whereWasThis       String?
+  lookAtFocus        String?
   videoPath          String?
   responsePreference MentalGameResponsePreference
   status             MentalGameSubmissionStatus   @default(PENDING)
@@ -400,6 +402,9 @@ model SwingAnalysisSubmission {
   playerName         String
   pitchType          String
   handedness         String
+  whereWasThis       String?
+  lookAtFocus        String?
+  videoCategory      String?
   notes              String
   submittedVideo     String
   responsePreference MentalGameResponsePreference

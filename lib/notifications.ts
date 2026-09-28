@@ -15,8 +15,14 @@ import {
   getPublicAppUrl,
 } from "@/lib/email-layout";
 import { getDrillLibraryVideoId, getDrillLibraryVideosByIds } from "@/lib/drill-library-videos";
+import {
+  buildCoachSubmissionNotificationEmailContent,
+  type CoachSubmissionNotificationEmailParams,
+} from "@/lib/coach-submission-notification-email";
 import type { DatabaseTier } from "@/lib/membership";
 import { formatDatabaseTierLabel } from "@/lib/membership";
+import { prisma } from "@/lib/prisma";
+import { getCoachSubmissionEmailContext } from "@/lib/submission-coach-context";
 
 function createTransporter() {
   const notificationEmail = process.env.NOTIFICATION_EMAIL;
@@ -317,139 +323,100 @@ export async function sendSubmissionReceivedEmail(params: {
   });
 }
 
-export async function sendSwingSubmissionNotification(params: {
-  userEmail: string;
-  membershipTier: DatabaseTier;
-  playerName: string;
-  pitchType: string;
-  handedness: string;
-  notes: string;
-  responsePreference: "VIDEO_RESPONSE" | "WRITTEN_RESPONSE";
-  submittedVideo: string;
-  videoAttachment?: {
-    fileName: string;
-    content: Buffer;
-    contentType: string;
-  };
-  temporaryVideoLink?: string;
-  temporaryVideoLinkExpiresAt?: Date;
-}) {
+async function sendCoachSubmissionNotificationEmail(
+  params: CoachSubmissionNotificationEmailParams,
+) {
   const transporter = createTransporter();
-  const attachmentSummary = params.videoAttachment
-    ? `Attached file: ${params.videoAttachment.fileName}`
-    : "No attached file";
-  const tempLinkSummary = params.temporaryVideoLink ?? "Not provided";
-  const tempLinkExpiry = params.temporaryVideoLinkExpiresAt
-    ? params.temporaryVideoLinkExpiresAt.toLocaleString()
-    : "Not provided";
-
-  const html = buildSubmissionNotificationHtml({
-    title: "New Coaching Submission",
-    membershipTier: params.membershipTier,
-    userEmail: params.userEmail,
-    detailRows: [
-      { label: "Player Name", value: params.playerName },
-      { label: "Pitch Type Focus", value: params.pitchType },
-      { label: "Handedness", value: params.handedness },
-      {
-        label: "Preferred Response",
-        value:
-          params.responsePreference === "VIDEO_RESPONSE"
-            ? "Video Response from Coach"
-            : "Written Response",
-      },
-      { label: "Submitted Video Reference", value: params.submittedVideo },
-      { label: "Attached Video", value: attachmentSummary },
-      { label: "Temporary Download Link", value: tempLinkSummary },
-      { label: "Temporary Link Expires", value: tempLinkExpiry },
-      { label: "Notes", value: params.notes || "No notes provided." },
-    ],
-  });
+  const emailContent = buildCoachSubmissionNotificationEmailContent(params);
 
   await transporter.sendMail({
     from: process.env.NOTIFICATION_EMAIL,
     to: getNotificationRecipient(),
-    subject: "New Coaching Submission",
-    text: `New Coaching Submission\n\nMembership Tier: ${getTierLabel(params.membershipTier)}\nPriority: ${getPriorityLabel(params.membershipTier)}\nSubmitting User: ${params.userEmail}\nPlayer Name: ${params.playerName}\nPitch Type Focus: ${params.pitchType}\nHandedness: ${params.handedness}\nPreferred Response: ${params.responsePreference}\nSubmitted Video Reference: ${params.submittedVideo}\nAttached Video: ${attachmentSummary}\nTemporary Download Link: ${tempLinkSummary}\nTemporary Link Expires: ${tempLinkExpiry}\nNotes: ${params.notes || "No notes provided."}`,
-    html,
-    attachments: params.videoAttachment
-      ? [
-          {
-            filename: params.videoAttachment.fileName,
-            content: params.videoAttachment.content,
-            contentType: params.videoAttachment.contentType,
-          },
-        ]
-      : undefined,
+    replyTo: EMAIL_REPLY_TO,
+    subject: emailContent.subject,
+    text: emailContent.text,
+    html: emailContent.html,
   });
 }
 
-export async function sendMentalGameSubmissionNotification(params: {
-  userEmail: string;
-  membershipTier: DatabaseTier;
-  playerName: string;
-  playerAge: string;
-  topic: string;
-  message: string;
-  videoPath: string | null;
-  responsePreference: string;
-  status: string;
-  videoAttachment?: {
-    fileName: string;
-    content: Buffer;
-    contentType: string;
-  };
-  temporaryVideoLink?: string;
-  temporaryVideoLinkExpiresAt?: Date;
+export async function sendSwingSubmissionNotification(
+  params: Omit<CoachSubmissionNotificationEmailParams, "submissionTab">,
+) {
+  await sendCoachSubmissionNotificationEmail({
+    ...params,
+    submissionTab: "swing",
+  });
+}
+
+export async function sendMentalGameSubmissionNotification(
+  params: Omit<CoachSubmissionNotificationEmailParams, "submissionTab">,
+) {
+  await sendCoachSubmissionNotificationEmail({
+    ...params,
+    submissionTab: "mental",
+  });
+}
+
+export async function sendTestCoachSubmissionNotificationEmail(params: {
+  submissionTab: "swing" | "mental";
+  toEmail: string;
+  enrollmentId?: string;
 }) {
   const transporter = createTransporter();
-  const attachmentSummary = params.videoAttachment
-    ? `Attached file: ${params.videoAttachment.fileName}`
-    : "No attached file";
-  const tempLinkSummary = params.temporaryVideoLink ?? "Not provided";
-  const tempLinkExpiry = params.temporaryVideoLinkExpiresAt
-    ? params.temporaryVideoLinkExpiresAt.toLocaleString()
-    : "Not provided";
-  const html = buildSubmissionNotificationHtml({
-    title: "New Coaching Submission",
-    membershipTier: params.membershipTier,
-    userEmail: params.userEmail,
-    detailRows: [
-      { label: "Player Name", value: params.playerName },
-      { label: "Player Age", value: params.playerAge },
-      { label: "Topic", value: params.topic },
-      {
-        label: "Preferred Response",
-        value:
-          params.responsePreference === "VIDEO_RESPONSE"
-            ? "Video Response from Coach"
-            : "Written Response",
+  let ageGroupLabel: string | null = "Ages 12-15";
+  let programWeekNumber: number | null = 3;
+  let membershipTier: DatabaseTier = "TWELVE_WEEK";
+  let firstName = "Alex";
+  let fullName = "Alex Rivera";
+
+  if (params.enrollmentId) {
+    const enrollment = await prisma.programEnrollment.findUnique({
+      where: { id: params.enrollmentId },
+      include: {
+        user: {
+          select: {
+            name: true,
+            membershipTier: true,
+          },
+        },
       },
-      { label: "Video Reference", value: params.videoPath ?? "No video uploaded" },
-      { label: "Attached Video", value: attachmentSummary },
-      { label: "Temporary Download Link", value: tempLinkSummary },
-      { label: "Temporary Link Expires", value: tempLinkExpiry },
-      { label: "Status", value: params.status },
-      { label: "Message", value: params.message },
-    ],
+    });
+
+    if (enrollment) {
+      membershipTier = enrollment.user.membershipTier as DatabaseTier;
+      fullName = enrollment.user.name?.trim() || fullName;
+      firstName = fullName.split(/\s+/)[0] || firstName;
+      const context = await getCoachSubmissionEmailContext(enrollment.userId, membershipTier);
+      ageGroupLabel = context.ageGroupLabel;
+      programWeekNumber = context.programWeekNumber;
+    }
+  }
+
+  const emailContent = buildCoachSubmissionNotificationEmailContent({
+    submissionId: "test-submission",
+    submissionTab: params.submissionTab,
+    firstName,
+    fullName,
+    membershipTier,
+    ageGroupLabel,
+    programWeekNumber,
+    whereWasThis: params.submissionTab === "swing" ? "Live BP" : null,
+    lookAtFocus: params.submissionTab === "swing" ? "Timing" : null,
+    videoCategory: params.submissionTab === "swing" ? "HITTING" : null,
+    note: "I keep getting out front on changeups and I want help staying back without losing my load.",
+    submittedAt: new Date(),
   });
 
   await transporter.sendMail({
     from: process.env.NOTIFICATION_EMAIL,
-    to: getNotificationRecipient(),
-    subject: "New Coaching Submission",
-    text: `New Coaching Submission\n\nMembership Tier: ${getTierLabel(params.membershipTier)}\nPriority: ${getPriorityLabel(params.membershipTier)}\nSubmitting User: ${params.userEmail}\nPlayer Name: ${params.playerName}\nPlayer Age: ${params.playerAge}\nTopic: ${params.topic}\nMessage: ${params.message}\nVideo Reference: ${params.videoPath ?? "No video uploaded"}\nAttached Video: ${attachmentSummary}\nTemporary Download Link: ${tempLinkSummary}\nTemporary Link Expires: ${tempLinkExpiry}\nResponse Preference: ${params.responsePreference}\nStatus: ${params.status}`,
-    html,
-    attachments: params.videoAttachment
-      ? [
-          {
-            filename: params.videoAttachment.fileName,
-            content: params.videoAttachment.content,
-            contentType: params.videoAttachment.contentType,
-          },
-        ]
-      : undefined,
+    to: params.toEmail,
+    replyTo: EMAIL_REPLY_TO,
+    subject: emailContent.subject,
+    text: emailContent.text,
+    html: emailContent.html,
   });
+
+  return emailContent.subject;
 }
 
 function truncateCoachResponseNotes(notes: string, maxLength = 400) {

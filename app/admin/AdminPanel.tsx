@@ -51,6 +51,9 @@ type MemberProfileSummary = {
 type SubmissionDetail = SubmissionListItem & {
   pitchType?: string;
   handedness?: string;
+  whereWasThis?: string | null;
+  lookAtFocus?: string | null;
+  videoCategory?: string | null;
   notes?: string;
   submittedVideo?: string;
   playerAge?: string;
@@ -619,21 +622,41 @@ export default function AdminPanel() {
                     {detail.playerAge}
                   </p>
                   <p className="whitespace-pre-wrap">
-                    <span className="font-semibold text-zinc-100">Message:</span> {detail.message}
+                    <span className="font-semibold text-zinc-100">Note:</span> {detail.message}
                   </p>
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <p>
-                    <span className="font-semibold text-zinc-100">Pitch focus:</span>{" "}
-                    {detail.pitchType}
-                  </p>
+                  {detail.pitchType ? (
+                    <p>
+                      <span className="font-semibold text-zinc-100">Pitch focus:</span>{" "}
+                      {detail.pitchType}
+                    </p>
+                  ) : null}
+                  {detail.videoCategory ? (
+                    <p>
+                      <span className="font-semibold text-zinc-100">Video type:</span>{" "}
+                      {detail.videoCategory === "FIELDING" ? "Fielding" : "Hitting"}
+                    </p>
+                  ) : null}
+                  {detail.whereWasThis ? (
+                    <p>
+                      <span className="font-semibold text-zinc-100">Where:</span>{" "}
+                      {detail.whereWasThis}
+                    </p>
+                  ) : null}
+                  {detail.lookAtFocus ? (
+                    <p>
+                      <span className="font-semibold text-zinc-100">Look at:</span>{" "}
+                      {detail.lookAtFocus}
+                    </p>
+                  ) : null}
                   <p>
                     <span className="font-semibold text-zinc-100">Handedness:</span>{" "}
                     {detail.handedness}
                   </p>
                   <p className="whitespace-pre-wrap">
-                    <span className="font-semibold text-zinc-100">Notes:</span> {detail.notes}
+                    <span className="font-semibold text-zinc-100">Note:</span> {detail.notes}
                   </p>
                 </div>
               )}

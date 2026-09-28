@@ -106,7 +106,15 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
       responseText: item.responseText,
       responseVideoUrl: item.responseVideoUrl,
       recommendedDrillIds: item.recommendedDrills,
-      extraLines: [`Pitch Focus: ${item.pitchType}`, `Handedness: ${item.handedness}`],
+      extraLines: [
+        ...(item.pitchType ? [`Pitch Focus: ${item.pitchType}`] : []),
+        ...(item.videoCategory
+          ? [`Video Type: ${item.videoCategory === "FIELDING" ? "Fielding" : "Hitting"}`]
+          : []),
+        ...(item.whereWasThis ? [`Where: ${item.whereWasThis}`] : []),
+        ...(item.lookAtFocus ? [`Look At: ${item.lookAtFocus}`] : []),
+        `Handedness: ${item.handedness}`,
+      ],
     })),
     ...mentalSubmissions.map((item) => ({
       id: item.id,
