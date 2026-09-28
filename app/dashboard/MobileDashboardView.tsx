@@ -36,6 +36,7 @@ type MobileDashboardViewProps = {
   twelveWeekCallScheduledAt: Date | null;
   calendlyBookingUrl: string;
   showProgramSetupBanner: boolean;
+  hasProgramEnrollmentRow: boolean;
 };
 
 export default function MobileDashboardView({
@@ -52,6 +53,7 @@ export default function MobileDashboardView({
   twelveWeekCallScheduledAt,
   calendlyBookingUrl,
   showProgramSetupBanner,
+  hasProgramEnrollmentRow,
 }: MobileDashboardViewProps) {
   const isEnrolled = isTwelveWeekProgramMember(membershipTier);
 
@@ -94,23 +96,22 @@ export default function MobileDashboardView({
         </article>
       )}
 
-      {isEnrolled && !showProgramSetupBanner ? (
-        <DashboardEnrolledHomeSection
-          userId={userId}
-          membershipTier={membershipTier}
-          calendlyBookingUrl={calendlyBookingUrl}
-          callBooked={twelveWeekCallBooked}
-          callScheduledAt={twelveWeekCallScheduledAt}
-          currentMonthGoalCheckin={currentMonthGoalCheckin}
-          layout="mobile"
-        />
-      ) : isEnrolled ? (
+      {hasProgramEnrollmentRow ? (
         <>
           {showProgramSetupBanner ? (
             <div className="mobile-card p-0 [&_section]:mt-0">
               <ProgramSetupBanner />
             </div>
           ) : null}
+          <DashboardEnrolledHomeSection
+            userId={userId}
+            membershipTier={membershipTier}
+            calendlyBookingUrl={calendlyBookingUrl}
+            callBooked={twelveWeekCallBooked}
+            callScheduledAt={twelveWeekCallScheduledAt}
+            currentMonthGoalCheckin={currentMonthGoalCheckin}
+            layout="mobile"
+          />
         </>
       ) : (
         <>

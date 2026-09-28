@@ -62,9 +62,9 @@ export default async function RootLayout({
     if (membershipTier === "TWELVE_WEEK") {
       const enrollment = await prisma.programEnrollment.findUnique({
         where: { userId: session.user.id },
-        select: { onboardingCompletedAt: true },
+        select: { id: true },
       });
-      hasProgramEnrollment = Boolean(enrollment?.onboardingCompletedAt);
+      hasProgramEnrollment = Boolean(enrollment);
     }
   }
 

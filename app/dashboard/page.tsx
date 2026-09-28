@@ -27,6 +27,7 @@ import {
   isTwelveWeekProgramMember,
   type DatabaseTier,
 } from "@/lib/membership";
+import { shouldShowProgramSetupBanner } from "@/lib/program-setup-shared";
 type DashboardPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
@@ -256,8 +257,8 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           select: { onboardingCompletedAt: true },
         })
       : null;
-  const showProgramSetupBanner =
-    membershipTier === "TWELVE_WEEK" && !programEnrollment?.onboardingCompletedAt;
+  const hasProgramEnrollmentRow = Boolean(programEnrollment);
+  const showProgramSetupBanner = shouldShowProgramSetupBanner(programEnrollment);
 
   const recentResponses = canAccessCoachingNav(membershipTier)
     ? await Promise.all([
@@ -316,6 +317,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         twelveWeekCallScheduledAt={userRecord.twelveWeekCallScheduledAt}
         calendlyBookingUrl={calendlyBookingUrl}
         showProgramSetupBanner={showProgramSetupBanner}
+        hasProgramEnrollmentRow={hasProgramEnrollmentRow}
       />
 
       <div className="mx-auto hidden w-full max-w-6xl px-4 py-10 sm:px-6 sm:py-14 md:block md:py-20">
@@ -350,8 +352,6 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           </>
         )}
       </section>
-
-      {showProgramSetupBanner ? <ProgramSetupBanner /> : null}
 
       {membershipTier === "BASIC" ? <DashboardPlaybookWelcomeCard /> : null}
 
@@ -391,16 +391,19 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         </section>
       )}
 
-      {isTwelveWeekProgramMember(membershipTier) && !showProgramSetupBanner ? (
-        <DashboardEnrolledHomeSection
-          userId={session.user.id}
-          membershipTier={membershipTier}
-          calendlyBookingUrl={calendlyBookingUrl}
-          callBooked={userRecord.twelveWeekCallBooked}
-          callScheduledAt={userRecord.twelveWeekCallScheduledAt}
-          currentMonthGoalCheckin={currentMonthGoalCheckin}
-          layout="desktop"
-        />
+      {hasProgramEnrollmentRow ? (
+        <>
+          {showProgramSetupBanner ? <ProgramSetupBanner /> : null}
+          <DashboardEnrolledHomeSection
+            userId={session.user.id}
+            membershipTier={membershipTier}
+            calendlyBookingUrl={calendlyBookingUrl}
+            callBooked={userRecord.twelveWeekCallBooked}
+            callScheduledAt={userRecord.twelveWeekCallScheduledAt}
+            currentMonthGoalCheckin={currentMonthGoalCheckin}
+            layout="desktop"
+          />
+        </>
       ) : (
         <>
           <div className="mt-8 space-y-4 sm:space-y-5">

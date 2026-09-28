@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isTwelveWeekProgramMember } from "@/lib/membership";
+import ProgramTodaySetupPrompt from "@/app/dashboard/ProgramTodaySetupPrompt";
 import ProgramTodayView from "@/app/dashboard/ProgramTodayView";
 
 export default async function ProgramTodayPage() {
@@ -25,8 +26,12 @@ export default async function ProgramTodayPage() {
     select: { onboardingCompletedAt: true },
   });
 
-  if (!enrollment?.onboardingCompletedAt) {
-    redirect("/program/start");
+  if (!enrollment) {
+    redirect("/dashboard");
+  }
+
+  if (!enrollment.onboardingCompletedAt) {
+    return <ProgramTodaySetupPrompt />;
   }
 
   return (
