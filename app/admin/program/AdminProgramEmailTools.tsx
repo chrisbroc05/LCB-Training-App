@@ -73,6 +73,12 @@ const COACH_ALERT_TYPES = [
   { value: "COACH_NEW_SUBMISSION_MENTAL", label: "Coach: new mental video" },
   { value: "COACH_NEW_PROGRAM_PLAYER", label: "Coach: new program player" },
   { value: "COACH_NIGHTLY_SUMMARY", label: "Coach: nightly summary" },
+  { value: "COACH_NEW_MESSAGE", label: "Coach: new player message" },
+] as const;
+
+const MESSAGE_TEST_TYPES = [
+  { value: "COACH_REPLY_PUSH", label: "Player: Coach Broc replied push" },
+  { value: "COACH_REPLY_EMAIL", label: "Player: Coach Broc replied email" },
 ] as const;
 
 const COACH_EMAIL_TYPES = [
@@ -107,6 +113,7 @@ export default function AdminProgramEmailTools({ players }: AdminProgramEmailToo
   const [sendingCoachAlertType, setSendingCoachAlertType] = useState<string | null>(null);
   const [sendingCoachEmailType, setSendingCoachEmailType] = useState<string | null>(null);
   const [sendingMarketingType, setSendingMarketingType] = useState<string | null>(null);
+  const [sendingMessageTestType, setSendingMessageTestType] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -303,6 +310,52 @@ export default function AdminProgramEmailTools({ players }: AdminProgramEmailToo
     setSuccess(`Sent test: ${data.subject ?? coachEmailType}`);
   };
 
+  const sendTestMessageNotification = async (messageTestType: string) => {
+    setSendingMessageTestType(messageTestType);
+    setError("");
+    setSuccess("");
+
+    if (messageTestType === "COACH_REPLY_EMAIL") {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(testEmail.trim())) {
+        setSendingMessageTestType(null);
+        setError("Enter a valid test email address.");
+        return;
+      }
+    }
+
+    if (!selectedEnrollmentId) {
+      setSendingMessageTestType(null);
+      setError("Pick a player first.");
+      return;
+    }
+
+    const response = await fetch("/api/admin/program/emails", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "sendTestMessageNotification",
+        messageTestType,
+        enrollmentId: selectedEnrollmentId,
+        toEmail: testEmail.trim(),
+        playerName: selectedPlayer?.name ?? "Test Player",
+      }),
+    });
+
+    const data = (await response.json().catch(() => ({}))) as {
+      subject?: string;
+      error?: string;
+    };
+
+    setSendingMessageTestType(null);
+
+    if (!response.ok) {
+      setError(data.error ?? "Test message notification failed.");
+      return;
+    }
+
+    setSuccess(data.subject ? `Sent test: ${data.subject}` : "Test message notification sent.");
+  };
+
   const sendTestMarketing = async (type: string) => {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(testEmail.trim())) {
       setError("Enter a valid test email address.");
@@ -344,7 +397,9 @@ export default function AdminProgramEmailTools({ players }: AdminProgramEmailToo
       <p className="mt-2 text-sm text-zinc-400">
         Dry run shows what the hourly cron would send right now. Each job uses the first run at or
         after its target hour (Chicago), once per dateKey. Dedupe in EmailLog/PushLog prevents
-        repeats. Test sends use real player data and skip EmailLog/PushLog.
+        repeats. Players get one afternoon push: gone quiet replaces daily work when both apply.
+        Direct message pushes send instantly and are not part of this dry run.
+        Test sends use real player data and skip EmailLog/PushLog.
       </p>
       <ul className="mt-3 space-y-1 text-xs text-zinc-500">
         {PROGRAM_SCHEDULE_WINDOWS.map((window) => (
@@ -501,6 +556,23 @@ export default function AdminProgramEmailTools({ players }: AdminProgramEmailToo
               className="rounded-full border border-[#52B788]/50 px-3 py-2 text-xs font-semibold text-[#52B788] disabled:opacity-60"
             >
               {sendingCoachAlertType === entry.value ? "Sending..." : entry.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-6 border-t border-[#2b3650] pt-5">
+        <p className="text-sm font-semibold text-zinc-200">Send test message notification</p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {MESSAGE_TEST_TYPES.map((entry) => (
+            <button
+              key={entry.value}
+              type="button"
+              onClick={() => void sendTestMessageNotification(entry.value)}
+              disabled={sendingMessageTestType === entry.value}
+              className="rounded-full border border-[#52B788]/50 px-3 py-2 text-xs font-semibold text-[#52B788] disabled:opacity-60"
+            >
+              {sendingMessageTestType === entry.value ? "Sending..." : entry.label}
             </button>
           ))}
         </div>

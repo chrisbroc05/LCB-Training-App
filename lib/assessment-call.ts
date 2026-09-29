@@ -5,6 +5,13 @@ import {
 
 export const ASSESSMENT_CALL_TIMEZONE = CHICAGO_TIME_ZONE;
 
+export const PLAYER_ASSESSMENT_CALL_CALENDLY_URL =
+  "https://calendly.com/chrisbroc05/30min";
+
+export function getPlayerAssessmentCallCalendlyUrl() {
+  return PLAYER_ASSESSMENT_CALL_CALENDLY_URL;
+}
+
 type ZonedParts = {
   year: number;
   month: number;

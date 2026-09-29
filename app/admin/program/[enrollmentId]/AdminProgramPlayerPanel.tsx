@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { formatDateTime } from "@/lib/format-date";
 import { useCallback, useEffect, useState } from "react";
 import RecommendDrillsPicker from "@/app/admin/RecommendDrillsPicker";
@@ -247,7 +248,9 @@ function CustomTaskForm({
 }
 
 export default function AdminProgramPlayerPanel({ enrollmentId }: { enrollmentId: string }) {
+  const router = useRouter();
   const [detail, setDetail] = useState<PlayerDetail | null>(null);
+  const [openingMessage, setOpeningMessage] = useState(false);
   const [selectedWeek, setSelectedWeek] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -450,9 +453,35 @@ export default function AdminProgramPlayerPanel({ enrollmentId }: { enrollmentId
   return (
     <div className="space-y-8">
       <section className="rounded-3xl border border-[#18243a] bg-[#0b1324]/80 p-5 sm:p-8">
-        <Link href="/admin/program" className="text-sm font-semibold text-[#52B788]">
-          Back to overview
-        </Link>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Link href="/admin/program" className="text-sm font-semibold text-[#52B788]">
+            Back to overview
+          </Link>
+          <button
+            type="button"
+            disabled={openingMessage}
+            onClick={() => {
+              setOpeningMessage(true);
+              void (async () => {
+                const response = await fetch("/api/admin/messages", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ enrollmentId }),
+                });
+                const data = (await response.json().catch(() => ({}))) as {
+                  conversationId?: string;
+                };
+                setOpeningMessage(false);
+                if (response.ok && data.conversationId) {
+                  router.push(`/admin/messages/${data.conversationId}`);
+                }
+              })();
+            }}
+            className="rounded-full border border-[#52B788] px-4 py-2 text-sm font-semibold text-[#52B788] disabled:opacity-60"
+          >
+            {openingMessage ? "Opening..." : "Message"}
+          </button>
+        </div>
         <h1 className="mt-3 text-2xl font-semibold text-zinc-100">
           {detail.enrollment.name ?? detail.enrollment.email}
         </h1>

@@ -16,6 +16,12 @@ import {
   sendTestMarketingEmail,
 } from "@/lib/marketing-email-scheduler";
 import { runProgramEmailScheduler, sendTestProgramEmail } from "@/lib/program-email-scheduler";
+import {
+  sendTestCoachNewMessagePush,
+  sendTestCoachReplyEmail,
+  sendTestCoachReplyPush,
+} from "@/lib/direct-messaging-notifications";
+import { getPlayerFirstName } from "@/lib/program-email-templates";
 import { sendPushToUser } from "@/lib/push-send";
 import { sendTestCoachSubmissionNotificationEmail } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
@@ -70,6 +76,7 @@ export async function POST(request: Request) {
     toEmail?: string;
     playerName?: string;
     userId?: string;
+    messageTestType?: string;
   } | null;
 
   if (body?.action === "dryRun") {
@@ -231,6 +238,11 @@ export async function POST(request: Request) {
           playerName: enrollment.user.name ?? playerName,
           playerEmail: enrollment.user.email,
         });
+      } else if (body.coachAlertType === "COACH_NEW_MESSAGE") {
+        await sendTestCoachNewMessagePush({
+          playerFirstName: getPlayerFirstName(playerName, "player@example.com"),
+          body: "Hey Coach, quick question about today's hitting work.",
+        });
       } else if (body.coachAlertType === "COACH_NIGHTLY_SUMMARY") {
         const { dateKey } = getChicagoDateTimeParts();
         const summaryData = await buildCoachDailySummaryData(dateKey);
@@ -254,6 +266,54 @@ export async function POST(request: Request) {
       console.error("Failed to send test coach alert", error);
       return NextResponse.json(
         { error: error instanceof Error ? error.message : "Unable to send test coach alert." },
+        { status: 500 },
+      );
+    }
+  }
+
+  if (body?.action === "sendTestMessageNotification") {
+    if (typeof body.enrollmentId !== "string" || !body.enrollmentId.trim()) {
+      return NextResponse.json({ error: "Pick a player first." }, { status: 400 });
+    }
+
+    const enrollment = await prisma.programEnrollment.findUnique({
+      where: { id: body.enrollmentId.trim() },
+      select: { userId: true },
+    });
+
+    if (!enrollment) {
+      return NextResponse.json({ error: "Enrollment not found." }, { status: 404 });
+    }
+
+    const messageTestType = body.messageTestType;
+    const sampleBody = "Great work today. Keep building on that approach.";
+
+    try {
+      if (messageTestType === "COACH_REPLY_PUSH") {
+        await sendTestCoachReplyPush({
+          userId: enrollment.userId,
+          body: sampleBody,
+        });
+        return NextResponse.json({ success: true });
+      }
+
+      if (messageTestType === "COACH_REPLY_EMAIL") {
+        if (typeof body.toEmail !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.toEmail.trim())) {
+          return NextResponse.json({ error: "Valid test email is required." }, { status: 400 });
+        }
+
+        const subject = await sendTestCoachReplyEmail({
+          toEmail: body.toEmail.trim(),
+          body: sampleBody,
+        });
+        return NextResponse.json({ success: true, subject });
+      }
+
+      return NextResponse.json({ error: "Invalid message test type." }, { status: 400 });
+    } catch (error) {
+      console.error("Failed to send test message notification", error);
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : "Unable to send test message notification." },
         { status: 500 },
       );
     }

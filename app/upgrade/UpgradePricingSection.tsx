@@ -1,4 +1,5 @@
 import UpgradeActions from "@/app/upgrade/UpgradeActions";
+import ChicagolandBundleCallout from "@/components/ChicagolandBundleCallout";
 import {
   TWELVE_WEEK_PROGRAM_NAME,
   TWELVE_WEEK_PROGRAM_PRICE_LABEL,
@@ -32,6 +33,7 @@ export default function UpgradePricingSection() {
           </li>
         </ul>
         <UpgradeActions tier="TWELVE_WEEK" buttonLabel="Join the 12-Week Program" />
+        <ChicagolandBundleCallout />
       </article>
     </section>
   );

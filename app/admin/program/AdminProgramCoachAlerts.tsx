@@ -278,6 +278,15 @@ export default function AdminProgramCoachAlerts() {
               }}
             />
             <ToggleRow
+              label="New messages"
+              description="Alert when a 12-week player sends you a direct message."
+              checked={state.settings.newMessagesEnabled}
+              disabled={isSaving}
+              onChange={(checked) => {
+                void saveSettings({ newMessagesEnabled: checked });
+              }}
+            />
+            <ToggleRow
               label="Nightly summary push"
               description="One push at 8:30pm Chicago with the day recap."
               checked={state.settings.nightlySummaryPushEnabled}

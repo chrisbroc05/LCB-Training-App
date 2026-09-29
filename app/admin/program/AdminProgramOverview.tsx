@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import AdminProgramCoachAlerts from "@/app/admin/program/AdminProgramCoachAlerts";
 import AdminProgramEmailTools from "@/app/admin/program/AdminProgramEmailTools";
+import AdminMessagesNavLink from "@/components/AdminMessagesNavLink";
 
 type PlayerCard = {
   enrollmentId: string;
@@ -78,6 +79,7 @@ export default function AdminProgramOverview() {
             >
               My Hitting Focuses
             </Link>
+            <AdminMessagesNavLink />
             <Link
               href="/admin"
               className="inline-flex rounded-full border border-[#2b3650] px-4 py-2 text-sm font-semibold text-zinc-300"

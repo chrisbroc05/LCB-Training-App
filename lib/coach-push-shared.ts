@@ -1,6 +1,7 @@
 export type CoachAlertSettingsState = {
   newVideosEnabled: boolean;
   newProgramPlayersEnabled: boolean;
+  newMessagesEnabled: boolean;
   nightlySummaryPushEnabled: boolean;
   emailNightlySummaryEnabled: boolean;
 };
@@ -24,6 +25,7 @@ export type CoachDailySummarySnapshot = {
   newNotesCount: number;
   gamesLoggedToday: Array<{ name: string; line: string }>;
   videosWaiting: number;
+  unreadMessagesCount: number;
 };
 
 export function coachDailySummaryHasContent(data: CoachDailySummarySnapshot) {
@@ -33,7 +35,8 @@ export function coachDailySummaryHasContent(data: CoachDailySummarySnapshot) {
     data.goneQuietNames.length > 0 ||
     data.newNotesCount > 0 ||
     data.gamesLoggedToday.length > 0 ||
-    data.videosWaiting > 0
+    data.videosWaiting > 0 ||
+    data.unreadMessagesCount > 0
   );
 }
 
@@ -42,6 +45,12 @@ export function buildCoachNightlySummaryLine(data: CoachDailySummarySnapshot) {
 
   if (data.finished > 0) {
     parts.push(`${data.finished} checked in`);
+  }
+
+  if (data.unreadMessagesCount > 0) {
+    parts.push(
+      `${data.unreadMessagesCount} unread message${data.unreadMessagesCount === 1 ? "" : "s"}`,
+    );
   }
 
   if (data.videosWaiting > 0) {

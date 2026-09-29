@@ -53,12 +53,14 @@ export async function ensureCoachAlertSettings(userId: string) {
 export function serializeCoachAlertSettings(settings: {
   newVideosEnabled: boolean;
   newProgramPlayersEnabled: boolean;
+  newMessagesEnabled: boolean;
   nightlySummaryPushEnabled: boolean;
   emailNightlySummaryEnabled: boolean;
 }): CoachAlertSettingsState {
   return {
     newVideosEnabled: settings.newVideosEnabled,
     newProgramPlayersEnabled: settings.newProgramPlayersEnabled,
+    newMessagesEnabled: settings.newMessagesEnabled,
     nightlySummaryPushEnabled: settings.nightlySummaryPushEnabled,
     emailNightlySummaryEnabled: settings.emailNightlySummaryEnabled,
   };

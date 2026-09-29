@@ -44,6 +44,8 @@ import {
   maybeSendCoachNightlySummaryPush,
   type ScheduledCoachPushPreview,
 } from "@/lib/coach-push-scheduler";
+import { processQueuedPlayerCoachReplyNotifications } from "@/lib/direct-messaging-notifications";
+import { isMorningPlayerPushWindow } from "@/lib/direct-messaging-quiet-hours";
 import {
   getActiveScheduleWindows,
   isInSendWindow,
@@ -662,6 +664,13 @@ export async function runProgramEmailScheduler(params?: {
     morningSevenWindow &&
     isInSendWindow(hour, morningSevenWindow.startHour, morningSevenWindow.endHour)
   ) {
+    if (!dryRun && isMorningPlayerPushWindow(now)) {
+      await trySend("queued-player-message-pushes", async () => {
+        await processQueuedPlayerCoachReplyNotifications(now);
+        return false;
+      });
+    }
+
     for (const enrollment of enrollments) {
       await trySend(`day-before-start:${enrollment.id}`, () =>
         maybeSendDayBeforeStart(enrollment, dateKey, dryRun, previews),

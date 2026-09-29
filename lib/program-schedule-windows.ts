@@ -24,13 +24,13 @@ export const PROGRAM_SCHEDULE_WINDOWS: ProgramScheduleWindow[] = [
   },
   {
     id: "daily-work",
-    label: "3pm daily work push",
+    label: "3pm daily work push (skipped when gone quiet sends same day)",
     startHour: 15,
     endHour: 20,
   },
   {
     id: "gone-quiet",
-    label: "5pm gone quiet email/push",
+    label: "5pm gone quiet push (one afternoon push; replaces daily work when both apply)",
     startHour: 17,
     endHour: 20,
   },
@@ -201,9 +201,22 @@ export function runProgramSendWindowSelfTests() {
     );
   }
 
+  if (!shouldSkipDailyWorkWhenGoneQuietOnSameDay()) {
+    throw new Error("daily work should skip when gone quiet sends same day");
+  }
+
   let caseCount = Object.keys(expectedWeekday).length + 4;
   caseCount += 24;
-  caseCount += 1;
+  caseCount += 2;
 
   return caseCount;
+}
+
+export function shouldSkipDailyWorkWhenGoneQuietOnSameDay() {
+  return (
+    isInSendWindow(15, 15, 20) &&
+    isInSendWindow(17, 17, 20) &&
+    simulateHourlyCronFirstFireHours({ isSaturday: false, isSunday: false })["daily-work"] === 15 &&
+    simulateHourlyCronFirstFireHours({ isSaturday: false, isSunday: false })["gone-quiet"] === 17
+  );
 }

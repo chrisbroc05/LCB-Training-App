@@ -257,6 +257,8 @@ export function buildParentWeeklyRecapEmail(params: {
   weeklyVideoSent: boolean;
   bestNotes: string[];
   nextWeekPhase: string;
+  messagesThisWeek: number;
+  parentMessagesUrl: string;
   unsubscribeUrl: string;
 }) {
   const subject = `${params.playerFirstName}'s week ${params.weekNumber} recap`;
@@ -303,6 +305,12 @@ export function buildParentWeeklyRecapEmail(params: {
       ${notesHtml}
       ${buildEmailSectionLabel("NEXT WEEK")}
       <p style="margin:0 0 16px 0; font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:1.5; color:#0A1628;">Phase: ${escapeHtml(params.nextWeekPhase)}</p>
+      ${
+        params.messagesThisWeek > 0
+          ? `<p style="margin:0 0 16px 0; font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:1.5; color:#0A1628;">${escapeHtml(params.playerFirstName)} and Coach Broc exchanged ${params.messagesThisWeek} message${params.messagesThisWeek === 1 ? "" : "s"} this week</p>
+      ${buildEmailButton("View messages", params.parentMessagesUrl)}`
+          : ""
+      }
       ${buildEmailButton("See the program", programUrl)}
       ${buildParentUnsubscribeFooterHtml(params.unsubscribeUrl)}`;
 
@@ -336,7 +344,11 @@ ${notesText}
 
 NEXT WEEK
 Phase: ${params.nextWeekPhase}
-
+${
+  params.messagesThisWeek > 0
+    ? `\n${params.playerFirstName} and Coach Broc exchanged ${params.messagesThisWeek} message${params.messagesThisWeek === 1 ? "" : "s"} this week\nView messages: ${params.parentMessagesUrl}\n`
+    : ""
+}
 See the program: ${programUrl}${buildParentUnsubscribeFooterText(params.unsubscribeUrl)}
 
 ${buildEmailFooterText()}`;
@@ -358,6 +370,7 @@ export function buildCoachDailySummaryEmail(params: {
   recentNotes: Array<{ playerName: string; taskTitle: string; note: string }>;
   gamesLoggedToday: Array<{ name: string; line: string }>;
   videosWaiting: number;
+  unreadMessagesCount: number;
 }) {
   const subject = `Program today: ${params.finished} of ${params.active} finished`;
   const adminUrl = `${getPublicAppUrl()}/admin/program`;
@@ -415,6 +428,8 @@ export function buildCoachDailySummaryEmail(params: {
       ${gamesHtml}
       ${buildEmailSectionLabel("VIDEOS WAITING FOR YOU")}
       <p style="margin:0 0 16px 0; font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:1.5; color:#0A1628;">${params.videosWaiting}</p>
+      ${buildEmailSectionLabel("UNREAD MESSAGES")}
+      <p style="margin:0 0 16px 0; font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:1.5; color:#0A1628;">${params.unreadMessagesCount}</p>
       ${buildEmailButton("Open program overview", adminUrl)}`;
 
   const notFinishedText =
@@ -452,6 +467,9 @@ ${gamesText}
 
 VIDEOS WAITING FOR YOU
 ${params.videosWaiting}
+
+UNREAD MESSAGES
+${params.unreadMessagesCount}
 
 Open program overview: ${adminUrl}
 

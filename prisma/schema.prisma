@@ -79,6 +79,7 @@ enum ProgramEmailType {
   PARENT_GONE_QUIET
   PARENT_WEEKLY_RECAP
   COACH_DAILY_SUMMARY
+  COACH_MESSAGE_REPLY
 }
 
 enum PushNotificationType {
@@ -91,6 +92,8 @@ enum PushNotificationType {
   COACH_NEW_SUBMISSION
   COACH_NEW_PROGRAM_PLAYER
   COACH_NIGHTLY_SUMMARY
+  COACH_NEW_MESSAGE
+  COACH_REPLY
   TEST
 }
 
@@ -157,6 +160,7 @@ model User {
   pushLogs               PushLog[]
   marketingEmailLogs     MarketingEmailLog[]
   coachAlertSettings     CoachAlertSettings?
+  sentMessages           Message[]              @relation("MessageSender")
 }
 
 model MarketingEmailLog {
@@ -196,6 +200,7 @@ model ProgramEnrollment {
   customTasks                CustomTask[]
   dayLogs                    DayLog[]
   emailLogs                  EmailLog[]
+  conversation               Conversation?
 }
 
 model EmailLog {
@@ -234,10 +239,42 @@ model CoachAlertSettings {
   user                       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   newVideosEnabled           Boolean  @default(true)
   newProgramPlayersEnabled     Boolean  @default(true)
+  newMessagesEnabled         Boolean  @default(true)
   nightlySummaryPushEnabled    Boolean  @default(true)
   emailNightlySummaryEnabled   Boolean  @default(true)
   createdAt                  DateTime @default(now())
   updatedAt                  DateTime @updatedAt
+}
+
+model Conversation {
+  id                         String            @id @default(cuid())
+  enrollmentId               String            @unique
+  enrollment                 ProgramEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  createdAt                  DateTime          @default(now())
+  lastMessageAt              DateTime          @default(now())
+  coachUnreadCount           Int               @default(0)
+  playerUnreadCount          Int               @default(0)
+  playerReplyNotifyPending   Boolean           @default(false)
+  playerReplyNotifyMessageId String?
+  messages                   Message[]
+
+  @@index([lastMessageAt])
+  @@index([coachUnreadCount])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderUserId   String
+  sender         User         @relation("MessageSender", fields: [senderUserId], references: [id], onDelete: Cascade)
+  fromCoach      Boolean
+  body           String       @db.VarChar(1000)
+  createdAt      DateTime     @default(now())
+  readAt         DateTime?
+
+  @@index([conversationId, createdAt])
+  @@index([senderUserId, createdAt])
 }
 
 model PushLog {

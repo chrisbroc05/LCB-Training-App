@@ -12,6 +12,7 @@ import { prisma } from "@/lib/prisma";
 type CoachAlertSettingKey =
   | "newVideosEnabled"
   | "newProgramPlayersEnabled"
+  | "newMessagesEnabled"
   | "nightlySummaryPushEnabled";
 
 async function recordCoachPushLog(params: {

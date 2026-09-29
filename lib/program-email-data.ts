@@ -9,6 +9,7 @@ import {
   getChicagoTomorrowDateKeyFromDateKey,
 } from "@/lib/program-email-chicago";
 import { getPlayerFirstName } from "@/lib/program-email-templates";
+import { buildParentMessagesUrl } from "@/lib/parent-messages-token";
 import { buildParentUnsubscribeUrl } from "@/lib/program-parent-token";
 import {
   buildOverridesForWeekAndDay,
@@ -314,6 +315,34 @@ export async function buildWeeklyRecapData(
         ? PROGRAM_PHASE_LABELS.BUILD
         : PROGRAM_PHASE_LABELS.FOUNDATION;
 
+  let messagesThisWeek = 0;
+  const conversation = await prisma.conversation.findUnique({
+    where: { enrollmentId: enrollment.id },
+    select: { id: true },
+  });
+
+  if (conversation && weekDays.length > 0) {
+    const weekStart = getChicagoDayStart(
+      formatProgramStartDateKey(getDateForProgramDay(enrollment.startDate, weekDays[0])),
+    );
+    const weekEndDay = getDateForProgramDay(
+      enrollment.startDate,
+      weekDays[weekDays.length - 1],
+    );
+    weekEndDay.setUTCDate(weekEndDay.getUTCDate() + 1);
+    const weekEnd = getChicagoDayStart(formatProgramStartDateKey(weekEndDay));
+
+    messagesThisWeek = await prisma.message.count({
+      where: {
+        conversationId: conversation.id,
+        createdAt: {
+          gte: weekStart,
+          lt: weekEnd,
+        },
+      },
+    });
+  }
+
   return {
     playerFirstName: getPlayerFirstName(enrollment.user.name, enrollment.user.email),
     weekNumber: recapWeekNumber,
@@ -327,6 +356,8 @@ export async function buildWeeklyRecapData(
     weeklyVideoSent,
     bestNotes,
     nextWeekPhase,
+    messagesThisWeek,
+    parentMessagesUrl: buildParentMessagesUrl(enrollment.id),
     unsubscribeUrl: buildParentUnsubscribeUrl(enrollment.id),
   };
 }
@@ -503,6 +534,10 @@ export async function buildCoachDailySummaryData(dateKey: string, now = new Date
     return schedule.programDay > 0 && schedule.dayOfWeek !== 7 && !schedule.isComplete;
   }).length;
 
+  const unreadMessagesCount = await prisma.conversation.aggregate({
+    _sum: { coachUnreadCount: true },
+  });
+
   return {
     finished: finishedNames.length,
     active: workDayCount,
@@ -513,6 +548,7 @@ export async function buildCoachDailySummaryData(dateKey: string, now = new Date
     recentNotes,
     gamesLoggedToday: gamesLogged,
     videosWaiting: swingWaiting + mentalWaiting,
+    unreadMessagesCount: unreadMessagesCount._sum.coachUnreadCount ?? 0,
   };
 }
 

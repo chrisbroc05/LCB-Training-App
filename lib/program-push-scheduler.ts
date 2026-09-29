@@ -1,7 +1,13 @@
 import "server-only";
 
 import type { PushNotificationType } from "@prisma/client";
-import { getTaskCategoryLabel } from "@/lib/program-email-task-label";
+import {
+  buildDailyWorkPushBody,
+  buildGoneQuietPushBody,
+  DAILY_WORK_PUSH_TITLE,
+  GONE_QUIET_PUSH_TITLE,
+  shouldSkipDailyWorkPushForGoneQuiet,
+} from "@/lib/program-push-copy";
 import {
   isInSendWindow,
   isScheduleWindowActiveForDay,
@@ -72,6 +78,21 @@ async function enrollmentFinishedToday(enrollment: ActiveEnrollmentRecord, now: 
   return done === keys.length;
 }
 
+async function willSendGoneQuietPush(enrollment: ActiveEnrollmentRecord, now: Date) {
+  const hasPush = await userHasPushSubscriptions(enrollment.userId);
+  if (!hasPush) {
+    return false;
+  }
+
+  const schedule = getProgramDay({ startDate: enrollment.startDate }, now);
+  const completionDays = new Set(enrollment.taskCompletions.map((item) => item.programDay));
+  if (!isGoneQuiet(schedule.programDay, completionDays)) {
+    return false;
+  }
+
+  return shouldSendGoneQuietPush(enrollment.userId);
+}
+
 async function maybeSendDailyWorkPush(
   enrollment: ActiveEnrollmentRecord,
   dateKey: string,
@@ -99,6 +120,10 @@ async function maybeSendDailyWorkPush(
     return false;
   }
 
+  if (shouldSkipDailyWorkPushForGoneQuiet(await willSendGoneQuietPush(enrollment, now))) {
+    return false;
+  }
+
   const type = "DAILY_WORK" as const;
   const dedupeKey = buildPushDedupeKey(enrollment.userId, type, dateKey);
   const tasks = await getEnrollmentTasksForProgramDay(enrollment, schedule.programDay);
@@ -106,18 +131,15 @@ async function maybeSendDailyWorkPush(
     return false;
   }
 
-  const firstTask = tasks[0];
-  const firstLabel = `${getTaskCategoryLabel(firstTask.type)} - ${firstTask.title}`;
-  const extraCount = tasks.length - 1;
-  const body =
-    extraCount > 0 ? `${firstLabel} and ${extraCount} more` : firstLabel;
+  const includeWeeklyVideo = await enrollmentNeedsVideoReminder(enrollment, now);
+  const body = buildDailyWorkPushBody({ tasks, includeWeeklyVideo });
 
   previews.push({
     channel: "push",
     type,
     userId: enrollment.userId,
     enrollmentId: enrollment.id,
-    title: "Today's work is ready",
+    title: DAILY_WORK_PUSH_TITLE,
     body,
     url: "/dashboard/today",
     dateKey,
@@ -127,7 +149,7 @@ async function maybeSendDailyWorkPush(
     await sendPushToUser(
       enrollment.userId,
       {
-        title: "Today's work is ready",
+        title: DAILY_WORK_PUSH_TITLE,
         body,
         url: "/dashboard/today",
       },
@@ -276,14 +298,17 @@ async function maybeSendGoneQuietPush(
 
   const type = "GONE_QUIET" as const;
   const dedupeKey = buildPushDedupeKey(enrollment.userId, type, dateKey);
+  const tasks = await getEnrollmentTasksForProgramDay(enrollment, schedule.programDay);
+  const includeWeeklyVideo = await enrollmentNeedsVideoReminder(enrollment, now);
+  const body = buildGoneQuietPushBody({ tasks, includeWeeklyVideo });
 
   previews.push({
     channel: "push",
     type,
     userId: enrollment.userId,
     enrollmentId: enrollment.id,
-    title: "Haven't seen you in a few days",
-    body: "Get one thing done today.",
+    title: GONE_QUIET_PUSH_TITLE,
+    body,
     url: "/dashboard/today",
     dateKey,
   });
@@ -292,8 +317,8 @@ async function maybeSendGoneQuietPush(
     await sendPushToUser(
       enrollment.userId,
       {
-        title: "Haven't seen you in a few days",
-        body: "Get one thing done today.",
+        title: GONE_QUIET_PUSH_TITLE,
+        body,
         url: "/dashboard/today",
       },
       { type, dedupeKey },

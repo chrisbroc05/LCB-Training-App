@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
+import AdminMessagesNavLink from "@/components/AdminMessagesNavLink";
 import { shouldUseMobileAppChrome } from "@/lib/mobile-ui";
 
 type TopNavigationProps = {
@@ -392,6 +393,7 @@ export default function TopNavigation({
   if (isAdmin && pathname.startsWith("/admin")) {
     return (
       <nav className="flex items-center justify-end gap-2 md:justify-self-end">
+        <AdminMessagesNavLink />
         <button
           type="button"
           onClick={handleLogout}

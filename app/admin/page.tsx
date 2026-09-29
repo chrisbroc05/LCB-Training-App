@@ -9,6 +9,7 @@ import { prisma } from "@/lib/prisma";
 import AdminPanel from "@/app/admin/AdminPanel";
 import FreeMembersSection from "@/app/admin/FreeMembersSection";
 import TwelveWeekPlayersSection from "@/app/admin/TwelveWeekPlayersSection";
+import AdminMessagesNavLink from "@/components/AdminMessagesNavLink";
 import SignOutButton from "@/app/components/SignOutButton";
 
 export default async function AdminPage() {
@@ -47,12 +48,15 @@ export default async function AdminPage() {
                 : " . everyone checked in recently"}
             </p>
           </div>
-          <Link
-            href="/admin/program"
-            className="inline-flex items-center justify-center rounded-full bg-[#22c55e] px-6 py-3 text-sm font-semibold text-[#0A1628]"
-          >
-            Program overview
-          </Link>
+          <div className="flex flex-wrap gap-3">
+            <Link
+              href="/admin/program"
+              className="inline-flex items-center justify-center rounded-full bg-[#22c55e] px-6 py-3 text-sm font-semibold text-[#0A1628]"
+            >
+              Program overview
+            </Link>
+            <AdminMessagesNavLink />
+          </div>
         </div>
       </section>
 

@@ -7,6 +7,7 @@ import MobileAppHeader from "@/app/components/mobile/MobileAppHeader";
 import MobileBottomNav from "@/app/components/mobile/MobileBottomNav";
 import MobilePageTransition from "@/app/components/mobile/MobilePageTransition";
 import { MobileAppProvider } from "@/app/components/mobile/MobileAppProvider";
+import MessageChatBubble from "@/components/MessageChatBubble";
 import { shouldUseMobileAppChrome } from "@/lib/mobile-ui";
 import type { DatabaseTier } from "@/lib/membership";
 
@@ -71,6 +72,7 @@ export default function SiteShell({
         />
       ) : null}
       {adminToggle}
+      <MessageChatBubble isLoggedIn={isLoggedIn} />
       <div className={useMobileChrome ? "hidden md:block" : undefined}>{footer}</div>
     </>
   );

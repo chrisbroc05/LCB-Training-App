@@ -2,7 +2,9 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import ProgramCheckoutSection from "@/app/program/ProgramCheckoutSection";
+import ChicagolandBundleCallout from "@/components/ChicagolandBundleCallout";
 import { authOptions } from "@/lib/auth";
+import { isTwelveWeekProgramMember, type DatabaseTier } from "@/lib/membership";
 import { prisma } from "@/lib/prisma";
 import { FREE_SWING_AUTH_URL } from "@/lib/free-swing-flow";
 import { PLAYBOOK_PROGRAM_INCLUDED_DESCRIPTION } from "@/lib/playbook-branding";
@@ -39,14 +41,17 @@ export default async function ProgramPage({ searchParams }: ProgramPageProps) {
   const session = await getServerSession(authOptions);
   const resolvedSearchParams = searchParams ? await searchParams : {};
   const autoStartCheckout = resolvedSearchParams.startCheckout === "1";
+  let hasTwelveWeekProgram = false;
 
-  if (session?.user?.id && autoStartCheckout) {
+  if (session?.user?.id) {
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: { membershipTier: true },
     });
+    const membershipTier = (user?.membershipTier ?? "FREE") as DatabaseTier;
+    hasTwelveWeekProgram = isTwelveWeekProgramMember(membershipTier);
 
-    if (user?.membershipTier === "TWELVE_WEEK") {
+    if (autoStartCheckout && hasTwelveWeekProgram) {
       const enrollment = await prisma.programEnrollment.findUnique({
         where: { userId: session.user.id },
         select: { onboardingCompletedAt: true },
@@ -106,6 +111,7 @@ export default async function ProgramPage({ searchParams }: ProgramPageProps) {
             isLoggedIn={Boolean(session?.user)}
             autoStartCheckout={autoStartCheckout}
           />
+          {!hasTwelveWeekProgram ? <ChicagolandBundleCallout /> : null}
         </div>
       </section>
 

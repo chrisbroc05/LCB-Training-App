@@ -329,6 +329,10 @@ body {
     background: #475569;
   }
 
+  .message-chat-bubble {
+    bottom: calc(104px + env(safe-area-inset-bottom));
+  }
+
   .mobile-bottom-nav {
     position: fixed;
     left: 50%;
@@ -356,6 +360,12 @@ body {
 
   .mobile-bottom-nav-pill.is-five-tabs {
     grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  @media (min-width: 768px) {
+    .message-chat-bubble {
+      bottom: 24px;
+    }
   }
 
   .mobile-bottom-nav-tab {
