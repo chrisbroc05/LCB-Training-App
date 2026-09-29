@@ -2,7 +2,11 @@ import "server-only";
 
 import type { PushNotificationType } from "@prisma/client";
 import { getTaskCategoryLabel } from "@/lib/program-email-task-label";
-import { getChicagoDateTimeParts } from "@/lib/program-email-chicago";
+import {
+  isInSendWindow,
+  isScheduleWindowActiveForDay,
+  PROGRAM_SCHEDULE_WINDOWS,
+} from "@/lib/program-schedule-windows";
 import {
   enrollmentNeedsVideoReminder,
   getEnrollmentTasksForProgramDay,
@@ -304,14 +308,22 @@ export async function runScheduledPushJobs(params: {
   now: Date;
   dateKey: string;
   hour: number;
-  minute: number;
   isSaturday: boolean;
+  isSunday: boolean;
   previews: ScheduledPushPreview[];
   trySend: (label: string, fn: () => Promise<boolean>) => Promise<void>;
 }) {
   const enrollments = await loadActiveEnrollments(params.now);
+  const day = { isSaturday: params.isSaturday, isSunday: params.isSunday };
+  const morningSevenWindow = PROGRAM_SCHEDULE_WINDOWS.find((window) => window.id === "morning-seven");
+  const dailyWorkWindow = PROGRAM_SCHEDULE_WINDOWS.find((window) => window.id === "daily-work");
+  const saturdayVideoWindow = PROGRAM_SCHEDULE_WINDOWS.find((window) => window.id === "saturday-video");
+  const goneQuietWindow = PROGRAM_SCHEDULE_WINDOWS.find((window) => window.id === "gone-quiet");
 
-  if (params.hour === 7 && params.minute < 30) {
+  if (
+    morningSevenWindow &&
+    isInSendWindow(params.hour, morningSevenWindow.startHour, morningSevenWindow.endHour)
+  ) {
     for (const enrollment of enrollments) {
       await params.trySend(`push-day-before:${enrollment.id}`, () =>
         maybeSendDayBeforeStartPush(enrollment, params.dateKey, params.dryRun, params.previews),
@@ -319,7 +331,10 @@ export async function runScheduledPushJobs(params: {
     }
   }
 
-  if (params.hour === 15 && params.minute >= 30) {
+  if (
+    dailyWorkWindow &&
+    isInSendWindow(params.hour, dailyWorkWindow.startHour, dailyWorkWindow.endHour)
+  ) {
     for (const enrollment of enrollments) {
       await params.trySend(`push-daily-work:${enrollment.id}`, () =>
         maybeSendDailyWorkPush(
@@ -333,7 +348,11 @@ export async function runScheduledPushJobs(params: {
     }
   }
 
-  if (params.hour === 10 && params.minute < 30 && params.isSaturday) {
+  if (
+    saturdayVideoWindow &&
+    isInSendWindow(params.hour, saturdayVideoWindow.startHour, saturdayVideoWindow.endHour) &&
+    isScheduleWindowActiveForDay(saturdayVideoWindow, day)
+  ) {
     for (const enrollment of enrollments) {
       await params.trySend(`push-saturday-video:${enrollment.id}`, () =>
         maybeSendSaturdayVideoPush(
@@ -347,7 +366,10 @@ export async function runScheduledPushJobs(params: {
     }
   }
 
-  if (params.hour === 17 && params.minute < 30) {
+  if (
+    goneQuietWindow &&
+    isInSendWindow(params.hour, goneQuietWindow.startHour, goneQuietWindow.endHour)
+  ) {
     for (const enrollment of enrollments) {
       await params.trySend(`push-gone-quiet:${enrollment.id}`, () =>
         maybeSendGoneQuietPush(

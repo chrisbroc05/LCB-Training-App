@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { MARKETING_EMAIL_LABELS, MARKETING_EMAIL_TYPES } from "@/lib/marketing-email-shared";
+import { formatScheduleWindow, PROGRAM_SCHEDULE_WINDOWS } from "@/lib/program-schedule-windows";
 
 type PlayerOption = {
   enrollmentId: string;
@@ -135,6 +136,7 @@ export default function AdminProgramEmailTools({ players }: AdminProgramEmailToo
       marketingPreviews?: DryRunMarketingEmailPreview[];
       dateKey?: string;
       hour?: number;
+      activeWindows?: string[];
       error?: string;
     };
 
@@ -152,7 +154,13 @@ export default function AdminProgramEmailTools({ players }: AdminProgramEmailToo
       ...(data.marketingPreviews ?? []),
     ];
     setDryRunResults(combined);
-    setDryRunMeta(`Chicago ${data.dateKey ?? ""} hour ${data.hour ?? ""}`);
+    const active =
+      data.activeWindows && data.activeWindows.length > 0
+        ? data.activeWindows.join(", ")
+        : "none";
+    setDryRunMeta(
+      `Chicago ${data.dateKey ?? ""} hour ${data.hour ?? ""} | active windows: ${active}`,
+    );
   };
 
   const sendTest = async (type: string) => {
@@ -334,9 +342,15 @@ export default function AdminProgramEmailTools({ players }: AdminProgramEmailToo
     <section className="rounded-3xl border border-[#18243a] bg-[#0b1324]/80 p-5 sm:p-8">
       <h2 className="text-xl font-semibold text-zinc-100">Email tools</h2>
       <p className="mt-2 text-sm text-zinc-400">
-        Dry run shows what the next hourly cron would send (email, player push, and coach push).
-        Test sends use real player data and skip EmailLog/PushLog.
+        Dry run shows what the hourly cron would send right now. Each job uses the first run at or
+        after its target hour (Chicago), once per dateKey. Dedupe in EmailLog/PushLog prevents
+        repeats. Test sends use real player data and skip EmailLog/PushLog.
       </p>
+      <ul className="mt-3 space-y-1 text-xs text-zinc-500">
+        {PROGRAM_SCHEDULE_WINDOWS.map((window) => (
+          <li key={window.id}>{formatScheduleWindow(window)}</li>
+        ))}
+      </ul>
 
       <div className="mt-5 flex flex-wrap gap-3">
         <button

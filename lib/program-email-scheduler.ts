@@ -45,6 +45,12 @@ import {
   type ScheduledCoachPushPreview,
 } from "@/lib/coach-push-scheduler";
 import {
+  getActiveScheduleWindows,
+  isInSendWindow,
+  isScheduleWindowActiveForDay,
+  PROGRAM_SCHEDULE_WINDOWS,
+} from "@/lib/program-schedule-windows";
+import {
   runScheduledPushJobs,
   userHasPushSubscriptions,
   type ScheduledPushPreview,
@@ -64,6 +70,7 @@ export type ScheduledEmailPreview = {
 export type ProgramEmailRunResult = {
   dateKey: string;
   hour: number;
+  activeWindows: string[];
   dryRun: boolean;
   previews: ScheduledEmailPreview[];
   pushPreviews: ScheduledPushPreview[];
@@ -616,7 +623,9 @@ export async function runProgramEmailScheduler(params?: {
 }): Promise<ProgramEmailRunResult> {
   const dryRun = params?.dryRun ?? false;
   const now = params?.now ?? new Date();
-  const { dateKey, hour, minute, isSaturday, isSunday } = getChicagoDateTimeParts(now);
+  const { dateKey, hour, isSaturday, isSunday } = getChicagoDateTimeParts(now);
+  const day = { isSaturday, isSunday };
+  const activeWindows = getActiveScheduleWindows(hour, day).map((window) => window.id);
   const previews: ScheduledEmailPreview[] = [];
   const pushPreviews: ScheduledPushPreview[] = [];
   const coachPushPreviews: ScheduledCoachPushPreview[] = [];
@@ -625,6 +634,13 @@ export async function runProgramEmailScheduler(params?: {
   let skipped = 0;
 
   const enrollments = await loadActiveEnrollments(now);
+  const morningSevenWindow = PROGRAM_SCHEDULE_WINDOWS.find((window) => window.id === "morning-seven");
+  const saturdayVideoWindow = PROGRAM_SCHEDULE_WINDOWS.find((window) => window.id === "saturday-video");
+  const goneQuietWindow = PROGRAM_SCHEDULE_WINDOWS.find((window) => window.id === "gone-quiet");
+  const parentWeeklyRecapWindow = PROGRAM_SCHEDULE_WINDOWS.find(
+    (window) => window.id === "parent-weekly-recap",
+  );
+  const coachNightlyWindow = PROGRAM_SCHEDULE_WINDOWS.find((window) => window.id === "coach-nightly");
 
   const trySend = async (label: string, fn: () => Promise<boolean>) => {
     try {
@@ -642,7 +658,10 @@ export async function runProgramEmailScheduler(params?: {
     }
   };
 
-  if (hour === 7 && minute < 30) {
+  if (
+    morningSevenWindow &&
+    isInSendWindow(hour, morningSevenWindow.startHour, morningSevenWindow.endHour)
+  ) {
     for (const enrollment of enrollments) {
       await trySend(`day-before-start:${enrollment.id}`, () =>
         maybeSendDayBeforeStart(enrollment, dateKey, dryRun, previews),
@@ -656,7 +675,11 @@ export async function runProgramEmailScheduler(params?: {
     }
   }
 
-  if (hour === 10 && minute < 30 && isSaturday) {
+  if (
+    saturdayVideoWindow &&
+    isInSendWindow(hour, saturdayVideoWindow.startHour, saturdayVideoWindow.endHour) &&
+    isScheduleWindowActiveForDay(saturdayVideoWindow, day)
+  ) {
     for (const enrollment of enrollments) {
       await trySend(`saturday-video:${enrollment.id}`, () =>
         maybeSendSaturdayVideoReminder(enrollment, dateKey, now, dryRun, previews),
@@ -667,7 +690,10 @@ export async function runProgramEmailScheduler(params?: {
     }
   }
 
-  if (hour === 17 && minute < 30) {
+  if (
+    goneQuietWindow &&
+    isInSendWindow(hour, goneQuietWindow.startHour, goneQuietWindow.endHour)
+  ) {
     for (const enrollment of enrollments) {
       await trySend(`gone-quiet:${enrollment.id}`, () =>
         maybeSendGoneQuiet(enrollment, dateKey, now, dryRun, previews),
@@ -678,7 +704,11 @@ export async function runProgramEmailScheduler(params?: {
     }
   }
 
-  if (hour === 18 && minute < 30 && isSunday) {
+  if (
+    parentWeeklyRecapWindow &&
+    isInSendWindow(hour, parentWeeklyRecapWindow.startHour, parentWeeklyRecapWindow.endHour) &&
+    isScheduleWindowActiveForDay(parentWeeklyRecapWindow, day)
+  ) {
     for (const enrollment of enrollments) {
       await trySend(`parent-weekly-recap:${enrollment.id}`, () =>
         maybeSendParentWeeklyRecap(enrollment, dateKey, now, dryRun, previews),
@@ -686,7 +716,10 @@ export async function runProgramEmailScheduler(params?: {
     }
   }
 
-  if (hour === 20 && minute >= 30) {
+  if (
+    coachNightlyWindow &&
+    isInSendWindow(hour, coachNightlyWindow.startHour, coachNightlyWindow.endHour)
+  ) {
     await trySend("coach-daily-summary", () =>
       maybeSendCoachDailySummary(dateKey, now, dryRun, previews),
     );
@@ -707,8 +740,8 @@ export async function runProgramEmailScheduler(params?: {
     now,
     dateKey,
     hour,
-    minute,
     isSaturday,
+    isSunday,
     previews: pushPreviews,
     trySend,
   });
@@ -716,6 +749,7 @@ export async function runProgramEmailScheduler(params?: {
   return {
     dateKey,
     hour,
+    activeWindows,
     dryRun,
     previews,
     pushPreviews,

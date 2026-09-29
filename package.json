@@ -11,6 +11,7 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
     "test:program-schedule": "npx --yes tsx scripts/test-program-schedule.ts",
+    "test:program-send-windows": "npx --yes tsx scripts/test-program-send-windows.ts",
     "test:daily-plan": "npx --yes tsx scripts/test-daily-plan.ts",
     "test:program-stats": "npx --yes tsx scripts/test-program-stats.ts"
   },
