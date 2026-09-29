@@ -41,8 +41,8 @@ export default function DashboardMembershipCard({
         </div>
       ) : (
         <p className="mt-3 text-sm text-zinc-300">
-          You are on the Free plan. Upgrade anytime to unlock the full drill library, resources,
-          and coaching support.
+          You are on the Free plan. Send your one free coaching submission, or upgrade to the
+          12-Week Coaching Program, The Playbook, or a Remote Session.
         </p>
       )}
 

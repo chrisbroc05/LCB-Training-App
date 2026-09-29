@@ -94,6 +94,15 @@ enum PushNotificationType {
   TEST
 }
 
+enum MarketingEmailType {
+  WELCOME
+  FREE_SUBMISSION_REMINDER
+  FOLLOWUP_DRILLS_DAY_2
+  FOLLOWUP_OTHER_SIX_DAY_4
+  FOLLOWUP_SAMPLE_DAY_DAY_7
+  FOLLOWUP_KNOWN_FOR_DAY_10
+}
+
 model User {
   id                     String                 @id @default(cuid())
   name                   String?
@@ -146,7 +155,20 @@ model User {
   programEnrollment      ProgramEnrollment?
   pushSubscriptions      PushSubscription[]
   pushLogs               PushLog[]
+  marketingEmailLogs     MarketingEmailLog[]
   coachAlertSettings     CoachAlertSettings?
+}
+
+model MarketingEmailLog {
+  id                 String             @id @default(cuid())
+  userId             String
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type               MarketingEmailType
+  dedupeKey          String             @unique
+  anchorSubmissionId String?
+  sentAt             DateTime           @default(now())
+
+  @@index([userId, type])
 }
 
 model ProgramEnrollment {

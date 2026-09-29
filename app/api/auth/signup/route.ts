@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 import { hash } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { isDatabaseTier, type DatabaseTier } from "@/lib/membership";
-import { sendNewMemberNotification, sendOnboardingEmail1 } from "@/lib/notifications";
+import { loadUserMarketingRecipient } from "@/lib/marketing-email-data";
+import { sendMarketingEmail } from "@/lib/marketing-email-send";
+import { sendNewMemberNotification } from "@/lib/notifications";
 
 type SignupBody = {
   name?: string;
@@ -75,17 +77,15 @@ export async function POST(request: Request) {
     }
 
     try {
-      await sendOnboardingEmail1({
-        toEmail: createdUser.email,
-        displayName: createdUser.name ?? createdUser.email,
-        membershipTier: createdUser.membershipTier,
-      });
-      await prisma.user.update({
-        where: { id: createdUser.id },
-        data: { onboardingEmail1Sent: true },
-      });
+      const recipient = await loadUserMarketingRecipient(createdUser.id);
+      if (recipient) {
+        await sendMarketingEmail({
+          recipient,
+          type: "WELCOME",
+        });
+      }
     } catch (error) {
-      console.error("Failed to send onboarding welcome email", error);
+      console.error("Failed to send welcome email", error);
     }
 
     return NextResponse.json({ success: true }, { status: 201 });

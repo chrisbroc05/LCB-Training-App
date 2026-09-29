@@ -6,7 +6,7 @@ import { stripe } from "@/lib/stripe";
 import { sendCoachNewProgramPlayerPushForUser } from "@/lib/coach-push-instant";
 import { ensureProgramEnrollmentForUser } from "@/lib/program-enrollment";
 import { getTwelveWeekProgramEndDate } from "@/lib/twelve-week-program";
-import { sendPaymentFailedEmail, sendEliteWelcomeEmail, sendMemorableWelcomeEmail } from "@/lib/notifications";
+import { sendPaymentFailedEmail } from "@/lib/notifications";
 
 function mapPriceIdToTier(priceId?: string | null) {
   if (!priceId) {
@@ -133,33 +133,6 @@ export async function POST(request: Request) {
           },
         });
 
-        if (membershipTier === "MEMORABLE" || membershipTier === "ELITE") {
-          const user = await prisma.user.findUnique({
-            where: { id: userId },
-            select: {
-              email: true,
-              name: true,
-            },
-          });
-
-          if (user?.email) {
-            try {
-              if (membershipTier === "MEMORABLE") {
-                await sendMemorableWelcomeEmail({
-                  toEmail: user.email,
-                  displayName: user.name?.trim() || user.email,
-                });
-              } else {
-                await sendEliteWelcomeEmail({
-                  toEmail: user.email,
-                  displayName: user.name?.trim() || user.email,
-                });
-              }
-            } catch (error) {
-              console.error("Failed to send tier welcome email", error);
-            }
-          }
-        }
       }
     }
   }

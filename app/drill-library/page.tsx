@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -6,7 +7,15 @@ import VideoLibrary from "@/app/dashboard/VideoLibrary";
 import DrillLibraryErrorBoundary from "@/app/drill-library/DrillLibraryErrorBoundary";
 import DrillLibraryMobileResources from "@/app/drill-library/DrillLibraryMobileResources";
 import DrillLibraryVideoSection from "@/app/drill-library/DrillLibraryVideoSection";
-import { allDrillLibraryVideos } from "@/lib/drill-library-videos";
+import DrillProgramUpsellLine from "@/app/drill-library/DrillProgramUpsellLine";
+import GrantedDrillsPanel from "@/app/drill-library/GrantedDrillsPanel";
+import { isDrillGrantedToUser } from "@/lib/drill-library-access";
+import { loadUserGrantedDrillIds } from "@/lib/drill-library-access-server";
+import {
+  allDrillLibraryVideos,
+  getDrillLibraryVideoById,
+  getDrillLibraryVideosByIds,
+} from "@/lib/drill-library-videos";
 import { canAccessDrillLibrary, type DatabaseTier } from "@/lib/membership";
 import { prisma } from "@/lib/prisma";
 import { fetchVimeoThumbnailMap } from "@/lib/vimeo-oembed";
@@ -32,14 +41,82 @@ export default async function DrillLibraryPage({ searchParams }: DrillLibraryPag
     select: { membershipTier: true },
   });
   const membershipTier = (user?.membershipTier ?? "FREE") as DatabaseTier;
+  const hasFullLibraryAccess = canAccessDrillLibrary(membershipTier);
+  const grantedDrillIds = hasFullLibraryAccess ? [] : await loadUserGrantedDrillIds(session.user.id);
+  const showProgramUpsell = membershipTier === "FREE";
 
-  if (!canAccessDrillLibrary(membershipTier)) {
+  if (!hasFullLibraryAccess) {
+    if (initialDrillId && isDrillGrantedToUser(initialDrillId, grantedDrillIds)) {
+      const allowedVideos = getDrillLibraryVideosByIds([initialDrillId]);
+      const thumbnailMap = await fetchVimeoThumbnailMap(allowedVideos.map((video) => video.url));
+
+      return (
+        <>
+          <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
+            <section className="rounded-3xl border border-[#18243a] bg-[#0b1324]/80 p-5 sm:p-8">
+              <h1 className="text-2xl font-semibold text-zinc-100">Your Coach-Picked Drill</h1>
+              <p className="mt-2 text-sm text-zinc-300">
+                This drill came from your coaching breakdown. The full library stays locked until you
+                upgrade.
+              </p>
+              <DrillLibraryErrorBoundary>
+                <VideoLibrary
+                  thumbnailMap={thumbnailMap}
+                  initialDrillId={initialDrillId}
+                  allowedVideos={allowedVideos}
+                  showProgramUpsell={showProgramUpsell}
+                />
+              </DrillLibraryErrorBoundary>
+              {showProgramUpsell ? (
+                <div className="hidden md:block">
+                  <DrillProgramUpsellLine />
+                </div>
+              ) : null}
+              <p className="mt-6 text-sm text-zinc-400">
+                <Link href="/profile" className="font-semibold text-[#52B788] underline underline-offset-2">
+                  Back to your breakdown
+                </Link>
+              </p>
+            </section>
+          </div>
+        </>
+      );
+    }
+
+    if (initialDrillId && !getDrillLibraryVideoById(initialDrillId)) {
+      return (
+        <LockedFeaturePanel
+          title="Drill Not Found"
+          description="That drill link is invalid or no longer available."
+          message="Open the drills from your latest coaching breakdown email, or upgrade for full library access."
+          upgradeLabel="See Upgrade Options"
+          upgradeHref="/upgrade"
+        />
+      );
+    }
+
+    if (initialDrillId) {
+      return (
+        <LockedFeaturePanel
+          title="Drill Library"
+          description="This drill is not attached to one of your coaching breakdowns."
+          message="You can open drills Coach Broc picked for your submissions. The full drill library is available with The Playbook or the 12-Week Coaching Program."
+          upgradeLabel="See Upgrade Options"
+          upgradeHref="/upgrade"
+        />
+      );
+    }
+
+    if (grantedDrillIds.length > 0) {
+      return <GrantedDrillsPanel grantedDrillIds={grantedDrillIds} />;
+    }
+
     return (
       <LockedFeaturePanel
         title="Drill Library"
         description="Hitting, fielding, and mindset drill videos to support your training routine."
-        message="The drill library is available on Basic and 12-Week Program memberships. Upgrade to Basic or above to unlock the full hitting, fielding, and mindset drill library built around real game situations."
-        upgradeLabel="Upgrade to Basic or Above"
+        message="The drill library is available with The Playbook ($59) or the 12-Week Coaching Program. After Coach Broc responds to a submission, any drills he picks for you will open here."
+        upgradeLabel="See Upgrade Options"
         upgradeHref="/upgrade?reason=basic-required"
       />
     );

@@ -7,18 +7,3 @@ services:
     envVars:
       - key: NODE_VERSION
         value: 20.x
-
-  - type: cron
-    name: program-emails
-    runtime: node
-    schedule: "0,30 * * * *"
-    buildCommand: "true"
-    startCommand: curl -sS -f -X POST "${APP_URL}/api/cron/program-emails" -H "Authorization: Bearer ${CRON_SECRET}"
-    envVars:
-      - key: CRON_SECRET
-        sync: false
-      - key: APP_URL
-        fromService:
-          name: lcb-training-web
-          type: web
-          envVarKey: NEXTAUTH_URL

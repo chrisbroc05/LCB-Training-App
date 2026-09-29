@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import VideoPlayer from "@/app/components/mobile/VideoPlayer";
+import DrillProgramUpsellLine from "@/app/drill-library/DrillProgramUpsellLine";
 import {
   allDrillLibraryVideos,
   fieldingVideos,
@@ -129,26 +130,43 @@ function VideoSection({
 type VideoLibraryProps = {
   thumbnailMap?: Record<string, string | null>;
   initialDrillId?: string;
+  allowedVideos?: DrillLibraryVideoItem[];
+  showProgramUpsell?: boolean;
 };
 
-export default function VideoLibrary({ thumbnailMap = {}, initialDrillId }: VideoLibraryProps) {
+export default function VideoLibrary({
+  thumbnailMap = {},
+  initialDrillId,
+  allowedVideos,
+  showProgramUpsell = false,
+}: VideoLibraryProps) {
+  const isGrantedOnlyMode = Boolean(allowedVideos && allowedVideos.length > 0);
+  const visibleVideos = allowedVideos ?? allDrillLibraryVideos;
   const [playerState, setPlayerState] = useState<PlayerState | null>(null);
   const [desktopVideo, setDesktopVideo] = useState<DrillLibraryVideoItem | null>(null);
   const [mobileCategory, setMobileCategory] = useState<DrillCategoryFilter>("all");
 
   const filteredMobileVideos = useMemo(() => {
+    if (isGrantedOnlyMode) {
+      return visibleVideos;
+    }
+
     if (mobileCategory === "all") {
       return allDrillLibraryVideos;
     }
 
     return allDrillLibraryVideos.filter((video) => video.category === mobileCategory);
-  }, [mobileCategory]);
+  }, [isGrantedOnlyMode, mobileCategory, visibleVideos]);
 
   const openVideo = (video: DrillLibraryVideoItem, index: number) => {
-    const categoryVideos =
-      mobileCategory === "all" ? getVideosForCategory(video.category) : filteredMobileVideos;
-    const videoIndex =
-      mobileCategory === "all"
+    const categoryVideos = isGrantedOnlyMode
+      ? visibleVideos
+      : mobileCategory === "all"
+        ? getVideosForCategory(video.category)
+        : filteredMobileVideos;
+    const videoIndex = isGrantedOnlyMode
+      ? index
+      : mobileCategory === "all"
         ? categoryVideos.findIndex((entry) => entry.url === video.url)
         : index;
 
@@ -209,57 +227,87 @@ export default function VideoLibrary({ thumbnailMap = {}, initialDrillId }: Vide
 
   return (
     <>
-      <section className="mt-6 space-y-4 px-4 md:hidden">
-        <div className="mobile-filter-row">
-          {drillCategories.map((category) => (
-            <button
-              key={category.key}
-              type="button"
-              onClick={() => setMobileCategory(category.key)}
-              className={`mobile-filter-pill ${mobileCategory === category.key ? "is-active" : ""}`}
-            >
-              {category.label}
-            </button>
-          ))}
-        </div>
-        <div className="mobile-card-stack">
-          {filteredMobileVideos.map((video, index) => (
-            <button
-              key={video.url}
-              type="button"
-              onClick={() => openVideo(video, index)}
-              className="mobile-card text-left"
-            >
-              <VideoThumbnail thumbnailUrl={thumbnailMap[video.url]} compact />
-              <p className="mt-3 text-base font-semibold text-zinc-100">{video.title}</p>
-            </button>
-          ))}
-        </div>
-      </section>
+      {!isGrantedOnlyMode ? (
+        <section className="mt-6 space-y-4 px-4 md:hidden">
+          <div className="mobile-filter-row">
+            {drillCategories.map((category) => (
+              <button
+                key={category.key}
+                type="button"
+                onClick={() => setMobileCategory(category.key)}
+                className={`mobile-filter-pill ${mobileCategory === category.key ? "is-active" : ""}`}
+              >
+                {category.label}
+              </button>
+            ))}
+          </div>
+          <div className="mobile-card-stack">
+            {filteredMobileVideos.map((video, index) => (
+              <button
+                key={video.url}
+                type="button"
+                onClick={() => openVideo(video, index)}
+                className="mobile-card text-left"
+              >
+                <VideoThumbnail thumbnailUrl={thumbnailMap[video.url]} compact />
+                <p className="mt-3 text-base font-semibold text-zinc-100">{video.title}</p>
+              </button>
+            ))}
+          </div>
+        </section>
+      ) : (
+        <section className="mt-6 space-y-4 px-4 md:hidden">
+          <div className="mobile-card-stack">
+            {visibleVideos.map((video, index) => (
+              <button
+                key={video.url}
+                type="button"
+                onClick={() => openVideo(video, index)}
+                className="mobile-card text-left"
+              >
+                <VideoThumbnail thumbnailUrl={thumbnailMap[video.url]} compact />
+                <p className="mt-3 text-base font-semibold text-zinc-100">{video.title}</p>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
 
-      <section className="mt-10 hidden space-y-8 md:block">
-        <VideoSection
-          heading="Hitting Library"
-          description="Drill demonstrations for swing mechanics, load, posture, and bat path."
-          videos={hittingVideos}
-          thumbnailMap={thumbnailMap}
-          onSelectVideo={setDesktopVideo}
-        />
-        <VideoSection
-          heading="Fielding Library"
-          description="Defensive drill work for control, timing, footwork, and making game-speed plays."
-          videos={fieldingVideos}
-          thumbnailMap={thumbnailMap}
-          onSelectVideo={setDesktopVideo}
-        />
-        <VideoSection
-          heading="Mindset Library"
-          description="Mental performance lessons to build confidence, focus, and composure."
-          videos={mindsetVideos}
-          thumbnailMap={thumbnailMap}
-          onSelectVideo={setDesktopVideo}
-        />
-      </section>
+      {isGrantedOnlyMode ? (
+        <section className="mt-10 hidden md:block">
+          <VideoSection
+            heading="Your Coach-Picked Drill"
+            description="This drill came from your coaching breakdown."
+            videos={visibleVideos}
+            thumbnailMap={thumbnailMap}
+            onSelectVideo={setDesktopVideo}
+          />
+        </section>
+      ) : (
+        <section className="mt-10 hidden space-y-8 md:block">
+          <VideoSection
+            heading="Hitting Library"
+            description="Drill demonstrations for swing mechanics, load, posture, and bat path."
+            videos={hittingVideos}
+            thumbnailMap={thumbnailMap}
+            onSelectVideo={setDesktopVideo}
+          />
+          <VideoSection
+            heading="Fielding Library"
+            description="Defensive drill work for control, timing, footwork, and making game-speed plays."
+            videos={fieldingVideos}
+            thumbnailMap={thumbnailMap}
+            onSelectVideo={setDesktopVideo}
+          />
+          <VideoSection
+            heading="Mindset Library"
+            description="Mental performance lessons to build confidence, focus, and composure."
+            videos={mindsetVideos}
+            thumbnailMap={thumbnailMap}
+            onSelectVideo={setDesktopVideo}
+          />
+        </section>
+      )}
 
       {playerState ? (
         <VideoPlayer
@@ -267,6 +315,7 @@ export default function VideoLibrary({ thumbnailMap = {}, initialDrillId }: Vide
           videos={playerState.videos}
           startIndex={playerState.startIndex}
           onClose={closeVideo}
+          footerSlot={showProgramUpsell ? <DrillProgramUpsellLine /> : undefined}
         />
       ) : null}
 
@@ -276,7 +325,7 @@ export default function VideoLibrary({ thumbnailMap = {}, initialDrillId }: Vide
           onClick={() => setDesktopVideo(null)}
         >
           <div
-            className="relative h-[78dvh] w-[96vw] max-w-6xl overflow-hidden rounded-2xl border border-[#2b3650] bg-black shadow-2xl sm:h-[80vh] sm:w-[85vw] lg:w-[80vw]"
+            className="relative w-[96vw] max-w-6xl overflow-hidden rounded-2xl border border-[#2b3650] bg-black shadow-2xl sm:w-[85vw] lg:w-[80vw]"
             onClick={(event) => event.stopPropagation()}
           >
             <button
@@ -286,15 +335,22 @@ export default function VideoLibrary({ thumbnailMap = {}, initialDrillId }: Vide
             >
               Close
             </button>
-            {desktopModalUrl ? (
-              <iframe
-                src={desktopModalUrl}
-                title={desktopVideo.title}
-                className="h-full w-full"
-                allow="fullscreen; picture-in-picture"
-                allowFullScreen
-                loading="lazy"
-              />
+            <div className="aspect-video w-full">
+              {desktopModalUrl ? (
+                <iframe
+                  src={desktopModalUrl}
+                  title={desktopVideo.title}
+                  className="h-full w-full"
+                  allow="fullscreen; picture-in-picture"
+                  allowFullScreen
+                  loading="lazy"
+                />
+              ) : null}
+            </div>
+            {showProgramUpsell ? (
+              <div className="border-t border-[#2b3650] bg-[#0b1324] px-4 py-4">
+                <DrillProgramUpsellLine />
+              </div>
             ) : null}
           </div>
         </div>

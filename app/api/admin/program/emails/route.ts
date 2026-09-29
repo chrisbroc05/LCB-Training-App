@@ -10,6 +10,11 @@ import {
 } from "@/lib/coach-push-scheduler";
 import { buildCoachDailySummaryData } from "@/lib/program-email-data";
 import { getChicagoDateTimeParts } from "@/lib/program-email-chicago";
+import { isMarketingEmailType } from "@/lib/marketing-email-shared";
+import {
+  runMarketingEmailScheduler,
+  sendTestMarketingEmail,
+} from "@/lib/marketing-email-scheduler";
 import { runProgramEmailScheduler, sendTestProgramEmail } from "@/lib/program-email-scheduler";
 import { sendPushToUser } from "@/lib/push-send";
 import { sendTestCoachSubmissionNotificationEmail } from "@/lib/notifications";
@@ -36,8 +41,18 @@ export async function GET() {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const result = await runProgramEmailScheduler({ dryRun: true });
-  return NextResponse.json(result);
+  const [programResult, marketingResult] = await Promise.all([
+    runProgramEmailScheduler({ dryRun: true }),
+    runMarketingEmailScheduler({ dryRun: true }),
+  ]);
+
+  return NextResponse.json({
+    ...programResult,
+    marketingPreviews: marketingResult.previews,
+    marketingSent: marketingResult.sent,
+    marketingSkipped: marketingResult.skipped,
+    marketingErrors: marketingResult.errors,
+  });
 }
 
 export async function POST(request: Request) {
@@ -54,11 +69,49 @@ export async function POST(request: Request) {
     enrollmentId?: string;
     toEmail?: string;
     playerName?: string;
+    userId?: string;
   } | null;
 
   if (body?.action === "dryRun") {
-    const result = await runProgramEmailScheduler({ dryRun: true });
-    return NextResponse.json(result);
+    const [programResult, marketingResult] = await Promise.all([
+      runProgramEmailScheduler({ dryRun: true }),
+      runMarketingEmailScheduler({ dryRun: true }),
+    ]);
+
+    return NextResponse.json({
+      ...programResult,
+      marketingPreviews: marketingResult.previews,
+      marketingSent: marketingResult.sent,
+      marketingSkipped: marketingResult.skipped,
+      marketingErrors: marketingResult.errors,
+    });
+  }
+
+  if (body?.action === "sendTestMarketing") {
+    if (typeof body.type !== "string" || !isMarketingEmailType(body.type)) {
+      return NextResponse.json({ error: "Invalid marketing email type." }, { status: 400 });
+    }
+
+    if (typeof body.toEmail !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.toEmail.trim())) {
+      return NextResponse.json({ error: "Valid test email is required." }, { status: 400 });
+    }
+
+    try {
+      const subject = await sendTestMarketingEmail({
+        type: body.type,
+        toEmail: body.toEmail.trim(),
+        userId:
+          typeof body.userId === "string" && body.userId.trim() ? body.userId.trim() : undefined,
+      });
+
+      return NextResponse.json({ success: true, subject });
+    } catch (error) {
+      console.error("Failed to send test marketing email", error);
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : "Unable to send test marketing email." },
+        { status: 500 },
+      );
+    }
   }
 
   if (body?.action === "sendTestPush") {

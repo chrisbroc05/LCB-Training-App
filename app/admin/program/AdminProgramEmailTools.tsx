@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { MARKETING_EMAIL_LABELS, MARKETING_EMAIL_TYPES } from "@/lib/marketing-email-shared";
 
 type PlayerOption = {
   enrollmentId: string;
@@ -36,7 +37,24 @@ type DryRunCoachPushPreview = {
   dateKey: string;
 };
 
-type DryRunPreview = DryRunEmailPreview | DryRunPushPreview | DryRunCoachPushPreview;
+type DryRunMarketingEmailPreview = {
+  channel: "marketing-email";
+  type: string;
+  userId: string;
+  firstName: string;
+  to: string;
+  subject: string;
+  anchorSubmissionId: string | null;
+  anchorDate: string;
+  ageDays: number;
+  window: string;
+};
+
+type DryRunPreview =
+  | DryRunEmailPreview
+  | DryRunPushPreview
+  | DryRunCoachPushPreview
+  | DryRunMarketingEmailPreview;
 
 const EMAIL_TYPES = [
   { value: "DAILY_ROUTINE", label: "A. Daily routine" },
@@ -73,6 +91,10 @@ function isCoachPushPreview(preview: DryRunPreview): preview is DryRunCoachPushP
   return preview.channel === "coach-push";
 }
 
+function isMarketingEmailPreview(preview: DryRunPreview): preview is DryRunMarketingEmailPreview {
+  return preview.channel === "marketing-email";
+}
+
 export default function AdminProgramEmailTools({ players }: AdminProgramEmailToolsProps) {
   const [dryRunResults, setDryRunResults] = useState<DryRunPreview[]>([]);
   const [dryRunMeta, setDryRunMeta] = useState("");
@@ -83,6 +105,7 @@ export default function AdminProgramEmailTools({ players }: AdminProgramEmailToo
   const [sendingPushTest, setSendingPushTest] = useState(false);
   const [sendingCoachAlertType, setSendingCoachAlertType] = useState<string | null>(null);
   const [sendingCoachEmailType, setSendingCoachEmailType] = useState<string | null>(null);
+  const [sendingMarketingType, setSendingMarketingType] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -109,6 +132,7 @@ export default function AdminProgramEmailTools({ players }: AdminProgramEmailToo
       previews?: DryRunEmailPreview[];
       pushPreviews?: DryRunPushPreview[];
       coachPushPreviews?: DryRunCoachPushPreview[];
+      marketingPreviews?: DryRunMarketingEmailPreview[];
       dateKey?: string;
       hour?: number;
       error?: string;
@@ -125,6 +149,7 @@ export default function AdminProgramEmailTools({ players }: AdminProgramEmailToo
       ...(data.previews ?? []),
       ...(data.pushPreviews ?? []),
       ...(data.coachPushPreviews ?? []),
+      ...(data.marketingPreviews ?? []),
     ];
     setDryRunResults(combined);
     setDryRunMeta(`Chicago ${data.dateKey ?? ""} hour ${data.hour ?? ""}`);
@@ -270,6 +295,41 @@ export default function AdminProgramEmailTools({ players }: AdminProgramEmailToo
     setSuccess(`Sent test: ${data.subject ?? coachEmailType}`);
   };
 
+  const sendTestMarketing = async (type: string) => {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(testEmail.trim())) {
+      setError("Enter a valid test email address.");
+      return;
+    }
+
+    setSendingMarketingType(type);
+    setError("");
+    setSuccess("");
+
+    const response = await fetch("/api/admin/program/emails", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "sendTestMarketing",
+        type,
+        toEmail: testEmail.trim(),
+      }),
+    });
+
+    const data = (await response.json().catch(() => ({}))) as {
+      subject?: string;
+      error?: string;
+    };
+
+    setSendingMarketingType(null);
+
+    if (!response.ok) {
+      setError(data.error ?? "Test marketing send failed.");
+      return;
+    }
+
+    setSuccess(`Sent test: ${data.subject ?? type}`);
+  };
+
   return (
     <section className="rounded-3xl border border-[#18243a] bg-[#0b1324]/80 p-5 sm:p-8">
       <h2 className="text-xl font-semibold text-zinc-100">Email tools</h2>
@@ -314,6 +374,22 @@ export default function AdminProgramEmailTools({ players }: AdminProgramEmailToo
                   </p>
                   <p className="text-zinc-400">
                     {preview.title} - {preview.body}
+                  </p>
+                </>
+              ) : isMarketingEmailPreview(preview) ? (
+                <>
+                  <p>
+                    <span className="font-semibold text-[#52B788]">MARKETING</span>{" "}
+                    <span className="font-semibold text-zinc-100">{preview.type}</span> to{" "}
+                    {preview.firstName} ({preview.to})
+                  </p>
+                  <p className="text-zinc-400">{preview.subject}</p>
+                  <p className="text-xs text-zinc-500">
+                    Window {preview.window} | age {preview.ageDays} days | anchor{" "}
+                    {preview.anchorDate.slice(0, 10)}
+                    {preview.anchorSubmissionId
+                      ? ` | submission ${preview.anchorSubmissionId}`
+                      : ""}
                   </p>
                 </>
               ) : isPushPreview(preview) ? (
@@ -380,6 +456,23 @@ export default function AdminProgramEmailTools({ players }: AdminProgramEmailToo
             {sendingType === entry.value ? "Sending..." : entry.label}
           </button>
         ))}
+      </div>
+
+      <div className="mt-6 border-t border-[#2b3650] pt-5">
+        <p className="text-sm font-semibold text-zinc-200">Send test marketing email</p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {MARKETING_EMAIL_TYPES.map((type) => (
+            <button
+              key={type}
+              type="button"
+              onClick={() => void sendTestMarketing(type)}
+              disabled={sendingMarketingType === type}
+              className="rounded-full border border-[#2b3650] px-3 py-2 text-xs font-semibold text-zinc-200 disabled:opacity-60"
+            >
+              {sendingMarketingType === type ? "Sending..." : MARKETING_EMAIL_LABELS[type]}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="mt-6 border-t border-[#2b3650] pt-5">

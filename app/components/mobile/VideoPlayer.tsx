@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import type { DrillLibraryVideoItem } from "@/lib/drill-library-videos";
 import { extractVimeoVideoId } from "@/lib/vimeo";
@@ -10,6 +10,7 @@ type VideoPlayerProps = {
   videos: DrillLibraryVideoItem[];
   startIndex: number;
   onClose: () => void;
+  footerSlot?: ReactNode;
 };
 
 type FullscreenHTMLElement = HTMLElement & {
@@ -33,7 +34,7 @@ function buildEmbedUrl(vimeoId: string) {
   return `https://player.vimeo.com/video/${vimeoId}?autoplay=1&title=0&byline=0&portrait=0&dnt=1&api=1&autopause=0`;
 }
 
-export default function VideoPlayer({ videos, startIndex, onClose }: VideoPlayerProps) {
+export default function VideoPlayer({ videos, startIndex, onClose, footerSlot }: VideoPlayerProps) {
   const [mounted, setMounted] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(startIndex);
   const [videoEnded, setVideoEnded] = useState(false);
@@ -329,6 +330,21 @@ export default function VideoPlayer({ videos, startIndex, onClose }: VideoPlayer
           >
             Back to Library
           </button>
+        </div>
+      ) : null}
+
+      {!videoEnded && footerSlot ? (
+        <div
+          style={{
+            position: "absolute",
+            bottom: "calc(88px + env(safe-area-inset-bottom))",
+            left: 0,
+            right: 0,
+            padding: "0 16px",
+            zIndex: 100000,
+          }}
+        >
+          {footerSlot}
         </div>
       ) : null}
 
