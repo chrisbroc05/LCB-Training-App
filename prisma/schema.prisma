@@ -46,6 +46,7 @@ enum ProgramEnrollmentStatus {
   ACTIVE
   PAUSED
   COMPLETED
+  REFUNDED
 }
 
 enum DayLogType {
@@ -94,6 +95,7 @@ enum PushNotificationType {
   COACH_NIGHTLY_SUMMARY
   COACH_NEW_MESSAGE
   COACH_REPLY
+  COACH_REFUND_PROCESSED
   TEST
 }
 
@@ -124,6 +126,8 @@ model User {
   twelveWeekCallBooked             Boolean      @default(false)
   twelveWeekCallScheduledAt        DateTime?
   membershipTier         MembershipTier         @default(FREE)
+  membershipTierBeforeProgram MembershipTier?
+  marketingEmailsSuppressed Boolean             @default(false)
   twelveWeekProgramStartedAt DateTime?
   twelveWeekProgramEndsAt    DateTime?
   pendingCheckoutTier    MembershipTier?
@@ -180,6 +184,9 @@ model ProgramEnrollment {
   userId                String                  @unique
   user                  User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
   status                ProgramEnrollmentStatus @default(ACTIVE)
+  refundedAt            DateTime?
+  refundAmountCents     Int?
+  stripeRefundChargeId  String?                 @unique
   startDate             DateTime?               @db.Date
   ageGroup              ProgramAgeGroup?
   position              String?

@@ -42,6 +42,7 @@ type PlayerDetail = {
     id: string;
     name: string | null;
     email: string;
+    refundLabel: string | null;
     startDate: string | null;
     ageGroup: ProgramAgeGroup | null;
     position: string | null;
@@ -486,6 +487,9 @@ export default function AdminProgramPlayerPanel({ enrollmentId }: { enrollmentId
           {detail.enrollment.name ?? detail.enrollment.email}
         </h1>
         <p className="mt-1 text-sm text-zinc-400">{detail.enrollment.email}</p>
+        {detail.enrollment.refundLabel ? (
+          <p className="mt-3 text-sm text-red-200">{detail.enrollment.refundLabel}</p>
+        ) : null}
         <p className="mt-3 text-sm text-zinc-300">
           Week {detail.schedule.weekNumber} . Day {detail.schedule.programDay} .{" "}
           {detail.schedule.phase} . Streak {detail.streak}

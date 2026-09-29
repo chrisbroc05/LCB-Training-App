@@ -8,6 +8,7 @@ type TwelveWeekEnrollmentRecord = {
   name: string | null;
   email: string;
   statusLabel: string;
+  refundLabel: string | null;
   startDate: string | null;
   currentWeek: number;
   currentProgramDay: number;
@@ -191,10 +192,20 @@ export default function TwelveWeekPlayersSection() {
                   </p>
                   <p className="text-sm text-zinc-400">{enrollment.email}</p>
                 </div>
-                <span className="rounded-full border border-[#52B788]/40 bg-[#52B788]/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#9df3bd]">
+                <span
+                  className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wide ${
+                    enrollment.statusLabel === "Refunded"
+                      ? "border-red-400/40 bg-red-500/10 text-red-200"
+                      : "border-[#52B788]/40 bg-[#52B788]/10 text-[#9df3bd]"
+                  }`}
+                >
                   {enrollment.statusLabel}
                 </span>
               </div>
+
+              {enrollment.refundLabel ? (
+                <p className="mt-3 text-sm text-red-200">{enrollment.refundLabel}</p>
+              ) : null}
 
               <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
                 <div>

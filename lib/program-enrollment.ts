@@ -24,11 +24,20 @@ export async function ensureProgramEnrollmentForUser(userId: string) {
 
 export async function activateTwelveWeekProgramAccess(userId: string) {
   const startedAt = new Date();
+  const existingUser = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { membershipTier: true },
+  });
+  const tierBeforeProgram =
+    existingUser?.membershipTier && existingUser.membershipTier !== "TWELVE_WEEK"
+      ? existingUser.membershipTier
+      : null;
 
   await prisma.user.update({
     where: { id: userId },
     data: {
       membershipTier: "TWELVE_WEEK",
+      membershipTierBeforeProgram: tierBeforeProgram,
       pendingCheckoutTier: null,
       subscriptionStatus: "NONE",
       stripeSubscriptionId: null,

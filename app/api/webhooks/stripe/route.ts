@@ -7,6 +7,7 @@ import { sendCoachNewProgramPlayerPushForUser } from "@/lib/coach-push-instant";
 import { ensureProgramEnrollmentForUser } from "@/lib/program-enrollment";
 import { getTwelveWeekProgramEndDate } from "@/lib/twelve-week-program";
 import { sendPaymentFailedEmail } from "@/lib/notifications";
+import { processStripeChargeRefund } from "@/lib/stripe-refund-server";
 
 function mapPriceIdToTier(priceId?: string | null) {
   if (!priceId) {
@@ -103,10 +104,21 @@ export async function POST(request: Request) {
         });
       } else if (checkoutSession.mode === "payment" && membershipTier === "TWELVE_WEEK") {
         const startedAt = new Date();
+        const existingUser = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { membershipTier: true },
+        });
+        const tierBeforeProgram =
+          existingUser?.membershipTier &&
+          existingUser.membershipTier !== "TWELVE_WEEK"
+            ? existingUser.membershipTier
+            : null;
+
         await prisma.user.updateMany({
           where: { id: userId },
           data: {
             membershipTier: "TWELVE_WEEK",
+            membershipTierBeforeProgram: tierBeforeProgram,
             pendingCheckoutTier: null,
             subscriptionStatus: "NONE",
             stripeCustomerId,
@@ -202,6 +214,16 @@ export async function POST(request: Request) {
       },
       data,
     });
+  }
+
+  if (event.type === "charge.refunded") {
+    const charge = event.data.object as Stripe.Charge;
+
+    try {
+      await processStripeChargeRefund(charge);
+    } catch (error) {
+      console.error("Failed to process Stripe charge refund", error);
+    }
   }
 
   if (event.type === "invoice.payment_failed") {

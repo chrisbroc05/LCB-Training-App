@@ -48,6 +48,7 @@ export async function loadMarketingFollowupAnchors(_now = new Date()) {
     where: {
       membershipTier: { in: ["FREE", "BASIC"] },
       notifyAnnouncements: true,
+      marketingEmailsSuppressed: false,
     },
     select: {
       id: true,
@@ -149,6 +150,7 @@ export async function loadFreeSubmissionReminderCandidates(now = new Date()) {
     where: {
       membershipTier: "FREE",
       notifyAnnouncements: true,
+      marketingEmailsSuppressed: false,
       swingAnalysisSubmissions: { none: {} },
       mentalGameSubmissions: { none: {} },
     },
@@ -189,10 +191,11 @@ export async function loadUserMarketingRecipient(userId: string) {
       email: true,
       name: true,
       membershipTier: true,
+      marketingEmailsSuppressed: true,
     },
   });
 
-  if (!user) {
+  if (!user || user.marketingEmailsSuppressed) {
     return null;
   }
 

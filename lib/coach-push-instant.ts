@@ -48,6 +48,25 @@ export async function sendCoachNewProgramPlayerPush(params: {
   });
 }
 
+export async function sendCoachRefundProcessedPush(params: {
+  chargeId: string;
+  playerName: string;
+  dedupeKey: string;
+}) {
+  const name = params.playerName.trim() || "Player";
+
+  return sendCoachAlertPushSafe({
+    type: "COACH_REFUND_PROCESSED",
+    dedupeKey: params.dedupeKey,
+    settingKey: "newProgramPlayersEnabled",
+    message: {
+      title: `Refund processed for ${name}`,
+      body: "Program access removed.",
+      url: "/admin",
+    },
+  });
+}
+
 export async function sendCoachNewProgramPlayerPushForUser(userId: string) {
   const user = await prisma.user.findUnique({
     where: { id: userId },

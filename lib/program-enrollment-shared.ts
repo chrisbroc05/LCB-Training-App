@@ -2,7 +2,7 @@ export type ProgramAgeGroup = "AGE_8_11" | "AGE_12_15" | "AGE_16_18";
 
 export type ProgramSeasonMode = "IN_SEASON" | "OFF_SEASON";
 
-export type ProgramEnrollmentStatus = "ACTIVE" | "PAUSED" | "COMPLETED";
+export type ProgramEnrollmentStatus = "ACTIVE" | "PAUSED" | "COMPLETED" | "REFUNDED";
 
 export const PROGRAM_FOCUS_AREAS = [
   "hitting",
@@ -64,6 +64,7 @@ export const PROGRAM_STATUS_LABELS: Record<ProgramEnrollmentStatus, string> = {
   ACTIVE: "Active",
   PAUSED: "Paused",
   COMPLETED: "Completed",
+  REFUNDED: "Refunded",
 };
 
 export function isProgramFocusArea(value: string): value is ProgramFocusArea {

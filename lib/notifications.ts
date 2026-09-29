@@ -896,3 +896,15 @@ export async function sendAccountDeletionRequestNotification(params: {
     }),
   });
 }
+
+export async function sendCoachRefundProcessedNotification(params: { playerName: string }) {
+  const transporter = createTransporter();
+  const name = params.playerName.trim() || "Player";
+
+  await transporter.sendMail({
+    from: process.env.NOTIFICATION_EMAIL,
+    to: getNotificationRecipient(),
+    subject: `Refund processed for ${name}`,
+    text: `Refund processed for ${name}. Program access removed.`,
+  });
+}

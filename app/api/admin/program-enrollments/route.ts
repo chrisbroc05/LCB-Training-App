@@ -13,6 +13,7 @@ import {
 } from "@/lib/program-enrollment-shared";
 import { getProgramDay } from "@/lib/program-schedule";
 import { prisma } from "@/lib/prisma";
+import { formatRefundLabel } from "@/lib/stripe-refund-shared";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -42,6 +43,12 @@ export async function GET() {
         email: enrollment.user.email,
         status: enrollment.status,
         statusLabel: PROGRAM_STATUS_LABELS[enrollment.status],
+        refundedAt: enrollment.refundedAt?.toISOString() ?? null,
+        refundAmountCents: enrollment.refundAmountCents,
+        refundLabel:
+          enrollment.refundedAt && enrollment.refundAmountCents != null
+            ? formatRefundLabel(enrollment.refundedAt, enrollment.refundAmountCents)
+            : null,
         startDate: enrollment.startDate?.toISOString().slice(0, 10) ?? null,
         currentWeek: schedule.weekNumber,
         currentProgramDay: schedule.programDay,

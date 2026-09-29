@@ -35,6 +35,7 @@ import {
 } from "@/lib/program-stats";
 import { getWeekdayLabelForProgramDay } from "@/lib/program-schedule";
 import { prisma } from "@/lib/prisma";
+import { formatRefundLabel } from "@/lib/stripe-refund-shared";
 
 export async function buildAdminProgramPlayerDetail(enrollmentId: string, now = new Date()) {
   const enrollment = await prisma.programEnrollment.findUnique({
@@ -152,6 +153,12 @@ export async function buildAdminProgramPlayerDetail(enrollmentId: string, now = 
       name: enrollment.user.name,
       email: enrollment.user.email,
       status: enrollment.status,
+      refundedAt: enrollment.refundedAt?.toISOString() ?? null,
+      refundAmountCents: enrollment.refundAmountCents,
+      refundLabel:
+        enrollment.refundedAt && enrollment.refundAmountCents != null
+          ? formatRefundLabel(enrollment.refundedAt, enrollment.refundAmountCents)
+          : null,
       startDate: enrollment.startDate?.toISOString().slice(0, 10) ?? null,
       ageGroup: enrollment.ageGroup,
       ageGroupLabel: enrollment.ageGroup
