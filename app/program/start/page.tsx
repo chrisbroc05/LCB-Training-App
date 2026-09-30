@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import ProgramStartWizard from "@/app/program/start/ProgramStartWizard";
 import { authOptions } from "@/lib/auth";
 import { ensureProgramEnrollmentForUser, serializeProgramEnrollment } from "@/lib/program-enrollment";
+import { serializeInPersonTrainingInfo } from "@/lib/in-person-training-shared";
 import { prisma } from "@/lib/prisma";
 
 type ProgramStartPageProps = {
@@ -31,6 +32,11 @@ export default async function ProgramStartPage({ searchParams }: ProgramStartPag
       name: true,
       email: true,
       acceptedAsParent: true,
+      trainsInPerson: true,
+      emergencyContactName: true,
+      emergencyContactPhone: true,
+      medicalNotes: true,
+      inPersonInfoUpdatedAt: true,
     },
   });
 
@@ -59,6 +65,7 @@ export default async function ProgramStartPage({ searchParams }: ProgramStartPag
       initialEnrollment={serializeProgramEnrollment(enrollment)}
       checkoutSuccess={checkoutSuccess}
       initialAcceptedAsParent={user.acceptedAsParent}
+      initialInPersonTraining={serializeInPersonTrainingInfo(user)}
     />
   );
 }

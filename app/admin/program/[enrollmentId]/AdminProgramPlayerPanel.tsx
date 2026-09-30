@@ -15,6 +15,7 @@ import {
   type ProgramEquipmentOption,
   type ProgramFocusArea,
 } from "@/lib/program-enrollment-shared";
+import type { InPersonTrainingInfo } from "@/lib/in-person-training-shared";
 
 type WeekTask = {
   key: string;
@@ -65,6 +66,7 @@ type PlayerDetail = {
       agreementRoleLabel: string;
       mediaConsentLabel: string;
     };
+    inPersonTraining: InPersonTrainingInfo;
   };
   schedule: {
     weekNumber: number;
@@ -526,6 +528,28 @@ export default function AdminProgramPlayerPanel({ enrollmentId }: { enrollmentId
           <p className="mt-1">
             Media consent: {detail.enrollment.legalAcceptance.mediaConsentLabel}
           </p>
+        </div>
+        <div className="mt-4 rounded-2xl border border-[#2b3650] bg-black/30 p-4 text-sm text-zinc-300">
+          <p className="font-semibold text-zinc-100">In-person training info</p>
+          <p className="mt-2">
+            Trains in person:{" "}
+            {detail.enrollment.inPersonTraining.trainsInPerson ? "Yes" : "No"}
+          </p>
+          {detail.enrollment.inPersonTraining.trainsInPerson ? (
+            <>
+              <p className="mt-1">
+                Emergency contact:{" "}
+                {detail.enrollment.inPersonTraining.emergencyContactName &&
+                detail.enrollment.inPersonTraining.emergencyContactPhone
+                  ? `${detail.enrollment.inPersonTraining.emergencyContactName} (${detail.enrollment.inPersonTraining.emergencyContactPhone})`
+                  : "Not set"}
+              </p>
+              <p className="mt-1">
+                Medical notes:{" "}
+                {detail.enrollment.inPersonTraining.medicalNotes?.trim() || "None"}
+              </p>
+            </>
+          ) : null}
         </div>
         <div className="mt-4 grid gap-2 text-sm text-zinc-400 sm:grid-cols-2">
           <p>Position: {detail.enrollment.position ?? "Not set"}</p>

@@ -11,6 +11,7 @@ import {
   formatLegalAgreementRole,
   formatMediaConsentLabel,
 } from "@/lib/legal-shared";
+import { serializeInPersonTrainingInfo } from "@/lib/in-person-training-shared";
 import { getTwelveWeekProgramEndDate } from "@/lib/twelve-week-program";
 
 export const adminMemberListSelect = {
@@ -159,6 +160,11 @@ export const adminMemberDetailSelect = {
   acceptedByName: true,
   acceptedAsParent: true,
   mediaConsent: true,
+  trainsInPerson: true,
+  emergencyContactName: true,
+  emergencyContactPhone: true,
+  medicalNotes: true,
+  inPersonInfoUpdatedAt: true,
   ...memberProfileSelect,
   swingAnalysisSubmissions: {
     orderBy: { createdAt: "desc" as const },
@@ -243,6 +249,11 @@ type AdminMemberDetailRecord = {
   acceptedByName: string | null;
   acceptedAsParent: boolean;
   mediaConsent: boolean;
+  trainsInPerson: boolean;
+  emergencyContactName: string | null;
+  emergencyContactPhone: string | null;
+  medicalNotes: string | null;
+  inPersonInfoUpdatedAt: Date | null;
   position: string | null;
   age: number | null;
   graduationYear: number | null;
@@ -321,6 +332,7 @@ export function serializeAdminMemberDetail(user: AdminMemberDetailRecord) {
       mediaConsent: user.mediaConsent,
       mediaConsentLabel: formatMediaConsentLabel(user.mediaConsent),
     },
+    inPersonTraining: serializeInPersonTrainingInfo(user),
     hasStripeSubscription: Boolean(user.stripeSubscriptionId),
     memberProfile: serializeMemberProfile(user),
     coachingSubmissions: [

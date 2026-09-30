@@ -2,11 +2,11 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin";
 import {
-  buildWaiverCsv,
-  listWaiverSignatures,
-  serializeWaiverSignature,
-} from "@/lib/waiver-sign-server";
-import { normalizeTeamSlug } from "@/lib/waiver-sign-shared";
+  buildUnifiedAgreementsCsv,
+  listUnifiedAgreements,
+  resolveTeamSlugFilter,
+} from "@/lib/admin-agreements-server";
+import type { AgreementSourceFilter } from "@/lib/admin-agreements-shared";
 
 export { dynamic, revalidate } from "@/lib/api-no-store";
 
@@ -19,19 +19,21 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const team = url.searchParams.get("team")?.trim() ?? "";
   const search = url.searchParams.get("search")?.trim() ?? "";
-  const teamSlug = team ? normalizeTeamSlug(team) : undefined;
+  const source = (url.searchParams.get("source")?.trim() ?? "all") as AgreementSourceFilter;
+  const teamSlug = resolveTeamSlugFilter(team);
 
-  const signatures = await listWaiverSignatures({
+  const agreements = await listUnifiedAgreements({
     teamSlug,
     search: search || undefined,
+    source,
   });
 
-  const csv = buildWaiverCsv(signatures.map(serializeWaiverSignature));
+  const csv = buildUnifiedAgreementsCsv(agreements);
 
   return new Response(csv, {
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": 'attachment; filename="waiver-signatures.csv"',
+      "Content-Disposition": 'attachment; filename="signed-agreements.csv"',
       "Cache-Control": "no-store, no-cache, must-revalidate",
     },
   });

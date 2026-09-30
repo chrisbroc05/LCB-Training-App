@@ -162,6 +162,11 @@ model User {
   acceptedAsParent       Boolean                @default(false)
   mediaConsent           Boolean                @default(false)
   mediaConsentUpdatedAt  DateTime?
+  trainsInPerson         Boolean                @default(false)
+  emergencyContactName   String?
+  emergencyContactPhone  String?
+  medicalNotes           String?
+  inPersonInfoUpdatedAt  DateTime?
   emailVerified          DateTime?
   image                  String?
   createdAt              DateTime               @default(now())

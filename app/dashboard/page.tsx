@@ -29,6 +29,8 @@ import {
   type DatabaseTier,
 } from "@/lib/membership";
 import { shouldShowProgramSetupBanner } from "@/lib/program-setup-shared";
+import { needsInPersonEmergencyContactReminder } from "@/lib/in-person-training-shared";
+import InPersonEmergencyReminderCard from "@/components/InPersonEmergencyReminderCard";
 type DashboardPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
@@ -158,6 +160,9 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       stripeSubscriptionId: true,
       assessmentCallBooked: true,
       assessmentCallDate: true,
+      trainsInPerson: true,
+      emergencyContactName: true,
+      emergencyContactPhone: true,
     },
   });
 
@@ -250,6 +255,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       : null;
   const hasProgramEnrollmentRow = Boolean(programEnrollment);
   const showProgramSetupBanner = shouldShowProgramSetupBanner(programEnrollment);
+  const showInPersonEmergencyReminder = needsInPersonEmergencyContactReminder(userRecord);
 
   const recentResponses = canAccessCoachingNav(membershipTier)
     ? await Promise.all([
@@ -309,6 +315,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         calendlyBookingUrl={calendlyBookingUrl}
         showProgramSetupBanner={showProgramSetupBanner}
         hasProgramEnrollmentRow={hasProgramEnrollmentRow}
+        showInPersonEmergencyReminder={showInPersonEmergencyReminder}
       />
 
       <div className="mx-auto hidden w-full max-w-6xl px-4 py-10 sm:px-6 sm:py-14 md:block md:py-20">
@@ -381,6 +388,10 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           submissions and unlocked training content.
         </section>
       )}
+
+      {showInPersonEmergencyReminder ? (
+        <InPersonEmergencyReminderCard layout="desktop" />
+      ) : null}
 
       {hasProgramEnrollmentRow ? (
         <>

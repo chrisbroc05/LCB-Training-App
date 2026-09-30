@@ -6,6 +6,7 @@ import MobileCoachingStatusCard from "@/app/dashboard/MobileCoachingStatusCard";
 import MonthlyGoalProgressCard from "@/app/dashboard/MonthlyGoalProgressCard";
 import type { CoachingSubmissionAvailability } from "@/lib/coaching-submissions";
 import { canAccessCoachingNav, isTwelveWeekProgramMember, type DatabaseTier } from "@/lib/membership";
+import InPersonEmergencyReminderCard from "@/components/InPersonEmergencyReminderCard";
 
 type UnreadResponseNotification = {
   id: number;
@@ -37,6 +38,7 @@ type MobileDashboardViewProps = {
   calendlyBookingUrl: string;
   showProgramSetupBanner: boolean;
   hasProgramEnrollmentRow: boolean;
+  showInPersonEmergencyReminder: boolean;
 };
 
 export default function MobileDashboardView({
@@ -54,6 +56,7 @@ export default function MobileDashboardView({
   calendlyBookingUrl,
   showProgramSetupBanner,
   hasProgramEnrollmentRow,
+  showInPersonEmergencyReminder,
 }: MobileDashboardViewProps) {
   const isEnrolled = isTwelveWeekProgramMember(membershipTier);
 
@@ -95,6 +98,8 @@ export default function MobileDashboardView({
           continue with additional submissions and unlocked training content.
         </article>
       )}
+
+      {showInPersonEmergencyReminder ? <InPersonEmergencyReminderCard /> : null}
 
       {hasProgramEnrollmentRow ? (
         <>

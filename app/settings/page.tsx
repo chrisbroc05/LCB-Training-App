@@ -6,6 +6,7 @@ import DeleteAccountSection from "@/app/settings/DeleteAccountSection";
 import NotificationPreferencesSection from "@/app/settings/NotificationPreferencesSection";
 import ProgramEmailSettingsSection from "@/app/settings/ProgramEmailSettingsSection";
 import PushNotificationsSection from "@/app/settings/PushNotificationsSection";
+import InPersonTrainingSection from "@/app/settings/InPersonTrainingSection";
 import LegalSettingsSection from "@/app/settings/LegalSettingsSection";
 import SecuritySection from "@/app/settings/SecuritySection";
 import {
@@ -17,6 +18,7 @@ import {
 import { type DatabaseTier } from "@/lib/membership";
 import { prisma } from "@/lib/prisma";
 import { formatOptionalDate } from "@/lib/format-date";
+import { serializeInPersonTrainingInfo } from "@/lib/in-person-training-shared";
 import { stripe } from "@/lib/stripe";
 
 async function getStripeBillingDate(params: {
@@ -80,6 +82,11 @@ export default async function SettingsPage() {
       acceptedByName: true,
       acceptedAsParent: true,
       mediaConsent: true,
+      trainsInPerson: true,
+      emergencyContactName: true,
+      emergencyContactPhone: true,
+      medicalNotes: true,
+      inPersonInfoUpdatedAt: true,
     },
   });
 
@@ -114,6 +121,7 @@ export default async function SettingsPage() {
           acceptedAsParent={user.acceptedAsParent}
           mediaConsent={user.mediaConsent}
         />
+        <InPersonTrainingSection initialInfo={serializeInPersonTrainingInfo(user)} />
         <SecuritySection />
         <BillingSection
           membershipTier={membershipTier}

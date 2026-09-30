@@ -8,6 +8,7 @@ import {
 import { formatOptionalDate, formatOptionalDateTime } from "@/lib/format-date";
 import { formatDatabaseTierLabel, validDatabaseTiers, type DatabaseTier } from "@/lib/membership";
 import TierBadge from "@/app/admin/TierBadge";
+import type { InPersonTrainingInfo } from "@/lib/in-person-training-shared";
 
 export type MemberDetail = {
   id: string;
@@ -33,6 +34,7 @@ export type MemberDetail = {
     mediaConsent: boolean;
     mediaConsentLabel: string;
   };
+  inPersonTraining: InPersonTrainingInfo;
   hasStripeSubscription: boolean;
   memberProfile: {
     hasProfile: boolean;
@@ -229,6 +231,29 @@ export default function MemberDetailContent({
           <span className="font-semibold text-zinc-100">Media consent:</span>{" "}
           {detail.legalAcceptance.mediaConsentLabel}
         </p>
+      </div>
+
+      <div className="rounded-xl border border-[#2b3650] bg-[#0b1324]/70 p-4 text-sm text-zinc-300">
+        <p className="font-semibold text-zinc-100">In-person training info</p>
+        <p className="mt-2">
+          <span className="font-semibold text-zinc-100">Trains in person:</span>{" "}
+          {detail.inPersonTraining.trainsInPerson ? "Yes" : "No"}
+        </p>
+        {detail.inPersonTraining.trainsInPerson ? (
+          <>
+            <p className="mt-2">
+              <span className="font-semibold text-zinc-100">Emergency contact:</span>{" "}
+              {detail.inPersonTraining.emergencyContactName &&
+              detail.inPersonTraining.emergencyContactPhone
+                ? `${detail.inPersonTraining.emergencyContactName} (${detail.inPersonTraining.emergencyContactPhone})`
+                : "Not set"}
+            </p>
+            <p className="mt-2">
+              <span className="font-semibold text-zinc-100">Medical notes:</span>{" "}
+              {detail.inPersonTraining.medicalNotes?.trim() || "None"}
+            </p>
+          </>
+        ) : null}
       </div>
 
       {detail.membershipTier === "FREE" || isTwelveWeekMember ? (

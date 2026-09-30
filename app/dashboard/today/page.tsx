@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { isTwelveWeekProgramMember } from "@/lib/membership";
 import ProgramTodaySetupPrompt from "@/app/dashboard/ProgramTodaySetupPrompt";
 import ProgramTodayView from "@/app/dashboard/ProgramTodayView";
+import InPersonEmergencyReminderCard from "@/components/InPersonEmergencyReminderCard";
+import { needsInPersonEmergencyContactReminder } from "@/lib/in-person-training-shared";
 
 export default async function ProgramTodayPage() {
   const session = await getServerSession(authOptions);
@@ -14,7 +16,12 @@ export default async function ProgramTodayPage() {
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { membershipTier: true },
+    select: {
+      membershipTier: true,
+      trainsInPerson: true,
+      emergencyContactName: true,
+      emergencyContactPhone: true,
+    },
   });
 
   if (!user || !isTwelveWeekProgramMember(user.membershipTier)) {
@@ -34,8 +41,11 @@ export default async function ProgramTodayPage() {
     return <ProgramTodaySetupPrompt />;
   }
 
+  const showInPersonEmergencyReminder = needsInPersonEmergencyContactReminder(user);
+
   return (
     <div className="mobile-card-stack px-4 pb-28 pt-2 md:mx-auto md:max-w-3xl md:px-6 md:pb-10 md:pt-6">
+      {showInPersonEmergencyReminder ? <InPersonEmergencyReminderCard /> : null}
       <ProgramTodayView />
     </div>
   );

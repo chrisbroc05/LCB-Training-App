@@ -21,6 +21,10 @@ import LegalAgreementFields, {
 } from "@/components/LegalAgreementFields";
 import { BRAND_SECONDARY_TAGLINE } from "@/lib/brand-copy";
 import { formatProgramStartLabel, parseProgramDateKey } from "@/lib/program-schedule";
+import {
+  type InPersonTrainingInfo,
+  validateInPersonTrainingInput,
+} from "@/lib/in-person-training-shared";
 
 type SerializedEnrollment = {
   ageGroup: ProgramAgeGroup | null;
@@ -46,6 +50,7 @@ type WizardStep =
   | "start_date"
   | "parent"
   | "parent_legal"
+  | "in_person"
   | "confirmation";
 
 const STEP_ORDER: WizardStep[] = [
@@ -58,6 +63,7 @@ const STEP_ORDER: WizardStep[] = [
   "known_for",
   "start_date",
   "parent",
+  "in_person",
   "confirmation",
 ];
 
@@ -98,6 +104,7 @@ type ProgramStartWizardProps = {
   initialEnrollment: SerializedEnrollment;
   checkoutSuccess: boolean;
   initialAcceptedAsParent: boolean;
+  initialInPersonTraining: InPersonTrainingInfo;
 };
 
 export default function ProgramStartWizard({
@@ -105,6 +112,7 @@ export default function ProgramStartWizard({
   initialEnrollment,
   checkoutSuccess,
   initialAcceptedAsParent,
+  initialInPersonTraining,
 }: ProgramStartWizardProps) {
   const router = useRouter();
   const [enrollment, setEnrollment] = useState(initialEnrollment);
@@ -134,6 +142,14 @@ export default function ProgramStartWizard({
     values.agreementRole = "parent";
     return values;
   });
+  const [trainsInPerson, setTrainsInPerson] = useState(initialInPersonTraining.trainsInPerson);
+  const [emergencyContactName, setEmergencyContactName] = useState(
+    initialInPersonTraining.emergencyContactName ?? "",
+  );
+  const [emergencyContactPhone, setEmergencyContactPhone] = useState(
+    initialInPersonTraining.emergencyContactPhone ?? "",
+  );
+  const [medicalNotes, setMedicalNotes] = useState(initialInPersonTraining.medicalNotes ?? "");
 
   const questionSteps = STEP_ORDER.filter((entry) => entry !== "intro" && entry !== "confirmation");
   const currentQuestionIndex = step === "intro" || step === "confirmation" ? -1 : questionSteps.indexOf(step);
@@ -301,7 +317,7 @@ export default function ProgramStartWizard({
       if (ageGroup === "AGE_8_11" && !acceptedAsParent) {
         goToStep("parent_legal");
       } else {
-        goToStep("confirmation");
+        goToStep("in_person");
       }
     }
   };
@@ -313,7 +329,7 @@ export default function ProgramStartWizard({
       return;
     }
 
-    goToStep("confirmation");
+    goToStep("in_person");
   };
 
   const handleParentLegalContinue = async () => {
@@ -351,7 +367,58 @@ export default function ProgramStartWizard({
 
     setAcceptedAsParent(true);
     setSaving(false);
-    goToStep("confirmation");
+    goToStep("in_person");
+  };
+
+  const saveInPersonTraining = async (nextTrainsInPerson: boolean) => {
+    const input = {
+      trainsInPerson: nextTrainsInPerson,
+      emergencyContactName,
+      emergencyContactPhone,
+      medicalNotes,
+    };
+
+    const validationError = validateInPersonTrainingInput(input);
+    if (validationError) {
+      setError(validationError);
+      return false;
+    }
+
+    setSaving(true);
+    setError("");
+
+    const response = await fetch("/api/settings/in-person-training", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    });
+
+    const data = (await response.json().catch(() => ({}))) as { error?: string };
+
+    setSaving(false);
+
+    if (!response.ok) {
+      setError(data.error ?? "Unable to save in-person training info.");
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleInPersonNo = async () => {
+    setTrainsInPerson(false);
+    const saved = await saveInPersonTraining(false);
+    if (saved) {
+      goToStep("confirmation");
+    }
+  };
+
+  const handleInPersonContinue = async () => {
+    setTrainsInPerson(true);
+    const saved = await saveInPersonTraining(true);
+    if (saved) {
+      goToStep("confirmation");
+    }
   };
 
   const handleFinish = async () => {
@@ -600,6 +667,96 @@ export default function ProgramStartWizard({
                 >
                   Skip
                 </button>
+              </div>
+            </div>
+          ) : null}
+
+          {step === "in_person" ? (
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-2xl font-bold text-[#0A1628]">
+                  Will you also train with Coach Broc in person (lessons or team)?
+                </h2>
+                <p className="mt-3 text-sm leading-6 text-[#6B7280]">
+                  If yes, add an emergency contact so we are ready at lessons and team sessions.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <OptionButton
+                  label="Yes"
+                  selected={trainsInPerson}
+                  onClick={() => setTrainsInPerson(true)}
+                  disabled={saving}
+                />
+                <OptionButton
+                  label="No"
+                  selected={!trainsInPerson}
+                  onClick={() => setTrainsInPerson(false)}
+                  disabled={saving}
+                />
+              </div>
+
+              {trainsInPerson ? (
+                <>
+                  <label className="block space-y-2">
+                    <span className="text-sm font-semibold text-[#0A1628]">
+                      Emergency contact name
+                    </span>
+                    <input
+                      type="text"
+                      value={emergencyContactName}
+                      onChange={(event) => setEmergencyContactName(event.target.value)}
+                      className="w-full rounded-2xl border border-[#0A1628]/15 px-4 py-3 text-sm text-[#0A1628]"
+                    />
+                  </label>
+
+                  <label className="block space-y-2">
+                    <span className="text-sm font-semibold text-[#0A1628]">
+                      Emergency contact phone
+                    </span>
+                    <input
+                      type="tel"
+                      value={emergencyContactPhone}
+                      onChange={(event) => setEmergencyContactPhone(event.target.value)}
+                      className="w-full rounded-2xl border border-[#0A1628]/15 px-4 py-3 text-sm text-[#0A1628]"
+                    />
+                  </label>
+
+                  <label className="block space-y-2">
+                    <span className="text-sm font-semibold text-[#0A1628]">
+                      Medical conditions, injuries, or allergies (optional)
+                    </span>
+                    <textarea
+                      rows={4}
+                      value={medicalNotes}
+                      onChange={(event) => setMedicalNotes(event.target.value)}
+                      className="w-full rounded-2xl border border-[#0A1628]/15 px-4 py-3 text-sm text-[#0A1628]"
+                    />
+                  </label>
+                </>
+              ) : null}
+
+              <div className="flex flex-wrap gap-3">
+                {trainsInPerson ? (
+                  <button
+                    type="button"
+                    onClick={() => void handleInPersonContinue()}
+                    disabled={saving}
+                    className="rounded-2xl bg-[#2D6A4F] px-6 py-3 text-sm font-bold text-white disabled:opacity-70"
+                  >
+                    {saving ? "Saving..." : "Continue"}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => void handleInPersonNo()}
+                    disabled={saving}
+                    className="rounded-2xl bg-[#2D6A4F] px-6 py-3 text-sm font-bold text-white disabled:opacity-70"
+                  >
+                    {saving ? "Saving..." : "Continue"}
+                  </button>
+                )}
               </div>
             </div>
           ) : null}

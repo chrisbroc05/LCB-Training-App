@@ -3,10 +3,10 @@ import { authOptions } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin";
 import { jsonNoStore } from "@/lib/api-no-store";
 import {
-  listWaiverSignatures,
-  serializeWaiverSignature,
-} from "@/lib/waiver-sign-server";
-import { normalizeTeamSlug } from "@/lib/waiver-sign-shared";
+  listUnifiedAgreements,
+  resolveTeamSlugFilter,
+} from "@/lib/admin-agreements-server";
+import type { AgreementSourceFilter } from "@/lib/admin-agreements-shared";
 
 export { dynamic, revalidate } from "@/lib/api-no-store";
 
@@ -19,15 +19,17 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const team = url.searchParams.get("team")?.trim() ?? "";
   const search = url.searchParams.get("search")?.trim() ?? "";
-  const teamSlug = team ? normalizeTeamSlug(team) : undefined;
+  const source = (url.searchParams.get("source")?.trim() ?? "all") as AgreementSourceFilter;
+  const teamSlug = resolveTeamSlugFilter(team);
 
-  const signatures = await listWaiverSignatures({
+  const agreements = await listUnifiedAgreements({
     teamSlug,
     search: search || undefined,
+    source,
   });
 
   return jsonNoStore({
-    signatures: signatures.map(serializeWaiverSignature),
-    count: signatures.length,
+    agreements,
+    count: agreements.length,
   });
 }

@@ -41,6 +41,7 @@ import {
   formatMediaConsentLabel,
 } from "@/lib/legal-shared";
 import { formatRefundLabel } from "@/lib/stripe-refund-shared";
+import { serializeInPersonTrainingInfo } from "@/lib/in-person-training-shared";
 
 export async function buildAdminProgramPlayerDetail(enrollmentId: string, now = new Date()) {
   const enrollment = await prisma.programEnrollment.findUnique({
@@ -56,6 +57,11 @@ export async function buildAdminProgramPlayerDetail(enrollmentId: string, now = 
           acceptedByName: true,
           acceptedAsParent: true,
           mediaConsent: true,
+          trainsInPerson: true,
+          emergencyContactName: true,
+          emergencyContactPhone: true,
+          medicalNotes: true,
+          inPersonInfoUpdatedAt: true,
         },
       },
       taskCompletions: {
@@ -201,6 +207,7 @@ export async function buildAdminProgramPlayerDetail(enrollmentId: string, now = 
         agreementRoleLabel: formatLegalAgreementRole(enrollment.user.acceptedAsParent),
         mediaConsentLabel: formatMediaConsentLabel(enrollment.user.mediaConsent),
       },
+      inPersonTraining: serializeInPersonTrainingInfo(enrollment.user),
     },
     schedule,
     streak: computeProgramStreak({
