@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import MessageChatView, { type MessageChatItem } from "@/components/MessageChatView";
+import { setCoachUnreadCount } from "@/lib/messaging-unread-client";
 
 export default function AdminConversationPage() {
   const params = useParams<{ conversationId: string }>();
@@ -41,7 +42,19 @@ export default function AdminConversationPage() {
   }, [loadMessages]);
 
   const markRead = useCallback(async () => {
-    await fetch(`/api/admin/messages/${conversationId}`, { method: "PATCH" });
+    const response = await fetch(`/api/admin/messages/${conversationId}`, {
+      method: "PATCH",
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      return;
+    }
+
+    const data = (await response.json().catch(() => ({}))) as { unreadCount?: number };
+    if (typeof data.unreadCount === "number") {
+      setCoachUnreadCount(data.unreadCount);
+    }
   }, [conversationId]);
 
   const handleSend = async (body: string) => {

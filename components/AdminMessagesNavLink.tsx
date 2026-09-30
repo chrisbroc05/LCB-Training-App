@@ -1,24 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCoachUnreadCount } from "@/lib/messaging-unread-client";
 
 export default function AdminMessagesNavLink() {
-  const [unreadCount, setUnreadCount] = useState(0);
-
-  useEffect(() => {
-    const load = async () => {
-      const response = await fetch("/api/admin/messages");
-      if (!response.ok) {
-        return;
-      }
-
-      const data = (await response.json()) as { unreadCount?: number };
-      setUnreadCount(data.unreadCount ?? 0);
-    };
-
-    void load();
-  }, []);
+  const unreadCount = useCoachUnreadCount();
 
   return (
     <Link

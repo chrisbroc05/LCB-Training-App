@@ -2,20 +2,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import MobileBottomSheet from "@/app/components/mobile/MobileBottomSheet";
 import {
   NON_PROGRAM_CHAT_SHEET_TITLE,
   shouldShowMessageBubble,
 } from "@/lib/direct-messaging-shared";
+import { usePlayerMessageStatus } from "@/lib/messaging-unread-client";
 
 type MessageChatBubbleProps = {
   isLoggedIn: boolean;
-};
-
-type MessageStatusResponse = {
-  access: "none" | "active" | "read_only";
-  unreadCount: number;
 };
 
 function ChatIcon() {
@@ -34,31 +30,9 @@ function ChatIcon() {
 
 export default function MessageChatBubble({ isLoggedIn }: MessageChatBubbleProps) {
   const pathname = usePathname();
-  const [status, setStatus] = useState<MessageStatusResponse>({ access: "none", unreadCount: 0 });
   const [sheetOpen, setSheetOpen] = useState(false);
-
-  useEffect(() => {
-    if (!isLoggedIn || pathname.startsWith("/messages")) {
-      return;
-    }
-
-    const loadStatus = async () => {
-      const response = await fetch("/api/messages/status");
-      if (!response.ok) {
-        return;
-      }
-
-      const data = (await response.json()) as MessageStatusResponse;
-      setStatus(data);
-    };
-
-    void loadStatus();
-    const intervalId = window.setInterval(() => {
-      void loadStatus();
-    }, 60_000);
-
-    return () => window.clearInterval(intervalId);
-  }, [isLoggedIn, pathname]);
+  const shouldTrackUnread = isLoggedIn && !pathname.startsWith("/messages");
+  const status = usePlayerMessageStatus(shouldTrackUnread);
 
   if (!shouldShowMessageBubble(pathname)) {
     return null;

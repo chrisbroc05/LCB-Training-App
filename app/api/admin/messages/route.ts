@@ -2,21 +2,24 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin";
+import { jsonNoStore } from "@/lib/api-no-store";
 import {
   getCoachUnreadCount,
   getOrCreateConversationForEnrollment,
   listCoachInbox,
 } from "@/lib/direct-messaging-server";
 
+export { dynamic, revalidate } from "@/lib/api-no-store";
+
 export async function GET() {
   const session = await getServerSession(authOptions);
   if (!isAdminEmail(session?.user?.email)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    return jsonNoStore({ error: "Forbidden" }, { status: 403 });
   }
 
   const [inbox, unreadCount] = await Promise.all([listCoachInbox(), getCoachUnreadCount()]);
 
-  return NextResponse.json({ inbox, unreadCount });
+  return jsonNoStore({ inbox, unreadCount });
 }
 
 export async function POST(request: Request) {

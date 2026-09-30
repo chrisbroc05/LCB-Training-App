@@ -1,14 +1,18 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { jsonNoStore } from "@/lib/api-no-store";
 import {
   getEnrollmentForUser,
   getMessagingAccessState,
   getOrCreateConversation,
+  getPlayerUnreadCount,
   listConversationMessages,
   markConversationRead,
   sendConversationMessage,
 } from "@/lib/direct-messaging-server";
+
+export { dynamic, revalidate } from "@/lib/api-no-store";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -25,7 +29,7 @@ export async function GET() {
   const conversation = enrollment.conversation ?? (await getOrCreateConversation(enrollment.id));
   const messages = await listConversationMessages(conversation.id);
 
-  return NextResponse.json({
+  return jsonNoStore({
     access,
     conversationId: conversation.id,
     messages: messages.map((message) => ({
@@ -99,5 +103,6 @@ export async function PATCH() {
     forCoach: false,
   });
 
-  return NextResponse.json({ success: true });
+  const unreadCount = await getPlayerUnreadCount(session.user.id);
+  return jsonNoStore({ success: true, unreadCount });
 }

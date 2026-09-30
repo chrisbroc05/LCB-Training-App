@@ -2,12 +2,16 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin";
+import { jsonNoStore } from "@/lib/api-no-store";
 import {
+  getCoachUnreadCount,
   getConversationById,
   listConversationMessages,
   markConversationRead,
   sendConversationMessage,
 } from "@/lib/direct-messaging-server";
+
+export { dynamic, revalidate } from "@/lib/api-no-store";
 
 type RouteContext = {
   params: Promise<{ conversationId: string }>;
@@ -27,7 +31,7 @@ export async function GET(_request: Request, context: RouteContext) {
 
   const messages = await listConversationMessages(conversation.id);
 
-  return NextResponse.json({
+  return jsonNoStore({
     conversation: {
       id: conversation.id,
       enrollmentId: conversation.enrollmentId,
@@ -70,7 +74,7 @@ export async function POST(request: Request, context: RouteContext) {
       playerEmail: conversation.enrollment.user.email,
     });
 
-    return NextResponse.json({
+    return jsonNoStore({
       message: {
         id: message.id,
         body: message.body,
@@ -96,5 +100,6 @@ export async function PATCH(_request: Request, context: RouteContext) {
 
   const { conversationId } = await context.params;
   await markConversationRead({ conversationId, forCoach: true });
-  return NextResponse.json({ success: true });
+  const unreadCount = await getCoachUnreadCount();
+  return jsonNoStore({ success: true, unreadCount });
 }

@@ -5,6 +5,7 @@ import MessageChatView, {
   PROGRAM_ENDED_CHAT_MESSAGE,
   type MessageChatItem,
 } from "@/components/MessageChatView";
+import { setPlayerUnreadCount } from "@/lib/messaging-unread-client";
 
 export default function MessagesPage() {
   const [messages, setMessages] = useState<MessageChatItem[]>([]);
@@ -38,7 +39,16 @@ export default function MessagesPage() {
   }, [loadMessages]);
 
   const markRead = useCallback(async () => {
-    await fetch("/api/messages", { method: "PATCH" });
+    const response = await fetch("/api/messages", { method: "PATCH", cache: "no-store" });
+
+    if (!response.ok) {
+      return;
+    }
+
+    const data = (await response.json().catch(() => ({}))) as { unreadCount?: number };
+    if (typeof data.unreadCount === "number") {
+      setPlayerUnreadCount(data.unreadCount);
+    }
   }, []);
 
   const handleSend = async (body: string) => {

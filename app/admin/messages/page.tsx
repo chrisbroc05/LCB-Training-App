@@ -1,10 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { formatDateTime } from "@/lib/format-date";
 import { PROGRAM_AGE_GROUP_LABELS, type ProgramAgeGroup } from "@/lib/program-enrollment-shared";
 import { truncateMessagePreview } from "@/lib/direct-messaging-shared";
+import {
+  fetchCoachInbox,
+  MESSAGING_UNREAD_POLL_INTERVAL_MS,
+  useCoachUnreadCount,
+} from "@/lib/messaging-unread-client";
 
 type InboxItem = {
   id: string;
@@ -18,27 +23,41 @@ type InboxItem = {
 };
 
 export default function AdminMessagesPage() {
+  const unreadCount = useCoachUnreadCount();
   const [inbox, setInbox] = useState<InboxItem[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const load = async () => {
-      const response = await fetch("/api/admin/messages");
-      const data = (await response.json().catch(() => ({}))) as {
-        inbox?: InboxItem[];
-        unreadCount?: number;
-      };
+  const loadInbox = useCallback(async () => {
+    const data = await fetchCoachInbox();
+    if (data) {
+      setInbox((data.inbox ?? []) as InboxItem[]);
+    }
 
-      setLoading(false);
-      if (response.ok) {
-        setInbox(data.inbox ?? []);
-        setUnreadCount(data.unreadCount ?? 0);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    void loadInbox();
+
+    const intervalId = window.setInterval(() => {
+      if (document.visibilityState === "visible") {
+        void loadInbox();
       }
+    }, MESSAGING_UNREAD_POLL_INTERVAL_MS);
+
+    const handleRefresh = () => {
+      void loadInbox();
     };
 
-    void load();
-  }, []);
+    window.addEventListener("focus", handleRefresh);
+    document.addEventListener("visibilitychange", handleRefresh);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", handleRefresh);
+      document.removeEventListener("visibilitychange", handleRefresh);
+    };
+  }, [loadInbox]);
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
