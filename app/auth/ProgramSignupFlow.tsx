@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import LegalAgreementFields, { type LegalAgreementValues } from "@/components/LegalAgreementFields";
 
 type ProgramSignupFlowProps = {
   loginHref: string;
@@ -13,6 +14,8 @@ type ProgramSignupFlowProps = {
   signupError: string;
   signupLoading: boolean;
   onSignupSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
+  legalAgreement: LegalAgreementValues;
+  onLegalAgreementChange: (values: LegalAgreementValues) => void;
 };
 
 export default function ProgramSignupFlow({
@@ -26,6 +29,8 @@ export default function ProgramSignupFlow({
   signupError,
   signupLoading,
   onSignupSubmit,
+  legalAgreement,
+  onLegalAgreementChange,
 }: ProgramSignupFlowProps) {
   return (
     <article className="mx-auto w-full max-w-md rounded-2xl border border-[#18243a] bg-black/25 p-5 sm:p-7">
@@ -72,6 +77,10 @@ export default function ProgramSignupFlow({
             required
           />
         </label>
+        <LegalAgreementFields
+          values={legalAgreement}
+          onChange={onLegalAgreementChange}
+        />
         {signupError ? <p className="text-sm text-red-300">{signupError}</p> : null}
         <button
           type="submit"

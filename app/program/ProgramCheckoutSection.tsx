@@ -3,6 +3,11 @@
 import { Suspense, useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
+import LegalAgreementFields, {
+  createEmptyLegalAgreementValues,
+  validateLegalAgreementValues,
+} from "@/components/LegalAgreementFields";
+import { postCheckout } from "@/lib/checkout-client";
 type ProgramCheckoutSectionProps = {
   isLoggedIn: boolean;
   autoStartCheckout: boolean;
@@ -25,26 +30,15 @@ function ProgramCheckoutSectionContent({
   const [authLoading, setAuthLoading] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [checkoutError, setCheckoutError] = useState("");
+  const [legalAgreement, setLegalAgreement] = useState(createEmptyLegalAgreementValues());
 
   const startCheckout = async () => {
     setCheckoutLoading(true);
     setCheckoutError("");
 
     try {
-      const response = await fetch("/api/stripe/checkout/twelve-week", {
-        method: "POST",
-      });
-
-      const payload = (await response.json().catch(() => ({}))) as {
-        url?: string;
-        error?: string;
-      };
-
-      if (!response.ok || !payload.url) {
-        throw new Error(payload.error ?? "Unable to start checkout.");
-      }
-
-      window.location.href = payload.url;
+      const payload = await postCheckout("/api/stripe/checkout/twelve-week");
+      window.location.href = payload.url!;
     } catch (checkoutError) {
       setCheckoutError(
         checkoutError instanceof Error ? checkoutError.message : "Unable to start checkout.",
@@ -67,6 +61,13 @@ function ProgramCheckoutSectionContent({
     setAuthLoading(true);
     setAuthError("");
 
+    const legalValidationError = validateLegalAgreementValues(legalAgreement);
+    if (legalValidationError) {
+      setAuthLoading(false);
+      setAuthError(legalValidationError);
+      return;
+    }
+
     const response = await fetch("/api/auth/signup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -76,6 +77,11 @@ function ProgramCheckoutSectionContent({
         password,
         selectedMembershipTier: "FREE",
         signupSource: "program",
+        legalAcceptance: {
+          acceptedByName: legalAgreement.acceptedByName.trim(),
+          acceptedAsParent: legalAgreement.agreementRole === "parent",
+          mediaConsent: legalAgreement.mediaConsent,
+        },
       }),
     });
 
@@ -212,6 +218,10 @@ function ProgramCheckoutSectionContent({
             required
           />
         </label>
+
+        {authMode === "signup" ? (
+          <LegalAgreementFields values={legalAgreement} onChange={setLegalAgreement} />
+        ) : null}
 
         {authError ? <p className="text-sm text-red-300">{authError}</p> : null}
 

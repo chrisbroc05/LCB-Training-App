@@ -58,6 +58,13 @@ type PlayerDetail = {
     parentEmail: string | null;
     parentEmailsEnabled: boolean;
     dailyRoutineEmailsEnabled: boolean;
+    legalAcceptance: {
+      termsVersion: string | null;
+      termsAcceptedAtLabel: string;
+      acceptedByName: string | null;
+      agreementRoleLabel: string;
+      mediaConsentLabel: string;
+    };
   };
   schedule: {
     weekNumber: number;
@@ -502,6 +509,24 @@ export default function AdminProgramPlayerPanel({ enrollmentId }: { enrollmentId
             &quot;{detail.enrollment.knownFor}&quot;
           </p>
         ) : null}
+        <div className="mt-4 rounded-2xl border border-[#2b3650] bg-black/30 p-4 text-sm text-zinc-300">
+          <p className="font-semibold text-zinc-100">Legal agreement</p>
+          <p className="mt-2">
+            Terms version: {detail.enrollment.legalAcceptance.termsVersion ?? "Not accepted"}
+          </p>
+          <p className="mt-1">
+            Accepted: {detail.enrollment.legalAcceptance.termsAcceptedAtLabel}
+          </p>
+          {detail.enrollment.legalAcceptance.acceptedByName ? (
+            <p className="mt-1">
+              Agreed by: {detail.enrollment.legalAcceptance.acceptedByName} (
+              {detail.enrollment.legalAcceptance.agreementRoleLabel})
+            </p>
+          ) : null}
+          <p className="mt-1">
+            Media consent: {detail.enrollment.legalAcceptance.mediaConsentLabel}
+          </p>
+        </div>
         <div className="mt-4 grid gap-2 text-sm text-zinc-400 sm:grid-cols-2">
           <p>Position: {detail.enrollment.position ?? "Not set"}</p>
           <p>Age group: {detail.enrollment.ageGroupLabel ?? "Not set"}</p>

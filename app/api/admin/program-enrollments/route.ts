@@ -13,6 +13,11 @@ import {
 } from "@/lib/program-enrollment-shared";
 import { getProgramDay } from "@/lib/program-schedule";
 import { prisma } from "@/lib/prisma";
+import { formatDateTime } from "@/lib/format-date";
+import {
+  formatLegalAgreementRole,
+  formatMediaConsentLabel,
+} from "@/lib/legal-shared";
 import { formatRefundLabel } from "@/lib/stripe-refund-shared";
 
 export async function GET() {
@@ -27,6 +32,11 @@ export async function GET() {
         select: {
           name: true,
           email: true,
+          termsVersion: true,
+          termsAcceptedAt: true,
+          acceptedByName: true,
+          acceptedAsParent: true,
+          mediaConsent: true,
         },
       },
     },
@@ -71,6 +81,15 @@ export async function GET() {
         knownFor: enrollment.knownFor,
         setupComplete: Boolean(enrollment.onboardingCompletedAt),
         onboardingCompletedAt: enrollment.onboardingCompletedAt?.toISOString() ?? null,
+        legalAcceptance: {
+          termsVersion: enrollment.user.termsVersion,
+          termsAcceptedAtLabel: enrollment.user.termsAcceptedAt
+            ? formatDateTime(enrollment.user.termsAcceptedAt)
+            : "Not accepted",
+          acceptedByName: enrollment.user.acceptedByName,
+          agreementRoleLabel: formatLegalAgreementRole(enrollment.user.acceptedAsParent),
+          mediaConsentLabel: formatMediaConsentLabel(enrollment.user.mediaConsent),
+        },
         createdAt: enrollment.createdAt.toISOString(),
       };
     }),

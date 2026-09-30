@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { BillingFrequency } from "@/lib/billing";
 import { PLAYBOOK_PURCHASE_BUTTON_LABEL } from "@/lib/playbook-branding";
+import { postCheckout } from "@/lib/checkout-client";
 import { formatDatabaseTierLabel, type DatabaseTier } from "@/lib/membership";
 
 type UpgradeActionsProps = {
@@ -26,31 +27,17 @@ export default function UpgradeActions({
     setError("");
 
     try {
-      const checkoutPath =
+      const payload =
         tier === "BASIC"
-          ? "/api/stripe/checkout/basic"
+          ? await postCheckout("/api/stripe/checkout/basic")
           : tier === "TWELVE_WEEK"
-            ? "/api/stripe/checkout/twelve-week"
-            : "/api/stripe/checkout";
-      const response = await fetch(checkoutPath, {
-        method: "POST",
-        headers: tier === "BASIC" || tier === "TWELVE_WEEK" ? undefined : { "Content-Type": "application/json" },
-        body:
-          tier === "BASIC" || tier === "TWELVE_WEEK"
-            ? undefined
-            : JSON.stringify({
+            ? await postCheckout("/api/stripe/checkout/twelve-week")
+            : await postCheckout("/api/stripe/checkout", {
                 membershipTier: tier,
                 billingFrequency,
-              }),
-      });
-      const data = (await response.json().catch(() => ({}))) as { error?: string; url?: string };
+              });
 
-      if (!response.ok || !data.url) {
-        setError(data.error ?? "Unable to start checkout.");
-        return;
-      }
-
-      window.location.href = data.url;
+      window.location.href = payload.url!;
     } catch {
       setError("Unable to start checkout right now.");
     } finally {

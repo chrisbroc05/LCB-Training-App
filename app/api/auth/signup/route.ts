@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { isDatabaseTier, type DatabaseTier } from "@/lib/membership";
 import { loadUserMarketingRecipient } from "@/lib/marketing-email-data";
 import { sendMarketingEmail } from "@/lib/marketing-email-send";
+import { validateAcceptedByName, LEGAL_DOCS_VERSION } from "@/lib/legal-shared";
 import { sendNewMemberNotification } from "@/lib/notifications";
 
 type SignupBody = {
@@ -12,6 +13,11 @@ type SignupBody = {
   password?: string;
   selectedMembershipTier?: string;
   signupSource?: string;
+  legalAcceptance?: {
+    acceptedByName?: string;
+    acceptedAsParent?: boolean;
+    mediaConsent?: boolean;
+  };
 };
 
 export async function POST(request: Request) {
@@ -40,6 +46,19 @@ export async function POST(request: Request) {
       );
     }
 
+    const acceptedByName = body.legalAcceptance?.acceptedByName?.trim() ?? "";
+    const nameError = validateAcceptedByName(acceptedByName);
+    if (nameError) {
+      return NextResponse.json({ error: nameError }, { status: 400 });
+    }
+
+    if (typeof body.legalAcceptance?.acceptedAsParent !== "boolean") {
+      return NextResponse.json(
+        { error: "Select whether you are the player or the parent or guardian." },
+        { status: 400 },
+      );
+    }
+
     const existingUser = await prisma.user.findUnique({
       where: { email },
       select: { id: true },
@@ -51,6 +70,7 @@ export async function POST(request: Request) {
 
     const hashedPassword = await hash(password, 12);
 
+    const acceptedAt = new Date();
     const createdUser = await prisma.user.create({
       data: {
         name: name || null,
@@ -58,6 +78,12 @@ export async function POST(request: Request) {
         password: hashedPassword,
         membershipTier: "FREE",
         signupDate: new Date(),
+        termsVersion: LEGAL_DOCS_VERSION,
+        termsAcceptedAt: acceptedAt,
+        acceptedByName,
+        acceptedAsParent: body.legalAcceptance.acceptedAsParent,
+        mediaConsent: Boolean(body.legalAcceptance.mediaConsent),
+        mediaConsentUpdatedAt: acceptedAt,
       },
       select: {
         id: true,

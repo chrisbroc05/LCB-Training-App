@@ -23,6 +23,12 @@ import {
 import PlaybookSignupFlow from "@/app/auth/PlaybookSignupFlow";
 import GeneralAuthFlow from "@/app/auth/GeneralAuthFlow";
 import ProgramSignupFlow from "@/app/auth/ProgramSignupFlow";
+import LegalAgreementFields, {
+  createEmptyLegalAgreementValues,
+  validateLegalAgreementValues,
+  type LegalAgreementValues,
+} from "@/components/LegalAgreementFields";
+import { postCheckout } from "@/lib/checkout-client";
 
 type AuthMode = "login" | "signup";
 
@@ -39,27 +45,25 @@ async function startMembershipCheckout(
   billingFrequency: BillingFrequency,
   checkoutSource: string,
 ): Promise<{ url?: string; error?: string }> {
-  if (membershipTier === "BASIC") {
-    const response = await fetch("/api/stripe/checkout/basic", { method: "POST" });
-    return (await response.json().catch(() => ({}))) as { url?: string; error?: string };
-  }
+  try {
+    if (membershipTier === "BASIC") {
+      return await postCheckout("/api/stripe/checkout/basic");
+    }
 
-  if (membershipTier === "TWELVE_WEEK") {
-    const response = await fetch("/api/stripe/checkout/twelve-week", { method: "POST" });
-    return (await response.json().catch(() => ({}))) as { url?: string; error?: string };
-  }
+    if (membershipTier === "TWELVE_WEEK") {
+      return await postCheckout("/api/stripe/checkout/twelve-week");
+    }
 
-  const response = await fetch("/api/stripe/checkout", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
+    return await postCheckout("/api/stripe/checkout", {
       membershipTier,
       billingFrequency,
       checkoutSource,
-    }),
-  });
-
-  return (await response.json().catch(() => ({}))) as { url?: string; error?: string };
+    });
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Unable to start checkout.",
+    };
+  }
 }
 
 function AuthContent() {
@@ -79,6 +83,9 @@ function AuthContent() {
   const [sessionChecked, setSessionChecked] = useState(false);
   const [hasActiveSession, setHasActiveSession] = useState(false);
   const [pendingCheckoutTier, setPendingCheckoutTier] = useState<DatabaseTier | null>(null);
+  const [legalAgreement, setLegalAgreement] = useState<LegalAgreementValues>(
+    createEmptyLegalAgreementValues(),
+  );
 
   const tierQueryParam = searchParams.get("tier");
   const normalizedTierQuery = tierQueryParam?.toLowerCase();
@@ -282,6 +289,13 @@ function AuthContent() {
     setSignupLoading(true);
     setSignupError("");
 
+    const legalValidationError = validateLegalAgreementValues(legalAgreement);
+    if (legalValidationError) {
+      setSignupLoading(false);
+      setSignupError(legalValidationError);
+      return;
+    }
+
     const membershipTierForSignup = isPlaybookFlow ? selectedDatabaseTier : "FREE";
     const signupSource = isProgramFlow ? "program" : isPlaybookFlow ? "playbook" : "standard";
 
@@ -296,6 +310,11 @@ function AuthContent() {
         password: signupPassword,
         selectedMembershipTier: membershipTierForSignup,
         signupSource,
+        legalAcceptance: {
+          acceptedByName: legalAgreement.acceptedByName.trim(),
+          acceptedAsParent: legalAgreement.agreementRole === "parent",
+          mediaConsent: legalAgreement.mediaConsent,
+        },
       }),
     });
 
@@ -493,6 +512,11 @@ function AuthContent() {
                 />
               </label>
 
+              <LegalAgreementFields
+                values={legalAgreement}
+                onChange={setLegalAgreement}
+              />
+
               {signupError && <p className="text-sm text-red-300">{signupError}</p>}
 
               <button
@@ -523,6 +547,8 @@ function AuthContent() {
             signupError={signupError}
             signupLoading={signupLoading}
             onSignupSubmit={handleSignup}
+            legalAgreement={legalAgreement}
+            onLegalAgreementChange={setLegalAgreement}
           />
         ) : authMode === "signup" && isPlaybookFlow ? (
           <PlaybookSignupFlow
@@ -545,6 +571,8 @@ function AuthContent() {
             onResumeCheckout={handleResumeCheckout}
             onStartFreeLoggedIn={handleStartFreeLoggedIn}
             loginHref={loginHref}
+            legalAgreement={legalAgreement}
+            onLegalAgreementChange={setLegalAgreement}
           />
         ) : (
           <GeneralAuthFlow
@@ -567,6 +595,8 @@ function AuthContent() {
             signupError={signupError}
             signupLoading={signupLoading}
             onSignupSubmit={handleSignup}
+            legalAgreement={legalAgreement}
+            onLegalAgreementChange={setLegalAgreement}
           />
         )}
       </section>

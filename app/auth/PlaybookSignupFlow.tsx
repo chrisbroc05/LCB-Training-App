@@ -2,6 +2,7 @@
 
 import type { DatabaseTier, TierKey } from "@/lib/membership";
 import Link from "next/link";
+import LegalAgreementFields, { type LegalAgreementValues } from "@/components/LegalAgreementFields";
 import { TWELVE_WEEK_PROGRAM_NAME } from "@/lib/twelve-week-program";
 import {
   getPlaybookResumeCheckoutButtonLabel,
@@ -31,6 +32,8 @@ type PlaybookSignupFlowProps = {
   onResumeCheckout: () => void;
   onStartFreeLoggedIn: () => void;
   loginHref: string;
+  legalAgreement: LegalAgreementValues;
+  onLegalAgreementChange: (values: LegalAgreementValues) => void;
 };
 
 function CheckmarkIcon() {
@@ -72,6 +75,8 @@ export default function PlaybookSignupFlow({
   onResumeCheckout,
   onStartFreeLoggedIn,
   loginHref,
+  legalAgreement,
+  onLegalAgreementChange,
 }: PlaybookSignupFlowProps) {
   const isFreeSelected = selectedTier === "free";
   const isBasicSelected = selectedTier === "basic";
@@ -186,6 +191,10 @@ export default function PlaybookSignupFlow({
                 required
               />
             </label>
+            <LegalAgreementFields
+              values={legalAgreement}
+              onChange={onLegalAgreementChange}
+            />
           </form>
 
           {!isFreeSelected ? (

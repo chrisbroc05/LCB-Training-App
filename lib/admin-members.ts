@@ -6,6 +6,11 @@ import {
   validDatabaseTiers,
 } from "@/lib/membership";
 import { memberProfileSelect, serializeMemberProfile } from "@/lib/player-profile";
+import { formatDateTime } from "@/lib/format-date";
+import {
+  formatLegalAgreementRole,
+  formatMediaConsentLabel,
+} from "@/lib/legal-shared";
 import { getTwelveWeekProgramEndDate } from "@/lib/twelve-week-program";
 
 export const adminMemberListSelect = {
@@ -149,6 +154,11 @@ export const adminMemberDetailSelect = {
   coachingSubmissionPeriod: true,
   eliteRolloverCredits: true,
   stripeSubscriptionId: true,
+  termsVersion: true,
+  termsAcceptedAt: true,
+  acceptedByName: true,
+  acceptedAsParent: true,
+  mediaConsent: true,
   ...memberProfileSelect,
   swingAnalysisSubmissions: {
     orderBy: { createdAt: "desc" as const },
@@ -228,6 +238,11 @@ type AdminMemberDetailRecord = {
   coachingSubmissionPeriod: string | null;
   eliteRolloverCredits: number;
   stripeSubscriptionId: string | null;
+  termsVersion: string | null;
+  termsAcceptedAt: Date | null;
+  acceptedByName: string | null;
+  acceptedAsParent: boolean;
+  mediaConsent: boolean;
   position: string | null;
   age: number | null;
   graduationYear: number | null;
@@ -294,6 +309,18 @@ export function serializeAdminMemberDetail(user: AdminMemberDetailRecord) {
   return {
     ...summary,
     adminNotes: user.adminNotes,
+    legalAcceptance: {
+      termsVersion: user.termsVersion,
+      termsAcceptedAt: user.termsAcceptedAt?.toISOString() ?? null,
+      termsAcceptedAtLabel: user.termsAcceptedAt
+        ? formatDateTime(user.termsAcceptedAt)
+        : "Not accepted",
+      acceptedByName: user.acceptedByName,
+      acceptedAsParent: user.acceptedAsParent,
+      agreementRoleLabel: formatLegalAgreementRole(user.acceptedAsParent),
+      mediaConsent: user.mediaConsent,
+      mediaConsentLabel: formatMediaConsentLabel(user.mediaConsent),
+    },
     hasStripeSubscription: Boolean(user.stripeSubscriptionId),
     memberProfile: serializeMemberProfile(user),
     coachingSubmissions: [

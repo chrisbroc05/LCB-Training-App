@@ -18,6 +18,7 @@ import SiteShell from "@/app/SiteShell";
 import AppSplashScreen from "@/components/AppSplashScreen";
 import PWAInstallHint from "@/components/PWAInstallHint";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
+import LegalAgreementGate from "@/components/LegalAgreementGate";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -157,6 +158,9 @@ export default async function RootLayout({
                   <Link href="/privacy" className="transition hover:text-[#98b144]">
                     Privacy Policy
                   </Link>
+                  <Link href="/waiver" className="transition hover:text-[#98b144]">
+                    Waiver
+                  </Link>
                 </div>
               </div>
             </footer>
@@ -164,6 +168,7 @@ export default async function RootLayout({
         >
           {children}
         </SiteShell>
+        {session?.user ? <LegalAgreementGate /> : null}
         <PWAInstallHint />
         <ServiceWorkerRegister />
       </body>

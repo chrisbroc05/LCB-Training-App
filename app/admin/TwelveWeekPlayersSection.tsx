@@ -9,6 +9,13 @@ type TwelveWeekEnrollmentRecord = {
   email: string;
   statusLabel: string;
   refundLabel: string | null;
+  legalAcceptance: {
+    termsVersion: string | null;
+    termsAcceptedAtLabel: string;
+    acceptedByName: string | null;
+    agreementRoleLabel: string;
+    mediaConsentLabel: string;
+  };
   startDate: string | null;
   currentWeek: number;
   currentProgramDay: number;
@@ -251,6 +258,17 @@ export default function TwelveWeekPlayersSection() {
                 <div>
                   <dt className="text-zinc-500">Setup complete</dt>
                   <dd className="text-zinc-100">{enrollment.setupComplete ? "Yes" : "No"}</dd>
+                </div>
+                <div className="sm:col-span-2 lg:col-span-3">
+                  <dt className="text-zinc-500">Legal agreement</dt>
+                  <dd className="text-zinc-100">
+                    {enrollment.legalAcceptance.termsVersion ?? "Not accepted"} on{" "}
+                    {enrollment.legalAcceptance.termsAcceptedAtLabel}
+                    {enrollment.legalAcceptance.acceptedByName
+                      ? ` by ${enrollment.legalAcceptance.acceptedByName} (${enrollment.legalAcceptance.agreementRoleLabel})`
+                      : ""}
+                    . Media consent: {enrollment.legalAcceptance.mediaConsentLabel}.
+                  </dd>
                 </div>
                 <div>
                   <dt className="text-zinc-500">Age group</dt>

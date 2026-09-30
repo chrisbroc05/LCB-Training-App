@@ -23,6 +23,16 @@ export type MemberDetail = {
   twelveWeekCallScheduledAt: string | null;
   monthlySubmissionsRemaining: number | null;
   adminNotes: string | null;
+  legalAcceptance: {
+    termsVersion: string | null;
+    termsAcceptedAt: string | null;
+    termsAcceptedAtLabel: string;
+    acceptedByName: string | null;
+    acceptedAsParent: boolean;
+    agreementRoleLabel: string;
+    mediaConsent: boolean;
+    mediaConsentLabel: string;
+  };
   hasStripeSubscription: boolean;
   memberProfile: {
     hasProfile: boolean;
@@ -198,6 +208,28 @@ export default function MemberDetailContent({
       </div>
 
       <MemberProfileCard profile={detail.memberProfile} />
+
+      <div className="rounded-xl border border-[#2b3650] bg-[#0b1324]/70 p-4 text-sm text-zinc-300">
+        <p className="font-semibold text-zinc-100">Legal agreement</p>
+        <p className="mt-2">
+          <span className="font-semibold text-zinc-100">Terms version:</span>{" "}
+          {detail.legalAcceptance.termsVersion ?? "Not accepted"}
+        </p>
+        <p className="mt-2">
+          <span className="font-semibold text-zinc-100">Accepted:</span>{" "}
+          {detail.legalAcceptance.termsAcceptedAtLabel}
+        </p>
+        {detail.legalAcceptance.acceptedByName ? (
+          <p className="mt-2">
+            <span className="font-semibold text-zinc-100">Agreed by:</span>{" "}
+            {detail.legalAcceptance.acceptedByName} ({detail.legalAcceptance.agreementRoleLabel})
+          </p>
+        ) : null}
+        <p className="mt-2">
+          <span className="font-semibold text-zinc-100">Media consent:</span>{" "}
+          {detail.legalAcceptance.mediaConsentLabel}
+        </p>
+      </div>
 
       {detail.membershipTier === "FREE" || isTwelveWeekMember ? (
         <div className="rounded-xl border border-[#2b3650] bg-[#0b1324]/70 p-4">

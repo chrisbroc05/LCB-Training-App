@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { postCheckout } from "@/lib/checkout-client";
 
 type TwelveWeekProgramCheckoutButtonProps = {
   isLoggedIn: boolean;
@@ -29,20 +30,8 @@ export default function TwelveWeekProgramCheckoutButton({
     setError("");
 
     try {
-      const response = await fetch("/api/stripe/checkout/twelve-week", {
-        method: "POST",
-      });
-
-      const payload = (await response.json().catch(() => ({}))) as {
-        url?: string;
-        error?: string;
-      };
-
-      if (!response.ok || !payload.url) {
-        throw new Error(payload.error ?? "Unable to start checkout.");
-      }
-
-      window.location.href = payload.url;
+      const payload = await postCheckout("/api/stripe/checkout/twelve-week");
+      window.location.href = payload.url!;
     } catch (checkoutError) {
       setError(
         checkoutError instanceof Error ? checkoutError.message : "Unable to start checkout.",

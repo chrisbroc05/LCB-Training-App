@@ -148,6 +148,12 @@ model User {
   notifyGoalResponse       Boolean              @default(true)
   notifyWeeklyCheckin      Boolean              @default(true)
   notifyAnnouncements      Boolean              @default(true)
+  termsVersion           String?
+  termsAcceptedAt        DateTime?
+  acceptedByName         String?
+  acceptedAsParent       Boolean                @default(false)
+  mediaConsent           Boolean                @default(false)
+  mediaConsentUpdatedAt  DateTime?
   emailVerified          DateTime?
   image                  String?
   createdAt              DateTime               @default(now())

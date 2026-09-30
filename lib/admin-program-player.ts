@@ -35,6 +35,11 @@ import {
 } from "@/lib/program-stats";
 import { getWeekdayLabelForProgramDay } from "@/lib/program-schedule";
 import { prisma } from "@/lib/prisma";
+import { formatDateTime } from "@/lib/format-date";
+import {
+  formatLegalAgreementRole,
+  formatMediaConsentLabel,
+} from "@/lib/legal-shared";
 import { formatRefundLabel } from "@/lib/stripe-refund-shared";
 
 export async function buildAdminProgramPlayerDetail(enrollmentId: string, now = new Date()) {
@@ -46,6 +51,11 @@ export async function buildAdminProgramPlayerDetail(enrollmentId: string, now = 
           id: true,
           name: true,
           email: true,
+          termsVersion: true,
+          termsAcceptedAt: true,
+          acceptedByName: true,
+          acceptedAsParent: true,
+          mediaConsent: true,
         },
       },
       taskCompletions: {
@@ -182,6 +192,15 @@ export async function buildAdminProgramPlayerDetail(enrollmentId: string, now = 
       parentEmail: enrollment.parentEmail,
       parentEmailsEnabled: enrollment.parentEmailsEnabled,
       dailyRoutineEmailsEnabled: enrollment.dailyRoutineEmailsEnabled,
+      legalAcceptance: {
+        termsVersion: enrollment.user.termsVersion,
+        termsAcceptedAtLabel: enrollment.user.termsAcceptedAt
+          ? formatDateTime(enrollment.user.termsAcceptedAt)
+          : "Not accepted",
+        acceptedByName: enrollment.user.acceptedByName,
+        agreementRoleLabel: formatLegalAgreementRole(enrollment.user.acceptedAsParent),
+        mediaConsentLabel: formatMediaConsentLabel(enrollment.user.mediaConsent),
+      },
     },
     schedule,
     streak: computeProgramStreak({

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getCalendlyBookingUrl } from "@/lib/calendly-booking";
+import { requireCurrentTermsForCheckout } from "@/lib/legal-checkout-server";
 import { stripe } from "@/lib/stripe";
 
 function getBaseUrl() {
@@ -18,6 +19,11 @@ export async function POST() {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id || !session.user.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const termsError = await requireCurrentTermsForCheckout(session.user.id);
+    if (termsError) {
+      return termsError;
     }
 
     const stripeSecretKey = process.env.STRIPE_SECRET_KEY;

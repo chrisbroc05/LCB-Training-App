@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import LegalAgreementFields, { type LegalAgreementValues } from "@/components/LegalAgreementFields";
 
 type GeneralAuthFlowProps = {
   authMode: "login" | "signup";
@@ -22,6 +23,8 @@ type GeneralAuthFlowProps = {
   signupError: string;
   signupLoading: boolean;
   onSignupSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
+  legalAgreement: LegalAgreementValues;
+  onLegalAgreementChange: (values: LegalAgreementValues) => void;
 };
 
 export default function GeneralAuthFlow({
@@ -44,6 +47,8 @@ export default function GeneralAuthFlow({
   signupError,
   signupLoading,
   onSignupSubmit,
+  legalAgreement,
+  onLegalAgreementChange,
 }: GeneralAuthFlowProps) {
   if (authMode === "login") {
     return (
@@ -148,6 +153,10 @@ export default function GeneralAuthFlow({
             required
           />
         </label>
+        <LegalAgreementFields
+          values={legalAgreement}
+          onChange={onLegalAgreementChange}
+        />
         {signupError ? <p className="text-sm text-red-300">{signupError}</p> : null}
         <button
           type="submit"

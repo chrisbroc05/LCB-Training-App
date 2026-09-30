@@ -161,17 +161,23 @@ export function buildEmailHeaderHtml() {
 }
 
 export function buildEmailFooterHtml() {
+  const appUrl = getPublicAppUrl();
   return `${buildEmailDivider()}
               <p style="margin:0 0 8px 0; font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:1.6; color:#6B7280;">Coach Broc</p>
               <p style="margin:0 0 8px 0; font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:1.6; color:#6B7280;">LCB Training | lcbtraining.com</p>
               <p style="margin:0 0 8px 0; font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:1.6; color:#6B7280;">Instagram @lcbtraining | TikTok @cbroc05</p>
+              <p style="margin:0 0 8px 0; font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:1.6; color:#6B7280;"><a href="${escapeHtml(`${appUrl}/terms`)}" style="color:#2D6A4F; text-decoration:underline;">Terms of Service</a> | <a href="${escapeHtml(`${appUrl}/privacy`)}" style="color:#2D6A4F; text-decoration:underline;">Privacy Policy</a> | <a href="${escapeHtml(`${appUrl}/waiver`)}" style="color:#2D6A4F; text-decoration:underline;">Waiver</a></p>
               <p style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:1.6; color:#6B7280;">Questions? Just reply to this email.</p>`;
 }
 
 export function buildEmailFooterText() {
+  const appUrl = getPublicAppUrl();
   return `Coach Broc
 LCB Training | lcbtraining.com
 Instagram @lcbtraining | TikTok @cbroc05
+Terms of Service: ${appUrl}/terms
+Privacy Policy: ${appUrl}/privacy
+Waiver: ${appUrl}/waiver
 Questions? Just reply to this email.`;
 }
 

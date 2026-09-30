@@ -26,7 +26,12 @@ export default async function ProgramStartPage({ searchParams }: ProgramStartPag
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { membershipTier: true, name: true, email: true },
+    select: {
+      membershipTier: true,
+      name: true,
+      email: true,
+      acceptedAsParent: true,
+    },
   });
 
   if (!user || user.membershipTier !== "TWELVE_WEEK") {
@@ -53,6 +58,7 @@ export default async function ProgramStartPage({ searchParams }: ProgramStartPag
       firstName={getFirstName(user.name, user.email)}
       initialEnrollment={serializeProgramEnrollment(enrollment)}
       checkoutSuccess={checkoutSuccess}
+      initialAcceptedAsParent={user.acceptedAsParent}
     />
   );
 }

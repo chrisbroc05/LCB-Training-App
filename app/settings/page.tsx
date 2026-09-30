@@ -6,6 +6,7 @@ import DeleteAccountSection from "@/app/settings/DeleteAccountSection";
 import NotificationPreferencesSection from "@/app/settings/NotificationPreferencesSection";
 import ProgramEmailSettingsSection from "@/app/settings/ProgramEmailSettingsSection";
 import PushNotificationsSection from "@/app/settings/PushNotificationsSection";
+import LegalSettingsSection from "@/app/settings/LegalSettingsSection";
 import SecuritySection from "@/app/settings/SecuritySection";
 import {
   settingsCardClass,
@@ -74,6 +75,11 @@ export default async function SettingsPage() {
       stripeCustomerId: true,
       stripeSubscriptionId: true,
       subscriptionCancelAtPeriodEnd: true,
+      termsVersion: true,
+      termsAcceptedAt: true,
+      acceptedByName: true,
+      acceptedAsParent: true,
+      mediaConsent: true,
     },
   });
 
@@ -101,6 +107,13 @@ export default async function SettingsPage() {
         <NotificationPreferencesSection />
         <PushNotificationsSection />
         <ProgramEmailSettingsSection />
+        <LegalSettingsSection
+          termsVersion={user.termsVersion}
+          termsAcceptedAt={user.termsAcceptedAt?.toISOString() ?? null}
+          acceptedByName={user.acceptedByName}
+          acceptedAsParent={user.acceptedAsParent}
+          mediaConsent={user.mediaConsent}
+        />
         <SecuritySection />
         <BillingSection
           membershipTier={membershipTier}

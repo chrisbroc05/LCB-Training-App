@@ -15,6 +15,10 @@ import {
   type ProgramFocusArea,
   type ProgramSeasonMode,
 } from "@/lib/program-enrollment-shared";
+import LegalAgreementFields, {
+  createEmptyLegalAgreementValues,
+  validateLegalAgreementValues,
+} from "@/components/LegalAgreementFields";
 import { BRAND_SECONDARY_TAGLINE } from "@/lib/brand-copy";
 import { formatProgramStartLabel, parseProgramDateKey } from "@/lib/program-schedule";
 
@@ -41,6 +45,7 @@ type WizardStep =
   | "known_for"
   | "start_date"
   | "parent"
+  | "parent_legal"
   | "confirmation";
 
 const STEP_ORDER: WizardStep[] = [
@@ -92,12 +97,14 @@ type ProgramStartWizardProps = {
   firstName: string;
   initialEnrollment: SerializedEnrollment;
   checkoutSuccess: boolean;
+  initialAcceptedAsParent: boolean;
 };
 
 export default function ProgramStartWizard({
   firstName,
   initialEnrollment,
   checkoutSuccess,
+  initialAcceptedAsParent,
 }: ProgramStartWizardProps) {
   const router = useRouter();
   const [enrollment, setEnrollment] = useState(initialEnrollment);
@@ -121,6 +128,12 @@ export default function ProgramStartWizard({
   const [parentEmail, setParentEmail] = useState(initialEnrollment.parentEmail ?? "");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [acceptedAsParent, setAcceptedAsParent] = useState(initialAcceptedAsParent);
+  const [parentLegalAgreement, setParentLegalAgreement] = useState(() => {
+    const values = createEmptyLegalAgreementValues();
+    values.agreementRole = "parent";
+    return values;
+  });
 
   const questionSteps = STEP_ORDER.filter((entry) => entry !== "intro" && entry !== "confirmation");
   const currentQuestionIndex = step === "intro" || step === "confirmation" ? -1 : questionSteps.indexOf(step);
@@ -285,16 +298,68 @@ export default function ProgramStartWizard({
     });
 
     if (saved) {
-      goToStep("confirmation");
+      if (ageGroup === "AGE_8_11" && !acceptedAsParent) {
+        goToStep("parent_legal");
+      } else {
+        goToStep("confirmation");
+      }
     }
   };
 
   const handleParentSkip = () => {
     setError("");
+    if (ageGroup === "AGE_8_11" && !acceptedAsParent) {
+      goToStep("parent_legal");
+      return;
+    }
+
+    goToStep("confirmation");
+  };
+
+  const handleParentLegalContinue = async () => {
+    if (parentLegalAgreement.agreementRole !== "parent") {
+      setError("A parent or guardian must agree for players under 13.");
+      return;
+    }
+
+    const validationError = validateLegalAgreementValues(parentLegalAgreement);
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
+    setSaving(true);
+    setError("");
+
+    const response = await fetch("/api/legal/accept", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        acceptedByName: parentLegalAgreement.acceptedByName.trim(),
+        acceptedAsParent: true,
+        mediaConsent: parentLegalAgreement.mediaConsent,
+      }),
+    });
+
+    const data = (await response.json().catch(() => ({}))) as { error?: string };
+
+    if (!response.ok) {
+      setError(data.error ?? "Unable to save parent agreement.");
+      setSaving(false);
+      return;
+    }
+
+    setAcceptedAsParent(true);
+    setSaving(false);
     goToStep("confirmation");
   };
 
   const handleFinish = async () => {
+    if (ageGroup === "AGE_8_11" && !acceptedAsParent) {
+      goToStep("parent_legal");
+      return;
+    }
+
     const saved = await patchEnrollment({ completeOnboarding: true });
     if (saved) {
       router.push("/dashboard/today");
@@ -536,6 +601,33 @@ export default function ProgramStartWizard({
                   Skip
                 </button>
               </div>
+            </div>
+          ) : null}
+
+          {step === "parent_legal" ? (
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-2xl font-bold text-[#0A1628]">Parent or guardian agreement</h2>
+                <p className="mt-3 text-sm leading-6 text-[#6B7280]">
+                  Players under 13 need a parent or guardian to agree.
+                </p>
+              </div>
+
+              <LegalAgreementFields
+                values={parentLegalAgreement}
+                onChange={setParentLegalAgreement}
+                parentConsentPrompt
+                compact
+              />
+
+              <button
+                type="button"
+                onClick={() => void handleParentLegalContinue()}
+                disabled={saving}
+                className="w-full rounded-2xl bg-[#2D6A4F] px-6 py-4 text-base font-bold text-white disabled:opacity-70"
+              >
+                {saving ? "Saving..." : "Continue"}
+              </button>
             </div>
           ) : null}
 
