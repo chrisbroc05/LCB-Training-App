@@ -2,6 +2,7 @@ import "server-only";
 
 import { prisma } from "@/lib/prisma";
 import { LEGAL_DOCS_VERSION, needsLegalAcceptance } from "@/lib/legal-shared";
+import { findMatchingWaiverSignatureForUser } from "@/lib/waiver-sign-server";
 
 export type LegalAcceptanceInput = {
   acceptedByName: string;
@@ -26,15 +27,29 @@ export async function getUserLegalStatus(userId: string) {
     return null;
   }
 
+  const matchingWaiver = needsLegalAcceptance(user.termsVersion)
+    ? await findMatchingWaiverSignatureForUser(userId)
+    : null;
+
+  const acceptedViaWaiver = Boolean(matchingWaiver);
+
   return {
     currentVersion: LEGAL_DOCS_VERSION,
-    needsAcceptance: needsLegalAcceptance(user.termsVersion),
-    termsVersion: user.termsVersion,
-    termsAcceptedAt: user.termsAcceptedAt?.toISOString() ?? null,
-    acceptedByName: user.acceptedByName,
-    acceptedAsParent: user.acceptedAsParent,
-    mediaConsent: user.mediaConsent,
-    mediaConsentUpdatedAt: user.mediaConsentUpdatedAt?.toISOString() ?? null,
+    needsAcceptance: acceptedViaWaiver ? false : needsLegalAcceptance(user.termsVersion),
+    termsVersion: acceptedViaWaiver ? matchingWaiver?.version ?? user.termsVersion : user.termsVersion,
+    termsAcceptedAt: acceptedViaWaiver
+      ? matchingWaiver?.signedAt.toISOString() ?? user.termsAcceptedAt?.toISOString() ?? null
+      : user.termsAcceptedAt?.toISOString() ?? null,
+    acceptedByName: acceptedViaWaiver
+      ? matchingWaiver?.signerFullName ?? user.acceptedByName
+      : user.acceptedByName,
+    acceptedAsParent: acceptedViaWaiver
+      ? matchingWaiver!.playerAge < 18
+      : user.acceptedAsParent,
+    mediaConsent: acceptedViaWaiver ? matchingWaiver!.mediaConsent : user.mediaConsent,
+    mediaConsentUpdatedAt: acceptedViaWaiver
+      ? matchingWaiver?.signedAt.toISOString() ?? user.mediaConsentUpdatedAt?.toISOString() ?? null
+      : user.mediaConsentUpdatedAt?.toISOString() ?? null,
   };
 }
 
@@ -86,5 +101,10 @@ export async function userHasCurrentTermsAcceptance(userId: string) {
     return false;
   }
 
-  return !needsLegalAcceptance(user.termsVersion);
+  if (!needsLegalAcceptance(user.termsVersion)) {
+    return true;
+  }
+
+  const matchingWaiver = await findMatchingWaiverSignatureForUser(userId);
+  return Boolean(matchingWaiver);
 }

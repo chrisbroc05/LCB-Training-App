@@ -60,6 +60,32 @@ export default async function AdminPage() {
         </div>
       </section>
 
+      <section className="mb-8 rounded-3xl border border-[#18243a] bg-[#0b1324]/80 p-5 sm:p-8">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-2xl font-semibold text-zinc-100 sm:text-3xl">Signed waivers</h2>
+            <p className="mt-2 text-sm text-zinc-400">
+              Lesson and team players who signed outside the app.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <Link
+              href="/sign"
+              target="_blank"
+              className="inline-flex rounded-full border border-[#2b3650] px-4 py-2 text-sm font-semibold text-zinc-300"
+            >
+              Open /sign
+            </Link>
+            <Link
+              href="/admin/waivers"
+              className="inline-flex rounded-full bg-[#22c55e] px-4 py-2 text-sm font-semibold text-[#0A1628]"
+            >
+              View waivers
+            </Link>
+          </div>
+        </div>
+      </section>
+
       <section className="rounded-3xl border border-[#18243a] bg-[#0b1324]/80 p-5 sm:p-8">
         <h1 className="text-2xl font-semibold leading-tight text-zinc-100 sm:text-3xl">Admin Submissions Inbox</h1>
         <p className="mt-2 text-zinc-300">

@@ -96,7 +96,15 @@ enum PushNotificationType {
   COACH_NEW_MESSAGE
   COACH_REPLY
   COACH_REFUND_PROCESSED
+  COACH_WAIVER_SIGNED
   TEST
+}
+
+enum WaiverSignupType {
+  PRIVATE_LESSONS
+  GROUP_LESSONS
+  TEAM_TRAINING
+  OTHER
 }
 
 enum MarketingEmailType {
@@ -171,6 +179,36 @@ model User {
   marketingEmailLogs     MarketingEmailLog[]
   coachAlertSettings     CoachAlertSettings?
   sentMessages           Message[]              @relation("MessageSender")
+  waiverSignatures       WaiverSignature[]
+}
+
+model WaiverSignature {
+  id                    String           @id @default(cuid())
+  playerFirstName       String
+  playerLastName        String
+  playerAge             Int
+  teamName              String?
+  teamSlug              String?
+  signupType            WaiverSignupType
+  signerFullName        String
+  signerEmail           String
+  signerPhone           String?
+  emergencyContactName  String
+  emergencyContactPhone String
+  medicalNotes          String?
+  mediaConsent          Boolean          @default(false)
+  typedSignature        String
+  version               String
+  signedAt              DateTime         @default(now())
+  ip                    String
+  userId                String?
+  user                  User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([signedAt(sort: Desc)])
+  @@index([teamSlug])
+  @@index([signerEmail])
+  @@index([userId])
+  @@index([ip, signedAt])
 }
 
 model MarketingEmailLog {

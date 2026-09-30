@@ -6,6 +6,10 @@ import { loadUserMarketingRecipient } from "@/lib/marketing-email-data";
 import { sendMarketingEmail } from "@/lib/marketing-email-send";
 import { validateAcceptedByName, LEGAL_DOCS_VERSION } from "@/lib/legal-shared";
 import { sendNewMemberNotification } from "@/lib/notifications";
+import {
+  applyMatchingWaiverAcceptanceToUser,
+  linkWaiverSignaturesToUser,
+} from "@/lib/waiver-sign-server";
 
 type SignupBody = {
   name?: string;
@@ -92,6 +96,13 @@ export async function POST(request: Request) {
         membershipTier: true,
       },
     });
+
+    try {
+      await linkWaiverSignaturesToUser(createdUser.id, email);
+      await applyMatchingWaiverAcceptanceToUser(createdUser.id);
+    } catch (error) {
+      console.error("Failed to link waiver signatures to new user", error);
+    }
 
     try {
       await sendNewMemberNotification({
