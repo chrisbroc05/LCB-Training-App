@@ -81,6 +81,7 @@ enum ProgramEmailType {
   PARENT_WEEKLY_RECAP
   COACH_DAILY_SUMMARY
   COACH_MESSAGE_REPLY
+  COACH_VIDEO
 }
 
 enum PushNotificationType {
@@ -97,7 +98,15 @@ enum PushNotificationType {
   COACH_REPLY
   COACH_REFUND_PROCESSED
   COACH_WAIVER_SIGNED
+  COACH_VIDEO
   TEST
+}
+
+enum CoachVideoDrillCategory {
+  HITTING
+  FIELDING
+  MINDSET
+  OTHER
 }
 
 enum WaiverSignupType {
@@ -185,6 +194,7 @@ model User {
   coachAlertSettings     CoachAlertSettings?
   sentMessages           Message[]              @relation("MessageSender")
   waiverSignatures       WaiverSignature[]
+  coachVideos            CoachVideo[]
 }
 
 model WaiverSignature {
@@ -259,6 +269,28 @@ model ProgramEnrollment {
   dayLogs                    DayLog[]
   emailLogs                  EmailLog[]
   conversation               Conversation?
+  coachVideos                CoachVideo[]
+}
+
+model CoachVideo {
+  id               String                   @id @default(cuid())
+  userId           String
+  user             User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  enrollmentId     String?
+  enrollment       ProgramEnrollment?       @relation(fields: [enrollmentId], references: [id], onDelete: SetNull)
+  title            String
+  note             String?
+  videoKey         String
+  videoContentType String
+  videoSizeBytes   Int
+  drillCategory    CoachVideoDrillCategory?
+  notifyPending    Boolean                  @default(false)
+  createdAt        DateTime                 @default(now())
+  viewedAt         DateTime?
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([enrollmentId])
+  @@index([notifyPending])
 }
 
 model EmailLog {

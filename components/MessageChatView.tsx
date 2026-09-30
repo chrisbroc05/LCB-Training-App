@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { formatTime } from "@/lib/format-date";
+import { parseCoachVideoLinkFromMessage } from "@/lib/coach-video-shared";
 import {
   MESSAGE_BODY_MAX_LENGTH,
   MESSAGE_POLL_INTERVAL_MS,
@@ -103,7 +105,7 @@ export default function MessageChatView({
                   : "rounded-br-md bg-[#2D6A4F] text-[#F4F6F8]"
               }`}
             >
-              <p className="whitespace-pre-wrap break-words">{message.body}</p>
+              <MessageBody body={message.body} fromCoach={message.fromCoach} />
               <p className="mt-2 text-[11px] opacity-70">{formatTime(message.createdAt)}</p>
             </div>
           </div>
@@ -140,6 +142,32 @@ export default function MessageChatView({
           {error ? <p className="mt-2 text-sm text-red-300">{error}</p> : null}
         </form>
       ) : null}
+    </div>
+  );
+}
+
+function MessageBody({ body, fromCoach }: { body: string; fromCoach: boolean }) {
+  const videoId = fromCoach ? parseCoachVideoLinkFromMessage(body) : null;
+  const lines = body.split("\n");
+
+  return (
+    <div className="space-y-2 whitespace-pre-wrap break-words">
+      {lines.map((line, index) => {
+        const trimmed = line.trim();
+        if (videoId && trimmed === `/videos/${videoId}`) {
+          return (
+            <Link
+              key={`${line}-${index}`}
+              href={`/videos/${videoId}`}
+              className="inline-flex rounded-full bg-[#52B788] px-3 py-1 text-xs font-semibold text-[#0A1628]"
+            >
+              Watch video
+            </Link>
+          );
+        }
+
+        return <p key={`${line}-${index}`}>{line}</p>;
+      })}
     </div>
   );
 }

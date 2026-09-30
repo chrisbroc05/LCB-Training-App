@@ -16,6 +16,8 @@ import {
   type ProgramFocusArea,
 } from "@/lib/program-enrollment-shared";
 import type { InPersonTrainingInfo } from "@/lib/in-person-training-shared";
+import type { AdminCoachVideoSummary } from "@/lib/coach-video-shared";
+import SendCoachVideoPanel from "@/app/admin/SendCoachVideoPanel";
 
 type WeekTask = {
   key: string;
@@ -39,8 +41,10 @@ type WeekDay = {
 };
 
 type PlayerDetail = {
+  coachVideosSent: AdminCoachVideoSummary[];
   enrollment: {
     id: string;
+    userId: string;
     name: string | null;
     email: string;
     refundLabel: string | null;
@@ -261,6 +265,7 @@ export default function AdminProgramPlayerPanel({ enrollmentId }: { enrollmentId
   const router = useRouter();
   const [detail, setDetail] = useState<PlayerDetail | null>(null);
   const [openingMessage, setOpeningMessage] = useState(false);
+  const [showSendVideo, setShowSendVideo] = useState(false);
   const [selectedWeek, setSelectedWeek] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -467,31 +472,53 @@ export default function AdminProgramPlayerPanel({ enrollmentId }: { enrollmentId
           <Link href="/admin/program" className="text-sm font-semibold text-[#52B788]">
             Back to overview
           </Link>
-          <button
-            type="button"
-            disabled={openingMessage}
-            onClick={() => {
-              setOpeningMessage(true);
-              void (async () => {
-                const response = await fetch("/api/admin/messages", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ enrollmentId }),
-                });
-                const data = (await response.json().catch(() => ({}))) as {
-                  conversationId?: string;
-                };
-                setOpeningMessage(false);
-                if (response.ok && data.conversationId) {
-                  router.push(`/admin/messages/${data.conversationId}`);
-                }
-              })();
-            }}
-            className="rounded-full border border-[#52B788] px-4 py-2 text-sm font-semibold text-[#52B788] disabled:opacity-60"
-          >
-            {openingMessage ? "Opening..." : "Message"}
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setShowSendVideo((current) => !current)}
+              className="rounded-full bg-[#22c55e] px-4 py-2 text-sm font-semibold text-black"
+            >
+              Send video
+            </button>
+            <button
+              type="button"
+              disabled={openingMessage}
+              onClick={() => {
+                setOpeningMessage(true);
+                void (async () => {
+                  const response = await fetch("/api/admin/messages", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ enrollmentId }),
+                  });
+                  const data = (await response.json().catch(() => ({}))) as {
+                    conversationId?: string;
+                  };
+                  setOpeningMessage(false);
+                  if (response.ok && data.conversationId) {
+                    router.push(`/admin/messages/${data.conversationId}`);
+                  }
+                })();
+              }}
+              className="rounded-full border border-[#52B788] px-4 py-2 text-sm font-semibold text-[#52B788] disabled:opacity-60"
+            >
+              {openingMessage ? "Opening..." : "Message"}
+            </button>
+          </div>
         </div>
+        {showSendVideo ? (
+          <div className="mt-4">
+            <SendCoachVideoPanel
+              userId={detail.enrollment.userId}
+              enrollmentId={detail.enrollment.id}
+              playerLabel={detail.enrollment.name ?? detail.enrollment.email}
+              onClose={() => setShowSendVideo(false)}
+              onSent={() => {
+                void loadDetail(selectedWeek);
+              }}
+            />
+          </div>
+        ) : null}
         <h1 className="mt-3 text-2xl font-semibold text-zinc-100">
           {detail.enrollment.name ?? detail.enrollment.email}
         </h1>
@@ -550,6 +577,24 @@ export default function AdminProgramPlayerPanel({ enrollmentId }: { enrollmentId
               </p>
             </>
           ) : null}
+        </div>
+        <div className="mt-4 rounded-2xl border border-[#2b3650] bg-black/30 p-4 text-sm text-zinc-300">
+          <p className="font-semibold text-zinc-100">Videos sent</p>
+          {detail.coachVideosSent.length === 0 ? (
+            <p className="mt-2 text-zinc-400">No coach videos sent yet.</p>
+          ) : (
+            <ul className="mt-3 space-y-2">
+              {detail.coachVideosSent.map((video) => (
+                <li key={video.id} className="flex flex-wrap items-center justify-between gap-2">
+                  <span>{video.title}</span>
+                  <span className="text-zinc-500">
+                    {formatDateTime(video.createdAt)} |{" "}
+                    {video.viewedAt ? "Watched" : "Not watched yet"}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
         <div className="mt-4 grid gap-2 text-sm text-zinc-400 sm:grid-cols-2">
           <p>Position: {detail.enrollment.position ?? "Not set"}</p>

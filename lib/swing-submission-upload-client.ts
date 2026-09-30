@@ -11,8 +11,17 @@ export function uploadVideoToPresignedUrl(
   contentType: string,
   onProgress: (percent: number) => void,
 ): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
+  return uploadVideoToPresignedUrlWithAbort(file, uploadUrl, contentType, onProgress).promise;
+}
+
+export function uploadVideoToPresignedUrlWithAbort(
+  file: File,
+  uploadUrl: string,
+  contentType: string,
+  onProgress: (percent: number) => void,
+) {
+  const xhr = new XMLHttpRequest();
+  const promise = new Promise<void>((resolve, reject) => {
     xhr.open("PUT", uploadUrl);
     xhr.setRequestHeader("Content-Type", contentType);
 
@@ -42,4 +51,9 @@ export function uploadVideoToPresignedUrl(
 
     xhr.send(file);
   });
+
+  return {
+    promise,
+    abort: () => xhr.abort(),
+  };
 }

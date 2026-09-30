@@ -316,12 +316,13 @@ export async function buildWeeklyRecapData(
         : PROGRAM_PHASE_LABELS.FOUNDATION;
 
   let messagesThisWeek = 0;
+  let coachVideosThisWeek = 0;
   const conversation = await prisma.conversation.findUnique({
     where: { enrollmentId: enrollment.id },
     select: { id: true },
   });
 
-  if (conversation && weekDays.length > 0) {
+  if (weekDays.length > 0) {
     const weekStart = getChicagoDayStart(
       formatProgramStartDateKey(getDateForProgramDay(enrollment.startDate, weekDays[0])),
     );
@@ -332,15 +333,27 @@ export async function buildWeeklyRecapData(
     weekEndDay.setUTCDate(weekEndDay.getUTCDate() + 1);
     const weekEnd = getChicagoDayStart(formatProgramStartDateKey(weekEndDay));
 
-    messagesThisWeek = await prisma.message.count({
+    coachVideosThisWeek = await prisma.coachVideo.count({
       where: {
-        conversationId: conversation.id,
+        userId: enrollment.userId,
         createdAt: {
           gte: weekStart,
           lt: weekEnd,
         },
       },
     });
+
+    if (conversation) {
+      messagesThisWeek = await prisma.message.count({
+        where: {
+          conversationId: conversation.id,
+          createdAt: {
+            gte: weekStart,
+            lt: weekEnd,
+          },
+        },
+      });
+    }
   }
 
   return {
@@ -357,6 +370,7 @@ export async function buildWeeklyRecapData(
     bestNotes,
     nextWeekPhase,
     messagesThisWeek,
+    coachVideosThisWeek,
     parentMessagesUrl: buildParentMessagesUrl(enrollment.id),
     unsubscribeUrl: buildParentUnsubscribeUrl(enrollment.id),
   };

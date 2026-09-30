@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import ProgramDayLogSection from "@/app/dashboard/ProgramDayLogSection";
 import ProgramPushPrompt from "@/components/ProgramPushPrompt";
+import VideosFromCoachLink from "@/components/VideosFromCoachLink";
 import ProgramNoteField from "@/app/components/ProgramNoteField";
 import { escapeHtml } from "@/lib/escape-text";
 import {
@@ -113,6 +114,7 @@ type ProgramTodayPayload = {
   weekDays: ProgramWeekDayStatus[];
   allTasksComplete: boolean;
   weeklyVideoSent: boolean;
+  unwatchedCoachVideoCount: number;
   knownFor: string | null;
   startDate: string | null;
   isBeforeStart: boolean;
@@ -717,6 +719,14 @@ export default function ProgramTodayView() {
       </section>
 
       <ProgramPushPrompt />
+
+      <section className={CARD}>
+        <VideosFromCoachLink
+          layout="today"
+          unwatchedCount={payload.unwatchedCoachVideoCount}
+          className="w-full justify-center"
+        />
+      </section>
 
       {showParentPrompt ? (
         <section className={`${CARD} border-[#52B788]/40`}>

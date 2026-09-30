@@ -26,6 +26,8 @@ import { ensurePlaybookProgress, serializePlaybookProgress } from "@/lib/playboo
 import { prisma } from "@/lib/prisma";
 import { formatOptionalDate } from "@/lib/format-date";
 import { fetchVimeoThumbnailMap } from "@/lib/vimeo-oembed";
+import { getUnwatchedCoachVideoCount } from "@/lib/coach-video-server";
+import VideosFromCoachLink from "@/components/VideosFromCoachLink";
 
 type ProfilePageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -154,6 +156,8 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
     playbookProgress = serializePlaybookProgress(progress);
   }
 
+  const unwatchedCoachVideoCount = await getUnwatchedCoachVideoCount(session.user.id);
+
   return (
     <div className="mx-auto w-full max-w-4xl px-4 py-10 sm:px-6 sm:py-14 md:py-20">
       <div className={profilePageStackClass}>
@@ -174,6 +178,8 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
         />
 
         <PlayerProfileCard />
+
+        <VideosFromCoachLink layout="profile" unwatchedCount={unwatchedCoachVideoCount} />
 
         {playbookProgress ? <PlaybookProgressCard progress={playbookProgress} /> : null}
 

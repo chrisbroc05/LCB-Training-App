@@ -42,6 +42,7 @@ import {
 } from "@/lib/legal-shared";
 import { formatRefundLabel } from "@/lib/stripe-refund-shared";
 import { serializeInPersonTrainingInfo } from "@/lib/in-person-training-shared";
+import { listAdminCoachVideosForUser } from "@/lib/coach-video-server";
 
 export async function buildAdminProgramPlayerDetail(enrollmentId: string, now = new Date()) {
   const enrollment = await prisma.programEnrollment.findUnique({
@@ -152,17 +153,19 @@ export async function buildAdminProgramPlayerDetail(enrollmentId: string, now = 
   const defaultCueLabel =
     HITTING_FOCUS_CUES[schedule.weekNumber] ?? HITTING_FOCUS_CUES[1];
 
-  const [gameLogs, dayLogs] = await Promise.all([
+  const [gameLogs, dayLogs, coachVideosSent] = await Promise.all([
     loadEnrollmentGameStats(enrollment.id),
     prisma.dayLog.findMany({
       where: { enrollmentId: enrollment.id },
       include: { gameStats: true },
       orderBy: [{ programDay: "desc" }, { createdAt: "desc" }],
     }),
+    listAdminCoachVideosForUser(enrollment.userId),
   ]);
   const statTotals = aggregateGameStats(gameLogs.map((log) => log.stats));
 
   return {
+    coachVideosSent,
     enrollment: {
       id: enrollment.id,
       userId: enrollment.userId,

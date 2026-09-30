@@ -156,6 +156,7 @@ export async function sendConversationMessage(params: {
   playerUserId: string;
   playerName: string | null;
   playerEmail: string;
+  skipPlayerNotification?: boolean;
 }) {
   const validated = validateMessageBody(params.body);
   if (!validated.ok) {
@@ -192,7 +193,7 @@ export async function sendConversationMessage(params: {
     return created;
   });
 
-  if (params.fromCoach) {
+  if (params.fromCoach && !params.skipPlayerNotification) {
     void notifyPlayerOfCoachReply({
       conversationId: params.conversationId,
       userId: params.playerUserId,
@@ -200,7 +201,7 @@ export async function sendConversationMessage(params: {
       body: message.body,
       messageId: message.id,
     });
-  } else {
+  } else if (!params.fromCoach) {
     void notifyCoachOfPlayerMessage({
       conversationId: params.conversationId,
       playerUserId: params.playerUserId,

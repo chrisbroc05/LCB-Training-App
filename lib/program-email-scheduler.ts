@@ -44,6 +44,7 @@ import {
   maybeSendCoachNightlySummaryPush,
   type ScheduledCoachPushPreview,
 } from "@/lib/coach-push-scheduler";
+import { processQueuedCoachVideoNotifications } from "@/lib/coach-video-notifications";
 import { processQueuedPlayerCoachReplyNotifications } from "@/lib/direct-messaging-notifications";
 import { isMorningPlayerPushWindow } from "@/lib/direct-messaging-quiet-hours";
 import {
@@ -667,6 +668,7 @@ export async function runProgramEmailScheduler(params?: {
     if (!dryRun && isMorningPlayerPushWindow(now)) {
       await trySend("queued-player-message-pushes", async () => {
         await processQueuedPlayerCoachReplyNotifications(now);
+        await processQueuedCoachVideoNotifications(now);
         return false;
       });
     }

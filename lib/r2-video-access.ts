@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import {
   formatR2VideoReference,
+  isCoachVideoKey,
   isUserSubmissionVideoKey,
   isValidR2ObjectKey,
 } from "@/lib/r2";
@@ -37,6 +38,13 @@ export async function userCanAccessR2VideoKey(
 
   if (isUserSubmissionVideoKey(key, userId)) {
     return true;
+  }
+
+  if (isCoachVideoKey(key, userId)) {
+    const count = await prisma.coachVideo.count({
+      where: { userId, videoKey: key },
+    });
+    return count > 0;
   }
 
   if (key.startsWith("responses/")) {

@@ -76,7 +76,12 @@ export function getStreamableR2VideoUrl(key: string) {
 }
 
 export function isValidR2ObjectKey(key: string) {
-  return (key.startsWith("submissions/") || key.startsWith("responses/")) && !key.includes("..");
+  return (
+    (key.startsWith("submissions/") ||
+      key.startsWith("responses/") ||
+      key.startsWith("coach-videos/")) &&
+    !key.includes("..")
+  );
 }
 
 export function buildUserSubmissionVideoKey(userId: string, fileName: string) {
@@ -85,6 +90,15 @@ export function buildUserSubmissionVideoKey(userId: string, fileName: string) {
 
 export function buildAdminResponseVideoKey(submissionId: string, fileName: string) {
   return `responses/${submissionId}/${Date.now()}-${randomUUID()}-${sanitizeFileName(fileName)}`;
+}
+
+export function buildCoachVideoKey(userId: string, fileName: string) {
+  return `coach-videos/${userId}/${Date.now()}-${randomUUID()}-${sanitizeFileName(fileName)}`;
+}
+
+export function isCoachVideoKey(key: string, userId: string) {
+  const prefix = `coach-videos/${userId}/`;
+  return key.startsWith(prefix) && isValidR2ObjectKey(key);
 }
 
 export function isUserSubmissionVideoKey(key: string, userId: string) {
@@ -99,6 +113,38 @@ export function isAdminResponseVideoKey(key: string, submissionId: string) {
 
 export function isAllowedSubmissionVideoContentType(contentType: string) {
   return contentType.trim().toLowerCase().startsWith("video/");
+}
+
+export async function createPresignedCoachVideoUploadUrl(params: {
+  userId: string;
+  fileName: string;
+  contentType: string;
+  fileSize: number;
+}) {
+  const { bucketName } = getR2Config();
+  const key = buildCoachVideoKey(params.userId, params.fileName);
+  const contentType = params.contentType.trim() || "video/mp4";
+
+  const command = new PutObjectCommand({
+    Bucket: bucketName,
+    Key: key,
+    ContentType: contentType,
+    ContentLength: params.fileSize,
+    Metadata: {
+      userId: params.userId,
+    },
+  });
+
+  const uploadUrl = await getSignedUrl(getR2Client(), command, {
+    expiresIn: SUBMISSION_VIDEO_PRESIGNED_UPLOAD_EXPIRY_SECONDS,
+  });
+
+  return {
+    uploadUrl,
+    r2Key: key,
+    contentType,
+    expiresInSeconds: SUBMISSION_VIDEO_PRESIGNED_UPLOAD_EXPIRY_SECONDS,
+  };
 }
 
 export async function createPresignedAdminResponseVideoUploadUrl(params: {

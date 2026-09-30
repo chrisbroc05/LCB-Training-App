@@ -258,6 +258,7 @@ export function buildParentWeeklyRecapEmail(params: {
   bestNotes: string[];
   nextWeekPhase: string;
   messagesThisWeek: number;
+  coachVideosThisWeek: number;
   parentMessagesUrl: string;
   unsubscribeUrl: string;
 }) {
@@ -306,6 +307,11 @@ export function buildParentWeeklyRecapEmail(params: {
       ${buildEmailSectionLabel("NEXT WEEK")}
       <p style="margin:0 0 16px 0; font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:1.5; color:#0A1628;">Phase: ${escapeHtml(params.nextWeekPhase)}</p>
       ${
+        params.coachVideosThisWeek > 0
+          ? `<p style="margin:0 0 16px 0; font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:1.5; color:#0A1628;">Coach Broc sent ${params.coachVideosThisWeek} video${params.coachVideosThisWeek === 1 ? "" : "s"} this week</p>`
+          : ""
+      }
+      ${
         params.messagesThisWeek > 0
           ? `<p style="margin:0 0 16px 0; font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:1.5; color:#0A1628;">${escapeHtml(params.playerFirstName)} and Coach Broc exchanged ${params.messagesThisWeek} message${params.messagesThisWeek === 1 ? "" : "s"} this week</p>
       ${buildEmailButton("View messages", params.parentMessagesUrl)}`
@@ -345,6 +351,10 @@ ${notesText}
 NEXT WEEK
 Phase: ${params.nextWeekPhase}
 ${
+  params.coachVideosThisWeek > 0
+    ? `\nCoach Broc sent ${params.coachVideosThisWeek} video${params.coachVideosThisWeek === 1 ? "" : "s"} this week\n`
+    : ""
+}${
   params.messagesThisWeek > 0
     ? `\n${params.playerFirstName} and Coach Broc exchanged ${params.messagesThisWeek} message${params.messagesThisWeek === 1 ? "" : "s"} this week\nView messages: ${params.parentMessagesUrl}\n`
     : ""

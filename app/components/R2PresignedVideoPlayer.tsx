@@ -7,6 +7,7 @@ type R2PresignedVideoPlayerProps = {
   storedVideo: string;
   title?: string;
   className?: string;
+  onFirstPlay?: () => void;
 };
 
 type PresignedPlaybackResponse = {
@@ -27,10 +28,12 @@ export default function R2PresignedVideoPlayer({
   storedVideo,
   title = "Video",
   className = "h-full w-full",
+  onFirstPlay,
 }: R2PresignedVideoPlayerProps) {
   const r2Key = resolveR2Key(storedVideo);
   const videoRef = useRef<HTMLVideoElement>(null);
   const retriedRef = useRef(false);
+  const playedRef = useRef(false);
   const [playbackUrl, setPlaybackUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -126,6 +129,14 @@ export default function R2PresignedVideoPlayer({
       title={title}
       className={className}
       onError={handleVideoError}
+      onPlay={() => {
+        if (playedRef.current) {
+          return;
+        }
+
+        playedRef.current = true;
+        onFirstPlay?.();
+      }}
     />
   );
 }

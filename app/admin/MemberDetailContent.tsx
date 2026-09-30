@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import SendCoachVideoPanel from "@/app/admin/SendCoachVideoPanel";
 import MemberProfileCard from "@/app/admin/MemberProfileCard";
 import {
   formatAssessmentCallDateTime,
@@ -157,6 +159,8 @@ export default function MemberDetailContent({
     ? detail.twelveWeekCallScheduledAt
     : detail.assessmentCallDate;
   const callSectionTitle = isTwelveWeekMember ? "Scheduled Check-In Call" : "Assessment Call";
+  const [showSendVideo, setShowSendVideo] = useState(false);
+
   return (
     <div className="space-y-5">
       <div>
@@ -164,10 +168,25 @@ export default function MemberDetailContent({
           {detail.name?.trim() || "Unnamed member"}
         </h3>
         <p className="mt-1 text-sm text-zinc-300">{detail.email}</p>
-        <div className="mt-3">
+        <div className="mt-3 flex flex-wrap items-center gap-3">
           <TierBadge tier={detail.membershipTier} />
+          <button
+            type="button"
+            onClick={() => setShowSendVideo((current) => !current)}
+            className="rounded-full bg-[#22c55e] px-4 py-2 text-sm font-semibold text-black"
+          >
+            Send video
+          </button>
         </div>
       </div>
+
+      {showSendVideo ? (
+        <SendCoachVideoPanel
+          userId={detail.id}
+          playerLabel={detail.name?.trim() || detail.email}
+          onClose={() => setShowSendVideo(false)}
+        />
+      ) : null}
 
       <div className="rounded-xl border border-[#2b3650] bg-[#0b1324]/70 p-4 text-sm text-zinc-300">
         <p>

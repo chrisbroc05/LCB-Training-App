@@ -26,6 +26,7 @@ import {
   parseProgramDateKey,
   type ProgramDayInfo,
 } from "@/lib/program-schedule";
+import { getUnwatchedCoachVideoCount } from "@/lib/coach-video-server";
 import {
   loadEnrollmentGameStats,
   serializeDayLog,
@@ -417,7 +418,10 @@ export async function buildProgramTodayPayload(params: {
   const allTasksComplete =
     tasks.length > 0 && tasks.every((task) => task.completed) && viewedProgramDay === todayInfo.programDay;
 
-  const weeklyVideoSent = await hasWeeklyVideoSent(params.userId, now);
+  const [weeklyVideoSent, unwatchedCoachVideoCount] = await Promise.all([
+    hasWeeklyVideoSent(params.userId, now),
+    getUnwatchedCoachVideoCount(params.userId),
+  ]);
 
   const weekFocusCue = viewedOverrides?.focusOverride?.cueLabel ?? null;
   const weekFocusNote = getWeekFocusNote(viewedOverrides);
@@ -432,6 +436,7 @@ export async function buildProgramTodayPayload(params: {
     weekDays,
     allTasksComplete,
     weeklyVideoSent,
+    unwatchedCoachVideoCount,
     weekFocusCue,
     weekFocusNote,
     dayLogs: dayLogs.map((log) => ({
