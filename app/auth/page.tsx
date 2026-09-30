@@ -6,7 +6,6 @@ import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import { keyToDatabaseTier, membershipTiers, type TierKey } from "@/lib/membership";
 import type { DatabaseTier } from "@/lib/membership";
-import BrandLogo from "@/app/BrandLogo";
 import { parseBillingFrequency, type BillingFrequency } from "@/lib/billing";
 import {
   FREE_SWING_AUTH_REDIRECT,
@@ -417,13 +416,8 @@ function AuthContent() {
   };
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl justify-center px-4 py-10 sm:px-6 sm:py-14 md:py-20">
-      <section className="w-full max-w-5xl rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-5 sm:p-7 md:p-9">
-        <div className="mx-auto mb-6 flex justify-center">
-          <div className="relative h-14 w-36 sm:h-16 sm:w-40">
-            <BrandLogo className="object-contain" />
-          </div>
-        </div>
+    <div className="mx-auto flex w-full max-w-[760px] justify-center px-4 py-6 sm:px-6 sm:py-8">
+      <section className="w-full rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-5 sm:p-7 md:p-9">
         {checkoutStatus === "cancelled" && isPlaybookFlow ? (
           <section className="mb-6 rounded-xl border border-yellow-500/40 bg-yellow-500/10 px-5 py-4 text-sm text-yellow-100">
             Checkout was cancelled. Your account is ready, and you can choose a plan again any time.

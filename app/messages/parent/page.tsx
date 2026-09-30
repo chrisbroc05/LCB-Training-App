@@ -43,7 +43,7 @@ export default function ParentMessagesPage() {
 
   if (loading) {
     return (
-      <div className="mx-auto w-full max-w-2xl px-4 py-10 sm:px-6">
+      <div className="mx-auto w-full max-w-[760px] px-4 py-6 sm:px-6 sm:py-8">
         <p className="text-sm text-zinc-400">Loading messages...</p>
       </div>
     );
@@ -51,14 +51,14 @@ export default function ParentMessagesPage() {
 
   if (error) {
     return (
-      <div className="mx-auto w-full max-w-2xl px-4 py-10 sm:px-6">
+      <div className="mx-auto w-full max-w-[760px] px-4 py-6 sm:px-6 sm:py-8">
         <p className="text-sm text-red-300">{error}</p>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6 sm:py-10">
+    <div className="mx-auto w-full max-w-[760px] px-4 py-6 sm:px-6 sm:py-8">
       <h1 className="text-2xl font-semibold text-zinc-100">{playerName} and Coach Broc</h1>
       <p className="mt-2 text-sm text-zinc-400">Read-only view for parents and second email.</p>
       <div className="mt-6 rounded-3xl border border-[#18243a] bg-[#0b1324]/80 p-5 sm:p-6">

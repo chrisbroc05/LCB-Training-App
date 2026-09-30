@@ -32,7 +32,7 @@ function UnsubscribeContent() {
   };
 
   return (
-    <div className="mx-auto min-h-[100dvh] w-full max-w-xl px-4 py-8 sm:px-6">
+    <div className="mx-auto w-full max-w-[760px] px-4 py-6 sm:px-6 sm:py-8">
       <div className="rounded-3xl border border-[#0A1628]/10 bg-white p-6 shadow-sm sm:p-8">
         <h1 className="text-2xl font-bold text-[#0A1628]">Turn off second email</h1>
         <p className="mt-3 text-sm leading-6 text-[#6B7280]">

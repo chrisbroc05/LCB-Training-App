@@ -8,7 +8,9 @@ import MobileBottomNav from "@/app/components/mobile/MobileBottomNav";
 import MobilePageTransition from "@/app/components/mobile/MobilePageTransition";
 import { MobileAppProvider } from "@/app/components/mobile/MobileAppProvider";
 import MessageChatBubble from "@/components/MessageChatBubble";
+import PublicPageShell from "@/components/PublicPageShell";
 import { shouldUseMobileAppChrome } from "@/lib/mobile-ui";
+import { isCompactPublicPage } from "@/lib/public-page-routes";
 import type { DatabaseTier } from "@/lib/membership";
 
 type SiteShellProps = {
@@ -38,10 +40,15 @@ export default function SiteShell({
 }: SiteShellProps) {
   const pathname = usePathname();
   const isStandaloneLanding = pathname.startsWith("/details") || pathname.startsWith("/remote");
+  const isCompactPublic = isCompactPublicPage(pathname);
   const isHomePage = pathname === "/";
   const useMobileChrome = shouldUseMobileAppChrome(isLoggedIn, pathname);
 
-  if (isStandaloneLanding) {
+  if (isStandaloneLanding || isCompactPublic) {
+    if (isCompactPublic) {
+      return <PublicPageShell isLoggedIn={isLoggedIn}>{children}</PublicPageShell>;
+    }
+
     return children;
   }
 
