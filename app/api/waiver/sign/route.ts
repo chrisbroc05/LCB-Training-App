@@ -1,10 +1,16 @@
+import { randomUUID } from "crypto";
 import { jsonNoStore } from "@/lib/api-no-store";
-import { parseWaiverSignPayload, type WaiverSignFormValues } from "@/lib/waiver-sign-shared";
+import {
+  buildWaiverPlayerFullName,
+  parseWaiverSignPayload,
+  type WaiverSignFormValues,
+} from "@/lib/waiver-sign-shared";
 import { sendWaiverConfirmationEmail } from "@/lib/waiver-sign-email";
 import { sendCoachWaiverSignedPush } from "@/lib/waiver-sign-notifications";
 import {
   applyMatchingWaiverAcceptanceToUser,
-  createWaiverSignature,
+  createWaiverSignatureBatch,
+  findLinkedUserIdForWaiverEmail,
   getRequestIp,
   isWaiverSignRateLimited,
 } from "@/lib/waiver-sign-server";
@@ -29,7 +35,7 @@ export async function POST(request: Request) {
     }
 
     if (parsed.honeypot) {
-      return jsonNoStore({ success: true });
+      return jsonNoStore({ success: true, playerNames: [] });
     }
 
     const ip = getRequestIp(request);
@@ -40,22 +46,31 @@ export async function POST(request: Request) {
       );
     }
 
-    const signature = await createWaiverSignature({
-      ...parsed.data,
+    const submissionBatchId = randomUUID();
+    const signedAt = new Date();
+    const signatures = await createWaiverSignatureBatch({
+      shared: parsed.shared,
+      players: parsed.players,
       ip,
+      submissionBatchId,
+      signedAt,
     });
 
-    if (signature.userId) {
-      await applyMatchingWaiverAcceptanceToUser(signature.userId);
+    const userId = await findLinkedUserIdForWaiverEmail(parsed.shared.signerEmail);
+    if (userId) {
+      await applyMatchingWaiverAcceptanceToUser(userId);
     }
+
+    const playerNames = signatures.map((signature) =>
+      buildWaiverPlayerFullName(signature.playerFirstName, signature.playerLastName),
+    );
 
     try {
       await sendWaiverConfirmationEmail({
-        to: signature.signerEmail,
-        playerFirstName: signature.playerFirstName,
-        playerLastName: signature.playerLastName,
-        signedAt: signature.signedAt,
-        version: signature.version,
+        to: parsed.shared.signerEmail,
+        playerNames,
+        signedAt,
+        version: parsed.shared.version,
       });
     } catch (error) {
       console.error("Failed to send waiver confirmation email", error);
@@ -63,11 +78,10 @@ export async function POST(request: Request) {
 
     try {
       await sendCoachWaiverSignedPush({
-        signatureId: signature.id,
-        playerFirstName: signature.playerFirstName,
-        playerLastName: signature.playerLastName,
-        teamName: signature.teamName,
-        signupType: signature.signupType,
+        submissionBatchId,
+        playerNames,
+        teamName: parsed.shared.teamName,
+        signupType: parsed.shared.signupType,
       });
     } catch (error) {
       console.error("Failed to send waiver signed coach push", error);
@@ -75,7 +89,7 @@ export async function POST(request: Request) {
 
     return jsonNoStore({
       success: true,
-      playerName: `${signature.playerFirstName} ${signature.playerLastName}`.trim(),
+      playerNames,
     });
   } catch (error) {
     console.error("Failed to save waiver signature", error);

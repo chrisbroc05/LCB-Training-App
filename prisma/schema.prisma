@@ -200,6 +200,7 @@ model WaiverSignature {
   typedSignature        String
   version               String
   signedAt              DateTime         @default(now())
+  submissionBatchId     String?
   ip                    String
   userId                String?
   user                  User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
@@ -209,6 +210,7 @@ model WaiverSignature {
   @@index([signerEmail])
   @@index([userId])
   @@index([ip, signedAt])
+  @@index([submissionBatchId])
 }
 
 model MarketingEmailLog {

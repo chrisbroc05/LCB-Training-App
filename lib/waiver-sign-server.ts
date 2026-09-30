@@ -8,26 +8,9 @@ import {
   normalizePersonName,
   WAIVER_SIGN_RATE_LIMIT_PER_HOUR,
   waiverPlayerNameMatches,
+  type WaiverSignPlayerInput,
+  type WaiverSignSharedInput,
 } from "@/lib/waiver-sign-shared";
-
-export type WaiverSignatureInput = {
-  playerFirstName: string;
-  playerLastName: string;
-  playerAge: number;
-  teamName: string | null;
-  teamSlug: string | null;
-  signupType: WaiverSignupType;
-  signerFullName: string;
-  signerEmail: string;
-  signerPhone: string | null;
-  emergencyContactName: string;
-  emergencyContactPhone: string;
-  medicalNotes: string | null;
-  mediaConsent: boolean;
-  typedSignature: string;
-  version: string;
-  ip: string;
-};
 
 export function getRequestIp(request: Request) {
   const forwarded = request.headers.get("x-forwarded-for");
@@ -40,14 +23,22 @@ export function getRequestIp(request: Request) {
 
 export async function isWaiverSignRateLimited(ip: string) {
   const since = new Date(Date.now() - 60 * 60 * 1000);
-  const count = await prisma.waiverSignature.count({
+  const recentSignatures = await prisma.waiverSignature.findMany({
     where: {
       ip,
       signedAt: { gte: since },
     },
+    select: {
+      id: true,
+      submissionBatchId: true,
+    },
   });
 
-  return count >= WAIVER_SIGN_RATE_LIMIT_PER_HOUR;
+  const submissionCount = new Set(
+    recentSignatures.map((signature) => signature.submissionBatchId ?? signature.id),
+  ).size;
+
+  return submissionCount >= WAIVER_SIGN_RATE_LIMIT_PER_HOUR;
 }
 
 export async function findLinkedUserIdForWaiverEmail(email: string) {
@@ -59,15 +50,43 @@ export async function findLinkedUserIdForWaiverEmail(email: string) {
   return user?.id ?? null;
 }
 
-export async function createWaiverSignature(input: WaiverSignatureInput) {
-  const userId = await findLinkedUserIdForWaiverEmail(input.signerEmail);
+export async function createWaiverSignatureBatch(params: {
+  shared: WaiverSignSharedInput;
+  players: WaiverSignPlayerInput[];
+  ip: string;
+  submissionBatchId: string;
+  signedAt?: Date;
+}) {
+  const userId = await findLinkedUserIdForWaiverEmail(params.shared.signerEmail);
+  const signedAt = params.signedAt ?? new Date();
 
-  return prisma.waiverSignature.create({
-    data: {
-      ...input,
-      userId,
-    },
-  });
+  return prisma.$transaction(
+    params.players.map((player) =>
+      prisma.waiverSignature.create({
+        data: {
+          playerFirstName: player.playerFirstName,
+          playerLastName: player.playerLastName,
+          playerAge: player.playerAge,
+          medicalNotes: player.medicalNotes,
+          teamName: params.shared.teamName,
+          teamSlug: params.shared.teamSlug,
+          signupType: params.shared.signupType,
+          signerFullName: params.shared.signerFullName,
+          signerEmail: params.shared.signerEmail,
+          signerPhone: params.shared.signerPhone,
+          emergencyContactName: params.shared.emergencyContactName,
+          emergencyContactPhone: params.shared.emergencyContactPhone,
+          mediaConsent: params.shared.mediaConsent,
+          typedSignature: params.shared.typedSignature,
+          version: params.shared.version,
+          ip: params.ip,
+          submissionBatchId: params.submissionBatchId,
+          signedAt,
+          userId,
+        },
+      }),
+    ),
+  );
 }
 
 export async function findMatchingWaiverSignatureForUser(userId: string) {

@@ -41,11 +41,18 @@ export const WAIVER_SIGN_RATE_LIMIT_PER_HOUR = 30;
 export const WAIVER_PLAYER_MIN_AGE = 5;
 export const WAIVER_PLAYER_MAX_AGE = 19;
 export const WAIVER_ADULT_AGE = 18;
+export const WAIVER_MAX_PLAYERS = 6;
 
-export type WaiverSignFormValues = {
+export type WaiverPlayerEntry = {
+  id: string;
   playerFirstName: string;
   playerLastName: string;
   playerAge: string;
+  medicalNotes: string;
+};
+
+export type WaiverSignFormValues = {
+  players: WaiverPlayerEntry[];
   teamName: string;
   signupType: WaiverSignupType | "";
   signerFullName: string;
@@ -53,18 +60,49 @@ export type WaiverSignFormValues = {
   signerPhone: string;
   emergencyContactName: string;
   emergencyContactPhone: string;
-  medicalNotes: string;
   termsAccepted: boolean;
   mediaConsent: boolean;
   typedSignature: string;
   website: string;
 };
 
-export function createEmptyWaiverSignFormValues(teamName = ""): WaiverSignFormValues {
+export type WaiverSignPlayerInput = {
+  playerFirstName: string;
+  playerLastName: string;
+  playerAge: number;
+  medicalNotes: string | null;
+};
+
+export type WaiverSignSharedInput = {
+  teamName: string | null;
+  teamSlug: string | null;
+  signupType: WaiverSignupType;
+  signerFullName: string;
+  signerEmail: string;
+  signerPhone: string | null;
+  emergencyContactName: string;
+  emergencyContactPhone: string;
+  mediaConsent: boolean;
+  typedSignature: string;
+  version: string;
+};
+
+let nextPlayerEntryId = 0;
+
+export function createWaiverPlayerEntry(): WaiverPlayerEntry {
+  nextPlayerEntryId += 1;
   return {
+    id: `player-${nextPlayerEntryId}`,
     playerFirstName: "",
     playerLastName: "",
     playerAge: "",
+    medicalNotes: "",
+  };
+}
+
+export function createEmptyWaiverSignFormValues(teamName = ""): WaiverSignFormValues {
+  return {
+    players: [createWaiverPlayerEntry()],
     teamName,
     signupType: "",
     signerFullName: "",
@@ -72,7 +110,6 @@ export function createEmptyWaiverSignFormValues(teamName = ""): WaiverSignFormVa
     signerPhone: "",
     emergencyContactName: "",
     emergencyContactPhone: "",
-    medicalNotes: "",
     termsAccepted: false,
     mediaConsent: false,
     typedSignature: "",
@@ -110,33 +147,84 @@ export function getWaiverSignerLabel(playerAge: number) {
   return playerAge >= WAIVER_ADULT_AGE ? "Your full name" : "Parent or guardian full name";
 }
 
+export function parsePlayerAge(value: string) {
+  return Number.parseInt(value, 10);
+}
+
+export function isValidPlayerAge(playerAge: number) {
+  return (
+    Number.isInteger(playerAge) &&
+    playerAge >= WAIVER_PLAYER_MIN_AGE &&
+    playerAge <= WAIVER_PLAYER_MAX_AGE
+  );
+}
+
+export function isAdultSelfSignMode(players: WaiverPlayerEntry[]) {
+  if (players.length !== 1) {
+    return false;
+  }
+
+  const playerAge = parsePlayerAge(players[0]?.playerAge ?? "");
+  return isValidPlayerAge(playerAge) && playerAge >= WAIVER_ADULT_AGE;
+}
+
+function validateWaiverPlayer(entry: WaiverPlayerEntry, index: number) {
+  const playerFirstName = entry.playerFirstName.trim();
+  const playerLastName = entry.playerLastName.trim();
+  if (!playerFirstName || !playerLastName) {
+    return `Enter player ${index + 1}'s first and last name.`;
+  }
+
+  const playerAge = parsePlayerAge(entry.playerAge);
+  if (!isValidPlayerAge(playerAge)) {
+    return `Enter player ${index + 1}'s age (${WAIVER_PLAYER_MIN_AGE}-${WAIVER_PLAYER_MAX_AGE}).`;
+  }
+
+  return null;
+}
+
 export function validateWaiverSignForm(values: WaiverSignFormValues, teamLocked: boolean) {
   if (values.website.trim()) {
     return null;
   }
 
-  const playerFirstName = values.playerFirstName.trim();
-  const playerLastName = values.playerLastName.trim();
-  if (!playerFirstName || !playerLastName) {
-    return "Enter the player's first and last name.";
+  if (values.players.length === 0) {
+    return "Add at least one player.";
   }
 
-  const playerAge = Number.parseInt(values.playerAge, 10);
-  if (
-    !Number.isInteger(playerAge) ||
-    playerAge < WAIVER_PLAYER_MIN_AGE ||
-    playerAge > WAIVER_PLAYER_MAX_AGE
-  ) {
-    return `Enter the player's age (${WAIVER_PLAYER_MIN_AGE}-${WAIVER_PLAYER_MAX_AGE}).`;
+  if (values.players.length > WAIVER_MAX_PLAYERS) {
+    return `You can sign for up to ${WAIVER_MAX_PLAYERS} players at a time.`;
+  }
+
+  for (let index = 0; index < values.players.length; index += 1) {
+    const playerError = validateWaiverPlayer(values.players[index], index);
+    if (playerError) {
+      return playerError;
+    }
+  }
+
+  const adultSelfSign = isAdultSelfSignMode(values.players);
+  if (!adultSelfSign && values.players.length > 1) {
+    for (const player of values.players) {
+      const playerAge = parsePlayerAge(player.playerAge);
+      if (playerAge >= WAIVER_ADULT_AGE) {
+        return "Adult players must sign for themselves on a separate form.";
+      }
+    }
+  }
+
+  if (adultSelfSign && values.players.length > 1) {
+    return "Adult self-sign is limited to one player.";
   }
 
   if (!values.signupType) {
     return "Select what they are signing up for.";
   }
 
+  const primaryPlayerAge = parsePlayerAge(values.players[0].playerAge);
   const signerFullName = values.signerFullName.trim();
   if (!signerFullName) {
-    return playerAge >= WAIVER_ADULT_AGE
+    return primaryPlayerAge >= WAIVER_ADULT_AGE
       ? "Enter your full name."
       : "Enter the parent or guardian full name.";
   }
@@ -165,7 +253,7 @@ export function validateWaiverSignForm(values: WaiverSignFormValues, teamLocked:
     return "Typed signature must match the signer name.";
   }
 
-  const teamName = teamLocked ? values.teamName.trim() : values.teamName.trim();
+  const teamName = values.teamName.trim();
   if (teamLocked && !teamName) {
     return "Team name is missing from this link.";
   }
@@ -184,28 +272,33 @@ export function parseWaiverSignPayload(values: WaiverSignFormValues, teamLocked:
   }
 
   const teamName = values.teamName.trim();
-  const playerAge = Number.parseInt(values.playerAge, 10);
+
+  const players: WaiverSignPlayerInput[] = values.players.map((player) => ({
+    playerFirstName: player.playerFirstName.trim(),
+    playerLastName: player.playerLastName.trim(),
+    playerAge: parsePlayerAge(player.playerAge),
+    medicalNotes: player.medicalNotes.trim() || null,
+  }));
+
+  const shared: WaiverSignSharedInput = {
+    teamName: teamName || null,
+    teamSlug: teamName ? normalizeTeamSlug(teamName) : null,
+    signupType: values.signupType as WaiverSignupType,
+    signerFullName: values.signerFullName.trim(),
+    signerEmail: values.signerEmail.trim().toLowerCase(),
+    signerPhone: values.signerPhone.trim() || null,
+    emergencyContactName: values.emergencyContactName.trim(),
+    emergencyContactPhone: values.emergencyContactPhone.trim(),
+    mediaConsent: values.mediaConsent,
+    typedSignature: values.typedSignature.trim(),
+    version: LEGAL_DOCS_VERSION,
+  };
 
   return {
     ok: true as const,
     honeypot: false as const,
-    data: {
-      playerFirstName: values.playerFirstName.trim(),
-      playerLastName: values.playerLastName.trim(),
-      playerAge,
-      teamName: teamName || null,
-      teamSlug: teamName ? normalizeTeamSlug(teamName) : null,
-      signupType: values.signupType as WaiverSignupType,
-      signerFullName: values.signerFullName.trim(),
-      signerEmail: values.signerEmail.trim().toLowerCase(),
-      signerPhone: values.signerPhone.trim() || null,
-      emergencyContactName: values.emergencyContactName.trim(),
-      emergencyContactPhone: values.emergencyContactPhone.trim(),
-      medicalNotes: values.medicalNotes.trim() || null,
-      mediaConsent: values.mediaConsent,
-      typedSignature: values.typedSignature.trim(),
-      version: LEGAL_DOCS_VERSION,
-    },
+    shared,
+    players,
   };
 }
 
@@ -223,4 +316,20 @@ export function findUnsignedRosterNames(
   const signedSet = new Set(signedNames.map((name) => normalizePersonName(name)));
 
   return rosterNames.filter((name) => !signedSet.has(normalizePersonName(name)));
+}
+
+export function formatWaiverPlayerNameList(playerNames: string[]) {
+  if (playerNames.length === 0) {
+    return "";
+  }
+
+  if (playerNames.length === 1) {
+    return playerNames[0];
+  }
+
+  if (playerNames.length === 2) {
+    return `${playerNames[0]} and ${playerNames[1]}`;
+  }
+
+  return `${playerNames.slice(0, -1).join(", ")}, and ${playerNames[playerNames.length - 1]}`;
 }
