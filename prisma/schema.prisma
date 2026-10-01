@@ -253,6 +253,7 @@ model ProgramEnrollment {
   position              String?
   focusAreas            String[]                @default([])
   equipment             String[]                @default([])
+  strengthVariant       String?
   seasonMode            ProgramSeasonMode?
   knownFor                   String?
   onboardingCompletedAt      DateTime?

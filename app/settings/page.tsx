@@ -5,6 +5,7 @@ import BillingSection from "@/app/settings/BillingSection";
 import DeleteAccountSection from "@/app/settings/DeleteAccountSection";
 import NotificationPreferencesSection from "@/app/settings/NotificationPreferencesSection";
 import ProgramEmailSettingsSection from "@/app/settings/ProgramEmailSettingsSection";
+import WorkoutEquipmentSection from "@/app/settings/WorkoutEquipmentSection";
 import PushNotificationsSection from "@/app/settings/PushNotificationsSection";
 import InPersonTrainingSection from "@/app/settings/InPersonTrainingSection";
 import LegalSettingsSection from "@/app/settings/LegalSettingsSection";
@@ -114,6 +115,7 @@ export default async function SettingsPage() {
         <NotificationPreferencesSection />
         <PushNotificationsSection />
         <ProgramEmailSettingsSection />
+        <WorkoutEquipmentSection />
         <LegalSettingsSection
           termsVersion={user.termsVersion}
           termsAcceptedAt={user.termsAcceptedAt?.toISOString() ?? null}

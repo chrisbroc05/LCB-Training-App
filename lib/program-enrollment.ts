@@ -60,6 +60,7 @@ export function serializeProgramEnrollment(enrollment: {
   position: string | null;
   focusAreas: string[];
   equipment: string[];
+  strengthVariant: string | null;
   seasonMode: ProgramSeasonMode | null;
   knownFor: string | null;
   onboardingCompletedAt: Date | null;
@@ -82,6 +83,7 @@ export function serializeProgramEnrollment(enrollment: {
     position: enrollment.position,
     focusAreas: enrollment.focusAreas,
     equipment: enrollment.equipment,
+    strengthVariant: enrollment.strengthVariant,
     seasonMode: enrollment.seasonMode,
     knownFor: enrollment.knownFor,
     onboardingCompletedAt: enrollment.onboardingCompletedAt?.toISOString() ?? null,

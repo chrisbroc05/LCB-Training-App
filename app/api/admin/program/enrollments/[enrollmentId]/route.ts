@@ -17,6 +17,7 @@ import {
   type ProgramFocusArea,
   type ProgramSeasonMode,
 } from "@/lib/program-enrollment-shared";
+import { isStrengthVariant, type StrengthVariant } from "@/lib/strength-variant-shared";
 
 type RouteContext = {
   params: Promise<{ enrollmentId: string }>;
@@ -97,6 +98,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     ageGroup?: ProgramAgeGroup;
     focusAreas?: string[];
     equipment?: string[];
+    strengthVariant?: string;
   } | null;
 
   const existing = await prisma.programEnrollment.findUnique({ where: { id: enrollmentId } });
@@ -109,6 +111,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     ageGroup?: ProgramAgeGroup;
     focusAreas?: string[];
     equipment?: string[];
+    strengthVariant?: StrengthVariant;
   } = {};
 
   if (body?.seasonMode === "IN_SEASON" || body?.seasonMode === "OFF_SEASON") {
@@ -129,6 +132,10 @@ export async function PATCH(request: Request, context: RouteContext) {
     data.equipment = body.equipment.filter((item): item is ProgramEquipmentOption =>
       PROGRAM_EQUIPMENT_OPTIONS.includes(item as ProgramEquipmentOption),
     );
+  }
+
+  if (body?.strengthVariant && isStrengthVariant(body.strengthVariant)) {
+    data.strengthVariant = body.strengthVariant;
   }
 
   const enrollment = await prisma.programEnrollment.update({

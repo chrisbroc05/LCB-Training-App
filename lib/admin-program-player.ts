@@ -13,6 +13,11 @@ import {
   type ProgramEquipmentOption,
   type ProgramFocusArea,
 } from "@/lib/program-enrollment-shared";
+import {
+  resolveStrengthVariant,
+  STRENGTH_VARIANT_LABELS,
+  type StrengthVariant,
+} from "@/lib/strength-variant-shared";
 import { HITTING_FOCUS_CUES } from "@/lib/program-content";
 import { getProgramDay, getChicagoMondayStart } from "@/lib/program-schedule";
 import { computeProgramStreak, getDayOfWeekForProgramDay } from "@/lib/program-streak-shared";
@@ -192,6 +197,16 @@ export async function buildAdminProgramPlayerDetail(enrollmentId: string, now = 
       equipmentLabels: enrollment.equipment.map(
         (item) => PROGRAM_EQUIPMENT_LABELS[item as ProgramEquipmentOption] ?? item,
       ),
+      strengthVariant: resolveStrengthVariant({
+        strengthVariant: enrollment.strengthVariant as StrengthVariant | null,
+        equipment: enrollment.equipment as ProgramEquipmentOption[],
+      }),
+      strengthVariantLabel: STRENGTH_VARIANT_LABELS[
+        resolveStrengthVariant({
+          strengthVariant: enrollment.strengthVariant as StrengthVariant | null,
+          equipment: enrollment.equipment as ProgramEquipmentOption[],
+        })
+      ],
       seasonMode: enrollment.seasonMode,
       seasonModeLabel: enrollment.seasonMode
         ? PROGRAM_SEASON_MODE_LABELS[enrollment.seasonMode]

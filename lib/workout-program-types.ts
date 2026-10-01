@@ -12,6 +12,8 @@ export type WorkoutExercise = {
   repsOrTime: string;
   rest: string;
   formCue?: string;
+  alternativeName?: string;
+  alternativeRepsOrTime?: string;
 };
 
 export type WorkoutSection = {
@@ -26,6 +28,7 @@ export type StructuredWorkout = {
   title: string;
   sections: WorkoutSection[];
   coachNote?: string;
+  safetyNote?: string;
 };
 
 export type WorkoutWeek = {
@@ -47,4 +50,5 @@ export type WorkoutWithCues = StructuredWorkout & {
   phase: WorkoutPhase;
   category: WorkoutCategory;
   ageGroup: WorkoutAgeGroup;
+  strengthVariant?: "gym" | "bodyweight" | "home_weights";
 };

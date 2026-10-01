@@ -89,6 +89,7 @@ export function toEnrollmentPlanInput(enrollment: {
   ageGroup: string | null;
   focusAreas: string[];
   equipment: string[];
+  strengthVariant?: string | null;
   seasonMode: string | null;
   knownFor: string | null;
 }): ProgramEnrollmentPlanInput | null {
@@ -100,6 +101,7 @@ export function toEnrollmentPlanInput(enrollment: {
     ageGroup: enrollment.ageGroup as ProgramEnrollmentPlanInput["ageGroup"],
     focusAreas: enrollment.focusAreas as ProgramFocusArea[],
     equipment: enrollment.equipment as ProgramEquipmentOption[],
+    strengthVariant: enrollment.strengthVariant as ProgramEnrollmentPlanInput["strengthVariant"],
     seasonMode: enrollment.seasonMode as ProgramEnrollmentPlanInput["seasonMode"],
     knownFor: enrollment.knownFor,
   };

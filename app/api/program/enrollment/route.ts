@@ -8,7 +8,9 @@ import {
   normalizeEquipment,
   normalizeFocusAreas,
   PROGRAM_POSITION_OPTIONS,
+  type ProgramEquipmentOption,
 } from "@/lib/program-enrollment-shared";
+import { deriveStrengthVariantFromEquipment } from "@/lib/strength-variant-shared";
 import { serializeProgramEnrollment } from "@/lib/program-enrollment";
 import { validateSecondEmail } from "@/lib/second-email-shared";
 import {
@@ -98,6 +100,7 @@ export async function PATCH(request: Request) {
     parentName?: string | null;
     parentEmail?: string | null;
     onboardingCompletedAt?: Date;
+    strengthVariant?: string;
   } = {};
 
   if ("ageGroup" in body) {
@@ -241,6 +244,9 @@ export async function PATCH(request: Request) {
     }
 
     data.onboardingCompletedAt = new Date();
+    data.strengthVariant = deriveStrengthVariantFromEquipment(
+      merged.equipment as ProgramEquipmentOption[],
+    );
   }
 
   const updated = await prisma.programEnrollment.update({

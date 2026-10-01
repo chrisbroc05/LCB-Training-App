@@ -15,6 +15,11 @@ import {
   type ProgramEquipmentOption,
   type ProgramFocusArea,
 } from "@/lib/program-enrollment-shared";
+import {
+  STRENGTH_VARIANT_LABELS,
+  STRENGTH_VARIANTS,
+  type StrengthVariant,
+} from "@/lib/strength-variant-shared";
 import type { InPersonTrainingInfo } from "@/lib/in-person-training-shared";
 import type { AdminCoachVideoSummary } from "@/lib/coach-video-shared";
 import SendCoachVideoPanel from "@/app/admin/SendCoachVideoPanel";
@@ -58,6 +63,8 @@ type PlayerDetail = {
     ageGroupLabel: string | null;
     focusAreaLabels: string[];
     equipmentLabels: string[];
+    strengthVariant: string;
+    strengthVariantLabel: string;
     seasonModeLabel: string | null;
     parentName: string | null;
     parentEmail: string | null;
@@ -601,6 +608,7 @@ export default function AdminProgramPlayerPanel({ enrollmentId }: { enrollmentId
           <p>Age group: {detail.enrollment.ageGroupLabel ?? "Not set"}</p>
           <p>Focus: {detail.enrollment.focusAreaLabels.join(", ") || "Not set"}</p>
           <p>Equipment: {detail.enrollment.equipmentLabels.join(", ") || "Not set"}</p>
+          <p>Strength workouts: {detail.enrollment.strengthVariantLabel}</p>
           <p>
             Daily routine emails:{" "}
             {detail.enrollment.dailyRoutineEmailsEnabled ? "On" : "Off"}
@@ -702,6 +710,26 @@ export default function AdminProgramPlayerPanel({ enrollmentId }: { enrollmentId
                 }`}
               >
                 {PROGRAM_EQUIPMENT_LABELS[item as ProgramEquipmentOption]}
+              </button>
+            );
+          })}
+        </div>
+        <p className="text-sm font-medium text-zinc-300">Strength workout variant</p>
+        <div className="flex flex-wrap gap-2">
+          {STRENGTH_VARIANTS.map((variant) => {
+            const active = detail.enrollment.strengthVariant === variant;
+            return (
+              <button
+                key={variant}
+                type="button"
+                onClick={() => void patchEnrollment({ strengthVariant: variant })}
+                className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
+                  active
+                    ? "bg-[#22c55e]/20 text-[#9df3bd]"
+                    : "border border-[#2b3650] text-zinc-400"
+                }`}
+              >
+                {STRENGTH_VARIANT_LABELS[variant as StrengthVariant]}
               </button>
             );
           })}

@@ -1,7 +1,9 @@
 import { getDailyPlan } from "../lib/program-daily-plan";
 import type { ProgramEnrollmentPlanInput } from "../lib/program-daily-plan";
 import type { ProgramDailyPlanOverrides } from "../lib/program-plan-overrides";
+import { resolveStrengthVariant } from "../lib/strength-variant-shared";
 import { getProgramDay, parseProgramDateKey, type ProgramPhase } from "../lib/program-schedule";
+import { getWorkout } from "../lib/workout-program-training";
 
 function makeDayInfo(weekNumber: number, dayOfWeek: number) {
   const programDay = (weekNumber - 1) * 7 + dayOfWeek;
@@ -75,8 +77,25 @@ function printScenario(
 
       for (const task of tasks) {
         const drillTitles = task.drills?.map((drill) => drill.title).join(", ") ?? "";
+        let strengthDetails = "";
+        if (task.type === "strength" && task.workout) {
+          const variant =
+            task.workout.strengthVariant ??
+            resolveStrengthVariant({
+              strengthVariant: enrollment.strengthVariant,
+              equipment: enrollment.equipment,
+            });
+          const workout = getWorkout(
+            task.workout.category,
+            task.workout.ageGroup,
+            task.workout.week,
+            task.workout.workoutId,
+            variant,
+          );
+          strengthDetails = ` | strength: ${variant} | workout: ${workout?.title ?? "missing"}`;
+        }
         console.log(
-          `  - [${task.type}] ${task.title} | ${task.target}${task.focus ? ` | ${task.focus}` : ""}${drillTitles ? ` | drills: ${drillTitles}` : ""}`,
+          `  - [${task.type}] ${task.title} | ${task.target}${task.focus ? ` | ${task.focus}` : ""}${drillTitles ? ` | drills: ${drillTitles}` : ""}${strengthDetails}`,
         );
       }
     }
@@ -104,6 +123,21 @@ const scenarioC: ProgramEnrollmentPlanInput = {
   seasonMode: "IN_SEASON",
 };
 
+const scenarioD: ProgramEnrollmentPlanInput = {
+  ageGroup: "AGE_12_15",
+  focusAreas: ["hitting"],
+  equipment: ["nothing_special"],
+  seasonMode: "OFF_SEASON",
+};
+
+const scenarioE: ProgramEnrollmentPlanInput = {
+  ageGroup: "AGE_16_18",
+  focusAreas: ["strength", "speed"],
+  equipment: ["home_weights"],
+  strengthVariant: "home_weights",
+  seasonMode: "OFF_SEASON",
+};
+
 assertNoDuplicateMindsetPrompts();
 console.log("Mindset prompt uniqueness check passed for all 12 weeks.");
 
@@ -118,6 +152,16 @@ printScenario("(b) 8-11, fielding + mental, nothing_special, off season", scenar
   10,
 ]);
 printScenario("(c) 16-18, strength + speed, weights_gym, in season", scenarioC, "2026-01-05", [
+  1,
+  6,
+  10,
+]);
+printScenario("(d) 12-15, hitting focus, nothing_special (bodyweight strength)", scenarioD, "2026-01-05", [
+  1,
+  6,
+  10,
+]);
+printScenario("(e) 16-18, strength + speed, home_weights, off season", scenarioE, "2026-01-05", [
   1,
   6,
   10,

@@ -1,3 +1,5 @@
+import type { StrengthVariant } from "@/lib/strength-variant-shared";
+import { getHomeStrengthWorkout } from "@/lib/workout-program-home";
 import { WORKOUT_CUES_SUPPLEMENTARY } from "@/lib/workout-cues-supplementary";
 import { WORKOUT_PROGRAMS } from "@/lib/workout-program-data.generated";
 import type {
@@ -221,7 +223,22 @@ export function getWorkout(
   ageGroup: WorkoutAgeGroup,
   weekNumber: number,
   workoutId: WorkoutId,
+  strengthVariant?: StrengthVariant | null,
 ): WorkoutWithCues | null {
+  if (
+    category === "strength" &&
+    strengthVariant &&
+    strengthVariant !== "gym" &&
+    (ageGroup === "12-15" || ageGroup === "16-18")
+  ) {
+    return getHomeStrengthWorkout({
+      variant: strengthVariant,
+      ageGroup,
+      weekNumber,
+      workoutId,
+    });
+  }
+
   const program = findProgram(category, ageGroup);
   if (!program) {
     return null;

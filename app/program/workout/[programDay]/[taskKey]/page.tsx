@@ -53,6 +53,7 @@ export default async function ProgramWorkoutPage({ params }: ProgramWorkoutPageP
     task.workout.ageGroup,
     task.workout.week,
     task.workout.workoutId,
+    task.workout.strengthVariant,
   );
 
   if (!workout) {
@@ -69,11 +70,6 @@ export default async function ProgramWorkoutPage({ params }: ProgramWorkoutPageP
     },
   });
 
-  const showBodyweightNote =
-    task.type === "strength" &&
-    !planInput.equipment.includes("weights_gym") &&
-    (planInput.ageGroup === "AGE_12_15" || planInput.ageGroup === "AGE_16_18");
-
   return (
     <div className="min-h-screen bg-black">
       <ProgramWorkoutChecklist
@@ -81,7 +77,6 @@ export default async function ProgramWorkoutPage({ params }: ProgramWorkoutPageP
         taskKey={task.key}
         workout={workout}
         inSeasonNote={task.inSeasonNote}
-        showBodyweightNote={showBodyweightNote}
         initialNote={completion?.note ?? ""}
         initialCompleted={Boolean(completion)}
       />

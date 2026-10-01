@@ -37,6 +37,10 @@ import {
   type ProgramSeasonMode,
 } from "@/lib/program-enrollment-shared";
 import type { ProgramDayInfo } from "@/lib/program-schedule";
+import {
+  resolveStrengthVariant,
+  type StrengthVariant,
+} from "@/lib/strength-variant-shared";
 import type { WorkoutAgeGroup, WorkoutCategory, WorkoutId } from "@/lib/workout-program-types";
 
 export type ProgramTaskType =
@@ -57,6 +61,7 @@ export type ProgramWorkoutRef = {
   ageGroup: WorkoutAgeGroup;
   week: number;
   workoutId: WorkoutId;
+  strengthVariant?: StrengthVariant;
 };
 
 export type ProgramDailyTask = {
@@ -87,6 +92,7 @@ export type ProgramEnrollmentPlanInput = {
   equipment: ProgramEquipmentOption[];
   seasonMode: ProgramSeasonMode;
   knownFor?: string | null;
+  strengthVariant?: StrengthVariant | null;
 };
 
 type InternalTask = ProgramDailyTask & {
@@ -117,13 +123,22 @@ function makeWorkoutRef(
   ageGroup: ProgramAgeGroup,
   weekNumber: number,
   workoutId: WorkoutId,
+  strengthVariant?: StrengthVariant,
 ): ProgramWorkoutRef {
   return {
     category,
     ageGroup: toWorkoutAgeGroup(ageGroup),
     week: weekNumber,
     workoutId,
+    ...(category === "strength" && strengthVariant ? { strengthVariant } : {}),
   };
+}
+
+function getResolvedStrengthVariant(enrollment: ProgramEnrollmentPlanInput): StrengthVariant {
+  return resolveStrengthVariant({
+    strengthVariant: enrollment.strengthVariant,
+    equipment: enrollment.equipment,
+  });
 }
 
 function buildHittingTask(
@@ -222,6 +237,7 @@ function buildStrengthTask(
   workoutId: WorkoutId,
   ageGroup: ProgramAgeGroup,
   weekNumber: number,
+  strengthVariant: StrengthVariant,
   inSeasonNote?: string,
   removable = false,
 ): InternalTask {
@@ -230,7 +246,7 @@ function buildStrengthTask(
     type: "strength",
     title: workoutId === "A" ? "Strength Workout A" : "Strength Workout B",
     target: "Complete the strength workout",
-    workout: makeWorkoutRef("strength", ageGroup, weekNumber, workoutId),
+    workout: makeWorkoutRef("strength", ageGroup, weekNumber, workoutId, strengthVariant),
     needsNote: true,
     inSeasonNote,
     dropRank: DROP_RANK.keep,
@@ -391,6 +407,7 @@ function buildBaseTasks(
   const { ageGroup, focusAreas, equipment } = enrollment;
   const { programDay, weekNumber, dayOfWeek, phase } = programDayInfo;
   const contentPhase = toContentPhase(phase);
+  const strengthVariant = getResolvedStrengthVariant(enrollment);
   const tasks: InternalTask[] = [];
 
   if (dayOfWeek === 7) {
@@ -432,7 +449,7 @@ function buildBaseTasks(
       buildFieldingTask(programDay, "", ageGroup, contentPhase, weekNumber, dayOfWeek, equipment, false),
     );
     if (!inSeason) {
-      tasks.push(buildStrengthTask(programDay, "A", ageGroup, weekNumber));
+      tasks.push(buildStrengthTask(programDay, "A", ageGroup, weekNumber, strengthVariant));
     }
     if (hasFocus(focusAreas, "hitting")) {
       tasks.push(
@@ -504,7 +521,7 @@ function buildBaseTasks(
       buildFieldingTask(programDay, "", ageGroup, contentPhase, weekNumber, dayOfWeek, equipment, false),
     );
     tasks.push(
-      buildStrengthTask(programDay, "B", ageGroup, weekNumber, speedStrengthNote),
+      buildStrengthTask(programDay, "B", ageGroup, weekNumber, strengthVariant, speedStrengthNote),
     );
     if (hasFocus(focusAreas, "hitting")) {
       tasks.push(
@@ -550,6 +567,8 @@ function applyWednesdayStrengthRules(
     (task) => task.type === "strength" && task.workout?.workoutId === "A",
   );
 
+  const strengthVariant = getResolvedStrengthVariant(enrollment);
+
   if (enrollment.ageGroup === "AGE_16_18" && !hasStrengthA) {
     tasks.push(
       buildStrengthTask(
@@ -557,6 +576,7 @@ function applyWednesdayStrengthRules(
         "A",
         enrollment.ageGroup,
         programDayInfo.weekNumber,
+        strengthVariant,
       ),
     );
     return;
@@ -569,6 +589,7 @@ function applyWednesdayStrengthRules(
         "A",
         enrollment.ageGroup,
         programDayInfo.weekNumber,
+        strengthVariant,
       ),
     );
     return;

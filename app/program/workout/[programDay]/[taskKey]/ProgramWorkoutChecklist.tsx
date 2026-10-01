@@ -16,7 +16,6 @@ type ProgramWorkoutChecklistProps = {
   taskKey: string;
   workout: WorkoutWithCues;
   inSeasonNote?: string;
-  showBodyweightNote: boolean;
   initialNote?: string;
   initialCompleted: boolean;
 };
@@ -26,7 +25,6 @@ export default function ProgramWorkoutChecklist({
   taskKey,
   workout,
   inSeasonNote,
-  showBodyweightNote,
   initialNote = "",
   initialCompleted,
 }: ProgramWorkoutChecklistProps) {
@@ -99,15 +97,19 @@ export default function ProgramWorkoutChecklist({
         <p className="mt-2 text-sm text-zinc-400">
           Week {workout.weekNumber} | {workout.ageGroup} | {workout.category.replace("_", " ")}
         </p>
+        {workout.safetyNote ? (
+          <p className="mt-3 rounded-xl border border-yellow-500/40 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-100">
+            {workout.safetyNote}
+          </p>
+        ) : null}
+        {workout.coachNote ? (
+          <p className="mt-3 rounded-xl border border-[#52B788]/40 bg-[#52B788]/10 px-4 py-3 text-sm text-[#9df3bd]">
+            {workout.coachNote}
+          </p>
+        ) : null}
         {inSeasonNote ? (
           <p className="mt-3 rounded-xl border border-[#52B788]/40 bg-[#52B788]/10 px-4 py-3 text-sm text-[#9df3bd]">
             {inSeasonNote}
-          </p>
-        ) : null}
-        {showBodyweightNote ? (
-          <p className="mt-3 rounded-xl border border-[#52B788]/40 bg-[#52B788]/10 px-4 py-3 text-sm text-[#9df3bd]">
-            No gym today? Do what you can with bodyweight and tell me in your note. Bodyweight versions
-            are coming soon.
           </p>
         ) : null}
       </header>
@@ -148,6 +150,17 @@ export default function ProgramWorkoutChecklist({
                           {exercise.repsOrTime}
                           {exercise.rest && exercise.rest !== "-" ? ` | Rest: ${exercise.rest}` : ""}
                         </span>
+                        {exercise.alternativeName ? (
+                          <span className="mt-2 block text-sm text-zinc-400">
+                            {/pull-up/i.test(exercise.name)
+                              ? `No bar? Do ${exercise.alternativeName} instead`
+                              : `Alternative: ${exercise.alternativeName}`}
+                            {exercise.alternativeRepsOrTime
+                              ? ` (${exercise.alternativeRepsOrTime})`
+                              : ""}
+                            .
+                          </span>
+                        ) : null}
                         {exercise.formCue ? (
                           <span className="mt-2 block text-sm text-[#52B788]">{exercise.formCue}</span>
                         ) : null}

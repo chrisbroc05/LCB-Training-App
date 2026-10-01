@@ -19,6 +19,7 @@ export const PROGRAM_EQUIPMENT_OPTIONS = [
   "tee_net",
   "glove_wall",
   "weights_gym",
+  "home_weights",
   "nothing_special",
 ] as const;
 
@@ -57,6 +58,7 @@ export const PROGRAM_EQUIPMENT_LABELS: Record<ProgramEquipmentOption, string> = 
   tee_net: "Tee and net",
   glove_wall: "Glove and a wall",
   weights_gym: "Weights or gym",
+  home_weights: "Dumbbells or a kettlebell at home",
   nothing_special: "Nothing special",
 };
 
