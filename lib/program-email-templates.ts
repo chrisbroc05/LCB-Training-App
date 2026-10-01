@@ -93,6 +93,16 @@ function buildParentUnsubscribeFooterText(unsubscribeUrl: string) {
   return `\nTurn off second email: ${unsubscribeUrl}`;
 }
 
+const WEEKDAY_NAMES = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday",
+] as const;
+
 export function buildDailyRoutineEmail(params: {
   firstName: string;
   weekNumber: number;
@@ -102,7 +112,8 @@ export function buildDailyRoutineEmail(params: {
   knownFor: string | null;
   coachWeekBox?: { focus: string; note: string } | null;
 }) {
-  const subject = `Week ${params.weekNumber}, Day ${params.dayOfWeek}: your routine is ready`;
+  const weekdayName = WEEKDAY_NAMES[params.dayOfWeek - 1] ?? "Day";
+  const subject = `Week ${params.weekNumber}, ${weekdayName}: your routine is ready`;
   const headline = `Today's work, ${params.firstName}.`;
   const intro =
     "Here's what's on your list. Get the reps in, leave a real note on each one, and I'll see all of it.";

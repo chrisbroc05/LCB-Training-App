@@ -598,7 +598,7 @@ export default function ProgramStartWizard({
               <div>
                 <h2 className="text-2xl font-bold text-[#0A1628]">When do you want to start?</h2>
                 <p className="mt-3 text-sm text-[#6B7280]">
-                  Your week starts on Day 1, no matter what day of the week it is.
+                  Program weeks run Monday through Sunday. You start with that day&apos;s tasks.
                 </p>
               </div>
               <div className="space-y-3">
@@ -796,8 +796,8 @@ export default function ProgramStartWizard({
                   {firstName ? `, ${firstName}` : ""}.
                 </h2>
                 <p className="mt-3 text-base leading-7 text-[#0A1628]">
-                  Day 1 starts {startDateLabel}. Every morning you'll get your routine. Get the reps
-                  in, leave a quick note on each one, and I'll see all of it.
+                  You start {startDateLabel}. Every morning you&apos;ll get your routine. Get the
+                  reps in, leave a quick note on each one, and I&apos;ll see all of it.
                 </p>
               </div>
               <div className="rounded-2xl bg-[#F4F6F8] p-5">

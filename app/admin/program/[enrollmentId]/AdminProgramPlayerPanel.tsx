@@ -82,6 +82,7 @@ type PlayerDetail = {
   schedule: {
     weekNumber: number;
     programDay: number;
+    dayOfWeek: number;
     phase: string;
   };
   streak: number;
@@ -534,8 +535,8 @@ export default function AdminProgramPlayerPanel({ enrollmentId }: { enrollmentId
           <p className="mt-3 text-sm text-red-200">{detail.enrollment.refundLabel}</p>
         ) : null}
         <p className="mt-3 text-sm text-zinc-300">
-          Week {detail.schedule.weekNumber} . Day {detail.schedule.programDay} .{" "}
-          {detail.schedule.phase} . Streak {detail.streak}
+          {WEEKDAY_NAMES[detail.schedule.dayOfWeek - 1] ?? "Day"} - Week{" "}
+          {detail.schedule.weekNumber} of 12 . {detail.schedule.phase} . Streak {detail.streak}
         </p>
         {detail.enrollment.startDate ? (
           <p className="mt-1 text-sm text-zinc-400">Start date: {detail.enrollment.startDate}</p>
@@ -872,7 +873,7 @@ export default function AdminProgramPlayerPanel({ enrollmentId }: { enrollmentId
             {detail.stats.gameLogs.map((log) => (
               <article key={log.id} className="rounded-xl border border-[#2b3650] bg-black/20 p-3">
                 <p className="text-sm font-semibold text-zinc-100">
-                  {log.weekdayLabel} . Day {log.programDay}
+                  {log.weekdayLabel}
                   {log.opponent ? ` vs ${log.opponent}` : ""}
                 </p>
                 <p className="mt-1 text-sm text-[#9df3bd]">{log.line}</p>
@@ -904,9 +905,14 @@ export default function AdminProgramPlayerPanel({ enrollmentId }: { enrollmentId
         </div>
         <div className="mt-4 space-y-4">
           {detail.weekDays.map((day) => {
-            const weekdayName = WEEKDAY_NAMES[day.dayOfWeek - 1] ?? "";
+            const weekdayName =
+              "weekdayName" in day && typeof day.weekdayName === "string"
+                ? day.weekdayName
+                : WEEKDAY_NAMES[day.dayOfWeek - 1] ?? "";
             const isEditable =
-              !day.isRestDay && day.programDay >= detail.schedule.programDay;
+              !day.isRestDay &&
+              !("isNotStarted" in day && day.isNotStarted) &&
+              day.programDay >= detail.schedule.programDay;
             const showForm = taskForm?.programDay === day.programDay;
             const practiceLog = detail.dayLogs?.find(
               (log) => log.programDay === day.programDay && log.type === "PRACTICE",
@@ -920,7 +926,8 @@ export default function AdminProgramPlayerPanel({ enrollmentId }: { enrollmentId
               <article key={day.programDay} className="rounded-xl border border-[#2b3650] p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <h3 className="text-sm font-semibold text-zinc-100">
-                    Day {day.programDay} . {weekdayName}
+                    {weekdayName}
+                    {"isNotStarted" in day && day.isNotStarted ? " . Not started yet" : ""}
                     {day.isRestDay ? " . Rest day" : ""}
                     {practiceLog ? (
                       <span className="ml-2 rounded-full bg-[#52B788]/15 px-2 py-0.5 text-xs font-semibold text-[#9df3bd]">

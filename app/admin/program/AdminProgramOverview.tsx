@@ -13,6 +13,7 @@ type PlayerCard = {
   hasPush: boolean;
   weekNumber: number;
   programDay: number;
+  weekdayName: string;
   phase: string;
   todayDone: number;
   todayTotal: number;
@@ -30,6 +31,8 @@ type LatestNote = {
   playerName: string;
   taskTitle: string;
   programDay: number;
+  weekNumber: number;
+  weekdayName: string;
   note: string;
   relativeTime: string;
 };
@@ -118,7 +121,7 @@ export default function AdminProgramOverview() {
                   ) : null}
                 </div>
                 <p className="mt-1 text-sm text-zinc-400">
-                  Week {player.weekNumber} . Day {player.programDay} . {player.phase}
+                  {player.weekdayName} - Week {player.weekNumber} of 12 . {player.phase}
                 </p>
               </div>
               <div className="text-right text-sm text-zinc-300">
@@ -154,7 +157,7 @@ export default function AdminProgramOverview() {
                 <p className="text-xs text-zinc-500">{note.relativeTime}</p>
               </div>
               <p className="mt-1 text-xs text-[#52B788]">
-                Day {note.programDay} . {note.taskTitle}
+                {note.weekdayName} - Week {note.weekNumber} . {note.taskTitle}
               </p>
               <p className="mt-2 text-sm text-zinc-300">{note.note}</p>
             </Link>

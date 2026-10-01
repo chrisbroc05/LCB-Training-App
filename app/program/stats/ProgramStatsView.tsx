@@ -117,7 +117,9 @@ export default function ProgramStatsView() {
                   {log.dateLabel}
                   {log.opponent ? ` vs ${log.opponent}` : ""}
                 </p>
-                <p className="text-xs text-zinc-500">Day {log.programDay}</p>
+                {log.weekdayShort ? (
+                  <p className="text-xs text-zinc-500">{log.weekdayShort}</p>
+                ) : null}
               </div>
               <p className="mt-2 text-sm font-semibold text-[#9df3bd]">{log.line}</p>
               <p className="mt-2 text-sm text-zinc-400">{log.note}</p>

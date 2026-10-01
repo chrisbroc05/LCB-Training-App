@@ -15,7 +15,10 @@ import {
 } from "@/lib/program-today-server";
 import { formatRelativeTime } from "@/lib/format-date";
 import { formatGameLine } from "@/lib/program-stats";
-import { getWeekdayLabelForProgramDay } from "@/lib/program-schedule";
+import {
+  getWeekdayLabelForProgramDay,
+  getWeekdayNameForProgramDay,
+} from "@/lib/program-schedule";
 import { prisma } from "@/lib/prisma";
 
 export async function buildAdminProgramOverview(now = new Date()) {
@@ -158,12 +161,18 @@ export async function buildAdminProgramOverview(now = new Date()) {
         lastGameLabel = `Last game: ${line} (${weekday})`;
       }
 
+      const weekdayName =
+        enrollment.startDate && schedule.programDay > 0
+          ? getWeekdayNameForProgramDay(enrollment.startDate, schedule.programDay)
+          : "Day";
+
       return {
         enrollmentId: enrollment.id,
         name: enrollment.user.name ?? enrollment.user.email,
         email: enrollment.user.email,
         weekNumber: schedule.weekNumber,
         programDay: schedule.programDay,
+        weekdayName,
         phase: schedule.phase,
         todayDone,
         todayTotal,
@@ -232,11 +241,21 @@ export async function buildAdminProgramOverview(now = new Date()) {
         }
       }
 
+      const weekdayName =
+        completion.enrollment.startDate && dayInfo.programDay > 0
+          ? getWeekdayNameForProgramDay(
+              completion.enrollment.startDate,
+              completion.programDay,
+            )
+          : "Day";
+
       return {
         enrollmentId: completion.enrollmentId,
         playerName: completion.enrollment.user.name ?? completion.enrollment.user.email,
         taskTitle,
         programDay: completion.programDay,
+        weekNumber: dayInfo.weekNumber,
+        weekdayName,
         note: completion.note,
         relativeTime: formatRelativeTime(completion.completedAt, now),
       };

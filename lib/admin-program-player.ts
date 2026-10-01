@@ -19,7 +19,11 @@ import {
   type StrengthVariant,
 } from "@/lib/strength-variant-shared";
 import { HITTING_FOCUS_CUES } from "@/lib/program-content";
-import { getProgramDay, getChicagoMondayStart } from "@/lib/program-schedule";
+import {
+  getProgramDay,
+  getChicagoMondayStart,
+  getWeekdayNameForProgramDay,
+} from "@/lib/program-schedule";
 import { computeProgramStreak, getDayOfWeekForProgramDay } from "@/lib/program-streak-shared";
 import {
   buildProgramDayInfoForProgramDay,
@@ -377,6 +381,11 @@ export function buildAdminWeekDayTasks(params: {
     days.push({
       programDay,
       dayOfWeek: dayInfo.dayOfWeek,
+      weekdayName:
+        params.enrollment.startDate && programDay > 0
+          ? getWeekdayNameForProgramDay(params.enrollment.startDate, programDay)
+          : "Day",
+      isNotStarted: dayInfo.isBeforeStart,
       isRestDay: dayInfo.dayOfWeek === 7,
       tasks,
     });

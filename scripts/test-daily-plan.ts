@@ -2,11 +2,16 @@ import { getDailyPlan } from "../lib/program-daily-plan";
 import type { ProgramEnrollmentPlanInput } from "../lib/program-daily-plan";
 import type { ProgramDailyPlanOverrides } from "../lib/program-plan-overrides";
 import { resolveStrengthVariant } from "../lib/strength-variant-shared";
-import { getProgramDay, parseProgramDateKey, type ProgramPhase } from "../lib/program-schedule";
+import {
+  getProgramDay,
+  getProgramWeekStartProgramDay,
+  parseProgramDateKey,
+  type ProgramPhase,
+} from "../lib/program-schedule";
 import { getWorkout } from "../lib/workout-program-training";
 
-function makeDayInfo(weekNumber: number, dayOfWeek: number) {
-  const programDay = (weekNumber - 1) * 7 + dayOfWeek;
+function makeDayInfo(weekNumber: number, dayOfWeek: number, isBeforeStart = false) {
+  const programDay = getProgramWeekStartProgramDay(weekNumber) + dayOfWeek - 1;
   return {
     programDay,
     weekNumber,
@@ -16,9 +21,50 @@ function makeDayInfo(weekNumber: number, dayOfWeek: number) {
       : weekNumber >= 5
         ? "BUILD"
         : "FOUNDATION") as ProgramPhase,
-    isBeforeStart: false,
+    isBeforeStart,
     isComplete: false,
   };
+}
+
+function assertSaturdayStartUsesRealWeekday() {
+  const enrollment: ProgramEnrollmentPlanInput = {
+    ageGroup: "AGE_12_15",
+    focusAreas: ["hitting"],
+    equipment: ["nothing_special"],
+    seasonMode: "OFF_SEASON",
+  };
+  const startDate = parseProgramDateKey("2026-01-10");
+  const thursdayInfo = getProgramDay({ startDate }, parseProgramDateKey("2026-01-08"));
+  if (thursdayInfo.dayOfWeek !== 4) {
+    throw new Error(`Expected Thursday dayOfWeek=4, got ${thursdayInfo.dayOfWeek}`);
+  }
+
+  const thursdayTasks = getDailyPlan(enrollment, {
+    programDay: thursdayInfo.programDay,
+    weekNumber: thursdayInfo.weekNumber,
+    dayOfWeek: thursdayInfo.dayOfWeek,
+    phase: "FOUNDATION",
+    isBeforeStart: thursdayInfo.isBeforeStart,
+    isComplete: false,
+  });
+  if (thursdayTasks.some((task) => task.type === "reflection")) {
+    throw new Error("Thursday before a Saturday start should not include Saturday reflection.");
+  }
+
+  const saturdayInfo = getProgramDay({ startDate }, parseProgramDateKey("2026-01-10"));
+  const saturdayTasks = getDailyPlan(enrollment, {
+    programDay: saturdayInfo.programDay,
+    weekNumber: saturdayInfo.weekNumber,
+    dayOfWeek: saturdayInfo.dayOfWeek,
+    phase: "FOUNDATION",
+    isBeforeStart: false,
+    isComplete: false,
+  });
+  if (!saturdayTasks.some((task) => task.type === "reflection")) {
+    throw new Error("Real Saturday should include Saturday reflection.");
+  }
+
+  console.log("Saturday start calendar weekday test passed.");
 }
 
 function assertNoDuplicateMindsetPrompts() {
@@ -251,5 +297,6 @@ function assertCustomTaskReplaceCase() {
 
 assertFocusOverrideCase();
 assertCustomTaskReplaceCase();
+assertSaturdayStartUsesRealWeekday();
 
 console.log("\nDaily plan self-tests completed.");

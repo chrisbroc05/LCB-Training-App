@@ -71,7 +71,7 @@ export async function GET() {
       dateLabel:
         enrollment.startDate && log.programDay > 0
           ? formatWeekdayDate(getDateForProgramDay(enrollment.startDate, log.programDay))
-          : `Day ${log.programDay}`,
+          : "?",
       weekdayShort:
         enrollment.startDate && log.programDay > 0
           ? getWeekdayLabelForProgramDay(enrollment.startDate, log.programDay)

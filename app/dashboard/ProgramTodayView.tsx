@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import ProgramDayLogSection from "@/app/dashboard/ProgramDayLogSection";
 import ProgramPushPrompt from "@/components/ProgramPushPrompt";
 import VideosFromCoachLink from "@/components/VideosFromCoachLink";
@@ -33,10 +33,11 @@ type ProgramWeekDayStatus = {
   dayOfWeek: number;
   weekdayLabel: string;
   weekdayName: string;
-  status: "complete" | "partial" | "missed" | "upcoming" | "rest";
+  status: "complete" | "partial" | "missed" | "upcoming" | "rest" | "not_started";
   isToday: boolean;
   tappable: boolean;
   editable: boolean;
+  completionRatio: number;
 };
 
 type ProgramTodayTask = {
@@ -125,6 +126,8 @@ type ProgramTodayPayload = {
   isViewingYesterday: boolean;
   isViewingPastDay: boolean;
   viewedWeekdayName: string;
+  headerLabel: string;
+  progressWeekNumber: number;
   weekFocusCue?: string | null;
   weekFocusNote?: string | null;
   dayLogs?: DayLogPayload[];
@@ -334,39 +337,105 @@ function AnswerBottomSheet({
   );
 }
 
+function RestIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M12 3c-1.5 2.4-4 4.2-4 7.5a4 4 0 1 0 8 0c0-3.3-2.5-5.1-4-7.5Z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinejoin="round"
+      />
+      <path d="M8 21h8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function WeekDayCircle({
   day,
   onSelect,
 }: {
   day: ProgramWeekDayStatus;
-  onSelect: (programDay: number) => void;
+  onSelect: (programDay: number, isToday: boolean) => void;
 }) {
-  const statusClass =
-    day.status === "complete"
-      ? "border-[#52B788] bg-[#52B788] text-[#0A1628]"
-      : day.status === "partial"
-        ? "border-[#52B788] bg-transparent text-[#52B788]"
-        : day.status === "missed"
-          ? "border-[#475569] bg-[#24314a] text-zinc-400"
-          : "border-[#2b3650] bg-transparent text-zinc-500";
+  const size = day.isToday ? 44 : 36;
+  const radius = (size - 6) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const progress = Math.max(0, Math.min(1, day.completionRatio));
+  const dashOffset = circumference * (1 - progress);
+  const isDimmed = day.status === "not_started" || day.status === "upcoming";
 
-  const sizeClass = day.isToday ? "h-11 w-11 ring-2 ring-[#52B788]/70" : "h-9 w-9";
+  const labelClass = isDimmed ? "text-zinc-600" : "text-zinc-300";
 
-  const circle = (
-    <div className="flex flex-col items-center gap-1">
-      <span
-        className={`flex items-center justify-center rounded-full border-2 text-xs font-bold ${statusClass} ${sizeClass}`}
+  const inner = (
+    <div className="flex min-w-[42px] flex-col items-center gap-1">
+      <div
+        className={`relative flex items-center justify-center ${day.isToday ? "rounded-full ring-2 ring-[#52B788]" : ""}`}
+        style={{ width: size, height: size }}
       >
-        {day.status === "complete" ? <CheckIcon /> : day.weekdayLabel}
-      </span>
-      <span className="flex h-3 items-center justify-center">
-        {day.status === "complete" ? (
-          <span className="text-[10px] text-[#52B788]">
-            <CheckIcon />
+        {day.status === "rest" ? (
+          <span className="flex h-9 w-9 items-center justify-center text-zinc-500">
+            <RestIcon />
           </span>
-        ) : day.isToday ? (
-          <span className="h-1.5 w-1.5 rounded-full bg-[#52B788]" />
-        ) : null}
+        ) : day.status === "not_started" ? (
+          <span className={`text-xs font-bold ${labelClass}`}>{day.weekdayLabel}</span>
+        ) : (
+          <>
+            <svg
+              width={size}
+              height={size}
+              viewBox={`0 0 ${size} ${size}`}
+              className="absolute inset-0 -rotate-90"
+              aria-hidden="true"
+            >
+              <circle
+                cx={size / 2}
+                cy={size / 2}
+                r={radius}
+                fill="none"
+                stroke="#2b3650"
+                strokeWidth="3"
+              />
+              {day.status === "complete" ? (
+                <circle
+                  cx={size / 2}
+                  cy={size / 2}
+                  r={radius}
+                  fill="none"
+                  stroke="#52B788"
+                  strokeWidth="3"
+                />
+              ) : day.status === "partial" ? (
+                <circle
+                  cx={size / 2}
+                  cy={size / 2}
+                  r={radius}
+                  fill="none"
+                  stroke="#52B788"
+                  strokeWidth="3"
+                  strokeDasharray={`${circumference}`}
+                  strokeDashoffset={`${dashOffset}`}
+                  strokeLinecap="round"
+                />
+              ) : day.status === "missed" ? (
+                <circle
+                  cx={size / 2}
+                  cy={size / 2}
+                  r={radius}
+                  fill="none"
+                  stroke="#475569"
+                  strokeWidth="2"
+                />
+              ) : null}
+            </svg>
+            <span className={`relative text-xs font-bold ${labelClass}`}>
+              {day.status === "complete" ? <CheckIcon /> : day.weekdayLabel}
+            </span>
+          </>
+        )}
+      </div>
+      <span className="min-h-[14px] text-[10px] font-semibold text-[#52B788]">
+        {day.isToday ? "Today" : day.status === "complete" && day.dayOfWeek !== 7 ? "" : ""}
       </span>
     </div>
   );
@@ -375,16 +444,16 @@ function WeekDayCircle({
     return (
       <button
         type="button"
-        onClick={() => onSelect(day.programDay)}
+        onClick={() => onSelect(day.programDay, day.isToday)}
         className="rounded-full"
         aria-label={`View ${day.weekdayName}`}
       >
-        {circle}
+        {inner}
       </button>
     );
   }
 
-  return <div aria-label={`${day.weekdayName} upcoming`}>{circle}</div>;
+  return <div aria-label={`${day.weekdayName} ${day.status}`}>{inner}</div>;
 }
 
 function TaskCard({
@@ -597,6 +666,7 @@ export default function ProgramTodayView() {
   const [error, setError] = useState("");
   const [viewedProgramDay, setViewedProgramDay] = useState<number | null>(null);
   const [answerSheet, setAnswerSheet] = useState<AnswerSheetState>(null);
+  const todayTasksRef = useRef<HTMLDivElement | null>(null);
 
   const loadToday = useCallback(async (programDay?: number) => {
     setLoading(true);
@@ -681,19 +751,28 @@ export default function ProgramTodayView() {
     );
   }
 
-  const progressPercent = Math.min(100, Math.round((payload.todayProgramDay / 84) * 100));
+  const progressPercent = Math.min(
+    100,
+    Math.round((payload.progressWeekNumber / 12) * 100),
+  );
   const phaseLabel = PROGRAM_PHASE_LABELS[payload.programDayInfo.phase as keyof typeof PROGRAM_PHASE_LABELS];
   const viewingDifferentDay = payload.viewedProgramDay !== payload.todayProgramDay;
+
+  const handleWeekDaySelect = (programDay: number, isToday: boolean) => {
+    if (isToday) {
+      todayTasksRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+
+    void loadToday(programDay);
+  };
 
   return (
     <div className="space-y-3">
       <section className={`${CARD} border-[#2b3650]`}>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className="text-xl font-bold text-zinc-100">
-              Week {payload.programDayInfo.weekNumber || 1} . Day{" "}
-              {payload.programDayInfo.dayOfWeek || 1}
-            </p>
+            <p className="text-xl font-bold text-zinc-100">{payload.headerLabel}</p>
             <span className="mt-2 inline-flex rounded-full bg-[#52B788] px-3 py-1 text-xs font-bold uppercase tracking-wide text-[#0A1628]">
               {phaseLabel}
             </span>
@@ -768,13 +847,12 @@ export default function ProgramTodayView() {
       ) : null}
 
       <section className={CARD}>
-        <p className="mb-3 text-xs font-bold uppercase tracking-wide text-[#52B788]">This week</p>
-        <div className="flex items-center justify-between gap-1">
+        <div className="flex items-center justify-between gap-2">
           {payload.weekDays.map((day) => (
             <WeekDayCircle
               key={day.programDay}
               day={day}
-              onSelect={(programDay) => void loadToday(programDay)}
+              onSelect={handleWeekDaySelect}
             />
           ))}
         </div>
@@ -793,7 +871,7 @@ export default function ProgramTodayView() {
             <h3 className="text-xl font-semibold text-zinc-100">
               Your program starts {startLabel}.
             </h3>
-            <p className="mt-2 text-sm text-zinc-400">Preview of Day 1 tasks:</p>
+            <p className="mt-2 text-sm text-zinc-400">Preview of your first day:</p>
           </section>
           <div className="space-y-3 opacity-90">
             {payload.previewTasks.map((task) => (
@@ -848,7 +926,7 @@ export default function ProgramTodayView() {
             </section>
           ) : null}
 
-          <div className="space-y-3">
+          <div ref={todayTasksRef} id="today-tasks" className="space-y-3">
             {payload.tasks.map((task) => (
               <TaskCard
                 key={task.key}
@@ -885,7 +963,7 @@ export default function ProgramTodayView() {
         </Link>
       ) : null}
 
-      {!payload.isBeforeStart && !payload.isRestDay && payload.programDayInfo.dayOfWeek !== 7 ? (
+      {!payload.isBeforeStart && !payload.isComplete ? (
         <section className={CARD}>
           <h3 className="text-lg font-semibold text-zinc-100">This week&apos;s video</h3>
           {payload.weeklyVideoSent ? (

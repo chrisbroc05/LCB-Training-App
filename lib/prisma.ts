@@ -13,7 +13,15 @@ function createPrismaClient() {
     throw new Error("DATABASE_URL is required to initialize Prisma.");
   }
 
-  const pool = globalForPrisma.prismaPool ?? new Pool({ connectionString });
+  const useSsl =
+    !connectionString.includes("localhost") &&
+    !connectionString.includes("127.0.0.1");
+  const pool =
+    globalForPrisma.prismaPool ??
+    new Pool({
+      connectionString,
+      ...(useSsl ? { ssl: { rejectUnauthorized: false } } : {}),
+    });
   if (!globalForPrisma.prismaPool && process.env.NODE_ENV !== "production") {
     globalForPrisma.prismaPool = pool;
   }

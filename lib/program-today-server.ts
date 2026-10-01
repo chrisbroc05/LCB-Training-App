@@ -21,9 +21,10 @@ import {
   getChicagoMondayStart,
   getDateForProgramDay,
   getProgramDay,
+  getProgramDayStartProgramDay,
+  getProgramWeekStartProgramDay,
   getWeekdayLabelForProgramDay,
   getWeekdayNameForProgramDay,
-  parseProgramDateKey,
   type ProgramDayInfo,
 } from "@/lib/program-schedule";
 import { getUnwatchedCoachVideoCount } from "@/lib/coach-video-server";
@@ -59,10 +60,11 @@ export type ProgramWeekDayStatus = {
   dayOfWeek: number;
   weekdayLabel: string;
   weekdayName: string;
-  status: "complete" | "partial" | "missed" | "upcoming" | "rest";
+  status: "complete" | "partial" | "missed" | "upcoming" | "rest" | "not_started";
   isToday: boolean;
   tappable: boolean;
   editable: boolean;
+  completionRatio: number;
 };
 
 export function getAllowedCompletionProgramDays(
@@ -210,7 +212,10 @@ export async function buildProgramTodayPayload(params: {
 
   const previewDayInfo =
     todayInfo.isBeforeStart && params.enrollment.startDate
-      ? buildProgramDayInfoForProgramDay({ startDate: params.enrollment.startDate }, 1)
+      ? buildProgramDayInfoForProgramDay(
+          { startDate: params.enrollment.startDate },
+          getProgramDayStartProgramDay(params.enrollment.startDate),
+        )
       : null;
   const previewOverrides =
     previewDayInfo && previewDayInfo.weekNumber > 0
@@ -295,14 +300,14 @@ export async function buildProgramTodayPayload(params: {
   const completedWorkDays = new Set<number>();
   if (planInput && params.enrollment.startDate) {
     for (let day = 1; day <= Math.min(todayInfo.programDay, 84); day += 1) {
-      if (getDayOfWeekForProgramDay(day) === 7) {
-        continue;
-      }
-
       const dayInfo = buildProgramDayInfoForProgramDay(
         { startDate: params.enrollment.startDate },
         day,
       );
+
+      if (dayInfo.isBeforeStart || dayInfo.dayOfWeek === 7) {
+        continue;
+      }
       const dayOverrides = buildOverridesForWeekAndDay(
         overrideBundle,
         dayInfo.weekNumber,
@@ -328,46 +333,48 @@ export async function buildProgramTodayPayload(params: {
     completedWorkDays,
   });
 
-  const weekStartProgramDay =
-    viewedDayInfo.weekNumber > 0 ? (viewedDayInfo.weekNumber - 1) * 7 + 1 : 0;
+  const anchorProgramDay =
+    viewedDayInfo.programDay > 0 ? viewedDayInfo.programDay : todayInfo.programDay;
+  const anchorWeekNumber =
+    anchorProgramDay > 0 ? Math.min(12, Math.ceil(anchorProgramDay / 7)) : 1;
+  const weekStartProgramDay = getProgramWeekStartProgramDay(anchorWeekNumber);
+  const weekEndProgramDay = Math.min(84, weekStartProgramDay + 6);
   const weekDays: ProgramWeekDayStatus[] = [];
 
   const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
   const yesterdayInfo = getProgramDay({ startDate: params.enrollment.startDate }, yesterday);
   const startDate = params.enrollment.startDate;
 
+  const weekDayLogs = await prisma.dayLog.findMany({
+    where: {
+      enrollmentId: params.enrollment.id,
+      programDay: {
+        gte: weekStartProgramDay,
+        lte: weekEndProgramDay,
+      },
+    },
+    select: { programDay: true },
+  });
+  const dayLogProgramDays = new Set(weekDayLogs.map((log) => log.programDay));
+
   for (let offset = 0; offset < 7; offset += 1) {
     const programDay = weekStartProgramDay + offset;
     const dayOfWeek = offset + 1;
-    if (programDay > 84) {
-      break;
-    }
-
-    const weekdayLabel =
-      startDate && programDay > 0
-        ? getWeekdayLabelForProgramDay(startDate, programDay)
-        : "?";
-    const weekdayName =
-      startDate && programDay > 0
-        ? getWeekdayNameForProgramDay(startDate, programDay)
-        : "Day";
+    const weekdayLabel = getWeekdayLabelForProgramDay(startDate ?? new Date(), programDay);
+    const weekdayName = getWeekdayNameForProgramDay(startDate ?? new Date(), programDay);
     const isToday = programDay === todayInfo.programDay;
-    const tappable = programDay > 0 && programDay <= todayInfo.programDay;
-    const editable =
-      yesterdayInfo.programDay > 0 &&
-      programDay === yesterdayInfo.programDay &&
-      programDay !== todayInfo.programDay;
 
-    if (dayOfWeek === 7) {
+    if (programDay > 84) {
       weekDays.push({
         programDay,
         dayOfWeek,
         weekdayLabel,
         weekdayName,
-        status: "rest",
-        isToday,
-        tappable,
+        status: "upcoming",
+        isToday: false,
+        tappable: false,
         editable: false,
+        completionRatio: 0,
       });
       continue;
     }
@@ -376,6 +383,43 @@ export async function buildProgramTodayPayload(params: {
       { startDate: params.enrollment.startDate },
       programDay,
     );
+
+    if (dayInfo.isBeforeStart) {
+      weekDays.push({
+        programDay,
+        dayOfWeek,
+        weekdayLabel,
+        weekdayName,
+        status: "not_started",
+        isToday,
+        tappable: false,
+        editable: false,
+        completionRatio: 0,
+      });
+      continue;
+    }
+
+    const editable =
+      yesterdayInfo.programDay > 0 &&
+      programDay === yesterdayInfo.programDay &&
+      programDay !== todayInfo.programDay;
+    const tappable = programDay > 0 && programDay <= todayInfo.programDay;
+
+    if (dayOfWeek === 7) {
+      weekDays.push({
+        programDay,
+        dayOfWeek,
+        weekdayLabel,
+        weekdayName,
+        status: dayLogProgramDays.has(programDay) ? "complete" : "rest",
+        isToday,
+        tappable,
+        editable: false,
+        completionRatio: dayLogProgramDays.has(programDay) ? 1 : 0,
+      });
+      continue;
+    }
+
     const dayOverrides =
       planInput && dayInfo.weekNumber > 0
         ? buildOverridesForWeekAndDay(overrideBundle, dayInfo.weekNumber, programDay)
@@ -387,6 +431,8 @@ export async function buildProgramTodayPayload(params: {
     const completedCount = expectedKeys.filter((key) =>
       completionMap.has(`${programDay}:${key}`),
     ).length;
+    const completionRatio =
+      expectedKeys.length > 0 ? completedCount / expectedKeys.length : 0;
 
     let status: ProgramWeekDayStatus["status"] = "upcoming";
     if (programDay > todayInfo.programDay) {
@@ -410,6 +456,7 @@ export async function buildProgramTodayPayload(params: {
       isToday,
       tappable,
       editable,
+      completionRatio,
     });
   }
 
@@ -428,10 +475,21 @@ export async function buildProgramTodayPayload(params: {
   const weekFocusCue = viewedOverrides?.focusOverride?.cueLabel ?? null;
   const weekFocusNote = getWeekFocusNote(viewedOverrides);
 
+  const headerWeekNumber =
+    viewedDayInfo.weekNumber > 0 ? viewedDayInfo.weekNumber : todayInfo.weekNumber || 1;
+  const headerWeekdayName =
+    params.enrollment.startDate && viewedDayInfo.programDay > 0
+      ? getWeekdayNameForProgramDay(params.enrollment.startDate, viewedDayInfo.programDay)
+      : todayInfo.programDay > 0 && params.enrollment.startDate
+        ? getWeekdayNameForProgramDay(params.enrollment.startDate, todayInfo.programDay)
+        : "Today";
+
   return {
     todayProgramDay: todayInfo.programDay,
     viewedProgramDay: viewedDayInfo.programDay,
     programDayInfo: viewedDayInfo,
+    headerLabel: `${headerWeekdayName} - Week ${headerWeekNumber} of 12`,
+    progressWeekNumber: todayInfo.weekNumber > 0 ? todayInfo.weekNumber : 0,
     tasks,
     previewTasks,
     streak,
