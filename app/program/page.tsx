@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import ProgramCheckoutSection from "@/app/program/ProgramCheckoutSection";
 import ChicagolandBundleCallout from "@/components/ChicagolandBundleCallout";
+import TestimonialsSection from "@/components/TestimonialsSection";
 import { authOptions } from "@/lib/auth";
 import { isTwelveWeekProgramMember, type DatabaseTier } from "@/lib/membership";
 import { prisma } from "@/lib/prisma";
@@ -114,6 +115,8 @@ export default async function ProgramPage({ searchParams }: ProgramPageProps) {
           {!hasTwelveWeekProgram ? <ChicagolandBundleCallout /> : null}
         </div>
       </section>
+
+      <TestimonialsSection className="mt-10" />
 
       <section className="mt-10 rounded-2xl border border-[#18243a] bg-[#0b1324]/50 px-5 py-8 sm:px-8">
         <div className="mx-auto max-w-2xl text-center">

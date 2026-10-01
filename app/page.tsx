@@ -16,34 +16,7 @@ import {
   twelveWeekProgramLandingHighlights,
 } from "@/lib/twelve-week-program";
 import { toVimeoEmbedUrl } from "@/lib/vimeo";
-
-const testimonials = [
-  {
-    quote:
-      "What sets LCB Training apart is the intention behind the expertise. It's not just about mechanics - it's about building strength, sharpening mindset, and mastering strategy. The week-to-week data tracking keeps us motivated, and the results speak for themselves. My son's confidence - and the whole team's - has skyrocketed.",
-    attribution: "Parent of a Freshman 3rd Baseman",
-  },
-  {
-    quote:
-      "Hey Chris, thanks for today. My son feels great and is acting more confident - so appreciate you and all the time you put in with him.",
-    attribution: "Parent of a 12-Year-Old Player",
-  },
-  {
-    quote:
-      "I hit around .350 and batted leadoff for most of the season. That's way better than in the past. I'm definitely happy with the season - especially with my hitting performance.",
-    attribution: "Varsity Infielder, Class of 2026",
-  },
-  {
-    quote:
-      "My team could not stop talking about your training and would love to have you back again.",
-    attribution: "Coach, 15U Baseball Team",
-  },
-  {
-    quote:
-      "After your lesson with my son, he was actually very excited. The next game he went 3 for 3 and got in the car and said 'I did what Coach Chris taught me and it worked!'",
-    attribution: "Parent of a 13U Player",
-  },
-];
+import TestimonialsSection from "@/components/TestimonialsSection";
 
 const physicalTrainingPillars = [
   {
@@ -247,31 +220,7 @@ export default async function Home() {
           </div>
         </section>
 
-        <section className="mt-14 rounded-3xl bg-[#0A1628] px-5 py-14 sm:px-8 sm:py-16 md:px-12 md:py-20">
-          <div className="mx-auto max-w-4xl text-center">
-            <h2 className="text-2xl font-bold text-zinc-100 sm:text-3xl">
-              What Players &amp; Parents Are Saying
-            </h2>
-            <div className="mx-auto mt-4 h-[2px] w-28 rounded-full bg-[#52B788]" />
-          </div>
-
-          <div className="mt-10 grid gap-5 md:grid-cols-2">
-            {testimonials.map((testimonial) => (
-              <article
-                key={testimonial.attribution}
-                className="flex h-full flex-col rounded-2xl border border-[#1f2e4b] bg-[#111f37] p-6 shadow-lg shadow-black/30"
-              >
-                <p className="text-5xl font-bold leading-none text-[#52B788]">&ldquo;</p>
-                <p className="mt-3 flex-1 text-[15px] italic leading-relaxed text-zinc-100 sm:text-base">
-                  {testimonial.quote}
-                </p>
-                <p className="mt-6 text-sm font-medium text-[#52B788]">
-                  &mdash; {testimonial.attribution}
-                </p>
-              </article>
-            ))}
-          </div>
-        </section>
+        <TestimonialsSection className="mt-14" />
 
         <section className="mt-10 rounded-2xl border border-[#18243a] bg-[#0b1324]/50 px-5 py-8 sm:px-8">
           <div className="mx-auto max-w-3xl text-center">

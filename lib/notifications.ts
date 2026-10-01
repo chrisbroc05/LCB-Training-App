@@ -479,13 +479,26 @@ function buildSubmissionResponseEmailContent(params: {
           .join("\n")}\n\nEach drill opens in the app with the video and coaching cues.`
       : "";
 
+  const responseTestimonialOptions = {
+    maxCount: 1,
+    rotationSeed: params.submissionId,
+  } as const;
+
   const membershipSectionHtml = params.isTwelveWeekEnrolled
     ? `${buildEmailSectionLabel("KEEP IT GOING")}
       <p style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:1.7; color:#0A1628;">Got questions about anything in the breakdown? Bring them to our weekly call, or just reply to this email.</p>`
-    : buildEmailNonMemberUpsellHtml({ programPitchVariant: "response", programUrl });
+    : buildEmailNonMemberUpsellHtml({
+        programPitchVariant: "response",
+        programUrl,
+        testimonialOptions: responseTestimonialOptions,
+      });
   const membershipSectionText = params.isTwelveWeekEnrolled
     ? `\n\nKEEP IT GOING\nGot questions about anything in the breakdown? Bring them to our weekly call, or just reply to this email.`
-    : buildEmailNonMemberUpsellText({ programPitchVariant: "response", programUrl });
+    : buildEmailNonMemberUpsellText({
+        programPitchVariant: "response",
+        programUrl,
+        testimonialOptions: responseTestimonialOptions,
+      });
 
   const bodyContentHtml = `<h1 style="margin:0 0 20px 0; font-family:Arial, Helvetica, sans-serif; font-size:28px; line-height:1.3; font-weight:700; color:#0A1628;">${escapeHtml(headline)}</h1>
               <p style="margin:0 0 24px 0; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:1.7; color:#0A1628;">${escapeHtml(intro)}</p>

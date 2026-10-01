@@ -1,28 +1,9 @@
-export type EmailTestimonial = {
-  quote: string;
-  name: string;
-  detail: string;
-};
+import { selectEmailTestimonials, type Testimonial } from "@/lib/testimonials";
 
-export const EMAIL_TESTIMONIALS: readonly EmailTestimonial[] = [
-  {
-    quote:
-      "I hit around .350 this year and batted leadoff for most of the season. That's way better than it was in the past. I'm definitely happy with the season, especially my hitting.",
-    name: "",
-    detail: "Varsity infielder, Class of 2026",
-  },
-  {
-    quote:
-      "After your lesson with my son, he was so excited. The next game he went 3 for 3, got in the car, and said, 'I did what Coach Chris taught me, and it worked.'",
-    name: "",
-    detail: "Parent of a 13U player",
-  },
-  {
-    quote: "My team cannot stop talking about your training and would love to have you back again.",
-    name: "",
-    detail: "15U baseball coach",
-  },
-] as const;
+export type EmailTestimonialOptions = {
+  maxCount?: number;
+  rotationSeed?: string;
+};
 
 export const EMAIL_REPLY_TO = "chrisbroc05@gmail.com";
 
@@ -72,35 +53,38 @@ export function buildEmailInfoBox(contentHtml: string) {
   </table>`;
 }
 
-export function buildEmailTestimonialsHtml() {
-  return EMAIL_TESTIMONIALS.map((entry) => {
-    const nameLine = entry.name
-      ? `<p style="margin:8px 0 0 0; font-family:Arial, Helvetica, sans-serif; font-size:13px; font-weight:700; color:#0A1628;">${escapeHtml(entry.name)}</p>`
-      : "";
-
-    return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 12px 0; border-collapse:collapse;">
+function buildEmailTestimonialsHtmlForEntries(entries: readonly Testimonial[]) {
+  return entries
+    .map(
+      (entry) => `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 12px 0; border-collapse:collapse;">
       <tr>
         <td style="padding:16px; background-color:#F4F6F8; border-radius:8px;">
           <p style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:1.6; font-style:italic; color:#0A1628;">"${escapeHtml(entry.quote)}"</p>
-          ${nameLine}
-          <p style="margin:8px 0 0 0; font-family:Arial, Helvetica, sans-serif; font-size:13px; font-weight:700; color:#2D6A4F;">${escapeHtml(entry.detail)}</p>
+          <p style="margin:8px 0 0 0; font-family:Arial, Helvetica, sans-serif; font-size:13px; font-weight:700; color:#2D6A4F;">${escapeHtml(entry.attribution)}</p>
         </td>
       </tr>
-    </table>`;
-  }).join("");
+    </table>`,
+    )
+    .join("");
 }
 
-export function buildEmailTestimonialsText() {
-  return EMAIL_TESTIMONIALS.map((entry) => `"${entry.quote}"\n${entry.detail}`).join("\n\n");
+export function buildEmailTestimonialsHtml(options?: EmailTestimonialOptions) {
+  return buildEmailTestimonialsHtmlForEntries(selectEmailTestimonials(options));
 }
 
-export function buildEmailTestimonialsBlockHtml() {
+export function buildEmailTestimonialsText(options?: EmailTestimonialOptions) {
+  return selectEmailTestimonials(options)
+    .map((entry) => `"${entry.quote}"\n${entry.attribution}`)
+    .join("\n\n");
+}
+
+export function buildEmailTestimonialsBlockHtml(options?: EmailTestimonialOptions) {
   return `${buildEmailSectionLabel("WHAT PLAYERS AND PARENTS ARE SAYING")}
-      ${buildEmailTestimonialsHtml()}`;
+      ${buildEmailTestimonialsHtml(options)}`;
 }
 
-export function buildEmailTestimonialsBlockText() {
-  return `\n\nWHAT PLAYERS AND PARENTS ARE SAYING\n${buildEmailTestimonialsText()}`;
+export function buildEmailTestimonialsBlockText(options?: EmailTestimonialOptions) {
+  return `\n\nWHAT PLAYERS AND PARENTS ARE SAYING\n${buildEmailTestimonialsText(options)}`;
 }
 
 type EmailProgramPitchVariant = "confirmation" | "response";
@@ -136,16 +120,18 @@ export function buildEmailProgramPitchText(params: {
 export function buildEmailNonMemberUpsellHtml(params: {
   programPitchVariant: EmailProgramPitchVariant;
   programUrl: string;
+  testimonialOptions?: EmailTestimonialOptions;
 }) {
-  return `${buildEmailTestimonialsBlockHtml()}
+  return `${buildEmailTestimonialsBlockHtml(params.testimonialOptions)}
       ${buildEmailProgramPitchHtml({ variant: params.programPitchVariant, programUrl: params.programUrl })}`;
 }
 
 export function buildEmailNonMemberUpsellText(params: {
   programPitchVariant: EmailProgramPitchVariant;
   programUrl: string;
+  testimonialOptions?: EmailTestimonialOptions;
 }) {
-  return `${buildEmailTestimonialsBlockText()}${buildEmailProgramPitchText({
+  return `${buildEmailTestimonialsBlockText(params.testimonialOptions)}${buildEmailProgramPitchText({
     variant: params.programPitchVariant,
     programUrl: params.programUrl,
   })}`;
