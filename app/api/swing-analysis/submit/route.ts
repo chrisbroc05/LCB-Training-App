@@ -16,6 +16,7 @@ import {
   headR2Object,
   isUserSubmissionVideoKey,
 } from "@/lib/r2";
+import { requireUnder13ParentUnlockResponse } from "@/lib/legal-under13-guard-server";
 import {
   validateSubmissionLookAt,
   validateSubmissionNote,
@@ -81,6 +82,11 @@ export async function POST(request: Request) {
     const userId = session.user.id;
     const userEmail = session.user.email;
     console.log(`[swing-submit:${requestId}] Session validated for ${userEmail}`);
+
+    const under13LockError = await requireUnder13ParentUnlockResponse(userId);
+    if (under13LockError) {
+      return under13LockError;
+    }
 
     let body: SwingSubmitRequestBody | null = null;
     try {

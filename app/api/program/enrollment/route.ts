@@ -18,6 +18,7 @@ import {
   getChicagoTomorrowDateKey,
   parseProgramDateKey,
 } from "@/lib/program-schedule";
+import { requireUnder13ParentUnlockResponse } from "@/lib/legal-under13-guard-server";
 import { prisma } from "@/lib/prisma";
 
 const AGE_GROUPS: ProgramAgeGroup[] = ["AGE_8_11", "AGE_12_15", "AGE_16_18"];
@@ -61,6 +62,11 @@ export async function PATCH(request: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const under13LockError = await requireUnder13ParentUnlockResponse(session.user.id);
+  if (under13LockError) {
+    return under13LockError;
   }
 
   const user = await prisma.user.findUnique({

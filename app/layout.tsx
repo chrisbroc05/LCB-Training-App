@@ -19,6 +19,7 @@ import AppSplashScreen from "@/components/AppSplashScreen";
 import PWAInstallHint from "@/components/PWAInstallHint";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 import LegalAgreementGate from "@/components/LegalAgreementGate";
+import Under13ParentConsentGate from "@/components/Under13ParentConsentGate";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -169,6 +170,7 @@ export default async function RootLayout({
           {children}
         </SiteShell>
         {session?.user ? <LegalAgreementGate /> : null}
+        {session?.user ? <Under13ParentConsentGate /> : null}
         <PWAInstallHint />
         <ServiceWorkerRegister />
       </body>

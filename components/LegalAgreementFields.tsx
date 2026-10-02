@@ -76,7 +76,7 @@ export default function LegalAgreementFields({
         <span className={labelClass}>
           {isMinor ? (
             <>
-              I am the player&apos;s parent or legal guardian and I agree to the{" "}
+              I am the player&apos;s parent or legal guardian, and I agree to the{" "}
             </>
           ) : (
             <>I am 18 or older, or the player&apos;s parent or legal guardian, and I agree to the </>
@@ -92,12 +92,15 @@ export default function LegalAgreementFields({
           <Link href={LEGAL_PAGE_PATHS.waiver} target="_blank" className="text-[#98b144] underline">
             Waiver
           </Link>
-          .
+          {isMinor ? " on their behalf." : "."}
         </span>
       </label>
 
       {isMinor ? (
         <>
+          <p className={labelClass}>
+            Under 18? Have a parent or guardian fill out this part. We&apos;ll email them to confirm.
+          </p>
           <label className="block">
             <span className={labelClass}>Parent or guardian full name</span>
             <input

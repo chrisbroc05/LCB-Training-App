@@ -2,6 +2,7 @@ import "server-only";
 
 import { NextResponse } from "next/server";
 import { userHasCurrentTermsAcceptance } from "@/lib/legal-server";
+import { requireUnder13ParentUnlockResponse } from "@/lib/legal-under13-guard-server";
 
 export async function requireCurrentTermsForCheckout(userId: string | undefined | null) {
   if (!userId) {
@@ -18,6 +19,11 @@ export async function requireCurrentTermsForCheckout(userId: string | undefined 
       },
       { status: 403 },
     );
+  }
+
+  const under13LockError = await requireUnder13ParentUnlockResponse(userId);
+  if (under13LockError) {
+    return under13LockError;
   }
 
   return null;

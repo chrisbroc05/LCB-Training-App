@@ -5,6 +5,7 @@ import {
   createPresignedSubmissionVideoUploadUrl,
   isAllowedSubmissionVideoContentType,
 } from "@/lib/r2";
+import { requireUnder13ParentUnlockResponse } from "@/lib/legal-under13-guard-server";
 import {
   MAX_SUBMISSION_VIDEO_BYTES,
   SUBMISSION_VIDEO_TOO_LARGE_MESSAGE,
@@ -33,6 +34,11 @@ export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const under13LockError = await requireUnder13ParentUnlockResponse(session.user.id);
+  if (under13LockError) {
+    return under13LockError;
   }
 
   let body: UploadUrlRequestBody | null = null;

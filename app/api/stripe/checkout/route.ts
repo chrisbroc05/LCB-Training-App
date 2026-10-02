@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { parseBillingFrequency } from "@/lib/billing";
 import { getSubscriptionPriceId, stripe } from "@/lib/stripe";
+import { requireCurrentTermsForCheckout } from "@/lib/legal-checkout-server";
 import { isDatabaseTier } from "@/lib/membership";
 
 type CheckoutBody = {
@@ -30,6 +31,11 @@ export async function POST(request: Request) {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id || !session.user.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const termsError = await requireCurrentTermsForCheckout(session.user.id);
+    if (termsError) {
+      return termsError;
     }
 
     const body = (await request.json()) as CheckoutBody;

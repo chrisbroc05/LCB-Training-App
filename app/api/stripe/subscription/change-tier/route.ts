@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { parseBillingFrequency } from "@/lib/billing";
 import { isDatabaseTier, type DatabaseTier } from "@/lib/membership";
+import { requireCurrentTermsForCheckout } from "@/lib/legal-checkout-server";
 import { sendMembershipTierChangeEmail } from "@/lib/notifications";
 import { getSubscriptionPriceId, stripe } from "@/lib/stripe";
 
@@ -31,6 +32,11 @@ export async function POST(request: Request) {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id || !session.user.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const termsError = await requireCurrentTermsForCheckout(session.user.id);
+    if (termsError) {
+      return termsError;
     }
 
     const body = (await request.json()) as ChangeTierBody;

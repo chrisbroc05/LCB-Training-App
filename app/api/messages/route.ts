@@ -11,6 +11,7 @@ import {
   markConversationRead,
   sendConversationMessage,
 } from "@/lib/direct-messaging-server";
+import { requireUnder13ParentUnlockResponse } from "@/lib/legal-under13-guard-server";
 
 export { dynamic, revalidate } from "@/lib/api-no-store";
 
@@ -44,6 +45,11 @@ export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const under13LockError = await requireUnder13ParentUnlockResponse(session.user.id);
+  if (under13LockError) {
+    return under13LockError;
   }
 
   const enrollment = await getEnrollmentForUser(session.user.id);

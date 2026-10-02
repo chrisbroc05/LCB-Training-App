@@ -4,6 +4,8 @@ export const LEGAL_DOCS_VERSION = "2026-09-29";
 
 export const LEGAL_ADULT_AGE = 18;
 
+export const LEGAL_UNDER_13_AGE = 13;
+
 export const LEGAL_MIN_PLAYER_AGE = 5;
 
 export const LEGAL_MAX_PLAYER_AGE = 25;
@@ -47,6 +49,30 @@ export function isMinorPlayerAge(playerAge: number | null | undefined) {
 export function isUnder13ProgramAge(playerAge: number | null | undefined) {
   return playerAge != null && playerAge >= 8 && playerAge <= 11;
 }
+
+export function isUnder13PlayerAge(playerAge: number | null | undefined) {
+  return playerAge != null && playerAge < LEGAL_UNDER_13_AGE;
+}
+
+export type Under13ParentLockState = {
+  playerAge?: number | null;
+  parentConsentEmail?: string | null;
+  parentConsentConfirmedAt?: Date | string | null;
+};
+
+export function needsUnder13ParentConfirmationLock(state: Under13ParentLockState) {
+  if (!isUnder13PlayerAge(state.playerAge)) {
+    return false;
+  }
+
+  if (!state.parentConsentEmail?.trim()) {
+    return false;
+  }
+
+  return !state.parentConsentConfirmedAt;
+}
+
+export const UNDER13_PARENT_LOCK_MAX_RESENDS_PER_DAY = 3;
 
 export function parseLegalPlayerAge(value: string | number | null | undefined) {
   if (typeof value === "number") {
@@ -155,6 +181,10 @@ export function formatParentConsentStatus(params: {
 
   if (params.parentConsentConfirmedAt) {
     return "Parent confirmed";
+  }
+
+  if (isUnder13PlayerAge(params.playerAge)) {
+    return "Waiting on parent (under 13, locked)";
   }
 
   if (params.termsAcceptedAt) {

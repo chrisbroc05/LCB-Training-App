@@ -8,6 +8,7 @@ import {
 } from "@/lib/goal-check-in-constants";
 import { getGoalCheckinAvailability } from "@/lib/goal-check-in";
 import { requireGoalCheckinMember } from "@/lib/goal-checkin-api";
+import { requireUnder13ParentUnlockResponse } from "@/lib/legal-under13-guard-server";
 import {
   sendGoalCheckinReceivedEmail,
   sendGoalCheckinSubmissionNotification,
@@ -51,6 +52,11 @@ export async function POST(request: Request) {
   }
 
   const { session, user } = access;
+
+  const under13LockError = await requireUnder13ParentUnlockResponse(session.user.id);
+  if (under13LockError) {
+    return under13LockError;
+  }
 
   let body: SubmitBody;
   try {

@@ -175,6 +175,8 @@ model User {
   parentConsentConfirmedAt DateTime?
   parentConsentEmailSentAt DateTime?
   parentConsentReminderSentAt DateTime?
+  parentConsentManualResendDayKey String?
+  parentConsentManualResendCount Int @default(0)
   mediaConsent           Boolean                @default(false)
   mediaConsentUpdatedAt  DateTime?
   trainsInPerson         Boolean                @default(false)

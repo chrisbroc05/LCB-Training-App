@@ -143,3 +143,40 @@ export async function sendParentConsentConfirmEmail(params: {
     text: email.text,
   });
 }
+
+export async function sendPlayerParentConfirmedEmail(params: {
+  to: string;
+  playerName: string | null;
+}) {
+  const fromEmail = process.env.NOTIFICATION_EMAIL;
+  if (!fromEmail) {
+    throw new Error("NOTIFICATION_EMAIL is required for parent-confirmed emails.");
+  }
+
+  const playerFirstName = getPlayerFirstName(params.playerName, params.to);
+  const subject = "You're all set. Let's get to work.";
+  const appUrl = getPublicAppUrl();
+  const todayUrl = `${appUrl}/dashboard/today`;
+
+  const bodyContentHtml = `<h1 style="margin:0 0 16px 0; font-family:Arial, Helvetica, sans-serif; font-size:24px; line-height:1.3; color:#0A1628;">You&apos;re all set</h1>
+      <p style="margin:0 0 16px 0; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:1.7; color:#0A1628;">Hi ${escapeHtml(playerFirstName)}, your parent confirmed your LCB Training agreement. Let&apos;s get to work.</p>
+      ${buildEmailButton("Open Today", todayUrl)}`;
+
+  const text = `You're all set. Let's get to work.
+
+Hi ${playerFirstName}, your parent confirmed your LCB Training agreement.
+
+Open Today: ${todayUrl}
+
+${buildEmailFooterText()}`;
+
+  const transporter = createTransporter();
+  await transporter.sendMail({
+    from: `"LCB Training" <${fromEmail}>`,
+    to: params.to,
+    replyTo: EMAIL_REPLY_TO,
+    subject,
+    html: buildMemberEmailHtml({ title: subject, bodyContentHtml }),
+    text,
+  });
+}
