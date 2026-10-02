@@ -4,7 +4,13 @@ import { prisma } from "@/lib/prisma";
 import { isDatabaseTier, type DatabaseTier } from "@/lib/membership";
 import { loadUserMarketingRecipient } from "@/lib/marketing-email-data";
 import { sendMarketingEmail } from "@/lib/marketing-email-send";
-import { validateAcceptedByName, LEGAL_DOCS_VERSION } from "@/lib/legal-shared";
+import {
+  isMinorPlayerAge,
+  LEGAL_DOCS_VERSION,
+  parseLegalPlayerAge,
+  validateAcceptedByName,
+  validateParentConsentEmail,
+} from "@/lib/legal-shared";
 import { sendNewMemberNotification } from "@/lib/notifications";
 import {
   applyMatchingWaiverAcceptanceToUser,
@@ -20,6 +26,9 @@ type SignupBody = {
   legalAcceptance?: {
     acceptedByName?: string;
     acceptedAsParent?: boolean;
+    playerAge?: number | string;
+    parentConsentName?: string | null;
+    parentConsentEmail?: string | null;
     mediaConsent?: boolean;
   };
 };
@@ -50,6 +59,11 @@ export async function POST(request: Request) {
       );
     }
 
+    const playerAge = parseLegalPlayerAge(body.legalAcceptance?.playerAge);
+    if (playerAge == null) {
+      return NextResponse.json({ error: "Enter a valid player age (5-25)." }, { status: 400 });
+    }
+
     const acceptedByName = body.legalAcceptance?.acceptedByName?.trim() ?? "";
     const nameError = validateAcceptedByName(acceptedByName);
     if (nameError) {
@@ -61,6 +75,37 @@ export async function POST(request: Request) {
         { error: "Select whether you are the player or the parent or guardian." },
         { status: 400 },
       );
+    }
+
+    let parentConsentName: string | null = null;
+    let parentConsentEmail: string | null = null;
+
+    if (isMinorPlayerAge(playerAge)) {
+      parentConsentName = body.legalAcceptance?.parentConsentName?.trim() ?? "";
+      parentConsentEmail = body.legalAcceptance?.parentConsentEmail?.trim().toLowerCase() ?? "";
+
+      const parentNameError = validateAcceptedByName(parentConsentName);
+      if (parentNameError) {
+        return NextResponse.json(
+          { error: "Enter the parent or guardian full name (at least first and last)." },
+          { status: 400 },
+        );
+      }
+
+      const parentEmailError = validateParentConsentEmail(parentConsentEmail);
+      if (parentEmailError) {
+        return NextResponse.json({ error: parentEmailError }, { status: 400 });
+      }
+
+      if (!body.legalAcceptance?.acceptedAsParent) {
+        return NextResponse.json(
+          { error: "A parent or guardian must agree for players under 18." },
+          { status: 400 },
+        );
+      }
+    } else if (body.legalAcceptance.acceptedAsParent) {
+      parentConsentName = null;
+      parentConsentEmail = null;
     }
 
     const existingUser = await prisma.user.findUnique({
@@ -86,6 +131,9 @@ export async function POST(request: Request) {
         termsAcceptedAt: acceptedAt,
         acceptedByName,
         acceptedAsParent: body.legalAcceptance.acceptedAsParent,
+        playerAge,
+        parentConsentName,
+        parentConsentEmail,
         mediaConsent: Boolean(body.legalAcceptance.mediaConsent),
         mediaConsentUpdatedAt: acceptedAt,
       },
@@ -102,6 +150,15 @@ export async function POST(request: Request) {
       await applyMatchingWaiverAcceptanceToUser(createdUser.id);
     } catch (error) {
       console.error("Failed to link waiver signatures to new user", error);
+    }
+
+    if (isMinorPlayerAge(playerAge) && parentConsentName && parentConsentEmail) {
+      try {
+        const { finalizeMinorLegalAcceptanceSideEffects } = await import("@/lib/legal-server");
+        await finalizeMinorLegalAcceptanceSideEffects(createdUser.id);
+      } catch (error) {
+        console.error("Failed to send parent consent email for new signup", error);
+      }
     }
 
     try {

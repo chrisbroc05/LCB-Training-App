@@ -169,6 +169,12 @@ model User {
   termsAcceptedAt        DateTime?
   acceptedByName         String?
   acceptedAsParent       Boolean                @default(false)
+  playerAge              Int?
+  parentConsentName      String?
+  parentConsentEmail     String?
+  parentConsentConfirmedAt DateTime?
+  parentConsentEmailSentAt DateTime?
+  parentConsentReminderSentAt DateTime?
   mediaConsent           Boolean                @default(false)
   mediaConsentUpdatedAt  DateTime?
   trainsInPerson         Boolean                @default(false)

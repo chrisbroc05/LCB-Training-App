@@ -26,6 +26,7 @@ export type CoachDailySummarySnapshot = {
   gamesLoggedToday: Array<{ name: string; line: string }>;
   videosWaiting: number;
   unreadMessagesCount: number;
+  unconfirmedMinorNames: string[];
 };
 
 export function coachDailySummaryHasContent(data: CoachDailySummarySnapshot) {
@@ -36,7 +37,8 @@ export function coachDailySummaryHasContent(data: CoachDailySummarySnapshot) {
     data.newNotesCount > 0 ||
     data.gamesLoggedToday.length > 0 ||
     data.videosWaiting > 0 ||
-    data.unreadMessagesCount > 0
+    data.unreadMessagesCount > 0 ||
+    data.unconfirmedMinorNames.length > 0
   );
 }
 
@@ -77,6 +79,12 @@ export function buildCoachNightlySummaryLine(data: CoachDailySummarySnapshot) {
 
   if (data.notFinished.length > 0 && data.finished === 0) {
     parts.push(`${data.notFinished.length} still working`);
+  }
+
+  if (data.unconfirmedMinorNames.length > 0) {
+    parts.push(
+      `${data.unconfirmedMinorNames.length} parent${data.unconfirmedMinorNames.length === 1 ? "" : "s"} unconfirmed`,
+    );
   }
 
   return parts.join(", ");

@@ -392,6 +392,7 @@ export function buildCoachDailySummaryEmail(params: {
   gamesLoggedToday: Array<{ name: string; line: string }>;
   videosWaiting: number;
   unreadMessagesCount: number;
+  unconfirmedMinorNames: string[];
 }) {
   const subject = `Program today: ${params.finished} of ${params.active} finished`;
   const adminUrl = `${getPublicAppUrl()}/admin/program`;
@@ -436,6 +437,12 @@ export function buildCoachDailySummaryEmail(params: {
           .join("")}</ul>`
       : `<p style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:1.5; color:#6B7280;">None</p>`;
 
+  const parentConsentHtml =
+    params.unconfirmedMinorNames.length > 0
+      ? `${buildEmailSectionLabel("PARENT CONFIRMATIONS")}
+      <p style="margin:0 0 16px 0; font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:1.5; color:#DC2626;">${params.unconfirmedMinorNames.length} parent(s) haven&apos;t confirmed the agreement: ${params.unconfirmedMinorNames.map((name) => escapeHtml(name)).join(", ")}</p>`
+      : "";
+
   const bodyContentHtml = `${buildEmailSectionLabel("FINISHED TODAY")}
       <p style="margin:0 0 16px 0; font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:1.5; color:#0A1628;">${finishedHtml}</p>
       ${buildEmailSectionLabel("NOT FINISHED")}
@@ -451,6 +458,7 @@ export function buildCoachDailySummaryEmail(params: {
       <p style="margin:0 0 16px 0; font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:1.5; color:#0A1628;">${params.videosWaiting}</p>
       ${buildEmailSectionLabel("UNREAD MESSAGES")}
       <p style="margin:0 0 16px 0; font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:1.5; color:#0A1628;">${params.unreadMessagesCount}</p>
+      ${parentConsentHtml}
       ${buildEmailButton("Open program overview", adminUrl)}`;
 
   const notFinishedText =
@@ -491,7 +499,11 @@ ${params.videosWaiting}
 
 UNREAD MESSAGES
 ${params.unreadMessagesCount}
-
+${
+  params.unconfirmedMinorNames.length > 0
+    ? `\nPARENT CONFIRMATIONS\n${params.unconfirmedMinorNames.length} parent(s) haven't confirmed the agreement: ${params.unconfirmedMinorNames.join(", ")}\n`
+    : ""
+}
 Open program overview: ${adminUrl}
 
 ${buildEmailFooterText()}`;

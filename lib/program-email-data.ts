@@ -377,8 +377,11 @@ export async function buildWeeklyRecapData(
 }
 
 export async function buildCoachDailySummaryData(dateKey: string, now = new Date()) {
+  const { loadUnconfirmedMinorParentSummaries } = await import("@/lib/legal-server");
+  const unconfirmedMinorNames = await loadUnconfirmedMinorParentSummaries(now);
+
   const enrollments = await loadActiveEnrollments(now);
-  if (enrollments.length === 0) {
+  if (enrollments.length === 0 && unconfirmedMinorNames.length === 0) {
     return null;
   }
 
@@ -563,6 +566,7 @@ export async function buildCoachDailySummaryData(dateKey: string, now = new Date
     gamesLoggedToday: gamesLogged,
     videosWaiting: swingWaiting + mentalWaiting,
     unreadMessagesCount: unreadMessagesCount._sum.coachUnreadCount ?? 0,
+    unconfirmedMinorNames,
   };
 }
 

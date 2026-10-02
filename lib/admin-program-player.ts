@@ -48,6 +48,7 @@ import { formatDateTime } from "@/lib/format-date";
 import {
   formatLegalAgreementRole,
   formatMediaConsentLabel,
+  formatParentConsentStatus,
 } from "@/lib/legal-shared";
 import { formatRefundLabel } from "@/lib/stripe-refund-shared";
 import { serializeInPersonTrainingInfo } from "@/lib/in-person-training-shared";
@@ -66,6 +67,9 @@ export async function buildAdminProgramPlayerDetail(enrollmentId: string, now = 
           termsAcceptedAt: true,
           acceptedByName: true,
           acceptedAsParent: true,
+          playerAge: true,
+          parentConsentEmail: true,
+          parentConsentConfirmedAt: true,
           mediaConsent: true,
           trainsInPerson: true,
           emergencyContactName: true,
@@ -228,6 +232,12 @@ export async function buildAdminProgramPlayerDetail(enrollmentId: string, now = 
         acceptedByName: enrollment.user.acceptedByName,
         agreementRoleLabel: formatLegalAgreementRole(enrollment.user.acceptedAsParent),
         mediaConsentLabel: formatMediaConsentLabel(enrollment.user.mediaConsent),
+        parentConsentStatus: formatParentConsentStatus({
+          playerAge: enrollment.user.playerAge,
+          parentConsentEmail: enrollment.user.parentConsentEmail,
+          parentConsentConfirmedAt: enrollment.user.parentConsentConfirmedAt,
+          termsAcceptedAt: enrollment.user.termsAcceptedAt,
+        }),
       },
       inPersonTraining: serializeInPersonTrainingInfo(enrollment.user),
     },

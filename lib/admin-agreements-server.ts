@@ -2,7 +2,7 @@ import "server-only";
 
 import type { WaiverSignupType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { formatLegalAgreementRole } from "@/lib/legal-shared";
+import { formatLegalAgreementRole, formatParentConsentStatus } from "@/lib/legal-shared";
 import {
   buildAgreementMergeKey,
   formatAgreementSourceLabels,
@@ -53,6 +53,9 @@ type AppRow = {
   termsAcceptedAt: Date;
   acceptedByName: string | null;
   acceptedAsParent: boolean;
+  playerAge: number | null;
+  parentConsentEmail: string | null;
+  parentConsentConfirmedAt: Date | null;
   mediaConsent: boolean;
   trainsInPerson: boolean;
   emergencyContactName: string | null;
@@ -89,6 +92,7 @@ type AgreementPartial = {
   emergencyContactPhone: string | null;
   medicalNotes: string | null;
   isOutdatedVersion: boolean;
+  parentConsentStatus: string | null;
 };
 
 function waiverToPartial(row: WaiverRow): AgreementPartial {
@@ -122,6 +126,7 @@ function waiverToPartial(row: WaiverRow): AgreementPartial {
     emergencyContactPhone: row.emergencyContactPhone,
     medicalNotes: row.medicalNotes,
     isOutdatedVersion: isAgreementOutdatedVersion(row.version),
+    parentConsentStatus: null,
   };
 }
 
@@ -135,7 +140,7 @@ function appToPartial(row: AppRow): AgreementPartial {
     waiverSignatureId: null as string | null,
     userId: row.id,
     accountName: row.name,
-    playerAge: null as number | null,
+    playerAge: row.playerAge,
     teamName: null as string | null,
     teamSlug: null as string | null,
     signupType: null as string | null,
@@ -158,6 +163,12 @@ function appToPartial(row: AppRow): AgreementPartial {
     emergencyContactPhone: row.emergencyContactPhone,
     medicalNotes: row.medicalNotes,
     isOutdatedVersion: isAgreementOutdatedVersion(row.termsVersion),
+    parentConsentStatus: formatParentConsentStatus({
+      playerAge: row.playerAge,
+      parentConsentEmail: row.parentConsentEmail,
+      parentConsentConfirmedAt: row.parentConsentConfirmedAt,
+      termsAcceptedAt: row.termsAcceptedAt,
+    }),
   };
 }
 
@@ -214,6 +225,7 @@ function mergePartials(left: AgreementPartial, right: AgreementPartial): Agreeme
       left.medicalNotes?.trim() ||
       null,
     isOutdatedVersion: left.isOutdatedVersion || right.isOutdatedVersion,
+    parentConsentStatus: primary.parentConsentStatus ?? secondary.parentConsentStatus,
   };
 }
 
@@ -248,6 +260,7 @@ function serializeMerged(record: AgreementPartial): UnifiedAgreementRecord {
     emergencyContactPhone: record.emergencyContactPhone,
     medicalNotes: record.medicalNotes,
     isOutdatedVersion: record.isOutdatedVersion,
+    parentConsentStatus: record.parentConsentStatus,
   };
 }
 
@@ -319,6 +332,9 @@ export async function listUnifiedAgreements(filters: UnifiedAgreementListFilters
         termsAcceptedAt: true,
         acceptedByName: true,
         acceptedAsParent: true,
+        playerAge: true,
+        parentConsentEmail: true,
+        parentConsentConfirmedAt: true,
         mediaConsent: true,
         trainsInPerson: true,
         emergencyContactName: true,

@@ -40,6 +40,7 @@ import {
 } from "@/lib/program-plan-overrides-server";
 import { getTaskKeysForDay } from "@/lib/program-daily-plan";
 import { isCoachEmailSummaryEnabled } from "@/lib/coach-alert-settings";
+import { sendDueParentConsentReminders } from "@/lib/legal-server";
 import {
   maybeSendCoachNightlySummaryPush,
   type ScheduledCoachPushPreview,
@@ -660,6 +661,11 @@ export async function runProgramEmailScheduler(params?: {
       );
     }
   };
+
+  await trySend("parent-consent-reminders", async () => {
+    const sentReminders = await sendDueParentConsentReminders(now);
+    return sentReminders > 0;
+  });
 
   if (
     morningSevenWindow &&

@@ -23,6 +23,7 @@ import PlaybookSignupFlow from "@/app/auth/PlaybookSignupFlow";
 import GeneralAuthFlow from "@/app/auth/GeneralAuthFlow";
 import ProgramSignupFlow from "@/app/auth/ProgramSignupFlow";
 import LegalAgreementFields, {
+  buildLegalAcceptancePayload,
   createEmptyLegalAgreementValues,
   validateLegalAgreementValues,
   type LegalAgreementValues,
@@ -298,6 +299,13 @@ function AuthContent() {
     const membershipTierForSignup = isPlaybookFlow ? selectedDatabaseTier : "FREE";
     const signupSource = isProgramFlow ? "program" : isPlaybookFlow ? "playbook" : "standard";
 
+    const legalPayload = buildLegalAcceptancePayload(legalAgreement);
+    if (!legalPayload) {
+      setSignupLoading(false);
+      setSignupError("Enter a valid player age (5-25).");
+      return;
+    }
+
     const response = await fetch("/api/auth/signup", {
       method: "POST",
       headers: {
@@ -309,11 +317,7 @@ function AuthContent() {
         password: signupPassword,
         selectedMembershipTier: membershipTierForSignup,
         signupSource,
-        legalAcceptance: {
-          acceptedByName: legalAgreement.acceptedByName.trim(),
-          acceptedAsParent: legalAgreement.agreementRole === "parent",
-          mediaConsent: legalAgreement.mediaConsent,
-        },
+        legalAcceptance: legalPayload,
       }),
     });
 

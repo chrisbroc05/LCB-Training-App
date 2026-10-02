@@ -367,6 +367,12 @@ export default function AdminWaiversPanel() {
                 </dd>
               </div>
             ) : null}
+            {selected.parentConsentStatus ? (
+              <div>
+                <dt className="text-zinc-500">Parent confirmation</dt>
+                <dd>{selected.parentConsentStatus}</dd>
+              </div>
+            ) : null}
             {selected.signerPhone ? (
               <div>
                 <dt className="text-zinc-500">Signer phone</dt>

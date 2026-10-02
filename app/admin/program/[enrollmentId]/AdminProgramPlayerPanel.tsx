@@ -76,6 +76,7 @@ type PlayerDetail = {
       acceptedByName: string | null;
       agreementRoleLabel: string;
       mediaConsentLabel: string;
+      parentConsentStatus: string | null;
     };
     inPersonTraining: InPersonTrainingInfo;
   };
@@ -563,6 +564,9 @@ export default function AdminProgramPlayerPanel({ enrollmentId }: { enrollmentId
           <p className="mt-1">
             Media consent: {detail.enrollment.legalAcceptance.mediaConsentLabel}
           </p>
+          {detail.enrollment.legalAcceptance.parentConsentStatus ? (
+            <p className="mt-1">{detail.enrollment.legalAcceptance.parentConsentStatus}</p>
+          ) : null}
         </div>
         <div className="mt-4 rounded-2xl border border-[#2b3650] bg-black/30 p-4 text-sm text-zinc-300">
           <p className="font-semibold text-zinc-100">In-person training info</p>

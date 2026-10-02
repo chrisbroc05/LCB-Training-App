@@ -32,6 +32,7 @@ export default async function ProgramStartPage({ searchParams }: ProgramStartPag
       name: true,
       email: true,
       acceptedAsParent: true,
+      playerAge: true,
       trainsInPerson: true,
       emergencyContactName: true,
       emergencyContactPhone: true,
@@ -65,6 +66,7 @@ export default async function ProgramStartPage({ searchParams }: ProgramStartPag
       initialEnrollment={serializeProgramEnrollment(enrollment)}
       checkoutSuccess={checkoutSuccess}
       initialAcceptedAsParent={user.acceptedAsParent}
+      initialPlayerAge={user.playerAge}
       initialInPersonTraining={serializeInPersonTrainingInfo(user)}
     />
   );

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import LegalAgreementFields, {
+  buildLegalAcceptancePayload,
   createEmptyLegalAgreementValues,
   validateLegalAgreementValues,
   type LegalAgreementValues,
@@ -66,14 +67,17 @@ export default function LegalAgreementGate() {
 
     setLoading(true);
 
+    const payload = buildLegalAcceptancePayload(values);
+    if (!payload) {
+      setLoading(false);
+      setError("Enter a valid player age (5-25).");
+      return;
+    }
+
     const response = await fetch("/api/legal/accept", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        acceptedByName: values.acceptedByName.trim(),
-        acceptedAsParent: values.agreementRole === "parent",
-        mediaConsent: values.mediaConsent,
-      }),
+      body: JSON.stringify(payload),
     });
 
     const data = (await response.json().catch(() => ({}))) as { error?: string };

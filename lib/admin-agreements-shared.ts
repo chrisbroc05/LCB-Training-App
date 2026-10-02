@@ -51,6 +51,7 @@ export type UnifiedAgreementRecord = {
   emergencyContactPhone: string | null;
   medicalNotes: string | null;
   isOutdatedVersion: boolean;
+  parentConsentStatus: string | null;
 };
 
 export type RosterPlayerStatus = {

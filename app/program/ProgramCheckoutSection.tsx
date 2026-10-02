@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import LegalAgreementFields, {
+  buildLegalAcceptancePayload,
   createEmptyLegalAgreementValues,
   validateLegalAgreementValues,
 } from "@/components/LegalAgreementFields";
@@ -68,6 +69,13 @@ function ProgramCheckoutSectionContent({
       return;
     }
 
+    const legalPayload = buildLegalAcceptancePayload(legalAgreement);
+    if (!legalPayload) {
+      setAuthLoading(false);
+      setAuthError("Enter a valid player age (5-25).");
+      return;
+    }
+
     const response = await fetch("/api/auth/signup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -77,11 +85,7 @@ function ProgramCheckoutSectionContent({
         password,
         selectedMembershipTier: "FREE",
         signupSource: "program",
-        legalAcceptance: {
-          acceptedByName: legalAgreement.acceptedByName.trim(),
-          acceptedAsParent: legalAgreement.agreementRole === "parent",
-          mediaConsent: legalAgreement.mediaConsent,
-        },
+        legalAcceptance: legalPayload,
       }),
     });
 

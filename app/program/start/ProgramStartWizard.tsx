@@ -16,9 +16,11 @@ import {
   type ProgramSeasonMode,
 } from "@/lib/program-enrollment-shared";
 import LegalAgreementFields, {
+  buildLegalAcceptancePayload,
   createEmptyLegalAgreementValues,
   validateLegalAgreementValues,
 } from "@/components/LegalAgreementFields";
+import { isUnder13ProgramAge } from "@/lib/legal-shared";
 import { BRAND_SECONDARY_TAGLINE } from "@/lib/brand-copy";
 import { formatProgramStartLabel, parseProgramDateKey } from "@/lib/program-schedule";
 import {
@@ -99,11 +101,24 @@ function getResumeStep(enrollment: SerializedEnrollment): WizardStep {
   return "parent";
 }
 
+function needsParentLegalStep(params: {
+  ageGroup: ProgramAgeGroup | null;
+  acceptedAsParent: boolean;
+  playerAge: number | null;
+}) {
+  if (params.acceptedAsParent || isUnder13ProgramAge(params.playerAge)) {
+    return false;
+  }
+
+  return params.ageGroup === "AGE_8_11";
+}
+
 type ProgramStartWizardProps = {
   firstName: string;
   initialEnrollment: SerializedEnrollment;
   checkoutSuccess: boolean;
   initialAcceptedAsParent: boolean;
+  initialPlayerAge: number | null;
   initialInPersonTraining: InPersonTrainingInfo;
 };
 
@@ -112,6 +127,7 @@ export default function ProgramStartWizard({
   initialEnrollment,
   checkoutSuccess,
   initialAcceptedAsParent,
+  initialPlayerAge,
   initialInPersonTraining,
 }: ProgramStartWizardProps) {
   const router = useRouter();
@@ -314,7 +330,7 @@ export default function ProgramStartWizard({
     });
 
     if (saved) {
-      if (ageGroup === "AGE_8_11" && !acceptedAsParent) {
+      if (needsParentLegalStep({ ageGroup, acceptedAsParent, playerAge: initialPlayerAge })) {
         goToStep("parent_legal");
       } else {
         goToStep("in_person");
@@ -324,7 +340,7 @@ export default function ProgramStartWizard({
 
   const handleParentSkip = () => {
     setError("");
-    if (ageGroup === "AGE_8_11" && !acceptedAsParent) {
+    if (needsParentLegalStep({ ageGroup, acceptedAsParent, playerAge: initialPlayerAge })) {
       goToStep("parent_legal");
       return;
     }
@@ -333,14 +349,15 @@ export default function ProgramStartWizard({
   };
 
   const handleParentLegalContinue = async () => {
-    if (parentLegalAgreement.agreementRole !== "parent") {
-      setError("A parent or guardian must agree for players under 13.");
-      return;
-    }
-
     const validationError = validateLegalAgreementValues(parentLegalAgreement);
     if (validationError) {
       setError(validationError);
+      return;
+    }
+
+    const payload = buildLegalAcceptancePayload(parentLegalAgreement);
+    if (!payload || !payload.acceptedAsParent) {
+      setError("A parent or guardian must agree for players under 13.");
       return;
     }
 
@@ -350,11 +367,7 @@ export default function ProgramStartWizard({
     const response = await fetch("/api/legal/accept", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        acceptedByName: parentLegalAgreement.acceptedByName.trim(),
-        acceptedAsParent: true,
-        mediaConsent: parentLegalAgreement.mediaConsent,
-      }),
+      body: JSON.stringify(payload),
     });
 
     const data = (await response.json().catch(() => ({}))) as { error?: string };
@@ -422,7 +435,7 @@ export default function ProgramStartWizard({
   };
 
   const handleFinish = async () => {
-    if (ageGroup === "AGE_8_11" && !acceptedAsParent) {
+    if (needsParentLegalStep({ ageGroup, acceptedAsParent, playerAge: initialPlayerAge })) {
       goToStep("parent_legal");
       return;
     }
@@ -773,7 +786,6 @@ export default function ProgramStartWizard({
               <LegalAgreementFields
                 values={parentLegalAgreement}
                 onChange={setParentLegalAgreement}
-                parentConsentPrompt
                 compact
               />
 
