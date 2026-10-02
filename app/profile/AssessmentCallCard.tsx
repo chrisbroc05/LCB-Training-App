@@ -13,11 +13,11 @@ export default function AssessmentCallCard({
   assessmentCallDate,
 }: AssessmentCallCardProps) {
   return (
-    <ProfileCard title="Assessment Call">
+    <ProfileCard title="Coach Call">
       {assessmentCallBooked && assessmentCallDate ? (
         <div className="space-y-3">
           <p className={profileBodyTextClass}>
-            Your assessment call is scheduled for{" "}
+            Your call is scheduled for{" "}
             <span className="font-semibold text-[#9df3bd]">
               {formatAssessmentCallDateTime(assessmentCallDate)}
             </span>
@@ -33,8 +33,7 @@ export default function AssessmentCallCard({
       ) : (
         <div className="space-y-4">
           <p className={profileBodyTextClass}>
-            Book a free 20-minute video call with Coach Broc to discuss your player&apos;s goals
-            and find the right training plan for their development.
+            Want to talk through the 12-Week Program first? Book a call with me.
           </p>
           <a
             href={COACH_CALENDLY_URL}
@@ -42,7 +41,7 @@ export default function AssessmentCallCard({
             rel="noopener noreferrer"
             className={profilePrimaryButtonClass}
           >
-            Book Your Free Call
+            Book a call
           </a>
         </div>
       )}

@@ -54,11 +54,19 @@ export default function MessageChatView({
       return;
     }
 
-    const intervalId = window.setInterval(() => {
-      void onPoll();
-    }, MESSAGE_POLL_INTERVAL_MS);
+    const poll = () => {
+      if (document.visibilityState === "visible") {
+        void onPoll();
+      }
+    };
 
-    return () => window.clearInterval(intervalId);
+    const intervalId = window.setInterval(poll, MESSAGE_POLL_INTERVAL_MS);
+    document.addEventListener("visibilitychange", poll);
+
+    return () => {
+      window.clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", poll);
+    };
   }, [onPoll]);
 
   useEffect(() => {

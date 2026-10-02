@@ -19,11 +19,10 @@ export const membershipTiers: MembershipTier[] = [
   {
     key: "free",
     name: "Free",
-    priceLabel: "$0",
+    priceLabel: "Free",
     summary:
-      "Start with a free Player Assessment Call and one coaching submission with personal feedback from Coach Broc.",
+      "One coaching submission with personal feedback from Coach Broc.",
     features: [
-      "Start with a free 20-minute Player Assessment Call with Coach Broc via Google Meet",
       "One free coaching submission where Coach Broc personally reviews your swing or mental game and sends real feedback",
       "No credit card required. Just show up ready to work.",
     ],

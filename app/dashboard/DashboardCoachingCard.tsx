@@ -116,7 +116,7 @@ export default function DashboardCoachingCard({
           <article className="rounded-2xl border border-[#22c55e]/40 bg-[#0A1628] p-4 sm:p-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h2 className="text-lg font-semibold text-zinc-100">
-                Your Assessment Call is Scheduled
+                Your Call is Scheduled
               </h2>
               <span className="rounded-full border border-[#22c55e]/40 bg-[#22c55e]/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#9df3bd]">
                 Scheduled
@@ -135,15 +135,9 @@ export default function DashboardCoachingCard({
           </article>
         ) : (
           <article className="rounded-2xl border border-[#22c55e]/50 bg-[#22c55e]/10 p-4 sm:p-6">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 className="text-lg font-semibold text-zinc-100">Free Player Assessment Call</h2>
-              <span className="rounded-full bg-[#22c55e]/20 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#9df3bd]">
-                Free
-              </span>
-            </div>
+            <h2 className="text-lg font-semibold text-zinc-100">Have questions?</h2>
             <p className="mt-3 text-sm text-zinc-300">
-              Book a free 20-minute video call with Coach Broc to discuss your player&apos;s goals
-              and find the right training plan for their development.
+              Want to talk through the 12-Week Program first? Book a call with me.
             </p>
             <a
               href={COACH_CALENDLY_URL}
@@ -151,7 +145,7 @@ export default function DashboardCoachingCard({
               rel="noopener noreferrer"
               className="mt-4 inline-flex rounded-full bg-[#22c55e] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[#35db72]"
             >
-              Book Your Free Call
+              Book a call
             </a>
           </article>
         )}

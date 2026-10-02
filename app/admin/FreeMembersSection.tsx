@@ -111,7 +111,7 @@ export default function FreeMembersSection({
     <section className="mt-8 rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
       <h2 className="text-xl font-semibold text-zinc-100 sm:text-2xl">Free Members</h2>
       <p className="mt-2 text-sm text-zinc-400">
-        Track free tier signups and mark Player Assessment Calls as booked. All call times use
+        Track free tier signups and mark booked calls. All call times use
         Central Time (America/Chicago).
       </p>
 

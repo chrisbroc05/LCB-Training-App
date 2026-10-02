@@ -11,6 +11,8 @@ type Under13LockStatus = {
   parentConsentResendsRemaining?: number;
 };
 
+const PARENT_CONSENT_POLL_INTERVAL_MS = 15_000;
+
 export default function Under13ParentConsentGate() {
   const pathname = usePathname();
   const [status, setStatus] = useState<Under13LockStatus | null>(null);
@@ -20,14 +22,9 @@ export default function Under13ParentConsentGate() {
   const [message, setMessage] = useState("");
   const [loadingAction, setLoadingAction] = useState<"resend" | "update" | null>(null);
 
-  const loadStatus = async () => {
+  const fetchStatus = async () => {
     const response = await fetch("/api/legal/status");
-    const data = (await response.json().catch(() => ({}))) as Under13LockStatus;
-    setStatus(data);
-    if (data.parentConsentEmail) {
-      setParentEmail(data.parentConsentEmail);
-    }
-    return data;
+    return (await response.json().catch(() => ({}))) as Under13LockStatus;
   };
 
   useEffect(() => {
@@ -37,28 +34,67 @@ export default function Under13ParentConsentGate() {
     }
 
     let cancelled = false;
+    let intervalId: number | null = null;
 
-    void loadStatus().then((data) => {
+    const clearPolling = () => {
+      if (intervalId != null) {
+        window.clearInterval(intervalId);
+        intervalId = null;
+      }
+    };
+
+    const applyStatus = (data: Under13LockStatus) => {
       if (cancelled) {
         return;
       }
 
+      setStatus(data);
+      if (data.parentConsentEmail) {
+        setParentEmail(data.parentConsentEmail);
+      }
       if (!data.needsUnder13ParentLock) {
         setShowEmailEditor(false);
+        clearPolling();
+      }
+    };
+
+    const poll = async () => {
+      if (document.visibilityState !== "visible") {
+        return;
+      }
+
+      applyStatus(await fetchStatus());
+    };
+
+    const startPolling = () => {
+      if (intervalId != null) {
+        return;
+      }
+
+      intervalId = window.setInterval(() => {
+        void poll();
+      }, PARENT_CONSENT_POLL_INTERVAL_MS);
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        void poll();
+      }
+    };
+
+    void fetchStatus().then((data) => {
+      applyStatus(data);
+      if (data.needsUnder13ParentLock) {
+        startPolling();
       }
     });
 
-    const intervalId = window.setInterval(() => {
-      void loadStatus().then((data) => {
-        if (!data.needsUnder13ParentLock && data.needsUnder13ParentLock != null) {
-          window.location.reload();
-        }
-      });
-    }, 15000);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
       cancelled = true;
-      window.clearInterval(intervalId);
+      clearPolling();
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [pathname]);
 

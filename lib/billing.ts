@@ -23,8 +23,8 @@ export const basicOneTimePricing: TierPricing = {
 
 export const tierPricing: Record<TierKey, Record<BillingFrequency, TierPricing>> = {
   free: {
-    monthly: { primary: "$0" },
-    annual: { primary: "$0" },
+    monthly: { primary: "Free" },
+    annual: { primary: "Free" },
   },
   basic: {
     monthly: basicOneTimePricing,

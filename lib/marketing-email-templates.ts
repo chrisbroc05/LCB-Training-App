@@ -89,7 +89,7 @@ export function buildWelcomeMarketingEmail(recipient: MarketingEmailRecipient) {
                 "Glad you are here. You have one free swing analysis or mental game submission waiting. Send me a video and I will personally break it down for you.",
               )}
               ${paragraph(
-                "You can also book a free 20-minute Player Assessment Call if you want to talk through your game first.",
+                "You can also book a call with me if you want to talk through the 12-Week Program first.",
               )}
               ${buildEmailButton("Send Your Free Video", submitUrl)}
               ${buildEmailDivider()}
@@ -102,7 +102,7 @@ export function buildWelcomeMarketingEmail(recipient: MarketingEmailRecipient) {
 
 Glad you are here. You have one free swing analysis or mental game submission waiting. Send me a video and I will personally break it down for you.
 
-You can also book a free 20-minute Player Assessment Call if you want to talk through your game first.
+You can also book a call with me if you want to talk through the 12-Week Program first.
 
 Send your free video: ${submitUrl}
 
@@ -269,7 +269,7 @@ export function buildFollowupKnownForDay10Email(recipient: MarketingEmailRecipie
               )}
               ${buildEmailButton("Join the 12-Week Program", programUrl)}
               ${paragraph(
-                `Not ready for daily coaching? Book a free 20-minute Player Assessment Call and we can talk through your game first. Visit ${escapeHtml(assessmentCallUrl)}.`,
+                `Not ready for daily coaching? Book a call and we can talk through the 12-Week Program first. Visit ${escapeHtml(assessmentCallUrl)}.`,
               )}
               ${playbookLine}`;
 
@@ -281,7 +281,7 @@ Work Hard. Be Memorable. If you want me in your corner every day, the 12-Week Co
 
 Join the 12-Week Program: ${programUrl}
 
-Not ready for daily coaching? Book a free 20-minute Player Assessment Call and we can talk through your game first: ${assessmentCallUrl}${playbookText}`;
+Not ready for daily coaching? Book a call and we can talk through the 12-Week Program first: ${assessmentCallUrl}${playbookText}`;
 
   return wrapMarketingEmail({
     title: "What do you want to be known for?",

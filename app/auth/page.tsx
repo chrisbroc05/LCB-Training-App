@@ -450,13 +450,6 @@ function AuthContent() {
                 onSubmit={handleSignup}
               />
             </div>
-
-            <p className="mt-5 text-center text-sm text-zinc-300">
-              Already have an account?{" "}
-              <Link href={loginHref} className="underline-offset-2 transition hover:text-[#98b144] hover:underline">
-                Log in
-              </Link>
-            </p>
           </article>
         ) : authMode === "signup" && isProgramFlow ? (
           <ProgramSignupFlow
