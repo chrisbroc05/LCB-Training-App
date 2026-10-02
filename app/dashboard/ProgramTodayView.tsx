@@ -770,24 +770,20 @@ export default function ProgramTodayView() {
   return (
     <div className="space-y-3">
       <section className={`${CARD} border-[#2b3650]`}>
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <p className="text-xl font-bold text-zinc-100">{payload.headerLabel}</p>
-            <span className="mt-2 inline-flex rounded-full bg-[#52B788] px-3 py-1 text-xs font-bold uppercase tracking-wide text-[#0A1628]">
+        <div>
+          <p className="text-xl font-bold text-zinc-100">{payload.headerLabel}</p>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center rounded-full bg-[#52B788] px-3 py-1 text-xs font-bold uppercase tracking-wide text-[#0A1628]">
               {phaseLabel}
             </span>
-          </div>
-          <div className="text-right">
-            <div className="inline-flex items-center gap-2 rounded-full border border-[#52B788]/40 bg-[#52B788]/10 px-3 py-1.5">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-[#52B788]/40 bg-[#52B788]/10 px-3 py-1 text-xs font-semibold text-zinc-100">
               <FlameIcon />
-              <span className="text-sm font-semibold text-zinc-100">
-                {payload.streak}-day streak
-              </span>
-            </div>
-            {payload.streak === 0 ? (
-              <p className="mt-1 text-xs text-zinc-400">Finish every task today to start one.</p>
-            ) : null}
+              {payload.streak}-day streak
+            </span>
           </div>
+          {payload.streak === 0 ? (
+            <p className="mt-1 text-xs text-zinc-400">Finish every task today to start one.</p>
+          ) : null}
         </div>
         <div className="mt-4 h-3 overflow-hidden rounded-full bg-[#0A1628]">
           <div
