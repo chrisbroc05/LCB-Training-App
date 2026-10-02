@@ -1,5 +1,6 @@
 import "server-only";
 
+import { getAccountHolderFirstName, getPlayerFirstName } from "@/lib/account-shared";
 import type { MarketingEmailTypeValue } from "@/lib/marketing-email-shared";
 import {
   FOLLOWUP_DAY_OFFSETS,
@@ -17,13 +18,22 @@ export type MarketingFollowupAnchor = {
   submission: FollowupSubmissionContext;
 };
 
-function getFirstName(name: string | null | undefined, email: string) {
-  const trimmed = name?.trim();
-  if (trimmed) {
-    return trimmed.split(/\s+/)[0] ?? "there";
+function getFirstName(user: {
+  name: string | null;
+  email: string;
+  playerFirstName?: string | null;
+  accountRole?: string | null;
+  accountHolderName?: string | null;
+}) {
+  if (user.accountRole === "PARENT") {
+    return getAccountHolderFirstName(user.accountHolderName, user.email);
   }
 
-  return email.split("@")[0] || "there";
+  return getPlayerFirstName({
+    playerFirstName: user.playerFirstName,
+    name: user.name,
+    email: user.email,
+  });
 }
 
 function truncateResponseSummary(value: string | null | undefined, maxLength = 220) {
@@ -54,6 +64,9 @@ export async function loadMarketingFollowupAnchors(_now = new Date()) {
       id: true,
       email: true,
       name: true,
+      playerFirstName: true,
+      accountRole: true,
+      accountHolderName: true,
       membershipTier: true,
       swingAnalysisSubmissions: {
         where: { respondedAt: { not: null } },
@@ -135,7 +148,7 @@ export async function loadMarketingFollowupAnchors(_now = new Date()) {
     anchors.push({
       userId: user.id,
       email: user.email,
-      firstName: getFirstName(user.name, user.email),
+      firstName: getFirstName(user),
       ownsPlaybook: user.membershipTier === "BASIC",
       notifyAnnouncements: true,
       submission,
@@ -158,6 +171,9 @@ export async function loadFreeSubmissionReminderCandidates(now = new Date()) {
       id: true,
       email: true,
       name: true,
+      playerFirstName: true,
+      accountRole: true,
+      accountHolderName: true,
       signupDate: true,
     },
     take: 200,
@@ -168,7 +184,7 @@ export async function loadFreeSubmissionReminderCandidates(now = new Date()) {
     .map((user) => ({
       userId: user.id,
       email: user.email,
-      firstName: getFirstName(user.name, user.email),
+      firstName: getFirstName(user),
       ownsPlaybook: false,
       signupDate: user.signupDate,
     }));
@@ -190,6 +206,9 @@ export async function loadUserMarketingRecipient(userId: string) {
       id: true,
       email: true,
       name: true,
+      playerFirstName: true,
+      accountRole: true,
+      accountHolderName: true,
       membershipTier: true,
       marketingEmailsSuppressed: true,
     },
@@ -202,7 +221,14 @@ export async function loadUserMarketingRecipient(userId: string) {
   return {
     userId: user.id,
     email: user.email,
-    firstName: getFirstName(user.name, user.email),
+    firstName: getFirstName(user),
+    playerFirstName: getPlayerFirstName({
+      playerFirstName: user.playerFirstName,
+      name: user.name,
+      email: user.email,
+    }),
+    accountRole: user.accountRole,
+    accountHolderFirstName: getAccountHolderFirstName(user.accountHolderName, user.email),
     ownsPlaybook: user.membershipTier === "BASIC" || user.membershipTier === "TWELVE_WEEK",
   };
 }

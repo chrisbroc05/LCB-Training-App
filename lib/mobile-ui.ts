@@ -52,7 +52,13 @@ export function getMobileTierBadge(tier: DatabaseTier) {
 export function getMobileFirstName(
   name: string | null | undefined,
   email: string | null | undefined,
+  playerFirstName?: string | null,
 ) {
+  const fromPlayer = playerFirstName?.trim();
+  if (fromPlayer) {
+    return fromPlayer;
+  }
+
   const trimmedName = name?.trim();
   if (trimmedName) {
     return trimmedName.split(/\s+/)[0];

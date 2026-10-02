@@ -14,9 +14,15 @@ import {
 import { serializeInPersonTrainingInfo } from "@/lib/in-person-training-shared";
 import { getTwelveWeekProgramEndDate } from "@/lib/twelve-week-program";
 
+import { formatAccountRoleLabel, formatSignedUpBy, getPlayerFullName } from "@/lib/account-shared";
+
 export const adminMemberListSelect = {
   id: true,
   name: true,
+  playerFirstName: true,
+  playerLastName: true,
+  accountRole: true,
+  accountHolderName: true,
   email: true,
   membershipTier: true,
   signupDate: true,
@@ -39,6 +45,10 @@ export const adminMemberListSelect = {
 type AdminMemberListRecord = {
   id: string;
   name: string | null;
+  playerFirstName: string | null;
+  playerLastName: string | null;
+  accountRole: "PLAYER" | "PARENT";
+  accountHolderName: string | null;
   email: string;
   membershipTier: MembershipTier;
   signupDate: Date;
@@ -98,7 +108,11 @@ export function serializeAdminMemberSummary(user: AdminMemberListRecord) {
 
   return {
     id: user.id,
-    name: user.name,
+    name: getPlayerFullName(user),
+    accountRole: user.accountRole,
+    accountHolderName: user.accountHolderName,
+    accountRoleLabel: formatAccountRoleLabel(user.accountRole),
+    signedUpBy: formatSignedUpBy(user.accountRole, user.accountHolderName),
     email: user.email,
     membershipTier: user.membershipTier,
     signupDate: user.signupDate.toISOString(),
@@ -142,6 +156,10 @@ export function parseAdminNotes(value: unknown) {
 export const adminMemberDetailSelect = {
   id: true,
   name: true,
+  playerFirstName: true,
+  playerLastName: true,
+  accountRole: true,
+  accountHolderName: true,
   email: true,
   membershipTier: true,
   signupDate: true,
@@ -231,6 +249,10 @@ export const adminMemberDetailSelect = {
 type AdminMemberDetailRecord = {
   id: string;
   name: string | null;
+  playerFirstName: string | null;
+  playerLastName: string | null;
+  accountRole: "PLAYER" | "PARENT";
+  accountHolderName: string | null;
   email: string;
   membershipTier: MembershipTier;
   signupDate: Date;

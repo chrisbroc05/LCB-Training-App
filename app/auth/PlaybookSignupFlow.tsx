@@ -2,7 +2,8 @@
 
 import type { DatabaseTier, TierKey } from "@/lib/membership";
 import Link from "next/link";
-import LegalAgreementFields, { type LegalAgreementValues } from "@/components/LegalAgreementFields";
+import SignupWizard from "@/components/SignupWizard";
+import type { SignupRequestPayload } from "@/lib/signup-shared";
 import { TWELVE_WEEK_PROGRAM_NAME } from "@/lib/twelve-week-program";
 import {
   getPlaybookResumeCheckoutButtonLabel,
@@ -10,17 +11,9 @@ import {
   PLAYBOOK_INCLUDED_ITEMS,
 } from "@/lib/auth-flow";
 
-const SIGNUP_FORM_ID = "playbook-signup-form";
-
 type PlaybookSignupFlowProps = {
   selectedTier: TierKey;
   onSelectTier: (tier: TierKey) => void;
-  signupName: string;
-  onSignupNameChange: (value: string) => void;
-  signupEmail: string;
-  onSignupEmailChange: (value: string) => void;
-  signupPassword: string;
-  onSignupPasswordChange: (value: string) => void;
   signupError: string;
   signupLoading: boolean;
   resumeLoading: boolean;
@@ -28,12 +21,10 @@ type PlaybookSignupFlowProps = {
   checkoutStatus: string | null;
   isLoggedInWithPendingCheckout: boolean;
   pendingCheckoutTier: DatabaseTier | null;
-  onSignupSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
+  onSignup: (payload: SignupRequestPayload) => void | Promise<void>;
   onResumeCheckout: () => void;
   onStartFreeLoggedIn: () => void;
   loginHref: string;
-  legalAgreement: LegalAgreementValues;
-  onLegalAgreementChange: (values: LegalAgreementValues) => void;
 };
 
 function CheckmarkIcon() {
@@ -58,12 +49,6 @@ function CheckmarkIcon() {
 export default function PlaybookSignupFlow({
   selectedTier,
   onSelectTier,
-  signupName,
-  onSignupNameChange,
-  signupEmail,
-  onSignupEmailChange,
-  signupPassword,
-  onSignupPasswordChange,
   signupError,
   signupLoading,
   resumeLoading,
@@ -71,12 +56,10 @@ export default function PlaybookSignupFlow({
   checkoutStatus,
   isLoggedInWithPendingCheckout,
   pendingCheckoutTier,
-  onSignupSubmit,
+  onSignup,
   onResumeCheckout,
   onStartFreeLoggedIn,
   loginHref,
-  legalAgreement,
-  onLegalAgreementChange,
 }: PlaybookSignupFlowProps) {
   const isFreeSelected = selectedTier === "free";
   const isBasicSelected = selectedTier === "basic";
@@ -156,46 +139,21 @@ export default function PlaybookSignupFlow({
         </section>
       ) : (
         <>
-          <form id={SIGNUP_FORM_ID} className="mt-6 space-y-4" onSubmit={onSignupSubmit}>
-            <label className="block">
-              <span className="text-sm text-zinc-300">First name</span>
-              <input
-                type="text"
-                placeholder="First name"
-                value={signupName}
-                onChange={(event) => onSignupNameChange(event.target.value)}
-                className="mt-2 w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 placeholder:text-zinc-500 focus:border-[#22c55e]"
-                required
-              />
-            </label>
-            <label className="block">
-              <span className="text-sm text-zinc-300">Email</span>
-              <input
-                type="email"
-                placeholder="you@example.com"
-                value={signupEmail}
-                onChange={(event) => onSignupEmailChange(event.target.value)}
-                className="mt-2 w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 placeholder:text-zinc-500 focus:border-[#22c55e]"
-                required
-              />
-            </label>
-            <label className="block">
-              <span className="text-sm text-zinc-300">Password</span>
-              <input
-                type="password"
-                placeholder="At least 8 characters"
-                value={signupPassword}
-                onChange={(event) => onSignupPasswordChange(event.target.value)}
-                className="mt-2 w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 placeholder:text-zinc-500 focus:border-[#22c55e]"
-                minLength={8}
-                required
-              />
-            </label>
-            <LegalAgreementFields
-              values={legalAgreement}
-              onChange={onLegalAgreementChange}
+          <div className="mt-6">
+            <SignupWizard
+              title="Create your account"
+              subtitle={
+                isFreeSelected
+                  ? "Create your free account and get one personal coaching submission from Coach Broc."
+                  : "Create your account below and get instant access."
+              }
+              submitLabel={getPlaybookSignupButtonLabel(selectedTier)}
+              loading={signupLoading}
+              error={signupError}
+              loginHref={loginHref}
+              onSubmit={onSignup}
             />
-          </form>
+          </div>
 
           {!isFreeSelected ? (
             <section className="mt-8 border-t border-[#2b3650] pt-8">
@@ -214,17 +172,6 @@ export default function PlaybookSignupFlow({
               </Link>
             </section>
           ) : null}
-
-          {signupError ? <p className="mt-4 text-sm text-red-300">{signupError}</p> : null}
-
-          <button
-            type="submit"
-            form={SIGNUP_FORM_ID}
-            disabled={signupLoading}
-            className="mt-8 w-full rounded-full bg-[#22c55e] px-5 py-3.5 text-base font-semibold text-black transition hover:bg-[#35db72] disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {signupLoading ? "Creating account..." : getPlaybookSignupButtonLabel(selectedTier)}
-          </button>
 
           <p className="mt-4 text-center text-sm text-zinc-500">
             {isFreeSelected ? (
@@ -253,12 +200,6 @@ export default function PlaybookSignupFlow({
             )}
           </p>
 
-          <p className="mt-5 text-center text-sm text-zinc-300">
-            Already have an account?{" "}
-            <Link href={loginHref} className="underline-offset-2 transition hover:text-[#98b144] hover:underline">
-              Log in
-            </Link>
-          </p>
         </>
       )}
     </article>

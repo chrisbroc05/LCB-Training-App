@@ -46,6 +46,11 @@ import { getWeekdayLabelForProgramDay } from "@/lib/program-schedule";
 import { prisma } from "@/lib/prisma";
 import { formatDateTime } from "@/lib/format-date";
 import {
+  formatAccountRoleLabel,
+  formatSignedUpBy,
+  getPlayerFullName,
+} from "@/lib/account-shared";
+import {
   formatLegalAgreementRole,
   formatMediaConsentLabel,
   formatParentConsentStatus,
@@ -62,6 +67,10 @@ export async function buildAdminProgramPlayerDetail(enrollmentId: string, now = 
         select: {
           id: true,
           name: true,
+          playerFirstName: true,
+          playerLastName: true,
+          accountRole: true,
+          accountHolderName: true,
           email: true,
           termsVersion: true,
           termsAcceptedAt: true,
@@ -182,7 +191,14 @@ export async function buildAdminProgramPlayerDetail(enrollmentId: string, now = 
     enrollment: {
       id: enrollment.id,
       userId: enrollment.userId,
-      name: enrollment.user.name,
+      name: getPlayerFullName(enrollment.user),
+      accountRole: enrollment.user.accountRole,
+      accountRoleLabel: formatAccountRoleLabel(enrollment.user.accountRole),
+      accountHolderName: enrollment.user.accountHolderName,
+      signedUpBy: formatSignedUpBy(
+        enrollment.user.accountRole,
+        enrollment.user.accountHolderName,
+      ),
       email: enrollment.user.email,
       status: enrollment.status,
       refundedAt: enrollment.refundedAt?.toISOString() ?? null,

@@ -125,9 +125,18 @@ enum MarketingEmailType {
   FOLLOWUP_KNOWN_FOR_DAY_10
 }
 
+enum AccountRole {
+  PLAYER
+  PARENT
+}
+
 model User {
   id                     String                 @id @default(cuid())
   name                   String?
+  accountRole            AccountRole            @default(PLAYER)
+  accountHolderName      String?
+  playerFirstName        String?
+  playerLastName         String?
   email                  String                 @unique
   password               String
   signupDate             DateTime               @default(now())

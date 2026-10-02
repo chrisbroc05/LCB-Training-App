@@ -3,12 +3,11 @@
 import { Suspense, useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
-import LegalAgreementFields, {
-  buildLegalAcceptancePayload,
-  createEmptyLegalAgreementValues,
-  validateLegalAgreementValues,
-} from "@/components/LegalAgreementFields";
+import SignupWizard from "@/components/SignupWizard";
 import { postCheckout } from "@/lib/checkout-client";
+import { submitSignupRequest } from "@/lib/signup-client";
+import type { SignupRequestPayload } from "@/lib/signup-shared";
+
 type ProgramCheckoutSectionProps = {
   isLoggedIn: boolean;
   autoStartCheckout: boolean;
@@ -24,14 +23,12 @@ function ProgramCheckoutSectionContent({
   const searchParams = useSearchParams();
   const [showAccountForm, setShowAccountForm] = useState(false);
   const [authMode, setAuthMode] = useState<"signup" | "login">("signup");
-  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [authError, setAuthError] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [checkoutError, setCheckoutError] = useState("");
-  const [legalAgreement, setLegalAgreement] = useState(createEmptyLegalAgreementValues());
 
   const startCheckout = async () => {
     setCheckoutLoading(true);
@@ -57,48 +54,25 @@ function ProgramCheckoutSectionContent({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoStartCheckout, isLoggedIn]);
 
-  const handleSignup = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const handleSignup = async (payload: SignupRequestPayload) => {
     setAuthLoading(true);
     setAuthError("");
 
-    const legalValidationError = validateLegalAgreementValues(legalAgreement);
-    if (legalValidationError) {
-      setAuthLoading(false);
-      setAuthError(legalValidationError);
-      return;
-    }
-
-    const legalPayload = buildLegalAcceptancePayload(legalAgreement);
-    if (!legalPayload) {
-      setAuthLoading(false);
-      setAuthError("Enter a valid player age (5-25).");
-      return;
-    }
-
-    const response = await fetch("/api/auth/signup", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name,
-        email,
-        password,
-        selectedMembershipTier: "FREE",
-        signupSource: "program",
-        legalAcceptance: legalPayload,
-      }),
+    const response = await submitSignupRequest({
+      ...payload,
+      selectedMembershipTier: "FREE",
+      signupSource: "program",
     });
 
     if (!response.ok) {
-      const data = (await response.json().catch(() => ({}))) as { error?: string };
       setAuthLoading(false);
-      setAuthError(data.error ?? "Unable to create account.");
+      setAuthError(response.error);
       return;
     }
 
     const loginResult = await signIn("credentials", {
-      email,
-      password,
+      email: payload.email,
+      password: payload.password,
       redirect: false,
     });
 
@@ -182,63 +156,46 @@ function ProgramCheckoutSectionContent({
           : "Log in to continue to checkout for the 12-Week Coaching Program."}
       </p>
 
-      <form
-        className="mt-5 space-y-4"
-        onSubmit={authMode === "signup" ? handleSignup : handleLogin}
-      >
-        {authMode === "signup" ? (
+      {authMode === "signup" ? (
+        <div className="mt-5">
+          <SignupWizard
+            title="Create your account"
+            submitLabel="Create Account and Continue"
+            loading={authLoading}
+            error={authError}
+            onSubmit={handleSignup}
+          />
+        </div>
+      ) : (
+        <form className="mt-5 space-y-4" onSubmit={handleLogin}>
           <label className="block text-sm text-zinc-300">
-            First name
+            Email
             <input
-              type="text"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
               className="mt-2 w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 placeholder:text-zinc-500 focus:border-[#22c55e]"
-              placeholder="First name"
+              placeholder="you@example.com"
               required
             />
           </label>
-        ) : null}
-        <label className="block text-sm text-zinc-300">
-          Email
-          <input
-            type="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            className="mt-2 w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 placeholder:text-zinc-500 focus:border-[#22c55e]"
-            placeholder="you@example.com"
-            required
-          />
-        </label>
-        <label className="block text-sm text-zinc-300">
-          Password
-          <input
-            type="password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            className="mt-2 w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 placeholder:text-zinc-500 focus:border-[#22c55e]"
-            placeholder={authMode === "signup" ? "At least 8 characters" : "Your password"}
-            minLength={authMode === "signup" ? 8 : undefined}
-            required
-          />
-        </label>
-
-        {authMode === "signup" ? (
-          <LegalAgreementFields values={legalAgreement} onChange={setLegalAgreement} />
-        ) : null}
-
-        {authError ? <p className="text-sm text-red-300">{authError}</p> : null}
-
-        <button type="submit" disabled={authLoading} className={buttonClassName}>
-          {authLoading
-            ? authMode === "signup"
-              ? "Creating account..."
-              : "Logging in..."
-            : authMode === "signup"
-              ? "Create Account and Continue"
-              : "Log In and Continue"}
-        </button>
-      </form>
+          <label className="block text-sm text-zinc-300">
+            Password
+            <input
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              className="mt-2 w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 placeholder:text-zinc-500 focus:border-[#22c55e]"
+              placeholder="Your password"
+              required
+            />
+          </label>
+          {authError ? <p className="text-sm text-red-300">{authError}</p> : null}
+          <button type="submit" disabled={authLoading} className={buttonClassName}>
+            {authLoading ? "Logging in..." : "Log In and Continue"}
+          </button>
+        </form>
+      )}
 
       <p className="mt-4 text-sm text-zinc-400">
         {authMode === "signup" ? (

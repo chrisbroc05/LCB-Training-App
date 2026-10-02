@@ -31,6 +31,26 @@ async function applySecondEmailFromParentConsent(userId: string, params: {
   parentConsentName: string;
   parentConsentEmail: string;
 }) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      accountRole: true,
+      email: true,
+    },
+  });
+
+  if (!user) {
+    return;
+  }
+
+  const normalizedParentEmail = params.parentConsentEmail.trim().toLowerCase();
+  if (
+    user.accountRole === "PARENT" ||
+    normalizedParentEmail === user.email.trim().toLowerCase()
+  ) {
+    return;
+  }
+
   const enrollment = await prisma.programEnrollment.findUnique({
     where: { userId },
     select: {

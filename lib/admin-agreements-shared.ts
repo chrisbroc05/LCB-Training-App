@@ -52,6 +52,9 @@ export type UnifiedAgreementRecord = {
   medicalNotes: string | null;
   isOutdatedVersion: boolean;
   parentConsentStatus: string | null;
+  accountRole: "PLAYER" | "PARENT" | null;
+  accountHolderName: string | null;
+  signedUpBy: string | null;
 };
 
 export type RosterPlayerStatus = {

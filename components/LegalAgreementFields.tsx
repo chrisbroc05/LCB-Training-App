@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import type { AccountRole } from "@/lib/account-shared";
 import type { LegalAgreementRole } from "@/lib/legal-shared";
 import {
   LEGAL_ADULT_AGE,
@@ -22,6 +23,13 @@ export type LegalAgreementValues = {
   mediaConsent: boolean;
 };
 
+type SignupLegalContext = {
+  accountRole: AccountRole;
+  accountHolderName?: string;
+  accountEmail?: string;
+  playerAge: string;
+};
+
 type LegalAgreementFieldsProps = {
   values: LegalAgreementValues;
   onChange: (values: LegalAgreementValues) => void;
@@ -29,6 +37,7 @@ type LegalAgreementFieldsProps = {
   compact?: boolean;
   showMediaConsent?: boolean;
   accountEmail?: string;
+  signupContext?: SignupLegalContext;
 };
 
 export default function LegalAgreementFields({
@@ -37,66 +46,113 @@ export default function LegalAgreementFields({
   error,
   compact = false,
   showMediaConsent = true,
+  signupContext,
 }: LegalAgreementFieldsProps) {
   const labelClass = compact ? "text-xs text-zinc-400" : "text-sm text-zinc-300";
   const inputClass = compact
     ? "mt-1 w-full rounded-lg border border-[#2b3650] bg-black px-3 py-2 text-sm text-zinc-100"
     : "mt-2 w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 placeholder:text-zinc-500 focus:border-[#22c55e]";
 
-  const parsedAge = parseLegalPlayerAge(values.playerAge);
+  const parsedAge = parseLegalPlayerAge(signupContext?.playerAge ?? values.playerAge);
   const isMinor = parsedAge != null && parsedAge < LEGAL_ADULT_AGE;
   const isAdult = parsedAge != null && parsedAge >= LEGAL_ADULT_AGE;
+  const isParentSignup = signupContext?.accountRole === "PARENT";
 
   return (
     <div className={compact ? "space-y-3" : "space-y-4"}>
-      <label className="block">
-        <span className={labelClass}>Player&apos;s age</span>
-        <input
-          type="number"
-          min={LEGAL_MIN_PLAYER_AGE}
-          max={LEGAL_MAX_PLAYER_AGE}
-          inputMode="numeric"
-          value={values.playerAge}
-          onChange={(event) => onChange({ ...values, playerAge: event.target.value })}
-          placeholder={`${LEGAL_MIN_PLAYER_AGE}-${LEGAL_MAX_PLAYER_AGE}`}
-          className={inputClass}
-          required
-        />
-      </label>
+      {!signupContext ? (
+        <label className="block">
+          <span className={labelClass}>Player&apos;s age</span>
+          <input
+            type="number"
+            min={LEGAL_MIN_PLAYER_AGE}
+            max={LEGAL_MAX_PLAYER_AGE}
+            inputMode="numeric"
+            value={values.playerAge}
+            onChange={(event) => onChange({ ...values, playerAge: event.target.value })}
+            placeholder={`${LEGAL_MIN_PLAYER_AGE}-${LEGAL_MAX_PLAYER_AGE}`}
+            className={inputClass}
+            required
+          />
+        </label>
+      ) : null}
 
-      <label className="flex items-start gap-3">
-        <input
-          type="checkbox"
-          checked={values.termsAccepted}
-          onChange={(event) =>
-            onChange({ ...values, termsAccepted: event.target.checked })
-          }
-          className="mt-1 h-4 w-4 shrink-0 accent-[#22c55e]"
-        />
-        <span className={labelClass}>
-          {isMinor ? (
-            <>
+      {isParentSignup ? (
+        <>
+          <label className="block">
+            <span className={labelClass}>Type your full name to agree</span>
+            <input
+              type="text"
+              value={values.acceptedByName}
+              onChange={(event) => onChange({ ...values, acceptedByName: event.target.value })}
+              placeholder={signupContext?.accountHolderName || "First and last name"}
+              className={inputClass}
+              required
+            />
+          </label>
+          <label className="flex items-start gap-3">
+            <input
+              type="checkbox"
+              checked={values.termsAccepted}
+              onChange={(event) =>
+                onChange({ ...values, termsAccepted: event.target.checked })
+              }
+              className="mt-1 h-4 w-4 shrink-0 accent-[#22c55e]"
+            />
+            <span className={labelClass}>
               I am the player&apos;s parent or legal guardian, and I agree to the{" "}
-            </>
-          ) : (
-            <>I am 18 or older, or the player&apos;s parent or legal guardian, and I agree to the </>
-          )}
-          <Link href={LEGAL_PAGE_PATHS.terms} target="_blank" className="text-[#98b144] underline">
-            Terms of Service
-          </Link>
-          ,{" "}
-          <Link href={LEGAL_PAGE_PATHS.privacy} target="_blank" className="text-[#98b144] underline">
-            Privacy Policy
-          </Link>
-          , and{" "}
-          <Link href={LEGAL_PAGE_PATHS.waiver} target="_blank" className="text-[#98b144] underline">
-            Waiver
-          </Link>
-          {isMinor ? " on their behalf." : "."}
-        </span>
-      </label>
+              <Link href={LEGAL_PAGE_PATHS.terms} target="_blank" className="text-[#98b144] underline">
+                Terms of Service
+              </Link>
+              ,{" "}
+              <Link href={LEGAL_PAGE_PATHS.privacy} target="_blank" className="text-[#98b144] underline">
+                Privacy Policy
+              </Link>
+              , and{" "}
+              <Link href={LEGAL_PAGE_PATHS.waiver} target="_blank" className="text-[#98b144] underline">
+                Waiver
+              </Link>{" "}
+              on their behalf.
+            </span>
+          </label>
+        </>
+      ) : (
+        <>
+          <label className="flex items-start gap-3">
+            <input
+              type="checkbox"
+              checked={values.termsAccepted}
+              onChange={(event) =>
+                onChange({ ...values, termsAccepted: event.target.checked })
+              }
+              className="mt-1 h-4 w-4 shrink-0 accent-[#22c55e]"
+            />
+            <span className={labelClass}>
+              {isMinor ? (
+                <>
+                  I am the player&apos;s parent or legal guardian, and I agree to the{" "}
+                </>
+              ) : (
+                <>I am 18 or older, or the player&apos;s parent or legal guardian, and I agree to the </>
+              )}
+              <Link href={LEGAL_PAGE_PATHS.terms} target="_blank" className="text-[#98b144] underline">
+                Terms of Service
+              </Link>
+              ,{" "}
+              <Link href={LEGAL_PAGE_PATHS.privacy} target="_blank" className="text-[#98b144] underline">
+                Privacy Policy
+              </Link>
+              , and{" "}
+              <Link href={LEGAL_PAGE_PATHS.waiver} target="_blank" className="text-[#98b144] underline">
+                Waiver
+              </Link>
+              {isMinor ? " on their behalf." : "."}
+            </span>
+          </label>
+        </>
+      )}
 
-      {isMinor ? (
+      {!isParentSignup && isMinor ? (
         <>
           <p className={labelClass}>
             Under 18? Have a parent or guardian fill out this part. We&apos;ll email them to confirm.
@@ -130,7 +186,7 @@ export default function LegalAgreementFields({
         </>
       ) : null}
 
-      {isAdult ? (
+      {!isParentSignup && isAdult ? (
         <>
           <label className="block">
             <span className={labelClass}>Full name of the person agreeing</span>

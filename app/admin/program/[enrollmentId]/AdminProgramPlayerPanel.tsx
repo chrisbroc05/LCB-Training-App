@@ -52,6 +52,9 @@ type PlayerDetail = {
     userId: string;
     name: string | null;
     email: string;
+    accountRoleLabel: string | null;
+    accountHolderName: string | null;
+    signedUpBy: string | null;
     refundLabel: string | null;
     startDate: string | null;
     ageGroup: ProgramAgeGroup | null;
@@ -532,6 +535,17 @@ export default function AdminProgramPlayerPanel({ enrollmentId }: { enrollmentId
           {detail.enrollment.name ?? detail.enrollment.email}
         </h1>
         <p className="mt-1 text-sm text-zinc-400">{detail.enrollment.email}</p>
+        {detail.enrollment.signedUpBy ? (
+          <p className="mt-2 text-sm text-zinc-400">{detail.enrollment.signedUpBy}</p>
+        ) : null}
+        {detail.enrollment.accountRoleLabel ? (
+          <p className="mt-1 text-sm text-zinc-500">
+            Account role: {detail.enrollment.accountRoleLabel}
+            {detail.enrollment.accountHolderName
+              ? ` (${detail.enrollment.accountHolderName})`
+              : ""}
+          </p>
+        ) : null}
         {detail.enrollment.refundLabel ? (
           <p className="mt-3 text-sm text-red-200">{detail.enrollment.refundLabel}</p>
         ) : null}

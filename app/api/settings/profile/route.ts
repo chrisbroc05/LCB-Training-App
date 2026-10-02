@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { combinePlayerName } from "@/lib/account-shared";
 import {
   combineFullName,
   getGraduationYearOptions,
@@ -59,6 +60,8 @@ export async function GET() {
     where: { id: session.user.id },
     select: {
       name: true,
+      playerFirstName: true,
+      playerLastName: true,
       ...memberProfileSelect,
     },
   });
@@ -67,7 +70,8 @@ export async function GET() {
     return NextResponse.json({ error: "User not found." }, { status: 404 });
   }
 
-  const { firstName, lastName } = splitFullName(user.name);
+  const firstName = user.playerFirstName?.trim() || splitFullName(user.name).firstName;
+  const lastName = user.playerLastName?.trim() || splitFullName(user.name).lastName;
 
   return NextResponse.json({
     profile: {
@@ -129,7 +133,9 @@ export async function POST(request: Request) {
   await prisma.user.update({
     where: { id: session.user.id },
     data: {
-      name: combineFullName(firstName, lastName) || null,
+      name: combinePlayerName(firstName, lastName) || null,
+      playerFirstName: firstName || null,
+      playerLastName: lastName || null,
       position: position || null,
       age,
       graduationYear,

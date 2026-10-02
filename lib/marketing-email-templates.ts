@@ -28,8 +28,19 @@ export type MarketingEmailRecipient = {
   userId: string;
   email: string;
   firstName: string;
+  playerFirstName?: string;
+  accountRole?: "PLAYER" | "PARENT";
+  accountHolderFirstName?: string;
   ownsPlaybook: boolean;
 };
+
+function getMarketingGreeting(recipient: MarketingEmailRecipient) {
+  if (recipient.accountRole === "PARENT" && recipient.accountHolderFirstName) {
+    return `Hi ${recipient.accountHolderFirstName}`;
+  }
+
+  return `Hey ${recipient.firstName || "there"}`;
+}
 
 export type FollowupSubmissionContext = {
   submissionId: string;
@@ -67,12 +78,13 @@ function wrapMarketingEmail(params: {
 }
 
 export function buildWelcomeMarketingEmail(recipient: MarketingEmailRecipient) {
+  const greeting = getMarketingGreeting(recipient);
   const firstName = recipient.firstName || "there";
   const programUrl = getMarketingProgramUrl();
   const submitUrl = getMarketingCoachingSubmissionsUrl();
 
   const bodyContentHtml = `<h1 style="margin:0 0 16px 0; font-family:Arial, Helvetica, sans-serif; font-size:24px; line-height:1.3; color:#0A1628;">Welcome to LCB Training</h1>
-              ${paragraph(`Hey ${escapeHtml(firstName)},`)}
+              ${paragraph(`${escapeHtml(greeting)},`)}
               ${paragraph(
                 "Glad you are here. You have one free swing analysis or mental game submission waiting. Send me a video and I will personally break it down for you.",
               )}
@@ -86,7 +98,7 @@ export function buildWelcomeMarketingEmail(recipient: MarketingEmailRecipient) {
               )}
               ${buildEmailButton("See the 12-Week Program", programUrl)}`;
 
-  const textBody = `Hey ${firstName},
+  const textBody = `${greeting},
 
 Glad you are here. You have one free swing analysis or mental game submission waiting. Send me a video and I will personally break it down for you.
 

@@ -22,13 +22,10 @@ import {
 import PlaybookSignupFlow from "@/app/auth/PlaybookSignupFlow";
 import GeneralAuthFlow from "@/app/auth/GeneralAuthFlow";
 import ProgramSignupFlow from "@/app/auth/ProgramSignupFlow";
-import LegalAgreementFields, {
-  buildLegalAcceptancePayload,
-  createEmptyLegalAgreementValues,
-  validateLegalAgreementValues,
-  type LegalAgreementValues,
-} from "@/components/LegalAgreementFields";
+import SignupWizard from "@/components/SignupWizard";
 import { postCheckout } from "@/lib/checkout-client";
+import { submitSignupRequest } from "@/lib/signup-client";
+import type { SignupRequestPayload } from "@/lib/signup-shared";
 
 type AuthMode = "login" | "signup";
 
@@ -71,9 +68,6 @@ function AuthContent() {
   const [manuallySelectedTier, setManuallySelectedTier] = useState<TierKey | null>(null);
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
-  const [signupName, setSignupName] = useState("");
-  const [signupEmail, setSignupEmail] = useState("");
-  const [signupPassword, setSignupPassword] = useState("");
   const [loginError, setLoginError] = useState("");
   const [signupError, setSignupError] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
@@ -83,9 +77,6 @@ function AuthContent() {
   const [sessionChecked, setSessionChecked] = useState(false);
   const [hasActiveSession, setHasActiveSession] = useState(false);
   const [pendingCheckoutTier, setPendingCheckoutTier] = useState<DatabaseTier | null>(null);
-  const [legalAgreement, setLegalAgreement] = useState<LegalAgreementValues>(
-    createEmptyLegalAgreementValues(),
-  );
 
   const tierQueryParam = searchParams.get("tier");
   const normalizedTierQuery = tierQueryParam?.toLowerCase();
@@ -283,54 +274,28 @@ function AuthContent() {
     </form>
   );
 
-  const handleSignup = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
+  const handleSignup = async (payload: SignupRequestPayload) => {
     setSignupLoading(true);
     setSignupError("");
-
-    const legalValidationError = validateLegalAgreementValues(legalAgreement);
-    if (legalValidationError) {
-      setSignupLoading(false);
-      setSignupError(legalValidationError);
-      return;
-    }
 
     const membershipTierForSignup = isPlaybookFlow ? selectedDatabaseTier : "FREE";
     const signupSource = isProgramFlow ? "program" : isPlaybookFlow ? "playbook" : "standard";
 
-    const legalPayload = buildLegalAcceptancePayload(legalAgreement);
-    if (!legalPayload) {
-      setSignupLoading(false);
-      setSignupError("Enter a valid player age (5-25).");
-      return;
-    }
-
-    const response = await fetch("/api/auth/signup", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        name: signupName,
-        email: signupEmail,
-        password: signupPassword,
-        selectedMembershipTier: membershipTierForSignup,
-        signupSource,
-        legalAcceptance: legalPayload,
-      }),
+    const response = await submitSignupRequest({
+      ...payload,
+      selectedMembershipTier: membershipTierForSignup,
+      signupSource,
     });
 
     if (!response.ok) {
-      const data = (await response.json().catch(() => ({}))) as { error?: string };
       setSignupLoading(false);
-      setSignupError(data.error ?? "Unable to create account.");
+      setSignupError(response.error);
       return;
     }
 
     const loginResult = await signIn("credentials", {
-      email: signupEmail,
-      password: signupPassword,
+      email: payload.email,
+      password: payload.password,
       callbackUrl: "/auth",
       redirect: false,
     });
@@ -474,57 +439,17 @@ function AuthContent() {
               </p>
             </section>
 
-            <form className="mt-6 space-y-4" onSubmit={handleSignup}>
-              <label className="block">
-                <span className="text-sm text-zinc-300">First name</span>
-                <input
-                  type="text"
-                  placeholder="First name"
-                  value={signupName}
-                  onChange={(event) => setSignupName(event.target.value)}
-                  className="mt-2 w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 placeholder:text-zinc-500 focus:border-[#22c55e]"
-                  required
-                />
-              </label>
-              <label className="block">
-                <span className="text-sm text-zinc-300">Email</span>
-                <input
-                  type="email"
-                  placeholder="you@example.com"
-                  value={signupEmail}
-                  onChange={(event) => setSignupEmail(event.target.value)}
-                  className="mt-2 w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 placeholder:text-zinc-500 focus:border-[#22c55e]"
-                  required
-                />
-              </label>
-              <label className="block">
-                <span className="text-sm text-zinc-300">Password</span>
-                <input
-                  type="password"
-                  placeholder="At least 8 characters"
-                  value={signupPassword}
-                  onChange={(event) => setSignupPassword(event.target.value)}
-                  className="mt-2 w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 placeholder:text-zinc-500 focus:border-[#22c55e]"
-                  minLength={8}
-                  required
-                />
-              </label>
-
-              <LegalAgreementFields
-                values={legalAgreement}
-                onChange={setLegalAgreement}
+            <div className="mt-6">
+              <SignupWizard
+                title="Create your free account"
+                subtitle="No credit card required."
+                submitLabel="Create My Free Account"
+                loading={signupLoading}
+                error={signupError}
+                loginHref={loginHref}
+                onSubmit={handleSignup}
               />
-
-              {signupError && <p className="text-sm text-red-300">{signupError}</p>}
-
-              <button
-                type="submit"
-                disabled={signupLoading}
-                className="w-full rounded-full bg-[#22c55e] px-5 py-3 font-semibold text-black transition hover:bg-[#35db72] disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {signupLoading ? "Creating account..." : "Create My Free Account"}
-              </button>
-            </form>
+            </div>
 
             <p className="mt-5 text-center text-sm text-zinc-300">
               Already have an account?{" "}
@@ -536,28 +461,14 @@ function AuthContent() {
         ) : authMode === "signup" && isProgramFlow ? (
           <ProgramSignupFlow
             loginHref={loginHref}
-            signupName={signupName}
-            onSignupNameChange={setSignupName}
-            signupEmail={signupEmail}
-            onSignupEmailChange={setSignupEmail}
-            signupPassword={signupPassword}
-            onSignupPasswordChange={setSignupPassword}
             signupError={signupError}
             signupLoading={signupLoading}
-            onSignupSubmit={handleSignup}
-            legalAgreement={legalAgreement}
-            onLegalAgreementChange={setLegalAgreement}
+            onSignup={handleSignup}
           />
         ) : authMode === "signup" && isPlaybookFlow ? (
           <PlaybookSignupFlow
             selectedTier={selectedTier}
             onSelectTier={setManuallySelectedTier}
-            signupName={signupName}
-            onSignupNameChange={setSignupName}
-            signupEmail={signupEmail}
-            onSignupEmailChange={setSignupEmail}
-            signupPassword={signupPassword}
-            onSignupPasswordChange={setSignupPassword}
             signupError={signupError}
             signupLoading={signupLoading}
             resumeLoading={resumeLoading}
@@ -565,12 +476,10 @@ function AuthContent() {
             checkoutStatus={checkoutStatus}
             isLoggedInWithPendingCheckout={isLoggedInWithPendingCheckout}
             pendingCheckoutTier={pendingCheckoutTier}
-            onSignupSubmit={handleSignup}
+            onSignup={handleSignup}
             onResumeCheckout={handleResumeCheckout}
             onStartFreeLoggedIn={handleStartFreeLoggedIn}
             loginHref={loginHref}
-            legalAgreement={legalAgreement}
-            onLegalAgreementChange={setLegalAgreement}
           />
         ) : (
           <GeneralAuthFlow
@@ -584,17 +493,9 @@ function AuthContent() {
             loginError={loginError}
             loginLoading={loginLoading}
             onLoginSubmit={handleLogin}
-            signupName={signupName}
-            onSignupNameChange={setSignupName}
-            signupEmail={signupEmail}
-            onSignupEmailChange={setSignupEmail}
-            signupPassword={signupPassword}
-            onSignupPasswordChange={setSignupPassword}
             signupError={signupError}
             signupLoading={signupLoading}
-            onSignupSubmit={handleSignup}
-            legalAgreement={legalAgreement}
-            onLegalAgreementChange={setLegalAgreement}
+            onSignup={handleSignup}
           />
         )}
       </section>

@@ -2,6 +2,7 @@ import "server-only";
 
 import type { WaiverSignupType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { formatSignedUpBy, getPlayerFullName } from "@/lib/account-shared";
 import { formatLegalAgreementRole, formatParentConsentStatus } from "@/lib/legal-shared";
 import {
   buildAgreementMergeKey,
@@ -47,6 +48,10 @@ type WaiverRow = {
 type AppRow = {
   id: string;
   name: string | null;
+  playerFirstName: string | null;
+  playerLastName: string | null;
+  accountRole: "PLAYER" | "PARENT";
+  accountHolderName: string | null;
   email: string;
   membershipTier: string;
   termsVersion: string | null;
@@ -93,6 +98,9 @@ type AgreementPartial = {
   medicalNotes: string | null;
   isOutdatedVersion: boolean;
   parentConsentStatus: string | null;
+  accountRole: "PLAYER" | "PARENT" | null;
+  accountHolderName: string | null;
+  signedUpBy: string | null;
 };
 
 function waiverToPartial(row: WaiverRow): AgreementPartial {
@@ -127,11 +135,14 @@ function waiverToPartial(row: WaiverRow): AgreementPartial {
     medicalNotes: row.medicalNotes,
     isOutdatedVersion: isAgreementOutdatedVersion(row.version),
     parentConsentStatus: null,
+    accountRole: null,
+    accountHolderName: null,
+    signedUpBy: null,
   };
 }
 
 function appToPartial(row: AppRow): AgreementPartial {
-  const playerName = row.name?.trim() || row.email;
+  const playerName = getPlayerFullName(row);
   return {
     mergeKey: buildAgreementMergeKey(row.email, playerName),
     playerName,
@@ -140,6 +151,9 @@ function appToPartial(row: AppRow): AgreementPartial {
     waiverSignatureId: null as string | null,
     userId: row.id,
     accountName: row.name,
+    accountRole: row.accountRole,
+    accountHolderName: row.accountHolderName,
+    signedUpBy: formatSignedUpBy(row.accountRole, row.accountHolderName),
     playerAge: row.playerAge,
     teamName: null as string | null,
     teamSlug: null as string | null,
@@ -226,6 +240,9 @@ function mergePartials(left: AgreementPartial, right: AgreementPartial): Agreeme
       null,
     isOutdatedVersion: left.isOutdatedVersion || right.isOutdatedVersion,
     parentConsentStatus: primary.parentConsentStatus ?? secondary.parentConsentStatus,
+    accountRole: primary.accountRole ?? secondary.accountRole,
+    accountHolderName: primary.accountHolderName ?? secondary.accountHolderName,
+    signedUpBy: primary.signedUpBy ?? secondary.signedUpBy,
   };
 }
 
@@ -261,6 +278,9 @@ function serializeMerged(record: AgreementPartial): UnifiedAgreementRecord {
     medicalNotes: record.medicalNotes,
     isOutdatedVersion: record.isOutdatedVersion,
     parentConsentStatus: record.parentConsentStatus,
+    accountRole: record.accountRole,
+    accountHolderName: record.accountHolderName,
+    signedUpBy: record.signedUpBy,
   };
 }
 
@@ -326,6 +346,10 @@ export async function listUnifiedAgreements(filters: UnifiedAgreementListFilters
       select: {
         id: true,
         name: true,
+        playerFirstName: true,
+        playerLastName: true,
+        accountRole: true,
+        accountHolderName: true,
         email: true,
         membershipTier: true,
         termsVersion: true,
