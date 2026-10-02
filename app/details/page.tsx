@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import BrandLogo from "@/app/BrandLogo";
+import { COACH_CALENDLY_URL } from "@/lib/coach-calendly-shared";
 
 export const metadata: Metadata = {
   title: "In-Person Baseball Training | LCB Training",
@@ -66,8 +67,7 @@ function CoverageCard({ title, description }: { title: string; description: stri
 }
 
 export default function InPersonDetailsPage() {
-  // TODO: Replace with in-person booking Calendly link once created
-  const bookingUrl = "https://calendly.com/chrisbroc05/in-person-lesson";
+  const bookingUrl = COACH_CALENDLY_URL;
   const coachEmail = "chrisbroc05@gmail.com";
   const coachPhone = "847-208-9661";
 

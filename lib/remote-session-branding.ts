@@ -2,10 +2,10 @@ export const REMOTE_SESSION_PRICE = 60;
 
 export const REMOTE_SESSION_DURATION = "60 minutes";
 
-import { getCalendlyBookingUrl } from "@/lib/calendly-booking";
+import { getCoachCalendlyUrl } from "@/lib/coach-calendly-shared";
 
 export function getRemoteSessionCalendlyUrl() {
-  return getCalendlyBookingUrl();
+  return getCoachCalendlyUrl();
 }
 
 export const heroOfferCardClassName =

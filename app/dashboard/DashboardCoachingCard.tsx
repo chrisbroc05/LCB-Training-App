@@ -3,6 +3,7 @@ import FreeMemberWhileYouWaitCards from "@/app/components/FreeMemberWhileYouWait
 import CoachingSubmissionQuota from "@/app/CoachingSubmissionQuota";
 import type { CoachingSubmissionAvailability } from "@/lib/coaching-submissions";
 import { formatAssessmentCallDateTime } from "@/lib/assessment-call";
+import { COACH_CALENDLY_URL } from "@/lib/coach-calendly-shared";
 import { canAccessCoachingNav, type DatabaseTier } from "@/lib/membership";
 
 type DashboardCoachingCardProps = {
@@ -145,7 +146,7 @@ export default function DashboardCoachingCard({
               and find the right training plan for their development.
             </p>
             <a
-              href="https://calendly.com/chrisbroc05/30min"
+              href={COACH_CALENDLY_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="mt-4 inline-flex rounded-full bg-[#22c55e] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[#35db72]"

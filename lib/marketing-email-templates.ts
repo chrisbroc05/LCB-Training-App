@@ -13,7 +13,7 @@ import {
   buildSubmissionBreakdownUrl,
   getInPersonLessonsLine,
   getMarketingCoachingSubmissionsUrl,
-  getMarketingProfileUrl,
+  getMarketingAssessmentCallUrl,
   getMarketingProgramUrl,
   getPlaybookOfferLine,
   type MarketingEmailTypeValue,
@@ -239,7 +239,7 @@ See the 12-Week Program: ${programUrl}`;
 export function buildFollowupKnownForDay10Email(recipient: MarketingEmailRecipient) {
   const firstName = recipient.firstName || "there";
   const programUrl = getMarketingProgramUrl();
-  const assessmentCallUrl = getMarketingProfileUrl();
+  const assessmentCallUrl = getMarketingAssessmentCallUrl();
   const playbookLine = recipient.ownsPlaybook
     ? ""
     : `<p style="margin:16px 0 0 0; font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:1.7; color:#6B7280;">Other ways to work with me: ${escapeHtml(getPlaybookOfferLine())} or ${escapeHtml(getInPersonLessonsLine())}.</p>`;

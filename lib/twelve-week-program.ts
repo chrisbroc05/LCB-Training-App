@@ -1,4 +1,4 @@
-import { getCalendlyBookingUrl } from "@/lib/calendly-booking";
+import { getCoachCalendlyUrl } from "@/lib/coach-calendly-shared";
 
 export const TWELVE_WEEK_PROGRAM_NAME = "12-Week Coaching Program";
 
@@ -7,7 +7,7 @@ export const TWELVE_WEEK_PROGRAM_PRICE_LABEL = "$599";
 export const TWELVE_WEEK_PROGRAM_DURATION_WEEKS = 12;
 
 export function getTwelveWeekProgramCheckInCalendlyUrl() {
-  return getCalendlyBookingUrl();
+  return getCoachCalendlyUrl();
 }
 
 export const twelveWeekProgramIncludes = [

@@ -1,3 +1,4 @@
+import { COACH_CALENDLY_URL } from "@/lib/coach-calendly-shared";
 import { getPublicAppUrl } from "@/lib/email-layout";
 import { PLAYBOOK_NAME } from "@/lib/playbook-branding";
 import { REMOTE_SESSION_PRICE } from "@/lib/remote-session-branding";
@@ -102,6 +103,10 @@ export function getMarketingCoachingSubmissionsUrl() {
 
 export function getMarketingProfileUrl() {
   return `${getPublicAppUrl()}/profile`;
+}
+
+export function getMarketingAssessmentCallUrl() {
+  return COACH_CALENDLY_URL;
 }
 
 export function getMarketingSettingsNotificationsUrl() {

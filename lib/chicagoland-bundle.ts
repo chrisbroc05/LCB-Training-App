@@ -1,4 +1,4 @@
-import { getPlayerAssessmentCallCalendlyUrl } from "@/lib/assessment-call";
+import { getCoachCalendlyUrl } from "@/lib/coach-calendly-shared";
 
 export const CHICAGOLAND_BUNDLE_HEADING = "Local to Chicagoland?";
 
@@ -12,7 +12,7 @@ export const CHICAGOLAND_BUNDLE_EMAIL_SUBJECT = "Lessons + Program bundle";
 export const CHICAGOLAND_BUNDLE_SMS_NUMBER = "8472089661";
 
 export function getChicagolandBundleCalendlyUrl() {
-  return getPlayerAssessmentCallCalendlyUrl();
+  return getCoachCalendlyUrl();
 }
 
 export function getChicagolandBundleEmailUrl() {

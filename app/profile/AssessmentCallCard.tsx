@@ -1,6 +1,7 @@
 import ProfileCard from "@/app/profile/ProfileCard";
 import { profileBodyTextClass, profilePrimaryButtonClass } from "@/app/profile/profile-styles";
 import { formatAssessmentCallDateTime } from "@/lib/assessment-call";
+import { COACH_CALENDLY_URL } from "@/lib/coach-calendly-shared";
 
 type AssessmentCallCardProps = {
   assessmentCallBooked: boolean;
@@ -36,7 +37,7 @@ export default function AssessmentCallCard({
             and find the right training plan for their development.
           </p>
           <a
-            href="https://calendly.com/chrisbroc05/30min"
+            href={COACH_CALENDLY_URL}
             target="_blank"
             rel="noopener noreferrer"
             className={profilePrimaryButtonClass}

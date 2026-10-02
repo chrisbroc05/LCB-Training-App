@@ -1,15 +1,18 @@
 import {
+  COACH_CALENDLY_URL,
+  getCoachCalendlyUrl,
+} from "@/lib/coach-calendly-shared";
+import {
   CHICAGO_TIME_ZONE,
   formatLongWeekdayDateTime,
 } from "@/lib/format-date";
 
 export const ASSESSMENT_CALL_TIMEZONE = CHICAGO_TIME_ZONE;
 
-export const PLAYER_ASSESSMENT_CALL_CALENDLY_URL =
-  "https://calendly.com/chrisbroc05/30min";
+export const PLAYER_ASSESSMENT_CALL_CALENDLY_URL = COACH_CALENDLY_URL;
 
 export function getPlayerAssessmentCallCalendlyUrl() {
-  return PLAYER_ASSESSMENT_CALL_CALENDLY_URL;
+  return getCoachCalendlyUrl();
 }
 
 type ZonedParts = {
