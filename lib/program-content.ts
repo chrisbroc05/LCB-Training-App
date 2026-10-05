@@ -30,6 +30,22 @@ export const FIELDING_REPS_BY_AGE_PHASE: Record<
   AGE_16_18: { foundation: 75, build: 100, compete: 100 },
 };
 
+export const PROGRAM_DRILL_VIMEO_IDS_BY_TITLE: Record<string, string> = {
+  "Pre pitch hop": "1233142855",
+  "Solo infield drills for quick hands": "1233143850",
+  "YES YES NO": "1233142709",
+  "Where our hands should be at launch": "1233142509",
+  "Staying connected": "1233143083",
+  "Give yourself space in your setup": "1233143528",
+};
+
+export const HITTING_FOCUS_CUE_DRILL_TITLES: Partial<Record<number, string[]>> = {
+  1: ["Give yourself space in your setup", "Posture work", "Staying Stacked in Our Back Leg"],
+  2: ["Where our hands should be at launch", "Coil into your load", "Don't drift in your load"],
+  4: ["Staying connected", "Stop casting your hands", "Slot position"],
+  11: ["YES YES NO", "Be Able to Hit These 3 Pitches"],
+};
+
 export const HITTING_FOCUS_CUES: Record<number, string> = {
   1: "Stance and balance",
   2: "Load and timing",

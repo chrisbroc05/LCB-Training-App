@@ -33,6 +33,16 @@ const hittingVideoSources: DrillLibraryVideoSource[] = [
     title: "Be Able to Hit These 3 Pitches",
     url: "https://player.vimeo.com/video/1207516198",
   },
+  { title: "YES YES NO", url: "https://player.vimeo.com/video/1233142709" },
+  {
+    title: "Where our hands should be at launch",
+    url: "https://player.vimeo.com/video/1233142509",
+  },
+  { title: "Staying connected", url: "https://player.vimeo.com/video/1233143083" },
+  {
+    title: "Give yourself space in your setup",
+    url: "https://player.vimeo.com/video/1233143528",
+  },
 ];
 
 const fieldingVideoSources: DrillLibraryVideoSource[] = [
@@ -78,6 +88,11 @@ const fieldingVideoSources: DrillLibraryVideoSource[] = [
   },
   { title: "Quick Feet Drill", url: "https://player.vimeo.com/video/1205924080" },
   { title: "Backhand Footwork Drill", url: "https://player.vimeo.com/video/1205924073" },
+  { title: "Pre pitch hop", url: "https://player.vimeo.com/video/1233142855" },
+  {
+    title: "Solo infield drills for quick hands",
+    url: "https://player.vimeo.com/video/1233143850",
+  },
 ];
 
 const mindsetVideoSources: DrillLibraryVideoSource[] = [
