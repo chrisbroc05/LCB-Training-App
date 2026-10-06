@@ -37,13 +37,21 @@ export const PROGRAM_DRILL_VIMEO_IDS_BY_TITLE: Record<string, string> = {
   "Where our hands should be at launch": "1233142509",
   "Staying connected": "1233143083",
   "Give yourself space in your setup": "1233143528",
+  "The mental side to hitting with two strikes": "1233463927",
+  "Two Strike Approach": "1233464583",
+  "Situational Hitting": "1233464969",
+  "Approach by count": "1233465905",
+  "It starts at practice": "1233148098",
+  "Body Language and Control your emotions": "1233466376",
 };
 
 export const HITTING_FOCUS_CUE_DRILL_TITLES: Partial<Record<number, string[]>> = {
   1: ["Give yourself space in your setup", "Posture work", "Staying Stacked in Our Back Leg"],
   2: ["Where our hands should be at launch", "Coil into your load", "Don't drift in your load"],
   4: ["Staying connected", "Stop casting your hands", "Slot position"],
-  11: ["YES YES NO", "Be Able to Hit These 3 Pitches"],
+  8: ["Two Strike Approach", "The mental side to hitting with two strikes"],
+  10: ["Situational Hitting"],
+  11: ["Approach by count", "YES YES NO"],
 };
 
 export const HITTING_FOCUS_CUES: Record<number, string> = {

@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>LCB OUR APP Highlight Slides</title>
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body {
+        background: #050b16;
+        font-family: Inter, system-ui, sans-serif;
+        color: #f4f6f8;
+      }
+      .slide {
+        position: relative;
+        width: 1080px;
+        height: 1520px;
+        overflow: hidden;
+        background: #0a1628;
+        margin: 0 auto 40px;
+      }
+      .glow-a {
+        position: absolute;
+        width: 520px;
+        height: 520px;
+        top: -120px;
+        right: -80px;
+        border-radius: 50%;
+        background: rgba(45, 106, 79, 0.22);
+        filter: blur(80px);
+      }
+      .glow-b {
+        position: absolute;
+        width: 420px;
+        height: 420px;
+        bottom: 40px;
+        left: -100px;
+        border-radius: 50%;
+        background: rgba(82, 183, 136, 0.14);
+        filter: blur(80px);
+      }
+      .logo-wrap {
+        position: absolute;
+        top: 40px;
+        left: 0;
+        right: 0;
+        display: flex;
+        justify-content: center;
+      }
+      .logo-wrap img { height: 64px; width: auto; }
+      .safe {
+        position: absolute;
+        top: 250px;
+        left: 0;
+        width: 1080px;
+        height: 1180px;
+        padding: 0 48px 24px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+      }
+      .safe.text-only {
+        justify-content: center;
+      }
+      .safe.has-phone {
+        justify-content: flex-start;
+      }
+      .headline {
+        max-width: 920px;
+        font-size: 72px;
+        font-weight: 900;
+        line-height: 0.95;
+        text-transform: uppercase;
+        letter-spacing: -0.02em;
+      }
+      .safe.text-only .headline {
+        max-width: 960px;
+        font-size: 96px;
+      }
+      .supporting {
+        margin-top: 24px;
+        max-width: 820px;
+        font-size: 34px;
+        line-height: 1.35;
+        color: #d4dde8;
+        font-weight: 500;
+      }
+      .safe.text-only .supporting {
+        max-width: 880px;
+        margin-top: 36px;
+        font-size: 44px;
+      }
+      .hero-accent {
+        margin: 56px 0 40px;
+        font-size: 140px;
+        font-weight: 900;
+        line-height: 1;
+        color: rgba(82, 183, 136, 0.22);
+      }
+      .hero-divider {
+        width: 140px;
+        height: 5px;
+        margin: 32px auto 28px;
+        border-radius: 999px;
+        background: linear-gradient(90deg, transparent, #52b788, transparent);
+      }
+      .hero-kicker {
+        font-size: 38px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: #52b788;
+      }
+      .hero-kicker-row {
+        display: inline-flex;
+        align-items: center;
+        gap: 16px;
+      }
+      .hero-arrow {
+        flex-shrink: 0;
+        color: #52b788;
+      }
+      .hero-subline {
+        margin-top: 18px;
+        max-width: 720px;
+        font-size: 28px;
+        font-weight: 500;
+        line-height: 1.35;
+        color: #d4dde8;
+      }
+      .visual {
+        margin-top: 28px;
+        width: 100%;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+      }
+      .tagline {
+        margin-top: auto;
+        padding-bottom: 8px;
+        font-size: 30px;
+        font-weight: 600;
+        color: #52b788;
+        letter-spacing: 0.04em;
+      }
+      .slide-footer {
+        position: absolute;
+        bottom: 56px;
+        left: 0;
+        right: 0;
+        padding: 0 52px;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        gap: 24px;
+        font-size: 26px;
+        font-weight: 600;
+      }
+      .footer-handle {
+        color: #52b788;
+        letter-spacing: 0.18em;
+        flex-shrink: 0;
+      }
+      .footer-cta {
+        color: #d4dde8;
+        letter-spacing: 0.04em;
+        text-align: right;
+        max-width: 420px;
+        line-height: 1.25;
+      }
+      .phone {
+        width: 420px;
+        border-radius: 36px;
+        border: 6px solid #1f2937;
+        background: #000;
+        padding: 8px;
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+      }
+      .phone-inner { border-radius: 28px; overflow: hidden; background: #0a1628; }
+      .phone-status {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #0b1324;
+        padding: 8px 16px;
+        font-size: 11px;
+        color: #a1a1aa;
+        font-weight: 600;
+      }
+      .phone-notch { width: 96px; height: 20px; border-radius: 999px; background: #000; }
+      .phone-title {
+        text-align: center;
+        padding: 12px 16px;
+        border-bottom: 1px solid #18243a;
+        font-size: 14px;
+        font-weight: 600;
+      }
+      .phone-body { padding: 12px; background: #0a1628; min-height: 560px; max-height: 640px; overflow: hidden; }
+      .phone-nav {
+        display: flex;
+        justify-content: space-around;
+        border-top: 1px solid #18243a;
+        background: #0b1324;
+        padding: 8px 4px;
+      }
+      .phone-nav span { font-size: 9px; color: #71717a; font-weight: 600; }
+      .phone-nav span.active { color: #52b788; }
+      .card {
+        border-radius: 16px;
+        border: 1px solid #18243a;
+        background: rgba(11, 19, 36, 0.8);
+        padding: 16px;
+        margin-bottom: 12px;
+      }
+      .card-green { border-color: rgba(82, 183, 136, 0.4); }
+      .label-green {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        color: #52b788;
+        text-transform: uppercase;
+      }
+      .pill {
+        display: inline-block;
+        border-radius: 999px;
+        padding: 4px 12px;
+        font-size: 10px;
+        font-weight: 700;
+        margin-right: 8px;
+      }
+      .pill-solid { background: #52b788; color: #0a1628; }
+      .pill-outline { border: 1px solid rgba(82, 183, 136, 0.4); background: rgba(82, 183, 136, 0.1); color: #f4f6f8; }
+      .progress { height: 8px; border-radius: 999px; background: #0a1628; margin-top: 12px; overflow: hidden; }
+      .progress > span { display: block; height: 100%; width: 33%; background: #52b788; border-radius: 999px; }
+      .week-row { display: flex; justify-content: space-between; gap: 4px; }
+      .week-dot {
+        width: 36px; height: 36px; border-radius: 999px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 12px; font-weight: 700;
+      }
+      .week-today { box-shadow: 0 0 0 2px #52b788; color: #52b788; }
+      .week-done { background: rgba(82, 183, 136, 0.2); color: #52b788; }
+      .week-muted { color: #a1a1aa; }
+      .task-big { font-size: 24px; font-weight: 700; margin-top: 8px; }
+      .task-mid { font-size: 14px; color: #d4d4d8; margin-top: 6px; }
+      .chat { display: flex; flex-direction: column; gap: 12px; }
+      .bubble {
+        max-width: 85%;
+        padding: 12px 16px;
+        border-radius: 16px;
+        font-size: 13px;
+        line-height: 1.5;
+      }
+      .bubble-coach { background: #1a253a; border-bottom-left-radius: 4px; align-self: flex-start; }
+      .bubble-player { background: #2d6a4f; color: #f4f6f8; border-bottom-right-radius: 4px; align-self: flex-end; }
+      .bubble-time { font-size: 11px; opacity: 0.7; margin-top: 8px; }
+      .video-box {
+        aspect-ratio: 16/10;
+        border-radius: 12px;
+        border: 1px solid #2b3650;
+        background: #111827;
+        display: flex; align-items: center; justify-content: center;
+        margin-bottom: 12px;
+      }
+      .chip {
+        display: inline-block;
+        border-radius: 999px;
+        border: 1px solid rgba(82, 183, 136, 0.5);
+        background: rgba(82, 183, 136, 0.1);
+        color: #9df3bd;
+        padding: 4px 12px;
+        font-size: 12px;
+        margin: 4px 4px 0 0;
+      }
+      .workout-item {
+        display: flex; gap: 12px; align-items: flex-start;
+        border: 1px solid #2b3650; background: rgba(0,0,0,0.3);
+        border-radius: 12px; padding: 12px; margin-bottom: 8px;
+      }
+      .phone-body.compact-workout {
+        padding: 10px;
+      }
+      .phone-body.compact-workout .workout-item {
+        padding: 10px;
+        margin-bottom: 6px;
+      }
+      .phone-body.compact-workout .btn {
+        margin-top: 8px;
+        padding: 10px;
+      }
+      .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+      .stat-num { font-size: 22px; font-weight: 700; margin-top: 4px; }
+      .stat-label { font-size: 10px; color: #71717a; font-weight: 700; }
+      .notify {
+        min-height: 520px; display: flex; align-items: center; justify-content: center;
+        background: #111827; padding: 24px;
+      }
+      .notify-card {
+        width: 100%; max-width: 360px; border-radius: 24px;
+        border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.7);
+        padding: 16px;
+      }
+      .email-wrap {
+        background: #fff; color: #0a1628; border-radius: 12px;
+        border: 1px solid #d1d5db; padding: 16px; text-align: left; font-size: 13px; line-height: 1.5;
+      }
+      .email-wrap h3 { font-size: 20px; margin-bottom: 12px; }
+      .email-section { font-size: 11px; font-weight: 700; color: #6b7280; letter-spacing: 0.08em; margin: 12px 0 6px; }
+      .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+      .frame {
+        border-radius: 12px; border: 1px solid #2b3650; overflow: hidden; background: rgba(0,0,0,0.4);
+      }
+      .frame-visual {
+        aspect-ratio: 3/4;
+        background: linear-gradient(to bottom, #1f2937, #0a1628);
+        display: flex; align-items: flex-end; justify-content: center; padding: 12px;
+      }
+      .frame-body { height: 80px; width: 48px; border-radius: 999px; background: rgba(82,183,136,0.2); margin-bottom: 32px; }
+      .frame-line { height: 4px; width: 100%; background: rgba(82,183,136,0.6); border-radius: 999px; }
+      .frame-caption { padding: 12px; border-top: 1px solid #2b3650; font-size: 12px; }
+      .btn { display: block; width: 100%; margin-top: 12px; padding: 12px; border-radius: 999px; background: #2d6a4f; color: #fff; font-weight: 600; font-size: 14px; text-align: center; border: none; }
+    </style>
+  </head>
+  <body>
+    <section class="slide" data-slide="01">
+      <div class="glow-a"></div><div class="glow-b"></div>
+      <div class="logo-wrap"><img src="../public/logo/lcb-training-logo.png" alt="LCB Training" /></div>
+      <div class="safe text-only">
+        <h1 class="headline">Lessons are one day a week.</h1>
+        <p class="supporting">What happens the other six?</p>
+        <div class="hero-divider"></div>
+        <p class="hero-kicker hero-kicker-row">
+          <span>The Next Level Program</span>
+          <svg class="hero-arrow" viewBox="0 0 32 32" width="44" height="44" aria-hidden="true">
+            <path d="M7 16h14" stroke="currentColor" stroke-width="3" stroke-linecap="round" fill="none" />
+            <path d="M17 10l8 6-8 6" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+          </svg>
+        </p>
+      </div>
+      <div class="slide-footer">
+        <span class="footer-handle">@lcbtraining</span>
+        <span class="footer-cta">Message me for more info</span>
+      </div>
+    </section>
+
+    <section class="slide" data-slide="02">
+      <div class="glow-a"></div><div class="glow-b"></div>
+      <div class="logo-wrap"><img src="../public/logo/lcb-training-logo.png" alt="LCB Training" /></div>
+      <div class="safe has-phone">
+        <h1 class="headline">Your plan. Every day.</h1>
+        <p class="supporting">Built around you. 30 to 60 minutes of<br />personalized development.</p>
+        <div class="visual">
+          <div class="phone">
+            <div class="phone-inner">
+              <div class="phone-status"><span>9:41</span><div class="phone-notch"></div><span>100%</span></div>
+              <div class="phone-title">Today</div>
+              <div class="phone-body">
+                <div class="card">
+                  <div style="font-size:18px;font-weight:700;">Jake, Week 4 - Thursday</div>
+                  <div style="margin-top:8px;"><span class="pill pill-solid">FOUNDATION</span><span class="pill pill-outline">5-day streak</span></div>
+                  <div class="progress"><span></span></div>
+                </div>
+                <div class="card">
+                  <div class="week-row">
+                    <div class="week-dot week-done">M</div><div class="week-dot week-done">T</div><div class="week-dot week-done">W</div>
+                    <div class="week-dot week-today">T</div><div class="week-dot week-muted">F</div><div class="week-dot week-muted">S</div><div class="week-dot week-muted">R</div>
+                  </div>
+                </div>
+                <div class="card"><span class="label-green">HITTING</span><div class="task-big">45 swings today</div><div class="task-mid">Focus: Swing path through the middle</div></div>
+              </div>
+              <div class="phone-nav"><span class="active">Today</span><span>Home</span><span>Playbook</span><span>Train</span><span>Resources</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span class="footer-handle">@lcbtraining</span>
+        <span class="footer-cta">Message me for more info</span>
+      </div>
+    </section>
+
+    <section class="slide" data-slide="03">
+      <div class="glow-a"></div><div class="glow-b"></div>
+      <div class="logo-wrap"><img src="../public/logo/lcb-training-logo.png" alt="LCB Training" /></div>
+      <div class="safe has-phone">
+        <h1 class="headline">I set your focus.</h1>
+        <p class="supporting">Every week, with the drills to fix it.</p>
+        <div class="visual">
+          <div class="phone">
+            <div class="phone-inner">
+              <div class="phone-status"><span>9:41</span><div class="phone-notch"></div><span>100%</span></div>
+              <div class="phone-title">Today</div>
+              <div class="phone-body">
+                <div class="card card-green">
+                  <div class="label-green">THIS WEEK FROM COACH BROC</div>
+                  <div style="font-size:18px;font-weight:700;margin-top:8px;">Swing path through the middle</div>
+                  <div class="task-mid" style="margin-top:8px;">Stay through the middle of the field this week. Short to the ball, barrel stays inside, finish high.</div>
+                </div>
+              </div>
+              <div class="phone-nav"><span class="active">Today</span><span>Home</span><span>Playbook</span><span>Train</span><span>Resources</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span class="footer-handle">@lcbtraining</span>
+        <span class="footer-cta">Message me for more info</span>
+      </div>
+    </section>
+
+    <section class="slide" data-slide="04">
+      <div class="glow-a"></div><div class="glow-b"></div>
+      <div class="logo-wrap"><img src="../public/logo/lcb-training-logo.png" alt="LCB Training" /></div>
+      <div class="safe has-phone">
+        <h1 class="headline">Weekly breakdowns.</h1>
+        <p class="supporting">Send me a video. I break it down.</p>
+        <div class="visual">
+          <div class="phone">
+            <div class="phone-inner">
+              <div class="phone-status"><span>9:41</span><div class="phone-notch"></div><span>100%</span></div>
+              <div class="phone-title">Coaching</div>
+              <div class="phone-body">
+                <div class="video-box"><div style="text-align:center;color:#d4d4d8;font-size:12px;">Your swing video</div></div>
+                <div class="card card-green">
+                  <div class="label-green">COACH BROC'S BREAKDOWN</div>
+                  <div class="task-mid" style="margin-top:8px;">Your load is clean, but the barrel leaks early on middle-away. Stay stacked and drive it back up the middle.</div>
+                </div>
+                <div><span class="chip">Staying connected</span><span class="chip">Slot position</span><span class="chip">Stop casting your hands</span></div>
+              </div>
+              <div class="phone-nav"><span>Today</span><span class="active">Home</span><span>Playbook</span><span>Train</span><span>Resources</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span class="footer-handle">@lcbtraining</span>
+        <span class="footer-cta">Message me for more info</span>
+      </div>
+    </section>
+
+    <section class="slide" data-slide="05">
+      <div class="glow-a"></div><div class="glow-b"></div>
+      <div class="logo-wrap"><img src="../public/logo/lcb-training-logo.png" alt="LCB Training" /></div>
+      <div class="safe has-phone">
+        <h1 class="headline">Message me anytime.</h1>
+        <p class="supporting">Full access. I'm here whenever you need me.</p>
+        <div class="visual">
+          <div class="phone">
+            <div class="phone-inner">
+              <div class="phone-status"><span>9:41</span><div class="phone-notch"></div><span>100%</span></div>
+              <div class="phone-title">Messages</div>
+              <div class="phone-body">
+                <div class="chat">
+                  <div class="bubble bubble-player">Coach, my front foot keeps drifting open on outside pitches.<div class="bubble-time">4:05 PM</div></div>
+                  <div class="bubble bubble-coach">Good catch. Think closed landing and let the hands work late. I dropped a cue video for you.<div class="bubble-time">4:12 PM</div></div>
+                  <div class="bubble bubble-player">Got it. I'll hit the slot drill before tonight's session.<div class="bubble-time">4:18 PM</div></div>
+                </div>
+              </div>
+              <div class="phone-nav"><span>Today</span><span>Home</span><span>Playbook</span><span>Train</span><span>Resources</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span class="footer-handle">@lcbtraining</span>
+        <span class="footer-cta">Message me for more info</span>
+      </div>
+    </section>
+
+    <section class="slide" data-slide="06">
+      <div class="glow-a"></div><div class="glow-b"></div>
+      <div class="logo-wrap"><img src="../public/logo/lcb-training-logo.png" alt="LCB Training" /></div>
+      <div class="safe has-phone">
+        <h1 class="headline">Train anywhere.</h1>
+        <p class="supporting">Gym, dumbbells, or just your stairs.</p>
+        <div class="visual">
+          <div class="phone">
+            <div class="phone-inner">
+              <div class="phone-status"><span>9:41</span><div class="phone-notch"></div><span>100%</span></div>
+              <div class="phone-title">Workout</div>
+              <div class="phone-body compact-workout">
+                <div class="label-green">STRENGTH</div>
+                <div style="font-size:18px;font-weight:700;margin-top:4px;">Strength Workout A</div>
+                <div class="task-mid">Lower Body and Power</div>
+                <div class="workout-item"><div><div style="font-weight:600;">Bodyweight squat</div><div class="task-mid">3 x 15</div></div></div>
+                <div class="workout-item"><div><div style="font-weight:600;">Goblet squat</div><div class="task-mid">3 x 10</div></div></div>
+                <div class="workout-item"><div><div style="font-weight:600;">DB Romanian deadlift</div><div class="task-mid">3 x 10</div></div></div>
+                <div class="workout-item"><div><div style="font-weight:600;">90/90 hip switches</div><div class="task-mid">2 x 8 each side</div></div></div>
+                <div class="workout-item"><div><div style="font-weight:600;">Dead bug</div><div class="task-mid">2 x 8 each side</div></div></div>
+                <button class="btn" type="button">Mark workout complete</button>
+              </div>
+              <div class="phone-nav"><span>Today</span><span>Home</span><span>Playbook</span><span class="active">Train</span><span>Resources</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span class="footer-handle">@lcbtraining</span>
+        <span class="footer-cta">Message me for more info</span>
+      </div>
+    </section>
+
+    <section class="slide" data-slide="07">
+      <div class="glow-a"></div><div class="glow-b"></div>
+      <div class="logo-wrap"><img src="../public/logo/lcb-training-logo.png" alt="LCB Training" /></div>
+      <div class="safe has-phone">
+        <h1 class="headline">Games count.</h1>
+        <p class="supporting">Log your games and stats. I see it all.</p>
+        <div class="visual">
+          <div class="phone">
+            <div class="phone-inner">
+              <div class="phone-status"><span>9:41</span><div class="phone-notch"></div><span>100%</span></div>
+              <div class="phone-title">Stats</div>
+              <div class="phone-body">
+                <div class="card"><div class="label-green">MY STATS</div>
+                  <div class="stats-grid">
+                    <div><div class="stat-label">Games</div><div class="stat-num">6</div></div>
+                    <div><div class="stat-label">AVG</div><div class="stat-num">.318</div></div>
+                    <div><div class="stat-label">OBP</div><div class="stat-num">.419</div></div>
+                    <div><div class="stat-label">H</div><div class="stat-num">14</div></div>
+                    <div><div class="stat-label">RBI</div><div class="stat-num">9</div></div>
+                    <div><div class="stat-label">SB</div><div class="stat-num">4</div></div>
+                  </div>
+                </div>
+                <div class="card"><div style="display:flex;justify-content:space-between;"><strong>Game log</strong><span class="pill pill-outline">GAME</span></div>
+                  <div class="task-mid" style="margin-top:8px;">vs Central HS</div>
+                  <div style="color:#9df3bd;font-size:14px;">2-3, 2B, RBI, R</div>
+                  <div class="task-mid" style="margin-top:8px;">Stayed on middle-away and drove a ball the other way.</div>
+                </div>
+              </div>
+              <div class="phone-nav"><span>Today</span><span class="active">Home</span><span>Playbook</span><span>Train</span><span>Resources</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span class="footer-handle">@lcbtraining</span>
+        <span class="footer-cta">Message me for more info</span>
+      </div>
+    </section>
+
+    <section class="slide" data-slide="08">
+      <div class="glow-a"></div><div class="glow-b"></div>
+      <div class="logo-wrap"><img src="../public/logo/lcb-training-logo.png" alt="LCB Training" /></div>
+      <div class="safe has-phone">
+        <h1 class="headline">Never miss a day.</h1>
+        <p class="supporting">Reminders when your work is ready.</p>
+        <div class="visual">
+          <div class="phone">
+            <div class="phone-inner">
+              <div class="phone-status"><span>9:41</span><div class="phone-notch"></div><span>100%</span></div>
+              <div class="phone-title">Lock screen</div>
+              <div class="phone-body" style="padding:0;">
+                <div class="notify">
+                  <div class="notify-card">
+                    <div style="display:flex;gap:12px;">
+                      <div style="width:40px;height:40px;border-radius:12px;background:#0a1628;display:flex;align-items:center;justify-content:center;color:#52b788;font-size:11px;font-weight:700;">LCB</div>
+                      <div>
+                        <div style="font-size:11px;color:#a1a1aa;font-weight:600;text-transform:uppercase;">LCB Training</div>
+                        <div style="font-size:16px;font-weight:600;margin-top:4px;">Today's work is ready</div>
+                        <div style="font-size:14px;color:#d4d4d8;margin-top:4px;">Jake, Week 4 is live. Hit your swings, fielding, and strength work.</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span class="footer-handle">@lcbtraining</span>
+        <span class="footer-cta">Message me for more info</span>
+      </div>
+    </section>
+
+    <section class="slide" data-slide="09">
+      <div class="glow-a"></div><div class="glow-b"></div>
+      <div class="logo-wrap"><img src="../public/logo/lcb-training-logo.png" alt="LCB Training" /></div>
+      <div class="safe has-phone">
+        <h1 class="headline">Parents stay in the loop.</h1>
+        <p class="supporting">Weekly recap emails.</p>
+        <div class="visual">
+          <div class="phone">
+            <div class="phone-inner">
+              <div class="phone-status"><span>9:41</span><div class="phone-notch"></div><span>100%</span></div>
+              <div class="phone-title">Email</div>
+              <div class="phone-body">
+                <div class="email-wrap">
+                  <h3>Week 4 recap</h3>
+                  <div class="email-section">PROGRESS</div>
+                  <p>Tasks completed: 18 of 21</p>
+                  <p>Current streak: 5 days</p>
+                  <div class="email-section">HITTING FOCUS</div>
+                  <p><strong>Swing path through the middle</strong></p>
+                  <p>Stay through the middle of the field this week.</p>
+                  <div class="email-section">GAMES AND PRACTICES</div>
+                  <p>Game vs Central HS: 2-3, 2B, RBI</p>
+                </div>
+              </div>
+              <div class="phone-nav"><span>Today</span><span>Home</span><span>Playbook</span><span>Train</span><span>Resources</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span class="footer-handle">@lcbtraining</span>
+        <span class="footer-cta">Message me for more info</span>
+      </div>
+    </section>
+
+    <section class="slide" data-slide="10">
+      <div class="glow-a"></div><div class="glow-b"></div>
+      <div class="logo-wrap"><img src="../public/logo/lcb-training-logo.png" alt="LCB Training" /></div>
+      <div class="safe has-phone">
+        <h1 class="headline">Week 1 vs Week 12.</h1>
+        <p class="supporting">See how far your swing came.</p>
+        <div class="visual">
+          <div class="phone">
+            <div class="phone-inner">
+              <div class="phone-status"><span>9:41</span><div class="phone-notch"></div><span>100%</span></div>
+              <div class="phone-title">Progress</div>
+              <div class="phone-body">
+                <div class="compare">
+                  <div class="frame">
+                    <div class="frame-visual"><div><div class="frame-body"></div><div class="frame-line"></div></div></div>
+                    <div class="frame-caption"><div class="label-green">Week 1</div><div class="task-mid">Long load, barrel leaks early</div></div>
+                  </div>
+                  <div class="frame">
+                    <div class="frame-visual"><div><div class="frame-body"></div><div class="frame-line"></div></div></div>
+                    <div class="frame-caption"><div class="label-green">Week 12</div><div class="task-mid">Stacked, short to ball, finish high</div></div>
+                  </div>
+                </div>
+              </div>
+              <div class="phone-nav"><span>Today</span><span>Home</span><span>Playbook</span><span>Train</span><span>Resources</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span class="footer-handle">@lcbtraining</span>
+        <span class="footer-cta">Message me for more info</span>
+      </div>
+    </section>
+
+    <section class="slide" data-slide="11">
+      <div class="glow-a"></div><div class="glow-b"></div>
+      <div class="logo-wrap"><img src="../public/logo/lcb-training-logo.png" alt="LCB Training" /></div>
+      <div class="safe text-only">
+        <h1 class="headline">12-Week Coaching Program</h1>
+        <p class="supporting">Message me the word SWING for a free breakdown, or tap the link in my bio.</p>
+        <div class="hero-divider"></div>
+        <p class="hero-kicker">Work Hard. Be Memorable.</p>
+        <p class="hero-subline">What do you want to be known for?</p>
+      </div>
+      <div class="slide-footer">
+        <span class="footer-handle">@lcbtraining</span>
+        <span class="footer-cta">Message me for more info</span>
+      </div>
+    </section>
+  </body>
+</html>

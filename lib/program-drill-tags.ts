@@ -76,9 +76,12 @@ export const HITTING_DRILLS_BY_WEEK: Record<number, string[]> = {
   5: ["45 Degree Angled In", "Stop casting your hands"],
   6: ["45 Degree Drill - Angled Out", "Low Tee - Outside Pitch"],
   7: ["Top Hand - High Tee Drill", "Med ball & tee combo #1", "Med ball & tee combo #2"],
-  8: [],
+  8: HITTING_FOCUS_CUE_DRILL_TITLES[8] ?? [
+    "Two Strike Approach",
+    "The mental side to hitting with two strikes",
+  ],
   9: ["PVC Pipe/Light Bat Swings"],
-  10: [],
+  10: HITTING_FOCUS_CUE_DRILL_TITLES[10] ?? ["Situational Hitting"],
   11: HITTING_FOCUS_CUE_DRILL_TITLES[11] ?? ["Be Able to Hit These 3 Pitches"],
   12: ["Be Able to Hit These 3 Pitches"],
 };
@@ -113,15 +116,15 @@ const FIELDING_COMPETE = ["Pre pitch hop", "Body control", "Make plays on the ru
 
 export const MINDSET_DRILLS_BY_WEEK: Record<number, string[]> = {
   1: ["You Don't Have to Be the Biggest Player on the Team"],
-  2: ["Develop Consistency and Discipline", "Take Your Mobility Serious"],
-  3: [],
+  2: ["It starts at practice", "Develop Consistency and Discipline", "Take Your Mobility Serious"],
+  3: ["Body Language and Control your emotions"],
   4: ["Put the Work In"],
   5: ["Don't Worry About Mechanics in the Game"],
-  6: ["Dominate the Level You're At Right Now"],
+  6: ["The mental side to hitting with two strikes", "Dominate the Level You're At Right Now"],
   7: [],
   8: ["Clear Your Mind", "Don't Make This Game Harder Than It Needs to Be"],
   9: ["Ask Questions and Be Curious"],
-  10: ["Take Pride in Failure"],
+  10: ["The mental side to hitting with two strikes", "Take Pride in Failure"],
   11: [],
   12: ["Trust the Training"],
 };

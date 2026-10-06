@@ -13,7 +13,8 @@
     "test:program-schedule": "npx --yes tsx scripts/test-program-schedule.ts",
     "test:program-send-windows": "npx --yes tsx scripts/test-program-send-windows.ts",
     "test:daily-plan": "npx --yes tsx scripts/test-daily-plan.ts",
-    "test:program-stats": "npx --yes tsx scripts/test-program-stats.ts"
+    "test:program-stats": "npx --yes tsx scripts/test-program-stats.ts",
+    "export:app-highlight": "npx --yes tsx scripts/export-app-highlight-local.ts && python3 marketing/build_app_highlight_pdf.py"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1127.0",
@@ -44,6 +45,7 @@
     "@types/web-push": "^3.6.4",
     "eslint": "^9",
     "eslint-config-next": "16.2.7",
+    "playwright": "^1.63.0",
     "sharp": "^0.35.4",
     "tailwindcss": "^4",
     "typescript": "^5"

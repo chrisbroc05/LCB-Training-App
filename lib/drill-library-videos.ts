@@ -43,6 +43,13 @@ const hittingVideoSources: DrillLibraryVideoSource[] = [
     title: "Give yourself space in your setup",
     url: "https://player.vimeo.com/video/1233143528",
   },
+  {
+    title: "The mental side to hitting with two strikes",
+    url: "https://player.vimeo.com/video/1233463927",
+  },
+  { title: "Two Strike Approach", url: "https://player.vimeo.com/video/1233464583" },
+  { title: "Situational Hitting", url: "https://player.vimeo.com/video/1233464969" },
+  { title: "Approach by count", url: "https://player.vimeo.com/video/1233465905" },
 ];
 
 const fieldingVideoSources: DrillLibraryVideoSource[] = [
@@ -121,6 +128,11 @@ const mindsetVideoSources: DrillLibraryVideoSource[] = [
   {
     title: "Don't Make This Game Harder Than It Needs to Be",
     url: "https://player.vimeo.com/video/1210521772",
+  },
+  { title: "It starts at practice", url: "https://player.vimeo.com/video/1233148098" },
+  {
+    title: "Body Language and Control your emotions",
+    url: "https://player.vimeo.com/video/1233466376",
   },
 ];
 
