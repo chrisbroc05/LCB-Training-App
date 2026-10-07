@@ -116,6 +116,11 @@ enum WaiverSignupType {
   OTHER
 }
 
+enum TestBetterIs {
+  LOWER
+  HIGHER
+}
+
 enum MarketingEmailType {
   WELCOME
   FREE_SUBMISSION_REMINDER
@@ -212,6 +217,7 @@ model User {
   sentMessages           Message[]              @relation("MessageSender")
   waiverSignatures       WaiverSignature[]
   coachVideos            CoachVideo[]
+  testPlayers            TestPlayer[]
 }
 
 model WaiverSignature {
@@ -236,6 +242,7 @@ model WaiverSignature {
   ip                    String
   userId                String?
   user                  User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
+  testPlayers           TestPlayer[]
 
   @@index([signedAt(sort: Desc)])
   @@index([teamSlug])
@@ -661,5 +668,114 @@ model PlaybookReflection {
   @@unique([chapterId, questionNumber])
   @@index([chapterId])
   @@index([sharedWithCoach, sharedAt])
+}
+
+model TestTeam {
+  id         String           @id @default(cuid())
+  name       String
+  teamSlug   String           @unique
+  season     String           @default("")
+  coachName  String           @default("")
+  coachEmail String?
+  archived   Boolean          @default(false)
+  createdAt  DateTime         @default(now())
+  roster     TestTeamPlayer[]
+  sessions   TestSession[]
+
+  @@index([archived, createdAt(sort: Desc)])
+}
+
+model TestStation {
+  key        String   @id
+  label      String
+  sortOrder  Int
+  active     Boolean  @default(true)
+  metricKeys String[]
+
+  @@index([active, sortOrder])
+}
+
+model TestPlayer {
+  id                String            @id @default(cuid())
+  firstName         String
+  lastName          String
+  birthYear         Int?
+  age               Int?
+  positions         String[]          @default([])
+  bats              String?
+  throws            String?
+  parentEmail       String?
+  claimCode         String            @unique
+  userId            String?
+  user              User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+  waiverSignatureId String?
+  waiverSignature   WaiverSignature?  @relation(fields: [waiverSignatureId], references: [id], onDelete: SetNull)
+  createdAt         DateTime          @default(now())
+  teams             TestTeamPlayer[]
+  results           TestResult[]
+
+  @@index([lastName, firstName])
+  @@index([userId])
+  @@index([waiverSignatureId])
+}
+
+model TestTeamPlayer {
+  id       String     @id @default(cuid())
+  teamId   String
+  team     TestTeam   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  playerId String
+  player   TestPlayer @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, playerId])
+  @@index([playerId])
+}
+
+model TestMetric {
+  key        String       @id
+  label      String
+  unit       String
+  decimals   Int
+  betterIs   TestBetterIs
+  category   String
+  active     Boolean      @default(true)
+  sortOrder  Int
+  inputType  String       @default("number")
+  results    TestResult[]
+
+  @@index([active, sortOrder])
+}
+
+model TestSession {
+  id      String       @id @default(cuid())
+  teamId  String
+  team    TestTeam     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  date    DateTime     @db.Date
+  label   String
+  notes   String?
+  results TestResult[]
+
+  @@unique([teamId, date])
+  @@index([teamId, date(sort: Desc)])
+}
+
+model TestResult {
+  id        String      @id @default(cuid())
+  sessionId String
+  session   TestSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  playerId  String
+  player    TestPlayer  @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  metricKey String
+  metric    TestMetric  @relation(fields: [metricKey], references: [key], onDelete: Restrict)
+  attempts  Float[]     @default([])
+  best      Float?
+  absent    Boolean     @default(false)
+  skipped   Boolean     @default(false)
+  notes     String?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@unique([sessionId, playerId, metricKey])
+  @@index([playerId, metricKey])
+  @@index([sessionId, metricKey])
 }
 

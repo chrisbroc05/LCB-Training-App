@@ -7,6 +7,7 @@ import {
 } from "@/lib/waiver-sign-shared";
 import { sendWaiverConfirmationEmail } from "@/lib/waiver-sign-email";
 import { sendCoachWaiverSignedPush } from "@/lib/waiver-sign-notifications";
+import { syncTestingRosterForWaiverTeamSlug } from "@/lib/testing-server";
 import {
   applyMatchingWaiverAcceptanceToUser,
   createWaiverSignatureBatch,
@@ -59,6 +60,12 @@ export async function POST(request: Request) {
     const userId = await findLinkedUserIdForWaiverEmail(parsed.shared.signerEmail);
     if (userId) {
       await applyMatchingWaiverAcceptanceToUser(userId);
+    }
+
+    try {
+      await syncTestingRosterForWaiverTeamSlug(parsed.shared.teamSlug);
+    } catch (error) {
+      console.error("Failed to sync testing roster from waiver signature", error);
     }
 
     const playerNames = signatures.map((signature) =>
