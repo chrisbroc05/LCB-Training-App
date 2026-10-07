@@ -136,8 +136,60 @@ function isPlayerStationComplete(player: EntryPlayer, metrics: TestMetricRecord[
   });
 }
 
+function playerDisplayName(player: Pick<TestPlayerSummary, "firstName" | "lastName">) {
+  return `${player.firstName} ${player.lastName}`.trim();
+}
+
+function sortPlayersAlphabetical(a: EntryPlayer, b: EntryPlayer) {
+  const last = a.lastName.localeCompare(b.lastName);
+  if (last !== 0) {
+    return last;
+  }
+  return a.firstName.localeCompare(b.firstName);
+}
+
+function firstEmptyInputId(
+  player: EntryPlayer,
+  metrics: TestMetricRecord[],
+  drafts: Record<string, DraftSlot>,
+) {
+  for (const metric of metrics) {
+    const draft = drafts[`${player.id}:${metric.key}`] ?? emptyDraft();
+    if (metric.inputType === "feet_inches") {
+      if (!draft.a.trim() && !draft.b.trim()) {
+        return `${player.id}-${metric.key}-a`;
+      }
+      if (!draft.c.trim() && !draft.d.trim()) {
+        return `${player.id}-${metric.key}-c`;
+      }
+      continue;
+    }
+    if (!draft.a.trim()) {
+      return `${player.id}-${metric.key}-a`;
+    }
+    if (!draft.b.trim()) {
+      return `${player.id}-${metric.key}-b`;
+    }
+  }
+  return null;
+}
+
+function focusInputById(inputId: string | null) {
+  if (!inputId) {
+    return;
+  }
+  window.setTimeout(() => {
+    const element = document.getElementById(inputId);
+    if (element instanceof HTMLInputElement) {
+      element.focus();
+    }
+  }, 50);
+}
+
 export default function TestingWorkspacePanel() {
   const searchRef = useRef<HTMLInputElement>(null);
+  const searchBoxRef = useRef<HTMLDivElement>(null);
+  const pendingFocusPlayerId = useRef<string | null>(null);
   const [teamOptions, setTeamOptions] = useState<TestTeamOption[]>([]);
   const [teamSlug, setTeamSlug] = useState("");
   const [date, setDate] = useState(todayIso());
@@ -146,6 +198,8 @@ export default function TestingWorkspacePanel() {
   const [entry, setEntry] = useState<EntryData | null>(null);
   const [drafts, setDrafts] = useState<Record<string, DraftSlot>>({});
   const [search, setSearch] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [showAddPlayer, setShowAddPlayer] = useState(false);
   const [showNewTeam, setShowNewTeam] = useState(false);
   const [newTeamName, setNewTeamName] = useState("");
   const [addFirst, setAddFirst] = useState("");
@@ -242,12 +296,43 @@ export default function TestingWorkspacePanel() {
   }, [loadEntry, teamSlug]);
 
   useEffect(() => {
+    if (!entry || !pendingFocusPlayerId.current) {
+      return;
+    }
+    const player = entry.players.find((entryPlayer) => entryPlayer.id === pendingFocusPlayerId.current);
+    if (player) {
+      setSearch(playerDisplayName(player));
+      setSearchOpen(false);
+      focusInputById(firstEmptyInputId(player, entry.metrics, drafts));
+    }
+    pendingFocusPlayerId.current = null;
+  }, [entry, drafts]);
+
+  useEffect(() => {
     refreshPending();
     void syncPending();
     const onlineHandler = () => void syncPending();
     window.addEventListener("online", onlineHandler);
     return () => window.removeEventListener("online", onlineHandler);
   }, [refreshPending, syncPending]);
+
+  useEffect(() => {
+    function handlePointerDown(event: MouseEvent | TouchEvent) {
+      if (!searchBoxRef.current) {
+        return;
+      }
+      const target = event.target;
+      if (target instanceof Node && !searchBoxRef.current.contains(target)) {
+        setSearchOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("touchstart", handlePointerDown);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("touchstart", handlePointerDown);
+    };
+  }, []);
 
   const stationOptions = useMemo(() => {
     const stations = workspace?.stations ?? [];
@@ -262,6 +347,20 @@ export default function TestingWorkspacePanel() {
     return Array.from(dates).sort((a, b) => b.localeCompare(a));
   }, [workspace?.sessions, date]);
 
+  const searchListPlayers = useMemo(() => {
+    if (!entry) {
+      return [] as EntryPlayer[];
+    }
+    const query = search.trim().toLowerCase();
+    let players = [...entry.players].sort(sortPlayersAlphabetical);
+    if (query) {
+      players = players.filter((player) =>
+        playerDisplayName(player).toLowerCase().includes(query),
+      );
+    }
+    return players;
+  }, [entry, search]);
+
   const filteredPlayers = useMemo(() => {
     if (!entry) {
       return [] as EntryPlayer[];
@@ -270,7 +369,7 @@ export default function TestingWorkspacePanel() {
     let players = entry.players;
     if (query) {
       players = players.filter((player) =>
-        `${player.firstName} ${player.lastName}`.toLowerCase().includes(query),
+        playerDisplayName(player).toLowerCase().includes(query),
       );
     }
     return [...players].sort((a, b) => {
@@ -279,13 +378,23 @@ export default function TestingWorkspacePanel() {
       if (aDone !== bDone) {
         return aDone ? 1 : -1;
       }
-      const last = a.lastName.localeCompare(b.lastName);
-      if (last !== 0) {
-        return last;
-      }
-      return a.firstName.localeCompare(b.firstName);
+      return sortPlayersAlphabetical(a, b);
     });
   }, [entry, search, drafts]);
+
+  function selectSearchPlayer(player: EntryPlayer) {
+    setSearch(playerDisplayName(player));
+    setSearchOpen(false);
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+    focusInputById(firstEmptyInputId(player, entry?.metrics ?? [], drafts));
+  }
+
+  function clearSearch() {
+    setSearch("");
+    setSearchOpen(false);
+  }
 
   async function createTeam() {
     if (!newTeamName.trim()) {
@@ -320,14 +429,16 @@ export default function TestingWorkspacePanel() {
         age: addAge ? Number(addAge) : null,
       }),
     });
-    const data = (await response.json()) as { error?: string };
-    if (!response.ok) {
+    const data = (await response.json()) as { player?: TestPlayerSummary; error?: string };
+    if (!response.ok || !data.player) {
       setError(data.error ?? "Failed to add player.");
       return;
     }
     setAddFirst("");
     setAddLast("");
     setAddAge("");
+    setShowAddPlayer(false);
+    pendingFocusPlayerId.current = data.player.id;
     await loadWorkspace();
     await loadEntry();
   }
@@ -367,7 +478,7 @@ export default function TestingWorkspacePanel() {
       setSyncState("waiting");
     }
 
-    setSearch("");
+    clearSearch();
     if (document.activeElement instanceof HTMLElement) {
       document.activeElement.blur();
     }
@@ -398,20 +509,12 @@ export default function TestingWorkspacePanel() {
             Metrics
           </Link>
           {entry ? (
-            <>
-              <Link
-                href={`/admin/testing/teams/${entry.session.teamId}/sessions/${entry.session.id}`}
-                className="rounded-full border border-[#2b3650] px-4 py-2 text-sm font-semibold text-zinc-300"
-              >
-                Results grid
-              </Link>
-              <Link
-                href={`/admin/testing/teams/${entry.session.teamId}`}
-                className="rounded-full border border-[#2b3650] px-4 py-2 text-sm font-semibold text-zinc-300"
-              >
-                Import CSV
-              </Link>
-            </>
+            <Link
+              href={`/admin/testing/teams/${entry.session.teamId}/sessions/${entry.session.id}`}
+              className="rounded-full border border-[#2b3650] px-4 py-2 text-sm font-semibold text-zinc-300"
+            >
+              Results grid
+            </Link>
           ) : null}
           <span
             className={`rounded-full px-3 py-2 text-xs font-semibold ${
@@ -511,56 +614,95 @@ export default function TestingWorkspacePanel() {
           </div>
 
           <section className="rounded-3xl border border-[#18243a] bg-[#0b1324]/80 p-4">
-            <h2 className="text-sm font-semibold text-zinc-200">Add player</h2>
-            <div className="mt-3 grid gap-2 sm:grid-cols-4">
-              <input
-                value={addFirst}
-                onChange={(event) => setAddFirst(event.target.value)}
-                placeholder="First"
-                className="rounded-xl border border-[#2b3650] bg-[#0a1628] px-3 py-2 text-sm text-zinc-100"
-              />
-              <input
-                value={addLast}
-                onChange={(event) => setAddLast(event.target.value)}
-                placeholder="Last"
-                className="rounded-xl border border-[#2b3650] bg-[#0a1628] px-3 py-2 text-sm text-zinc-100"
-              />
-              <input
-                value={addAge}
-                onChange={(event) => setAddAge(event.target.value)}
-                placeholder="Age"
-                inputMode="numeric"
-                className="rounded-xl border border-[#2b3650] bg-[#0a1628] px-3 py-2 text-sm text-zinc-100"
-              />
-              <button
-                type="button"
-                onClick={() => void addPlayer()}
-                className="rounded-full bg-[#22c55e] px-4 py-2 text-sm font-semibold text-[#0A1628]"
-              >
-                Add
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => setShowAddPlayer((current) => !current)}
+              className="flex w-full items-center justify-between rounded-xl border border-[#2b3650] px-4 py-4 text-left text-sm font-semibold text-zinc-200"
+            >
+              <span>+ Add player</span>
+              <span className="text-zinc-500">{showAddPlayer ? "^" : "v"}</span>
+            </button>
+            {showAddPlayer ? (
+              <div className="mt-3 grid gap-2 sm:grid-cols-4">
+                <input
+                  value={addFirst}
+                  onChange={(event) => setAddFirst(event.target.value)}
+                  placeholder="First"
+                  className="rounded-xl border border-[#2b3650] bg-[#0a1628] px-3 py-3 text-sm text-zinc-100"
+                />
+                <input
+                  value={addLast}
+                  onChange={(event) => setAddLast(event.target.value)}
+                  placeholder="Last"
+                  className="rounded-xl border border-[#2b3650] bg-[#0a1628] px-3 py-3 text-sm text-zinc-100"
+                />
+                <input
+                  value={addAge}
+                  onChange={(event) => setAddAge(event.target.value)}
+                  placeholder="Age"
+                  inputMode="numeric"
+                  className="rounded-xl border border-[#2b3650] bg-[#0a1628] px-3 py-3 text-sm text-zinc-100"
+                />
+                <button
+                  type="button"
+                  onClick={() => void addPlayer()}
+                  className="rounded-full bg-[#22c55e] px-4 py-3 text-sm font-semibold text-[#0A1628]"
+                >
+                  Add
+                </button>
+              </div>
+            ) : null}
           </section>
 
-          <div className="sticky top-0 z-10 rounded-2xl border border-[#2b3650] bg-[#0a1628] p-3">
+          <div
+            ref={searchBoxRef}
+            className="sticky top-0 z-10 rounded-2xl border border-[#2b3650] bg-[#0a1628] p-3"
+          >
             <div className="flex items-center gap-2">
               <input
                 ref={searchRef}
                 value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search players"
+                onChange={(event) => {
+                  setSearch(event.target.value);
+                  setSearchOpen(true);
+                }}
+                onFocus={() => setSearchOpen(true)}
+                placeholder="Search or pick a player"
                 className="min-w-0 flex-1 rounded-xl border border-[#2b3650] bg-[#0b1324] px-4 py-3 text-base text-zinc-100"
               />
               {search ? (
                 <button
                   type="button"
-                  onClick={() => setSearch("")}
+                  onClick={clearSearch}
                   className="rounded-full border border-[#2b3650] px-3 py-2 text-sm text-zinc-300"
                 >
                   X
                 </button>
               ) : null}
             </div>
+            {searchOpen && entry ? (
+              <ul className="mt-2 max-h-64 overflow-y-auto rounded-xl border border-[#2b3650] bg-[#0b1324]">
+                {searchListPlayers.length === 0 ? (
+                  <li className="px-4 py-4 text-sm text-zinc-500">No players match.</li>
+                ) : (
+                  searchListPlayers.map((player) => {
+                    const done = isPlayerStationComplete(player, entry.metrics, drafts);
+                    return (
+                      <li key={player.id}>
+                        <button
+                          type="button"
+                          onClick={() => selectSearchPlayer(player)}
+                          className="flex w-full items-center justify-between gap-3 px-4 py-4 text-left text-base text-zinc-100 hover:bg-[#0a1628]"
+                        >
+                          <span>{playerDisplayName(player)}</span>
+                          <span className="text-sm text-[#52B788]">{done ? "ok" : ""}</span>
+                        </button>
+                      </li>
+                    );
+                  })
+                )}
+              </ul>
+            ) : null}
           </div>
 
           <div className="space-y-4">
@@ -632,6 +774,7 @@ export default function TestingWorkspacePanel() {
                             <div className="mt-3 grid grid-cols-2 gap-3">
                               <div className="grid grid-cols-2 gap-2">
                                 <input
+                                  id={`${player.id}-${metric.key}-a`}
                                   inputMode="numeric"
                                   value={draft.a}
                                   onChange={(event) =>
@@ -647,6 +790,7 @@ export default function TestingWorkspacePanel() {
                                   }`}
                                 />
                                 <input
+                                  id={`${player.id}-${metric.key}-b`}
                                   inputMode="decimal"
                                   value={draft.b}
                                   onChange={(event) =>
@@ -664,6 +808,7 @@ export default function TestingWorkspacePanel() {
                               </div>
                               <div className="grid grid-cols-2 gap-2">
                                 <input
+                                  id={`${player.id}-${metric.key}-c`}
                                   inputMode="numeric"
                                   value={draft.c}
                                   onChange={(event) =>
@@ -679,6 +824,7 @@ export default function TestingWorkspacePanel() {
                                   }`}
                                 />
                                 <input
+                                  id={`${player.id}-${metric.key}-d`}
                                   inputMode="decimal"
                                   value={draft.d}
                                   onChange={(event) =>
@@ -700,6 +846,7 @@ export default function TestingWorkspacePanel() {
                               {[0, 1].map((index) => (
                                 <input
                                   key={index}
+                                  id={`${player.id}-${metric.key}-${index === 0 ? "a" : "b"}`}
                                   inputMode="decimal"
                                   value={index === 0 ? draft.a : draft.b}
                                   onChange={(event) =>
