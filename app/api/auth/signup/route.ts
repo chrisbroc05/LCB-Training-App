@@ -14,6 +14,7 @@ import {
   validateParentConsentEmail,
 } from "@/lib/legal-shared";
 import { sendNewMemberNotification } from "@/lib/notifications";
+import { isTestAccountEmail } from "@/lib/test-account-shared";
 import type { SignupRequestPayload } from "@/lib/signup-shared";
 import {
   applyMatchingWaiverAcceptanceToUser,
@@ -163,6 +164,7 @@ export async function POST(request: Request) {
         parentConsentConfirmedAt,
         mediaConsent: Boolean(body.legalAcceptance.mediaConsent),
         mediaConsentUpdatedAt: acceptedAt,
+        isTestAccount: isTestAccountEmail(email),
       },
       select: {
         id: true,

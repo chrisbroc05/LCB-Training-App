@@ -99,6 +99,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     focusAreas?: string[];
     equipment?: string[];
     strengthVariant?: string;
+    isTestAccount?: boolean;
   } | null;
 
   const existing = await prisma.programEnrollment.findUnique({ where: { id: enrollmentId } });
@@ -138,10 +139,20 @@ export async function PATCH(request: Request, context: RouteContext) {
     data.strengthVariant = body.strengthVariant;
   }
 
-  const enrollment = await prisma.programEnrollment.update({
-    where: { id: enrollmentId },
-    data,
-  });
+  if (typeof body?.isTestAccount === "boolean") {
+    await prisma.user.update({
+      where: { id: existing.userId },
+      data: { isTestAccount: body.isTestAccount },
+    });
+  }
+
+  const enrollment =
+    Object.keys(data).length > 0
+      ? await prisma.programEnrollment.update({
+          where: { id: enrollmentId },
+          data,
+        })
+      : existing;
 
   return NextResponse.json({ enrollment });
 }

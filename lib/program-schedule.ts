@@ -69,6 +69,12 @@ export function getChicagoTodayDateKey(now = new Date()) {
   return getChicagoDateKey(now);
 }
 
+export function getChicagoDaysSinceDate(date: Date, now = new Date()) {
+  const startKey = formatProgramStartDateKey(date);
+  const todayKey = getChicagoTodayDateKey(now);
+  return diffChicagoCalendarDays(startKey, todayKey);
+}
+
 export function getChicagoTomorrowDateKey(now = new Date()) {
   const todayKey = getChicagoTodayDateKey(now);
   const today = dateKeyToUtcNoon(todayKey);

@@ -73,6 +73,7 @@ export async function sendCoachNewProgramPlayerPushForUser(userId: string) {
     select: {
       name: true,
       email: true,
+      isTestAccount: true,
       programEnrollment: {
         select: { id: true },
       },
@@ -81,6 +82,10 @@ export async function sendCoachNewProgramPlayerPushForUser(userId: string) {
 
   if (!user?.programEnrollment) {
     return { sent: 0, skipped: true, reason: "no_enrollment" as const };
+  }
+
+  if (user.isTestAccount) {
+    return { sent: 0, skipped: true, reason: "test_account" as const };
   }
 
   return sendCoachNewProgramPlayerPush({

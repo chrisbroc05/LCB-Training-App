@@ -86,6 +86,7 @@ export async function buildAdminProgramPlayerDetail(enrollmentId: string, now = 
           emergencyContactPhone: true,
           medicalNotes: true,
           inPersonInfoUpdatedAt: true,
+          isTestAccount: true,
         },
       },
       taskCompletions: {
@@ -201,6 +202,7 @@ export async function buildAdminProgramPlayerDetail(enrollmentId: string, now = 
         enrollment.user.accountHolderName,
       ),
       email: enrollment.user.email,
+      isTestAccount: enrollment.user.isTestAccount,
       status: enrollment.status,
       refundedAt: enrollment.refundedAt?.toISOString() ?? null,
       refundAmountCents: enrollment.refundAmountCents,

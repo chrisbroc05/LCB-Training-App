@@ -20,6 +20,7 @@ import { formatGameLine } from "@/lib/program-stats";
 import { computeProgramStreak, getDayOfWeekForProgramDay } from "@/lib/program-streak-shared";
 import {
   formatProgramStartDateKey,
+  getChicagoDaysSinceDate,
   getChicagoSundayStart,
   getDateForProgramDay,
   getProgramDay,
@@ -47,11 +48,15 @@ export type ActiveEnrollmentRecord = ProgramEnrollment & {
   }>;
 };
 
-export async function loadActiveEnrollments(now = new Date()) {
+export async function loadActiveEnrollments(
+  now = new Date(),
+  options?: { includeTestAccounts?: boolean },
+) {
   return prisma.programEnrollment.findMany({
     where: {
       status: "ACTIVE",
       onboardingCompletedAt: { not: null },
+      ...(options?.includeTestAccounts ? {} : { user: { isTestAccount: false } }),
     },
     include: {
       user: {
@@ -72,6 +77,53 @@ export async function loadActiveEnrollments(now = new Date()) {
     },
     orderBy: { createdAt: "asc" },
   });
+}
+
+export async function loadSetupIncompleteEnrollments(options?: { includeTestAccounts?: boolean }) {
+  return prisma.programEnrollment.findMany({
+    where: {
+      status: "ACTIVE",
+      onboardingCompletedAt: null,
+      ...(options?.includeTestAccounts ? {} : { user: { isTestAccount: false } }),
+    },
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          isTestAccount: true,
+        },
+      },
+    },
+    orderBy: { createdAt: "asc" },
+  });
+}
+
+export async function hasSetupReminderBeenSent(enrollmentId: string, userId: string) {
+  const [emailLog, pushLog] = await Promise.all([
+    prisma.emailLog.findFirst({
+      where: {
+        enrollmentId,
+        type: "SETUP_REMINDER",
+        recipient: "player",
+      },
+      select: { id: true },
+    }),
+    prisma.pushLog.findFirst({
+      where: {
+        userId,
+        type: "SETUP_REMINDER",
+      },
+      select: { id: true },
+    }),
+  ]);
+
+  return Boolean(emailLog || pushLog);
+}
+
+export function isSetupReminderDue(enrolledAt: Date, now = new Date()) {
+  return getChicagoDaysSinceDate(enrolledAt, now) >= 2;
 }
 
 function getCompletedWorkDays(
@@ -470,6 +522,7 @@ export async function buildCoachDailySummaryData(dateKey: string, now = new Date
       enrollment: {
         status: "ACTIVE",
         onboardingCompletedAt: { not: null },
+        user: { isTestAccount: false },
       },
     },
     include: {
@@ -524,6 +577,7 @@ export async function buildCoachDailySummaryData(dateKey: string, now = new Date
       enrollment: {
         status: "ACTIVE",
         onboardingCompletedAt: { not: null },
+        user: { isTestAccount: false },
       },
     },
     include: {

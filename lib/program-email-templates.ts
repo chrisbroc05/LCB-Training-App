@@ -187,6 +187,27 @@ export function buildSaturdayVideoReminderEmail(params: { firstName: string }) {
   };
 }
 
+export function buildSetupReminderEmail(params: { firstName: string }) {
+  const subject = `${params.firstName}, finish setting up your plan`;
+  const headline = "Finish setting up your plan so I can get you started.";
+  const body =
+    "You are enrolled, but your daily plan is not ready yet. Finish the quick setup so I know what to coach you on.";
+  const setupUrl = `${getPublicAppUrl()}/program/start`;
+
+  const bodyContentHtml = `<h1 style="margin:0 0 16px 0; font-family:Arial, Helvetica, sans-serif; font-size:24px; line-height:1.3; color:#0A1628;">${escapeHtml(headline)}</h1>
+      <p style="margin:0 0 20px 0; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:1.7; color:#0A1628;">${escapeHtml(body)}</p>
+      ${buildEmailButton("Finish setup", setupUrl)}
+      ${buildPlayerSettingsFooterHtml()}`;
+
+  const text = `${headline}\n\n${body}\n\nFinish setup: ${setupUrl}${buildPlayerSettingsFooterText()}\n\n${buildEmailFooterText()}`;
+
+  return {
+    subject,
+    html: buildMemberEmailHtml({ title: subject, bodyContentHtml }),
+    text,
+  };
+}
+
 export function buildGoneQuietEmail(params: { firstName: string }) {
   const subject = `Haven't heard from you, ${params.firstName}`;
   const headline = "Two days off. It happens.";

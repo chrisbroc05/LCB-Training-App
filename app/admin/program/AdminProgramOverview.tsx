@@ -1,15 +1,29 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 import AdminProgramCoachAlerts from "@/app/admin/program/AdminProgramCoachAlerts";
 import AdminProgramEmailTools from "@/app/admin/program/AdminProgramEmailTools";
 import AdminMessagesNavLink from "@/components/AdminMessagesNavLink";
+
+type WaitingOnSetupPlayer = {
+  enrollmentId: string;
+  userId: string;
+  name: string;
+  email: string;
+  enrolledDate: string;
+  startDate: string | null;
+  daysWaiting: number;
+  reminderSent: boolean;
+  isTestAccount: boolean;
+};
 
 type PlayerCard = {
   enrollmentId: string;
   name: string;
   email: string;
+  isTestAccount: boolean;
   hasPush: boolean;
   weekNumber: number;
   programDay: number;
@@ -37,35 +51,74 @@ type LatestNote = {
   relativeTime: string;
 };
 
+function MessageButton({ enrollmentId }: { enrollmentId: string }) {
+  const router = useRouter();
+  const [opening, setOpening] = useState(false);
+
+  return (
+    <button
+      type="button"
+      disabled={opening}
+      onClick={() => {
+        setOpening(true);
+        void (async () => {
+          const response = await fetch("/api/admin/messages", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ enrollmentId }),
+          });
+          const data = (await response.json().catch(() => ({}))) as {
+            conversationId?: string;
+          };
+          setOpening(false);
+          if (response.ok && data.conversationId) {
+            router.push(`/admin/messages/${data.conversationId}`);
+          }
+        })();
+      }}
+      className="rounded-full border border-[#52B788] px-3 py-1.5 text-xs font-semibold text-[#52B788] disabled:opacity-60"
+    >
+      {opening ? "Opening..." : "Message"}
+    </button>
+  );
+}
+
 export default function AdminProgramOverview() {
+  const [waitingOnSetup, setWaitingOnSetup] = useState<WaitingOnSetupPlayer[]>([]);
   const [players, setPlayers] = useState<PlayerCard[]>([]);
   const [latestNotes, setLatestNotes] = useState<LatestNote[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [showTestAccounts, setShowTestAccounts] = useState(false);
+
+  const loadOverview = useCallback(async (includeTestAccounts: boolean) => {
+    setLoading(true);
+    setError("");
+    try {
+      const query = includeTestAccounts ? "?showTestAccounts=true" : "";
+      const response = await fetch(`/api/admin/program/overview${query}`);
+      const data = (await response.json().catch(() => ({}))) as {
+        waitingOnSetup?: WaitingOnSetupPlayer[];
+        players?: PlayerCard[];
+        latestNotes?: LatestNote[];
+        error?: string;
+      };
+      if (!response.ok || !data.players) {
+        throw new Error(data.error ?? "Unable to load program overview.");
+      }
+      setWaitingOnSetup(data.waitingOnSetup ?? []);
+      setPlayers(data.players);
+      setLatestNotes(data.latestNotes ?? []);
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : "Unable to load program overview.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    void (async () => {
-      setLoading(true);
-      setError("");
-      try {
-        const response = await fetch("/api/admin/program/overview");
-        const data = (await response.json().catch(() => ({}))) as {
-          players?: PlayerCard[];
-          latestNotes?: LatestNote[];
-          error?: string;
-        };
-        if (!response.ok || !data.players) {
-          throw new Error(data.error ?? "Unable to load program overview.");
-        }
-        setPlayers(data.players);
-        setLatestNotes(data.latestNotes ?? []);
-      } catch (loadError) {
-        setError(loadError instanceof Error ? loadError.message : "Unable to load program overview.");
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
+    void loadOverview(showTestAccounts);
+  }, [loadOverview, showTestAccounts]);
 
   return (
     <div className="space-y-8">
@@ -73,7 +126,9 @@ export default function AdminProgramOverview() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl font-semibold text-zinc-100 sm:text-3xl">Program Overview</h1>
-            <p className="mt-2 text-sm text-zinc-400">Active 12-week players at a glance.</p>
+            <p className="mt-2 text-sm text-zinc-400">
+              Active 12-week players at a glance. Test accounts are hidden by default.
+            </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Link
@@ -91,10 +146,66 @@ export default function AdminProgramOverview() {
             </Link>
           </div>
         </div>
+        <label className="mt-4 flex items-center gap-2 text-sm text-zinc-300">
+          <input
+            type="checkbox"
+            checked={showTestAccounts}
+            onChange={(event) => setShowTestAccounts(event.target.checked)}
+            className="h-4 w-4 rounded border-[#2b3650]"
+          />
+          Show test accounts
+        </label>
       </section>
 
       {loading ? <p className="text-sm text-zinc-400">Loading players...</p> : null}
       {error ? <p className="text-sm text-red-300">{error}</p> : null}
+
+      {waitingOnSetup.length > 0 ? (
+        <section className="rounded-2xl border border-amber-500/30 bg-[#0b1324]/80 p-5">
+          <h2 className="text-lg font-semibold text-amber-100">Waiting on setup</h2>
+          <p className="mt-1 text-sm text-zinc-400">
+            Enrolled players who have not finished /program/start.
+          </p>
+          <div className="mt-4 space-y-3">
+            {waitingOnSetup.map((player) => (
+              <div
+                key={player.enrollmentId}
+                className="flex flex-wrap items-start justify-between gap-3 rounded-xl border border-[#2b3650] bg-black/20 p-4"
+              >
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Link
+                      href={`/admin/program/${player.enrollmentId}`}
+                      className="text-base font-semibold text-zinc-100 hover:text-[#52B788]"
+                    >
+                      {player.name}
+                    </Link>
+                    {player.isTestAccount ? (
+                      <span className="rounded-full bg-zinc-700 px-2 py-0.5 text-xs text-zinc-300">
+                        Test
+                      </span>
+                    ) : null}
+                    {player.reminderSent ? (
+                      <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-xs font-semibold text-amber-200">
+                        Reminder sent
+                      </span>
+                    ) : null}
+                  </div>
+                  <p className="mt-1 text-sm text-zinc-400">{player.email}</p>
+                  <div className="mt-2 flex flex-wrap gap-3 text-xs text-zinc-500">
+                    <span>Enrolled: {player.enrolledDate}</span>
+                    <span>Start date: {player.startDate ?? "Not set"}</span>
+                    <span>
+                      {player.daysWaiting} day{player.daysWaiting === 1 ? "" : "s"} waiting
+                    </span>
+                  </div>
+                </div>
+                <MessageButton enrollmentId={player.enrollmentId} />
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <section className="space-y-3">
         {players.map((player) => (
@@ -107,6 +218,11 @@ export default function AdminProgramOverview() {
               <div>
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="text-lg font-semibold text-zinc-100">{player.name}</h2>
+                  {player.isTestAccount ? (
+                    <span className="rounded-full bg-zinc-700 px-2 py-0.5 text-xs text-zinc-300">
+                      Test
+                    </span>
+                  ) : null}
                   {player.hasPush ? (
                     <span className="inline-flex text-[#52B788]" title="Push notifications on">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">

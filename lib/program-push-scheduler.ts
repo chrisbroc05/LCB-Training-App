@@ -6,6 +6,8 @@ import {
   buildGoneQuietPushBody,
   DAILY_WORK_PUSH_TITLE,
   GONE_QUIET_PUSH_TITLE,
+  SETUP_REMINDER_PUSH_BODY,
+  SETUP_REMINDER_PUSH_TITLE,
   shouldSkipDailyWorkPushForGoneQuiet,
 } from "@/lib/program-push-copy";
 import {
@@ -16,8 +18,11 @@ import {
 import {
   enrollmentNeedsVideoReminder,
   getEnrollmentTasksForProgramDay,
+  hasSetupReminderBeenSent,
   isDayBeforeStart,
+  isSetupReminderDue,
   loadActiveEnrollments,
+  loadSetupIncompleteEnrollments,
   type ActiveEnrollmentRecord,
 } from "@/lib/program-email-data";
 import { isGoneQuiet } from "@/lib/program-gone-quiet";
@@ -277,6 +282,64 @@ async function shouldSendGoneQuietPush(userId: string) {
   return lastCompletion.completedAt > lastPush.sentAt;
 }
 
+type SetupIncompleteEnrollment = Awaited<
+  ReturnType<typeof loadSetupIncompleteEnrollments>
+>[number];
+
+const SETUP_REMINDER_DATE_KEY = "once";
+
+async function maybeSendSetupReminderPush(
+  enrollment: SetupIncompleteEnrollment,
+  dryRun: boolean,
+  now: Date,
+  previews: ScheduledPushPreview[],
+) {
+  const hasPush = await userHasPushSubscriptions(enrollment.userId);
+  if (!hasPush) {
+    return false;
+  }
+
+  if (enrollment.onboardingCompletedAt) {
+    return false;
+  }
+
+  if (!isSetupReminderDue(enrollment.createdAt, now)) {
+    return false;
+  }
+
+  if (await hasSetupReminderBeenSent(enrollment.id, enrollment.userId)) {
+    return false;
+  }
+
+  const type = "SETUP_REMINDER" as const;
+  const dedupeKey = buildPushDedupeKey(enrollment.userId, type, SETUP_REMINDER_DATE_KEY);
+
+  previews.push({
+    channel: "push",
+    type,
+    userId: enrollment.userId,
+    enrollmentId: enrollment.id,
+    title: SETUP_REMINDER_PUSH_TITLE,
+    body: SETUP_REMINDER_PUSH_BODY,
+    url: "/program/start",
+    dateKey: SETUP_REMINDER_DATE_KEY,
+  });
+
+  if (!dryRun) {
+    await sendPushToUser(
+      enrollment.userId,
+      {
+        title: SETUP_REMINDER_PUSH_TITLE,
+        body: SETUP_REMINDER_PUSH_BODY,
+        url: "/program/start",
+      },
+      { type, dedupeKey },
+    );
+  }
+
+  return true;
+}
+
 async function maybeSendGoneQuietPush(
   enrollment: ActiveEnrollmentRecord,
   dateKey: string,
@@ -358,6 +421,18 @@ export async function runScheduledPushJobs(params: {
     for (const enrollment of enrollments) {
       await params.trySend(`push-day-before:${enrollment.id}`, () =>
         maybeSendDayBeforeStartPush(enrollment, params.dateKey, params.dryRun, params.previews),
+      );
+    }
+
+    const setupIncompleteEnrollments = await loadSetupIncompleteEnrollments();
+    for (const enrollment of setupIncompleteEnrollments) {
+      await params.trySend(`push-setup-reminder:${enrollment.id}`, () =>
+        maybeSendSetupReminderPush(
+          enrollment,
+          params.dryRun,
+          params.now,
+          params.previews,
+        ),
       );
     }
   }

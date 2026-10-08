@@ -52,6 +52,7 @@ type PlayerDetail = {
     userId: string;
     name: string | null;
     email: string;
+    isTestAccount: boolean;
     accountRoleLabel: string | null;
     accountHolderName: string | null;
     signedUpBy: string | null;
@@ -277,6 +278,7 @@ export default function AdminProgramPlayerPanel({ enrollmentId }: { enrollmentId
   const router = useRouter();
   const [detail, setDetail] = useState<PlayerDetail | null>(null);
   const [openingMessage, setOpeningMessage] = useState(false);
+  const [savingTestAccount, setSavingTestAccount] = useState(false);
   const [showSendVideo, setShowSendVideo] = useState(false);
   const [selectedWeek, setSelectedWeek] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -535,6 +537,30 @@ export default function AdminProgramPlayerPanel({ enrollmentId }: { enrollmentId
           {detail.enrollment.name ?? detail.enrollment.email}
         </h1>
         <p className="mt-1 text-sm text-zinc-400">{detail.enrollment.email}</p>
+        <label className="mt-3 flex items-center gap-2 text-sm text-zinc-300">
+          <input
+            type="checkbox"
+            checked={detail.enrollment.isTestAccount}
+            disabled={savingTestAccount}
+            onChange={(event) => {
+              const isTestAccount = event.target.checked;
+              setSavingTestAccount(true);
+              void (async () => {
+                const response = await fetch(`/api/admin/program/enrollments/${enrollmentId}`, {
+                  method: "PATCH",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ isTestAccount }),
+                });
+                setSavingTestAccount(false);
+                if (response.ok) {
+                  await loadDetail(selectedWeek);
+                }
+              })();
+            }}
+            className="h-4 w-4 rounded border-[#2b3650]"
+          />
+          Test account (hidden from overview counts and marketing)
+        </label>
         {detail.enrollment.signedUpBy ? (
           <p className="mt-2 text-sm text-zinc-400">{detail.enrollment.signedUpBy}</p>
         ) : null}

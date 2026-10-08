@@ -82,6 +82,7 @@ enum ProgramEmailType {
   COACH_DAILY_SUMMARY
   COACH_MESSAGE_REPLY
   COACH_VIDEO
+  SETUP_REMINDER
 }
 
 enum PushNotificationType {
@@ -99,6 +100,7 @@ enum PushNotificationType {
   COACH_REFUND_PROCESSED
   COACH_WAIVER_SIGNED
   COACH_VIDEO
+  SETUP_REMINDER
   TEST
 }
 
@@ -159,6 +161,7 @@ model User {
   membershipTier         MembershipTier         @default(FREE)
   membershipTierBeforeProgram MembershipTier?
   marketingEmailsSuppressed Boolean             @default(false)
+  isTestAccount             Boolean             @default(false)
   twelveWeekProgramStartedAt DateTime?
   twelveWeekProgramEndsAt    DateTime?
   pendingCheckoutTier    MembershipTier?

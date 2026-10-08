@@ -35,6 +35,7 @@ const EMAIL_TYPES: ProgramEmailType[] = [
   "PARENT_GONE_QUIET",
   "PARENT_WEEKLY_RECAP",
   "COACH_DAILY_SUMMARY",
+  "SETUP_REMINDER",
 ];
 
 function isProgramEmailType(value: unknown): value is ProgramEmailType {

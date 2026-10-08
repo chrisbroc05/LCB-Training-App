@@ -7,25 +7,40 @@ import {
 } from "@/lib/program-plan-overrides-server";
 import { isGoneQuiet } from "@/lib/program-gone-quiet";
 import { computeProgramStreak, getDayOfWeekForProgramDay } from "@/lib/program-streak-shared";
-import { getProgramDay, PROGRAM_DAY_COUNT } from "@/lib/program-schedule";
+import {
+  getChicagoDaysSinceDate,
+  getProgramDay,
+  PROGRAM_DAY_COUNT,
+  getWeekdayLabelForProgramDay,
+  getWeekdayNameForProgramDay,
+} from "@/lib/program-schedule";
 import {
   buildProgramDayInfoForProgramDay,
   hasWeeklyVideoSent,
   toEnrollmentPlanInput,
 } from "@/lib/program-today-server";
+import { hasSetupReminderBeenSent } from "@/lib/program-email-data";
 import { formatRelativeTime } from "@/lib/format-date";
 import { formatGameLine } from "@/lib/program-stats";
-import {
-  getWeekdayLabelForProgramDay,
-  getWeekdayNameForProgramDay,
-} from "@/lib/program-schedule";
 import { prisma } from "@/lib/prisma";
 
-export async function buildAdminProgramOverview(now = new Date()) {
-  const enrollments = await prisma.programEnrollment.findMany({
+type OverviewOptions = {
+  showTestAccounts?: boolean;
+};
+
+function buildTestAccountEnrollmentFilter(showTestAccounts: boolean) {
+  return showTestAccounts ? {} : { user: { isTestAccount: false } };
+}
+
+export async function buildAdminProgramOverview(now = new Date(), options?: OverviewOptions) {
+  const showTestAccounts = options?.showTestAccounts ?? false;
+  const testAccountFilter = buildTestAccountEnrollmentFilter(showTestAccounts);
+
+  const waitingEnrollments = await prisma.programEnrollment.findMany({
     where: {
       status: "ACTIVE",
-      onboardingCompletedAt: { not: null },
+      onboardingCompletedAt: null,
+      ...testAccountFilter,
     },
     include: {
       user: {
@@ -33,6 +48,40 @@ export async function buildAdminProgramOverview(now = new Date()) {
           id: true,
           name: true,
           email: true,
+          isTestAccount: true,
+        },
+      },
+    },
+    orderBy: { createdAt: "asc" },
+  });
+
+  const waitingOnSetup = await Promise.all(
+    waitingEnrollments.map(async (enrollment) => ({
+      enrollmentId: enrollment.id,
+      userId: enrollment.userId,
+      name: enrollment.user.name ?? enrollment.user.email,
+      email: enrollment.user.email,
+      enrolledDate: enrollment.createdAt.toISOString().slice(0, 10),
+      startDate: enrollment.startDate?.toISOString().slice(0, 10) ?? null,
+      daysWaiting: getChicagoDaysSinceDate(enrollment.createdAt, now),
+      reminderSent: await hasSetupReminderBeenSent(enrollment.id, enrollment.userId),
+      isTestAccount: enrollment.user.isTestAccount,
+    })),
+  );
+
+  const enrollments = await prisma.programEnrollment.findMany({
+    where: {
+      status: "ACTIVE",
+      onboardingCompletedAt: { not: null },
+      ...testAccountFilter,
+    },
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          isTestAccount: true,
         },
       },
       taskCompletions: {
@@ -125,9 +174,10 @@ export async function buildAdminProgramOverview(now = new Date()) {
         enrollment.startDate,
         now,
       );
-      const goneQuiet =
+      const goneQuiet = Boolean(
         enrollment.startDate &&
-        isGoneQuiet(enrollment.startDate, schedule.programDay, completionDays);
+          isGoneQuiet(enrollment.startDate, schedule.programDay, completionDays),
+      );
       const finishedToday = todayTotal > 0 && todayDone === todayTotal;
       const streak = enrollment.startDate
         ? computeProgramStreak({
@@ -179,6 +229,7 @@ export async function buildAdminProgramOverview(now = new Date()) {
         enrollmentId: enrollment.id,
         name: enrollment.user.name ?? enrollment.user.email,
         email: enrollment.user.email,
+        isTestAccount: enrollment.user.isTestAccount,
         weekNumber: schedule.weekNumber,
         programDay: schedule.programDay,
         weekdayName,
@@ -210,6 +261,7 @@ export async function buildAdminProgramOverview(now = new Date()) {
       enrollment: {
         status: "ACTIVE",
         onboardingCompletedAt: { not: null },
+        ...testAccountFilter,
       },
     },
     include: {
@@ -272,7 +324,11 @@ export async function buildAdminProgramOverview(now = new Date()) {
   );
 
   return {
+    waitingOnSetup,
     players: players.map(({ sortBucket: _sortBucket, ...player }) => player),
     latestNotes,
+    showTestAccounts,
+    activePlayerCount: players.length,
+    waitingOnSetupCount: waitingOnSetup.length,
   };
 }

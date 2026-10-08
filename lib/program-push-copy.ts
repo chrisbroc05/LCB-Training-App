@@ -4,6 +4,11 @@ export const DAILY_WORK_PUSH_TITLE = "Today's work is ready";
 
 export const GONE_QUIET_PUSH_TITLE = "Haven't seen you in a few days";
 
+export const SETUP_REMINDER_PUSH_TITLE = "Finish your setup";
+
+export const SETUP_REMINDER_PUSH_BODY =
+  "Finish setting up your plan so I can get you started.";
+
 type PushCategoryKey = "hitting" | "fielding" | "workout" | "mindset" | "weekly-video";
 
 const PUSH_CATEGORY_LABELS: Record<PushCategoryKey, string> = {

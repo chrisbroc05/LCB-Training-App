@@ -10,7 +10,10 @@ import {
   getEnrollmentTasksForProgramDay,
   getRecapWeekNumber,
   isDayBeforeStart,
+  hasSetupReminderBeenSent,
+  isSetupReminderDue,
   loadActiveEnrollments,
+  loadSetupIncompleteEnrollments,
   shouldSendGoneQuietEmail,
   type ActiveEnrollmentRecord,
 } from "@/lib/program-email-data";
@@ -24,6 +27,7 @@ import {
   buildParentSaturdayVideoEmail,
   buildParentWeeklyRecapEmail,
   buildSaturdayVideoReminderEmail,
+  buildSetupReminderEmail,
   getPlayerFirstName,
 } from "@/lib/program-email-templates";
 import { isGoneQuiet } from "@/lib/program-gone-quiet";
@@ -317,6 +321,63 @@ async function maybeSendSaturdayVideoReminder(
       recipient: "player",
       type,
       dateKey,
+    });
+  }
+
+  return true;
+}
+
+type SetupIncompleteEnrollment = Awaited<
+  ReturnType<typeof loadSetupIncompleteEnrollments>
+>[number];
+
+const SETUP_REMINDER_DATE_KEY = "once";
+
+async function maybeSendSetupReminder(
+  enrollment: SetupIncompleteEnrollment,
+  dryRun: boolean,
+  now: Date,
+  previews: ScheduledEmailPreview[],
+) {
+  if (enrollment.onboardingCompletedAt) {
+    return false;
+  }
+
+  if (!isSetupReminderDue(enrollment.createdAt, now)) {
+    return false;
+  }
+
+  if (await hasSetupReminderBeenSent(enrollment.id, enrollment.userId)) {
+    return false;
+  }
+
+  if (await userHasPushSubscriptions(enrollment.userId)) {
+    return false;
+  }
+
+  const type = "SETUP_REMINDER" as const;
+  const firstName = getPlayerFirstName(enrollment.user.name, enrollment.user.email);
+  const email = buildSetupReminderEmail({ firstName });
+
+  previews.push({
+    type,
+    recipient: "player",
+    enrollmentId: enrollment.id,
+    to: enrollment.user.email,
+    subject: email.subject,
+    dateKey: SETUP_REMINDER_DATE_KEY,
+  });
+
+  if (!dryRun) {
+    await sendProgramEmail({
+      to: enrollment.user.email,
+      subject: email.subject,
+      html: email.html,
+      text: email.text,
+      enrollmentId: enrollment.id,
+      recipient: "player",
+      type,
+      dateKey: SETUP_REMINDER_DATE_KEY,
     });
   }
 
@@ -701,6 +762,13 @@ export async function runProgramEmailScheduler(params?: {
         maybeSendDailyRoutine(enrollment, dateKey, dryRun, previews),
       );
     }
+
+    const setupIncompleteEnrollments = await loadSetupIncompleteEnrollments();
+    for (const enrollment of setupIncompleteEnrollments) {
+      await trySend(`setup-reminder:${enrollment.id}`, () =>
+        maybeSendSetupReminder(enrollment, dryRun, now, previews),
+      );
+    }
   }
 
   if (
@@ -948,6 +1016,20 @@ export async function sendTestProgramEmail(params: {
         html: email.html,
         text: email.text,
         recipient: "coach",
+        type: params.type,
+        dateKey: testDateKey,
+        skipLog: true,
+      });
+      return email.subject;
+    }
+    case "SETUP_REMINDER": {
+      const email = buildSetupReminderEmail({ firstName });
+      await sendProgramEmail({
+        to: params.toEmail,
+        subject: `[TEST] ${email.subject}`,
+        html: email.html,
+        text: email.text,
+        recipient: "player",
         type: params.type,
         dateKey: testDateKey,
         skipLog: true,
