@@ -3,7 +3,10 @@ import type { ProgramEnrollmentPlanInput } from "../lib/program-daily-plan";
 import type { ProgramDailyPlanOverrides } from "../lib/program-plan-overrides";
 import { resolveStrengthVariant } from "../lib/strength-variant-shared";
 import {
+  getDateForProgramDay,
   getProgramDay,
+  getProgramEndDateKey,
+  getProgramWeekNumber,
   getProgramWeekStartProgramDay,
   parseProgramDateKey,
   type ProgramPhase,
@@ -34,21 +37,11 @@ function assertSaturdayStartUsesRealWeekday() {
     seasonMode: "OFF_SEASON",
   };
   const startDate = parseProgramDateKey("2026-01-10");
-  const thursdayInfo = getProgramDay({ startDate }, parseProgramDateKey("2026-01-08"));
-  if (thursdayInfo.dayOfWeek !== 4) {
-    throw new Error(`Expected Thursday dayOfWeek=4, got ${thursdayInfo.dayOfWeek}`);
-  }
-
-  const thursdayTasks = getDailyPlan(enrollment, {
-    programDay: thursdayInfo.programDay,
-    weekNumber: thursdayInfo.weekNumber,
-    dayOfWeek: thursdayInfo.dayOfWeek,
-    phase: "FOUNDATION",
-    isBeforeStart: thursdayInfo.isBeforeStart,
-    isComplete: false,
-  });
-  if (thursdayTasks.some((task) => task.type === "reflection")) {
-    throw new Error("Thursday before a Saturday start should not include Saturday reflection.");
+  const thursdayBeforeStart = getProgramDay({ startDate }, parseProgramDateKey("2026-01-08"));
+  if (!thursdayBeforeStart.isBeforeStart || thursdayBeforeStart.programDay !== 0) {
+    throw new Error(
+      `Expected Thursday before Saturday start to be before start, got programDay=${thursdayBeforeStart.programDay}`,
+    );
   }
 
   const saturdayInfo = getProgramDay({ startDate }, parseProgramDateKey("2026-01-10"));
@@ -295,8 +288,42 @@ function assertCustomTaskReplaceCase() {
   console.log("Custom replace test passed.");
 }
 
+function printProgramWeekSamples() {
+  const mondayStartKey = "2026-01-05";
+  const thursdayStartKey = "2026-01-08";
+  const mondayStart = parseProgramDateKey(mondayStartKey);
+  const thursdayStart = parseProgramDateKey(thursdayStartKey);
+
+  for (const [label, startDate, startKey] of [
+    ["Monday", mondayStart, mondayStartKey],
+    ["Thursday", thursdayStart, thursdayStartKey],
+  ] as const) {
+    const week1 = getProgramDay({ startDate }, parseProgramDateKey(startKey));
+    const week2Day = getProgramWeekStartProgramDay(2);
+    const week2 = getProgramDay({ startDate }, getDateForProgramDay(startDate, week2Day));
+    const week12Day = getProgramWeekStartProgramDay(12);
+    const week12 = getProgramDay({ startDate }, getDateForProgramDay(startDate, week12Day));
+    const endKey = getProgramEndDateKey(startDate);
+
+    console.log(
+      `${label} start ${startKey}: week 1 day ${week1.programDay} (program week ${week1.weekNumber}), week 2 day ${week2.programDay} (program week ${week2.weekNumber}), week 12 day ${week12.programDay} (program week ${week12.weekNumber}), end ${endKey}`,
+    );
+
+    if (getProgramWeekNumber(week1.programDay) !== 1) {
+      throw new Error(`${label} start week 1 number failed.`);
+    }
+    if (getProgramWeekNumber(week2.programDay) !== 2) {
+      throw new Error(`${label} start week 2 number failed.`);
+    }
+    if (getProgramWeekNumber(week12.programDay) !== 12) {
+      throw new Error(`${label} start week 12 number failed.`);
+    }
+  }
+}
+
 assertFocusOverrideCase();
 assertCustomTaskReplaceCase();
 assertSaturdayStartUsesRealWeekday();
+printProgramWeekSamples();
 
 console.log("\nDaily plan self-tests completed.");

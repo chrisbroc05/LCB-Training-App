@@ -26,7 +26,7 @@ import {
   sendPushToUser,
   userHasPushSubscriptions,
 } from "@/lib/push-send";
-import { getProgramDay } from "@/lib/program-schedule";
+import { getProgramDay, PROGRAM_DAY_COUNT } from "@/lib/program-schedule";
 import {
   buildOverridesForWeekAndDay,
   loadEnrollmentPlanOverrideBundle,
@@ -86,7 +86,10 @@ async function willSendGoneQuietPush(enrollment: ActiveEnrollmentRecord, now: Da
 
   const schedule = getProgramDay({ startDate: enrollment.startDate }, now);
   const completionDays = new Set(enrollment.taskCompletions.map((item) => item.programDay));
-  if (!isGoneQuiet(schedule.programDay, completionDays)) {
+  if (
+    !enrollment.startDate ||
+    !isGoneQuiet(enrollment.startDate, schedule.programDay, completionDays)
+  ) {
     return false;
   }
 
@@ -110,7 +113,7 @@ async function maybeSendDailyWorkPush(
     schedule.isBeforeStart ||
     schedule.isComplete ||
     schedule.programDay <= 0 ||
-    schedule.programDay > 84 ||
+    schedule.programDay > PROGRAM_DAY_COUNT ||
     schedule.dayOfWeek === 7
   ) {
     return false;
@@ -288,7 +291,10 @@ async function maybeSendGoneQuietPush(
 
   const schedule = getProgramDay({ startDate: enrollment.startDate }, now);
   const completionDays = new Set(enrollment.taskCompletions.map((item) => item.programDay));
-  if (!isGoneQuiet(schedule.programDay, completionDays)) {
+  if (
+    !enrollment.startDate ||
+    !isGoneQuiet(enrollment.startDate, schedule.programDay, completionDays)
+  ) {
     return false;
   }
 

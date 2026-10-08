@@ -1,4 +1,5 @@
 import { getCoachCalendlyUrl } from "@/lib/coach-calendly-shared";
+import { getDateForProgramDay, PROGRAM_DAY_COUNT } from "@/lib/program-schedule";
 
 export const TWELVE_WEEK_PROGRAM_NAME = "12-Week Coaching Program";
 
@@ -29,9 +30,7 @@ export const twelveWeekProgramLandingHighlights = [
 ];
 
 export function getTwelveWeekProgramEndDate(startDate: Date) {
-  const endDate = new Date(startDate);
-  endDate.setUTCDate(endDate.getUTCDate() + TWELVE_WEEK_PROGRAM_DURATION_WEEKS * 7);
-  return endDate;
+  return getDateForProgramDay(startDate, PROGRAM_DAY_COUNT);
 }
 
 export function isTwelveWeekProgramActive(

@@ -1,8 +1,11 @@
-export function getDayOfWeekForProgramDay(programDay: number) {
-  return ((programDay - 1) % 7) + 1;
+import { getDateForProgramDay, getRealDayOfWeekForProgramDay } from "@/lib/program-schedule";
+
+export function getDayOfWeekForProgramDay(startDate: Date, programDay: number) {
+  return getRealDayOfWeekForProgramDay(startDate, programDay);
 }
 
 export function computeProgramStreak(params: {
+  startDate: Date;
   currentProgramDay: number;
   completedWorkDays: Set<number>;
 }) {
@@ -18,7 +21,7 @@ export function computeProgramStreak(params: {
   }
 
   while (day >= 1) {
-    const dayOfWeek = getDayOfWeekForProgramDay(day);
+    const dayOfWeek = getDayOfWeekForProgramDay(params.startDate, day);
     if (dayOfWeek === 7) {
       day -= 1;
       continue;

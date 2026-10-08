@@ -20,8 +20,10 @@ import { formatGameLine } from "@/lib/program-stats";
 import { computeProgramStreak, getDayOfWeekForProgramDay } from "@/lib/program-streak-shared";
 import {
   formatProgramStartDateKey,
+  getChicagoSundayStart,
   getDateForProgramDay,
   getProgramDay,
+  PROGRAM_DAY_COUNT,
   type ProgramDayInfo,
 } from "@/lib/program-schedule";
 import {
@@ -85,7 +87,7 @@ function getCompletedWorkDays(
   }
 
   for (let day = 1; day <= maxProgramDay; day += 1) {
-    if (getDayOfWeekForProgramDay(day) === 7) {
+    if (getDayOfWeekForProgramDay(enrollment.startDate, day) === 7) {
       continue;
     }
 
@@ -173,12 +175,12 @@ export async function shouldSendGoneQuietEmail(params: {
   return lastCompletion.completedAt > lastGoneQuiet.sentAt;
 }
 
-function getProgramDaysForWeek(weekNumber: number) {
+function getProgramDaysForWeek(startDate: Date, weekNumber: number) {
   const start = (weekNumber - 1) * 7 + 1;
-  const end = weekNumber * 7;
+  const end = Math.min(weekNumber * 7, PROGRAM_DAY_COUNT);
   const days: number[] = [];
   for (let day = start; day <= end; day += 1) {
-    if (getDayOfWeekForProgramDay(day) !== 7) {
+    if (getDayOfWeekForProgramDay(startDate, day) !== 7) {
       days.push(day);
     }
   }
@@ -187,27 +189,46 @@ function getProgramDaysForWeek(weekNumber: number) {
 
 async function hasWeeklyVideoSentForProgramWeek(userId: string, weekNumber: number, startDate: Date) {
   const weekStartDay = (weekNumber - 1) * 7 + 1;
-  const weekEndDay = weekNumber * 7;
-  const rangeStart = getDateForProgramDay(startDate, weekStartDay);
-  const rangeEnd = getDateForProgramDay(startDate, weekEndDay);
-  rangeEnd.setUTCDate(rangeEnd.getUTCDate() + 1);
+  const weekEndDay = Math.min(weekNumber * 7, PROGRAM_DAY_COUNT);
+  const sundayProgramDays: number[] = [];
 
-  const [swingCount, mentalCount] = await Promise.all([
-    prisma.swingAnalysisSubmission.count({
-      where: {
-        userId,
-        createdAt: { gte: rangeStart, lt: rangeEnd },
-      },
-    }),
-    prisma.mentalGameSubmission.count({
-      where: {
-        userId,
-        createdAt: { gte: rangeStart, lt: rangeEnd },
-      },
-    }),
-  ]);
+  for (let day = weekStartDay; day <= weekEndDay; day += 1) {
+    if (getDayOfWeekForProgramDay(startDate, day) === 7) {
+      sundayProgramDays.push(day);
+    }
+  }
 
-  return swingCount + mentalCount > 0;
+  if (sundayProgramDays.length === 0) {
+    return true;
+  }
+
+  for (const programDay of sundayProgramDays) {
+    const sundayDate = getDateForProgramDay(startDate, programDay);
+    const rangeStart = getChicagoSundayStart(sundayDate);
+    const rangeEnd = new Date(rangeStart);
+    rangeEnd.setUTCDate(rangeEnd.getUTCDate() + 7);
+
+    const [swingCount, mentalCount] = await Promise.all([
+      prisma.swingAnalysisSubmission.count({
+        where: {
+          userId,
+          createdAt: { gte: rangeStart, lt: rangeEnd },
+        },
+      }),
+      prisma.mentalGameSubmission.count({
+        where: {
+          userId,
+          createdAt: { gte: rangeStart, lt: rangeEnd },
+        },
+      }),
+    ]);
+
+    if (swingCount + mentalCount > 0) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 export async function buildWeeklyRecapData(
@@ -220,7 +241,7 @@ export async function buildWeeklyRecapData(
   }
 
   const overrideBundle = await loadEnrollmentPlanOverrideBundle(enrollment.id);
-  const weekDays = getProgramDaysForWeek(recapWeekNumber);
+  const weekDays = getProgramDaysForWeek(enrollment.startDate, recapWeekNumber);
   let tasksCompleted = 0;
   let tasksTotal = 0;
   let daysFullyDone = 0;
@@ -256,10 +277,11 @@ export async function buildWeeklyRecapData(
   const completedWorkDays = getCompletedWorkDays(
     enrollment,
     planInput,
-    Math.min(schedule.programDay, 84),
+    Math.min(schedule.programDay, PROGRAM_DAY_COUNT),
     overrideBundle,
   );
   const streak = computeProgramStreak({
+    startDate: enrollment.startDate,
     currentProgramDay: schedule.programDay,
     completedWorkDays,
   });
@@ -402,7 +424,10 @@ export async function buildCoachDailySummaryData(dateKey: string, now = new Date
       completionDays.add(completion.programDay);
     }
 
-    if (isGoneQuiet(schedule.programDay, completionDays)) {
+    if (
+      enrollment.startDate &&
+      isGoneQuiet(enrollment.startDate, schedule.programDay, completionDays)
+    ) {
       goneQuietNames.push(name);
     }
 
@@ -581,7 +606,7 @@ export function isDayBeforeStart(enrollment: ActiveEnrollmentRecord, dateKey: st
 }
 
 export async function enrollmentNeedsVideoReminder(enrollment: ActiveEnrollmentRecord, now = new Date()) {
-  return !(await hasWeeklyVideoSent(enrollment.userId, now));
+  return !(await hasWeeklyVideoSent(enrollment.userId, enrollment.startDate, now));
 }
 
 export function getRecapWeekNumber(schedule: ProgramDayInfo) {

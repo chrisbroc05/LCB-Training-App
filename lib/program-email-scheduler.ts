@@ -29,7 +29,7 @@ import {
 import { isGoneQuiet } from "@/lib/program-gone-quiet";
 import { buildParentUnsubscribeUrl } from "@/lib/program-parent-token";
 import { computeProgramStreak, getDayOfWeekForProgramDay } from "@/lib/program-streak-shared";
-import { getProgramDay } from "@/lib/program-schedule";
+import { getProgramDay, PROGRAM_DAY_COUNT } from "@/lib/program-schedule";
 import {
   buildProgramDayInfoForProgramDay,
   toEnrollmentPlanInput,
@@ -85,14 +85,18 @@ export type ProgramEmailRunResult = {
 };
 
 async function getStreakForEnrollment(enrollment: ActiveEnrollmentRecord, now: Date) {
+  if (!enrollment.startDate) {
+    return 0;
+  }
+
   const schedule = getProgramDay({ startDate: enrollment.startDate }, now);
   const overrideBundle = await loadEnrollmentPlanOverrideBundle(enrollment.id);
   const planInput = toEnrollmentPlanInput(enrollment);
   const completedWorkDays = new Set<number>();
 
-  if (planInput && enrollment.startDate) {
-    for (let day = 1; day <= Math.min(schedule.programDay, 84); day += 1) {
-      if (getDayOfWeekForProgramDay(day) === 7) {
+  if (planInput) {
+    for (let day = 1; day <= Math.min(schedule.programDay, PROGRAM_DAY_COUNT); day += 1) {
+      if (getDayOfWeekForProgramDay(enrollment.startDate, day) === 7) {
         continue;
       }
       const dayInfo = buildProgramDayInfoForProgramDay({ startDate: enrollment.startDate }, day);
@@ -111,6 +115,7 @@ async function getStreakForEnrollment(enrollment: ActiveEnrollmentRecord, now: D
   }
 
   return computeProgramStreak({
+    startDate: enrollment.startDate,
     currentProgramDay: schedule.programDay,
     completedWorkDays,
   });
@@ -135,7 +140,7 @@ async function maybeSendDailyRoutine(
     schedule.isBeforeStart ||
     schedule.isComplete ||
     schedule.programDay <= 0 ||
-    schedule.programDay > 84 ||
+    schedule.programDay > PROGRAM_DAY_COUNT ||
     schedule.dayOfWeek === 7
   ) {
     return false;
@@ -335,7 +340,10 @@ async function maybeSendGoneQuiet(
 
   const schedule = getProgramDay({ startDate: enrollment.startDate }, now);
   const completionDays = new Set(enrollment.taskCompletions.map((item) => item.programDay));
-  if (!isGoneQuiet(schedule.programDay, completionDays)) {
+  if (
+    !enrollment.startDate ||
+    !isGoneQuiet(enrollment.startDate, schedule.programDay, completionDays)
+  ) {
     return false;
   }
 
@@ -456,7 +464,10 @@ async function maybeSendParentGoneQuiet(
 
   const schedule = getProgramDay({ startDate: enrollment.startDate }, now);
   const completionDays = new Set(enrollment.taskCompletions.map((item) => item.programDay));
-  if (!isGoneQuiet(schedule.programDay, completionDays)) {
+  if (
+    !enrollment.startDate ||
+    !isGoneQuiet(enrollment.startDate, schedule.programDay, completionDays)
+  ) {
     return false;
   }
 

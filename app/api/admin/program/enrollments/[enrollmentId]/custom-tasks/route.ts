@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin";
 import { sendPlanUpdatePush } from "@/lib/push-instant";
-import { getProgramDay } from "@/lib/program-schedule";
+import { getProgramDay, PROGRAM_DAY_COUNT } from "@/lib/program-schedule";
 import { prisma } from "@/lib/prisma";
 
 type RouteContext = {
@@ -37,7 +37,7 @@ export async function POST(request: Request, context: RouteContext) {
   const details = body?.details?.trim() || null;
   const drillIds = Array.isArray(body?.drillIds) ? body.drillIds.filter(Boolean) : [];
 
-  if (!programDay || programDay < 1 || programDay > 84) {
+  if (!programDay || programDay < 1 || programDay > PROGRAM_DAY_COUNT) {
     return NextResponse.json({ error: "Valid program day is required." }, { status: 400 });
   }
 

@@ -7,7 +7,7 @@ import {
 } from "@/lib/program-plan-overrides-server";
 import { isGoneQuiet } from "@/lib/program-gone-quiet";
 import { computeProgramStreak, getDayOfWeekForProgramDay } from "@/lib/program-streak-shared";
-import { getProgramDay } from "@/lib/program-schedule";
+import { getProgramDay, PROGRAM_DAY_COUNT } from "@/lib/program-schedule";
 import {
   buildProgramDayInfoForProgramDay,
   hasWeeklyVideoSent,
@@ -60,8 +60,8 @@ export async function buildAdminProgramOverview(now = new Date()) {
       }
 
       if (planInput && enrollment.startDate) {
-        for (let day = 1; day <= Math.min(schedule.programDay, 84); day += 1) {
-          if (getDayOfWeekForProgramDay(day) === 7) {
+        for (let day = 1; day <= Math.min(schedule.programDay, PROGRAM_DAY_COUNT); day += 1) {
+          if (getDayOfWeekForProgramDay(enrollment.startDate, day) === 7) {
             continue;
           }
 
@@ -120,13 +120,22 @@ export async function buildAdminProgramOverview(now = new Date()) {
         return latest;
       }, null);
 
-      const weeklyVideoSent = await hasWeeklyVideoSent(enrollment.userId, now);
-      const goneQuiet = isGoneQuiet(schedule.programDay, completionDays);
+      const weeklyVideoSent = await hasWeeklyVideoSent(
+        enrollment.userId,
+        enrollment.startDate,
+        now,
+      );
+      const goneQuiet =
+        enrollment.startDate &&
+        isGoneQuiet(enrollment.startDate, schedule.programDay, completionDays);
       const finishedToday = todayTotal > 0 && todayDone === todayTotal;
-      const streak = computeProgramStreak({
-        currentProgramDay: schedule.programDay,
-        completedWorkDays,
-      });
+      const streak = enrollment.startDate
+        ? computeProgramStreak({
+            startDate: enrollment.startDate,
+            currentProgramDay: schedule.programDay,
+            completedWorkDays,
+          })
+        : 0;
 
       const lastGameLog = await prisma.dayLog.findFirst({
         where: { enrollmentId: enrollment.id, type: "GAME" },

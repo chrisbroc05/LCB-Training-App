@@ -12,7 +12,7 @@ import {
   notifyPlayerOfCoachReply,
 } from "@/lib/direct-messaging-notifications";
 import { isTwelveWeekProgramMember } from "@/lib/membership";
-import { getProgramDay } from "@/lib/program-schedule";
+import { getProgramDay, PROGRAM_DAY_COUNT } from "@/lib/program-schedule";
 import { prisma } from "@/lib/prisma";
 
 type EnrollmentWithUser = ProgramEnrollment & {
@@ -37,7 +37,7 @@ export function getMessagingAccessState(
   }
 
   const schedule = getProgramDay({ startDate: enrollment.startDate }, now);
-  if (schedule.isComplete || schedule.programDay > 84) {
+  if (schedule.isComplete || schedule.programDay > PROGRAM_DAY_COUNT) {
     return "read_only";
   }
 

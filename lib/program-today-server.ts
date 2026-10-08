@@ -15,16 +15,25 @@ import {
   loadEnrollmentPlanOverrideBundle,
 } from "@/lib/program-plan-overrides-server";
 import type { ProgramFocusArea, ProgramEquipmentOption } from "@/lib/program-enrollment-shared";
-import { computeProgramStreak, getDayOfWeekForProgramDay } from "@/lib/program-streak-shared";
+import { computeProgramStreak } from "@/lib/program-streak-shared";
 import {
+  addChicagoCalendarDays,
   formatProgramStartDateKey,
   getChicagoMondayStart,
+  getChicagoSundayStart,
+  getChicagoTodayDateKey,
+  getChicagoWeekdayIndex,
   getDateForProgramDay,
+  getFirstSundayOnOrAfterStart,
   getProgramDay,
+  getProgramDayNumberForDate,
+  getProgramEndDateKey,
   getProgramDayStartProgramDay,
-  getProgramWeekStartProgramDay,
   getWeekdayLabelForProgramDay,
   getWeekdayNameForProgramDay,
+  isDateBeforeEnrollmentStart,
+  parseProgramDateKey,
+  PROGRAM_DAY_COUNT,
   type ProgramDayInfo,
 } from "@/lib/program-schedule";
 import { getUnwatchedCoachVideoCount } from "@/lib/coach-video-server";
@@ -121,20 +130,34 @@ export function buildProgramDayInfoForProgramDay(
   return getProgramDay(enrollment, target);
 }
 
-export async function hasWeeklyVideoSent(userId: string, now = new Date()) {
-  const weekStart = getChicagoMondayStart(now);
+export async function hasWeeklyVideoSent(
+  userId: string,
+  startDate: Date | null,
+  now = new Date(),
+) {
+  if (!startDate) {
+    return false;
+  }
+
+  const firstSunday = getFirstSundayOnOrAfterStart(startDate);
+  if (now < firstSunday) {
+    return true;
+  }
+
+  const weekStart = getChicagoSundayStart(now);
+  const rangeStart = weekStart < firstSunday ? firstSunday : weekStart;
 
   const [swingCount, mentalCount] = await Promise.all([
     prisma.swingAnalysisSubmission.count({
       where: {
         userId,
-        createdAt: { gte: weekStart },
+        createdAt: { gte: rangeStart },
       },
     }),
     prisma.mentalGameSubmission.count({
       where: {
         userId,
-        createdAt: { gte: weekStart },
+        createdAt: { gte: rangeStart },
       },
     }),
   ]);
@@ -299,7 +322,7 @@ export async function buildProgramTodayPayload(params: {
 
   const completedWorkDays = new Set<number>();
   if (planInput && params.enrollment.startDate) {
-    for (let day = 1; day <= Math.min(todayInfo.programDay, 84); day += 1) {
+    for (let day = 1; day <= Math.min(todayInfo.programDay, PROGRAM_DAY_COUNT); day += 1) {
       const dayInfo = buildProgramDayInfoForProgramDay(
         { startDate: params.enrollment.startDate },
         day,
@@ -328,50 +351,81 @@ export async function buildProgramTodayPayload(params: {
     }
   }
 
-  const streak = computeProgramStreak({
-    currentProgramDay: todayInfo.programDay,
-    completedWorkDays,
-  });
+  const streak = params.enrollment.startDate
+    ? computeProgramStreak({
+        startDate: params.enrollment.startDate,
+        currentProgramDay: todayInfo.programDay,
+        completedWorkDays,
+      })
+    : 0;
 
-  const anchorProgramDay =
-    viewedDayInfo.programDay > 0 ? viewedDayInfo.programDay : todayInfo.programDay;
-  const anchorWeekNumber =
-    anchorProgramDay > 0 ? Math.min(12, Math.ceil(anchorProgramDay / 7)) : 1;
-  const weekStartProgramDay = getProgramWeekStartProgramDay(anchorWeekNumber);
-  const weekEndProgramDay = Math.min(84, weekStartProgramDay + 6);
   const weekDays: ProgramWeekDayStatus[] = [];
+  const calendarWeekdayLabels = ["M", "T", "W", "T", "F", "S", "S"] as const;
+  const calendarWeekdayNames = [
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
+  ] as const;
 
   const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
   const yesterdayInfo = getProgramDay({ startDate: params.enrollment.startDate }, yesterday);
   const startDate = params.enrollment.startDate;
+  const calendarMonday = getChicagoMondayStart(now);
+  const calendarMondayKey = formatProgramStartDateKey(calendarMonday);
+  const todayKey = getChicagoTodayDateKey(now);
+  const endDateKey = startDate ? getProgramEndDateKey(startDate) : null;
+  const weekProgramDays: number[] = [];
+
+  for (let offset = 0; offset < 7; offset += 1) {
+    const dateKey = addChicagoCalendarDays(calendarMondayKey, offset);
+    if (
+      startDate &&
+      !isDateBeforeEnrollmentStart(startDate, dateKey) &&
+      (!endDateKey || dateKey <= endDateKey)
+    ) {
+      const programDay = getProgramDayNumberForDate(startDate, dateKey);
+      if (programDay >= 1 && programDay <= PROGRAM_DAY_COUNT) {
+        weekProgramDays.push(programDay);
+      }
+    }
+  }
 
   const weekDayLogs = await prisma.dayLog.findMany({
     where: {
       enrollmentId: params.enrollment.id,
-      programDay: {
-        gte: weekStartProgramDay,
-        lte: weekEndProgramDay,
-      },
+      programDay: { in: weekProgramDays.length > 0 ? weekProgramDays : [-1] },
     },
     select: { programDay: true },
   });
   const dayLogProgramDays = new Set(weekDayLogs.map((log) => log.programDay));
 
   for (let offset = 0; offset < 7; offset += 1) {
-    const programDay = weekStartProgramDay + offset;
-    const dayOfWeek = offset + 1;
-    const weekdayLabel = getWeekdayLabelForProgramDay(startDate ?? new Date(), programDay);
-    const weekdayName = getWeekdayNameForProgramDay(startDate ?? new Date(), programDay);
-    const isToday = programDay === todayInfo.programDay;
+    const dateKey = addChicagoCalendarDays(calendarMondayKey, offset);
+    const calendarDate = parseProgramDateKey(dateKey);
+    const dayOfWeek = getChicagoWeekdayIndex(calendarDate) + 1;
+    const weekdayLabel = calendarWeekdayLabels[offset] ?? "?";
+    const weekdayName = calendarWeekdayNames[offset] ?? "Day";
+    const isToday = dateKey === todayKey;
 
-    if (programDay > 84) {
+    const isBeforeStart = startDate ? isDateBeforeEnrollmentStart(startDate, dateKey) : true;
+    const isAfterEnd = Boolean(endDateKey && dateKey > endDateKey);
+    const programDay =
+      startDate && !isBeforeStart && !isAfterEnd
+        ? getProgramDayNumberForDate(startDate, dateKey)
+        : 0;
+
+    if (isBeforeStart || isAfterEnd || programDay > PROGRAM_DAY_COUNT || programDay <= 0) {
       weekDays.push({
         programDay,
         dayOfWeek,
         weekdayLabel,
         weekdayName,
-        status: "upcoming",
-        isToday: false,
+        status: isBeforeStart ? "not_started" : "upcoming",
+        isToday,
         tappable: false,
         editable: false,
         completionRatio: 0,
@@ -383,21 +437,6 @@ export async function buildProgramTodayPayload(params: {
       { startDate: params.enrollment.startDate },
       programDay,
     );
-
-    if (dayInfo.isBeforeStart) {
-      weekDays.push({
-        programDay,
-        dayOfWeek,
-        weekdayLabel,
-        weekdayName,
-        status: "not_started",
-        isToday,
-        tappable: false,
-        editable: false,
-        completionRatio: 0,
-      });
-      continue;
-    }
 
     const editable =
       yesterdayInfo.programDay > 0 &&
@@ -468,7 +507,7 @@ export async function buildProgramTodayPayload(params: {
     tasks.length > 0 && tasks.every((task) => task.completed) && viewedProgramDay === todayInfo.programDay;
 
   const [weeklyVideoSent, unwatchedCoachVideoCount] = await Promise.all([
-    hasWeeklyVideoSent(params.userId, now),
+    hasWeeklyVideoSent(params.userId, params.enrollment.startDate, now),
     getUnwatchedCoachVideoCount(params.userId),
   ]);
 

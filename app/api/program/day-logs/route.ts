@@ -17,6 +17,7 @@ import {
   validateGameStats,
   type GameStatInput,
 } from "@/lib/program-stats";
+import { PROGRAM_DAY_COUNT } from "@/lib/program-schedule";
 import { prisma } from "@/lib/prisma";
 
 type CreateBody = {
@@ -45,7 +46,7 @@ export async function POST(request: Request) {
   const programDay = body?.programDay;
   const type = body?.type;
 
-  if (!programDay || programDay < 1 || programDay > 84) {
+  if (!programDay || programDay < 1 || programDay > PROGRAM_DAY_COUNT) {
     return NextResponse.json({ error: "Valid program day is required." }, { status: 400 });
   }
 

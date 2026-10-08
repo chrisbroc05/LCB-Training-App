@@ -25,6 +25,7 @@ import {
   getWeekdayNameForProgramDay,
 } from "@/lib/program-schedule";
 import { computeProgramStreak, getDayOfWeekForProgramDay } from "@/lib/program-streak-shared";
+import { PROGRAM_DAY_COUNT } from "@/lib/program-schedule";
 import {
   buildProgramDayInfoForProgramDay,
   toEnrollmentPlanInput,
@@ -112,8 +113,8 @@ export async function buildAdminProgramPlayerDetail(enrollmentId: string, now = 
 
   const completedWorkDays = new Set<number>();
   if (planInput && enrollment.startDate) {
-    for (let day = 1; day <= Math.min(schedule.programDay, 84); day += 1) {
-      if (getDayOfWeekForProgramDay(day) === 7) {
+    for (let day = 1; day <= Math.min(schedule.programDay, PROGRAM_DAY_COUNT); day += 1) {
+      if (getDayOfWeekForProgramDay(enrollment.startDate, day) === 7) {
         continue;
       }
 
@@ -258,10 +259,13 @@ export async function buildAdminProgramPlayerDetail(enrollmentId: string, now = 
       inPersonTraining: serializeInPersonTrainingInfo(enrollment.user),
     },
     schedule,
-    streak: computeProgramStreak({
-      currentProgramDay: schedule.programDay,
-      completedWorkDays,
-    }),
+    streak: enrollment.startDate
+      ? computeProgramStreak({
+          startDate: enrollment.startDate,
+          currentProgramDay: schedule.programDay,
+          completedWorkDays,
+        })
+      : 0,
     focus: {
       weekNumber: schedule.weekNumber,
       defaultCueLabel,
@@ -375,7 +379,7 @@ export function buildAdminWeekDayTasks(params: {
 
   for (let offset = 0; offset < 7; offset += 1) {
     const programDay = (params.weekNumber - 1) * 7 + offset + 1;
-    if (programDay > 84) {
+    if (programDay > PROGRAM_DAY_COUNT) {
       break;
     }
 

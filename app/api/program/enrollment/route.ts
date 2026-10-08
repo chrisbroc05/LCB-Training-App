@@ -14,8 +14,8 @@ import { deriveStrengthVariantFromEquipment } from "@/lib/strength-variant-share
 import { serializeProgramEnrollment } from "@/lib/program-enrollment";
 import { validateSecondEmail } from "@/lib/second-email-shared";
 import {
+  addChicagoCalendarDays,
   getChicagoTodayDateKey,
-  getChicagoTomorrowDateKey,
   parseProgramDateKey,
 } from "@/lib/program-schedule";
 import { requireUnder13ParentUnlockResponse } from "@/lib/legal-under13-guard-server";
@@ -188,14 +188,21 @@ export async function PATCH(request: Request) {
     data.knownFor = trimmed;
   }
 
-  if ("startChoice" in body) {
-    if (body.startChoice !== "today" && body.startChoice !== "tomorrow") {
-      return NextResponse.json({ error: "Invalid start choice." }, { status: 400 });
+  if ("startDateKey" in body) {
+    if (typeof body.startDateKey !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(body.startDateKey)) {
+      return NextResponse.json({ error: "Invalid start date." }, { status: 400 });
     }
 
-    const dateKey =
-      body.startChoice === "today" ? getChicagoTodayDateKey() : getChicagoTomorrowDateKey();
-    data.startDate = parseProgramDateKey(dateKey);
+    const todayKey = getChicagoTodayDateKey();
+    const maxKey = addChicagoCalendarDays(todayKey, 14);
+    if (body.startDateKey < todayKey || body.startDateKey > maxKey) {
+      return NextResponse.json(
+        { error: "Start date must be today or within the next 14 days." },
+        { status: 400 },
+      );
+    }
+
+    data.startDate = parseProgramDateKey(body.startDateKey);
   }
 
   if ("parentName" in body) {

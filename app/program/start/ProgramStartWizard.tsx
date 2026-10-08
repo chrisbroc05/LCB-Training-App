@@ -22,7 +22,12 @@ import LegalAgreementFields, {
 } from "@/components/LegalAgreementFields";
 import { isUnder13ProgramAge } from "@/lib/legal-shared";
 import { BRAND_SECONDARY_TAGLINE } from "@/lib/brand-copy";
-import { formatProgramStartLabel, parseProgramDateKey } from "@/lib/program-schedule";
+import {
+  addChicagoCalendarDays,
+  formatProgramStartLabel,
+  getChicagoTodayDateKey,
+  parseProgramDateKey,
+} from "@/lib/program-schedule";
 import {
   type InPersonTrainingInfo,
   validateInPersonTrainingInput,
@@ -148,6 +153,9 @@ export default function ProgramStartWizard({
   const [seasonMode, setSeasonMode] = useState<ProgramSeasonMode | null>(initialEnrollment.seasonMode);
   const [knownFor, setKnownFor] = useState(initialEnrollment.knownFor ?? "");
   const [startDate, setStartDate] = useState<string | null>(initialEnrollment.startDate);
+  const [selectedStartDateKey, setSelectedStartDateKey] = useState(
+    () => initialEnrollment.startDate ?? getChicagoTodayDateKey(),
+  );
   const [parentName, setParentName] = useState(initialEnrollment.parentName ?? "");
   const [parentEmail, setParentEmail] = useState(initialEnrollment.parentEmail ?? "");
   const [error, setError] = useState("");
@@ -178,6 +186,12 @@ export default function ProgramStartWizard({
 
     return formatProgramStartLabel(parseProgramDateKey(startDate));
   }, [startDate]);
+
+  const startDateMinKey = useMemo(() => getChicagoTodayDateKey(), []);
+  const startDateMaxKey = useMemo(
+    () => addChicagoCalendarDays(startDateMinKey, 14),
+    [startDateMinKey],
+  );
 
   const patchEnrollment = async (payload: Record<string, unknown>) => {
     setSaving(true);
@@ -309,8 +323,8 @@ export default function ProgramStartWizard({
     }
   };
 
-  const handleStartSelect = async (choice: "today" | "tomorrow") => {
-    const saved = await patchEnrollment({ startChoice: choice });
+  const handleStartContinue = async () => {
+    const saved = await patchEnrollment({ startDateKey: selectedStartDateKey });
     if (saved) {
       setStartDate(saved.startDate);
       goToStep("parent");
@@ -611,23 +625,29 @@ export default function ProgramStartWizard({
               <div>
                 <h2 className="text-2xl font-bold text-[#0A1628]">When do you want to start?</h2>
                 <p className="mt-3 text-sm text-[#6B7280]">
-                  Program weeks run Monday through Sunday. You start with that day&apos;s tasks.
+                  You get that day&apos;s tasks right away. You can start today or pick a date up to
+                  two weeks out.
                 </p>
               </div>
-              <div className="space-y-3">
-                <OptionButton
-                  label="Today"
-                  selected={false}
-                  onClick={() => void handleStartSelect("today")}
-                  disabled={saving}
+              <label className="block space-y-2">
+                <span className="text-sm font-semibold text-[#0A1628]">Start date</span>
+                <input
+                  type="date"
+                  value={selectedStartDateKey}
+                  min={startDateMinKey}
+                  max={startDateMaxKey}
+                  onChange={(event) => setSelectedStartDateKey(event.target.value)}
+                  className="w-full rounded-2xl border border-[#0A1628]/15 px-4 py-3 text-sm text-[#0A1628]"
                 />
-                <OptionButton
-                  label="Tomorrow"
-                  selected={false}
-                  onClick={() => void handleStartSelect("tomorrow")}
-                  disabled={saving}
-                />
-              </div>
+              </label>
+              <button
+                type="button"
+                onClick={() => void handleStartContinue()}
+                disabled={saving}
+                className="w-full rounded-2xl bg-[#2D6A4F] px-6 py-4 text-base font-bold text-white disabled:opacity-70"
+              >
+                {saving ? "Saving..." : "Continue"}
+              </button>
             </div>
           ) : null}
 

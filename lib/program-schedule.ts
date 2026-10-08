@@ -1,5 +1,7 @@
 const CHICAGO_TIME_ZONE = "America/Chicago";
 
+export const PROGRAM_DAY_COUNT = 84;
+
 export type ProgramPhase = "FOUNDATION" | "BUILD" | "COMPETE";
 
 export type ProgramDayInfo = {
@@ -74,6 +76,12 @@ export function getChicagoTomorrowDateKey(now = new Date()) {
   return getChicagoDateKey(today);
 }
 
+export function addChicagoCalendarDays(dateKey: string, days: number) {
+  const date = dateKeyToUtcNoon(dateKey);
+  date.setUTCDate(date.getUTCDate() + days);
+  return getChicagoDateKey(date);
+}
+
 export function getChicagoWeekdayIndex(now = new Date()) {
   const weekday = new Intl.DateTimeFormat("en-US", {
     timeZone: CHICAGO_TIME_ZONE,
@@ -92,6 +100,16 @@ export function getChicagoMondayStart(now = new Date()) {
   return monday;
 }
 
+export function getChicagoSundayStart(now = new Date()) {
+  const todayKey = getChicagoTodayDateKey(now);
+  const weekdayIndex = getChicagoWeekdayIndex(now);
+  const daysSinceSunday = weekdayIndex === 6 ? 0 : weekdayIndex + 1;
+  const sunday = dateKeyToUtcNoon(todayKey);
+  sunday.setUTCDate(sunday.getUTCDate() - daysSinceSunday);
+  sunday.setUTCHours(6, 0, 0, 0);
+  return sunday;
+}
+
 export function parseProgramDateKey(dateKey: string) {
   return dateKeyToUtcNoon(dateKey);
 }
@@ -103,17 +121,9 @@ export function formatProgramStartDateKey(startDate: Date) {
   return `${year}-${month}-${day}`;
 }
 
-export function getProgramWeekOneMonday(startDate: Date) {
-  const startKey = formatProgramStartDateKey(startDate);
-  const weekdayIndex = getChicagoWeekdayIndex(dateKeyToUtcNoon(startKey));
-  const monday = dateKeyToUtcNoon(startKey);
-  monday.setUTCDate(monday.getUTCDate() - weekdayIndex);
-  return monday;
-}
-
 export function getProgramDayNumberForDate(startDate: Date, dateKey: string) {
-  const weekOneMondayKey = formatProgramStartDateKey(getProgramWeekOneMonday(startDate));
-  return diffChicagoCalendarDays(weekOneMondayKey, dateKey) + 1;
+  const startKey = formatProgramStartDateKey(startDate);
+  return diffChicagoCalendarDays(startKey, dateKey) + 1;
 }
 
 export function isDateBeforeEnrollmentStart(startDate: Date, dateKey: string) {
@@ -122,24 +132,56 @@ export function isDateBeforeEnrollmentStart(startDate: Date, dateKey: string) {
 }
 
 export function getDateForProgramDay(startDate: Date, programDay: number) {
-  const weekOneMonday = getProgramWeekOneMonday(startDate);
-  const day = dateKeyToUtcNoon(formatProgramStartDateKey(weekOneMonday));
+  const day = dateKeyToUtcNoon(formatProgramStartDateKey(startDate));
   day.setUTCDate(day.getUTCDate() + (programDay - 1));
   return day;
 }
 
+export function getProgramEndDateKey(startDate: Date) {
+  const startKey = formatProgramStartDateKey(startDate);
+  return addChicagoCalendarDays(startKey, PROGRAM_DAY_COUNT - 1);
+}
+
+export function getProgramWeekNumber(programDay: number) {
+  if (programDay <= 0) {
+    return 0;
+  }
+  return Math.min(12, Math.floor((programDay - 1) / 7) + 1);
+}
+
+export function getRealDayOfWeekForProgramDay(startDate: Date, programDay: number) {
+  if (programDay <= 0) {
+    return 0;
+  }
+  const weekdayIndex = getChicagoWeekdayIndex(getDateForProgramDay(startDate, programDay));
+  return weekdayIndex + 1;
+}
+
 export function getWeekdayLabelForProgramDay(startDate: Date, programDay: number) {
-  const dayOfWeek = ((programDay - 1) % 7) + 1;
-  return WEEKDAY_LABELS[dayOfWeek - 1] ?? "?";
+  const dayOfWeek = getRealDayOfWeekForProgramDay(startDate, programDay);
+  return dayOfWeek > 0 ? WEEKDAY_LABELS[dayOfWeek - 1] ?? "?" : "?";
 }
 
 export function getWeekdayNameForProgramDay(startDate: Date, programDay: number) {
-  const dayOfWeek = ((programDay - 1) % 7) + 1;
-  return WEEKDAY_NAMES[dayOfWeek - 1] ?? "Day";
+  const dayOfWeek = getRealDayOfWeekForProgramDay(startDate, programDay);
+  return dayOfWeek > 0 ? WEEKDAY_NAMES[dayOfWeek - 1] ?? "Day" : "Day";
 }
 
 export function getProgramDayStartProgramDay(startDate: Date) {
-  return getProgramDayNumberForDate(startDate, formatProgramStartDateKey(startDate));
+  return 1;
+}
+
+export function getFirstSundayOnOrAfterStart(startDate: Date) {
+  const startKey = formatProgramStartDateKey(startDate);
+  let cursorKey = startKey;
+  for (let offset = 0; offset < 7; offset += 1) {
+    const date = dateKeyToUtcNoon(cursorKey);
+    if (getChicagoWeekdayIndex(date) === 6) {
+      return date;
+    }
+    cursorKey = addChicagoCalendarDays(cursorKey, 1);
+  }
+  return dateKeyToUtcNoon(cursorKey);
 }
 
 export function formatProgramStartLabel(startDate: Date, now = new Date()) {
@@ -160,13 +202,16 @@ export function formatProgramStartLabel(startDate: Date, now = new Date()) {
 }
 
 function buildProgramDayInfo(params: {
+  startDate: Date;
   programDay: number;
   isBeforeStart: boolean;
   isComplete: boolean;
 }): ProgramDayInfo {
-  const weekNumber =
-    params.programDay > 0 ? Math.min(12, Math.ceil(params.programDay / 7)) : 0;
-  const dayOfWeek = params.programDay > 0 ? ((params.programDay - 1) % 7) + 1 : 0;
+  const weekNumber = getProgramWeekNumber(params.programDay);
+  const dayOfWeek =
+    params.programDay > 0
+      ? getRealDayOfWeekForProgramDay(params.startDate, params.programDay)
+      : 0;
 
   return {
     programDay: params.programDay,
@@ -183,28 +228,34 @@ export function getProgramDay(
   now = new Date(),
 ): ProgramDayInfo {
   if (!enrollment.startDate) {
-    return buildProgramDayInfo({
+    return {
       programDay: 0,
+      weekNumber: 0,
+      dayOfWeek: 0,
+      phase: "FOUNDATION",
       isBeforeStart: true,
       isComplete: false,
-    });
+    };
   }
 
   const todayKey = getChicagoTodayDateKey(now);
-  const programDay = getProgramDayNumberForDate(enrollment.startDate, todayKey);
 
-  if (programDay < 1) {
-    return buildProgramDayInfo({
+  if (isDateBeforeEnrollmentStart(enrollment.startDate, todayKey)) {
+    return {
       programDay: 0,
+      weekNumber: 0,
+      dayOfWeek: 0,
+      phase: "FOUNDATION",
       isBeforeStart: true,
       isComplete: false,
-    });
+    };
   }
 
-  const isBeforeStart = isDateBeforeEnrollmentStart(enrollment.startDate, todayKey);
+  const programDay = getProgramDayNumberForDate(enrollment.startDate, todayKey);
 
-  if (programDay > 84) {
+  if (programDay > PROGRAM_DAY_COUNT) {
     return buildProgramDayInfo({
+      startDate: enrollment.startDate,
       programDay,
       isBeforeStart: false,
       isComplete: true,
@@ -212,8 +263,9 @@ export function getProgramDay(
   }
 
   return buildProgramDayInfo({
+    startDate: enrollment.startDate,
     programDay,
-    isBeforeStart,
+    isBeforeStart: false,
     isComplete: false,
   });
 }
@@ -223,90 +275,100 @@ export function getProgramWeekStartProgramDay(weekNumber: number) {
 }
 
 export function runProgramScheduleSelfTests() {
+  const mondayStartKey = "2026-01-05";
+  const thursdayStartKey = "2026-01-08";
+
   const cases = [
     {
       name: "monday start day 1",
-      startKey: "2026-01-05",
+      startKey: mondayStartKey,
       nowKey: "2026-01-05",
       expected: { programDay: 1, weekNumber: 1, dayOfWeek: 1, isBeforeStart: false, isComplete: false },
     },
     {
       name: "monday start day 7 sunday",
-      startKey: "2026-01-05",
+      startKey: mondayStartKey,
       nowKey: "2026-01-11",
       expected: { programDay: 7, weekNumber: 1, dayOfWeek: 7, isBeforeStart: false, isComplete: false },
     },
     {
       name: "monday start week 2 monday",
-      startKey: "2026-01-05",
+      startKey: mondayStartKey,
       nowKey: "2026-01-12",
       expected: { programDay: 8, weekNumber: 2, dayOfWeek: 1, isBeforeStart: false, isComplete: false },
     },
     {
       name: "monday start day 84",
-      startKey: "2026-01-05",
+      startKey: mondayStartKey,
       nowKey: "2026-03-29",
       expected: { programDay: 84, weekNumber: 12, dayOfWeek: 7, isBeforeStart: false, isComplete: false },
     },
     {
       name: "monday start day 85 complete",
-      startKey: "2026-01-05",
+      startKey: mondayStartKey,
       nowKey: "2026-03-30",
       expected: { programDay: 85, weekNumber: 12, dayOfWeek: 1, isBeforeStart: false, isComplete: true },
     },
     {
       name: "before start",
-      startKey: "2026-01-05",
+      startKey: mondayStartKey,
       nowKey: "2026-01-04",
       expected: { programDay: 0, weekNumber: 0, dayOfWeek: 0, isBeforeStart: true, isComplete: false },
     },
     {
-      name: "saturday start first active day",
-      startKey: "2026-01-10",
-      nowKey: "2026-01-10",
-      expected: { programDay: 6, weekNumber: 1, dayOfWeek: 6, isBeforeStart: false, isComplete: false },
+      name: "thursday start day 1",
+      startKey: thursdayStartKey,
+      nowKey: "2026-01-08",
+      expected: { programDay: 1, weekNumber: 1, dayOfWeek: 4, isBeforeStart: false, isComplete: false },
     },
     {
-      name: "saturday start thursday same week not started",
-      startKey: "2026-01-10",
-      nowKey: "2026-01-08",
-      expected: { programDay: 4, weekNumber: 1, dayOfWeek: 4, isBeforeStart: true, isComplete: false },
+      name: "thursday start before start",
+      startKey: thursdayStartKey,
+      nowKey: "2026-01-07",
+      expected: { programDay: 0, weekNumber: 0, dayOfWeek: 0, isBeforeStart: true, isComplete: false },
+    },
+    {
+      name: "thursday start week 2",
+      startKey: thursdayStartKey,
+      nowKey: "2026-01-15",
+      expected: { programDay: 8, weekNumber: 2, dayOfWeek: 4, isBeforeStart: false, isComplete: false },
     },
   ] as const;
 
   for (const testCase of cases) {
-    const result = getProgramDay(
-      { startDate: parseProgramDateKey(testCase.startKey) },
-      dateKeyToUtcNoon(testCase.nowKey),
-    );
+    const startDate = parseProgramDateKey(testCase.startKey);
+    const result = getProgramDay({ startDate }, dateKeyToUtcNoon(testCase.nowKey));
 
-    if ("expected" in testCase) {
-      for (const [key, value] of Object.entries(testCase.expected)) {
-        if (result[key as keyof typeof testCase.expected] !== value) {
-          throw new Error(
-            `${testCase.name}: expected ${key}=${value}, got ${result[key as keyof typeof testCase.expected]}`,
-          );
-        }
+    for (const [key, value] of Object.entries(testCase.expected)) {
+      if (result[key as keyof typeof testCase.expected] !== value) {
+        throw new Error(
+          `${testCase.name}: expected ${key}=${value}, got ${result[key as keyof typeof testCase.expected]}`,
+        );
       }
     }
   }
 
-  const saturdayStart = { startDate: parseProgramDateKey("2026-01-10") };
-  const thursdayInfo = getProgramDay(saturdayStart, dateKeyToUtcNoon("2026-01-08"));
-  if (thursdayInfo.dayOfWeek !== 4) {
-    throw new Error(`saturday cohort thursday: expected dayOfWeek=4, got ${thursdayInfo.dayOfWeek}`);
+  const mondayStart = parseProgramDateKey(mondayStartKey);
+  const thursdayStart = parseProgramDateKey(thursdayStartKey);
+
+  const mondayEndKey = getProgramEndDateKey(mondayStart);
+  const thursdayEndKey = getProgramEndDateKey(thursdayStart);
+
+  if (getProgramWeekNumber(1) !== 1 || getProgramWeekNumber(7) !== 1 || getProgramWeekNumber(8) !== 2) {
+    throw new Error("Program week number formula failed.");
   }
 
-  const saturdayInfo = getProgramDay(saturdayStart, dateKeyToUtcNoon("2026-01-10"));
-  if (saturdayInfo.dayOfWeek !== 6) {
-    throw new Error(`saturday cohort start day: expected dayOfWeek=6, got ${saturdayInfo.dayOfWeek}`);
+  if (getProgramWeekNumber(78) !== 12 || getProgramWeekNumber(84) !== 12) {
+    throw new Error("Program week 12 boundaries failed.");
+  }
+
+  const thursdayWeek1 = getProgramDay({ startDate: thursdayStart }, dateKeyToUtcNoon("2026-01-08"));
+  if (thursdayWeek1.dayOfWeek !== 4) {
+    throw new Error(`thursday start day 1: expected dayOfWeek=4, got ${thursdayWeek1.dayOfWeek}`);
   }
 
   const adminStartDate = new Date("2026-01-05T00:00:00.000Z");
-  const adminDay1 = getProgramDay(
-    { startDate: adminStartDate },
-    dateKeyToUtcNoon("2026-01-05"),
-  );
+  const adminDay1 = getProgramDay({ startDate: adminStartDate }, dateKeyToUtcNoon("2026-01-05"));
   if (adminDay1.programDay !== 1 || adminDay1.dayOfWeek !== 1) {
     throw new Error(
       `admin db midnight: expected programDay=1 dayOfWeek=1, got ${adminDay1.programDay}/${adminDay1.dayOfWeek}`,
@@ -317,6 +379,11 @@ export function runProgramScheduleSelfTests() {
   if (adminWeekday !== "S") {
     throw new Error(`admin db midnight: expected weekday S for programDay 6, got ${adminWeekday}`);
   }
+
+  console.log(`Monday start ${mondayStartKey}: week 1 day 1, week 2 day 8, week 12 day 78, end ${mondayEndKey}`);
+  console.log(
+    `Thursday start ${thursdayStartKey}: week 1 day 1, week 2 day 8, week 12 day 78, end ${thursdayEndKey}`,
+  );
 
   return cases.length + 1;
 }
