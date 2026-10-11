@@ -77,6 +77,8 @@ export async function upsertTaskFeedback(params: {
     taskKey: params.taskKey,
     liked,
     comment,
+  }).catch((error) => {
+    console.error("Task feedback notify hook failed", error);
   });
 
   return feedback;

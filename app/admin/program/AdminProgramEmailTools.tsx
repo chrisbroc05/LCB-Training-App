@@ -79,6 +79,7 @@ const COACH_ALERT_TYPES = [
 const MESSAGE_TEST_TYPES = [
   { value: "COACH_REPLY_PUSH", label: "Player: Coach Broc replied push" },
   { value: "COACH_REPLY_EMAIL", label: "Player: Coach Broc replied email" },
+  { value: "COACH_TASK_FEEDBACK_PUSH", label: "Player: Coach task feedback push" },
 ] as const;
 
 const COACH_EMAIL_TYPES = [

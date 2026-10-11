@@ -291,6 +291,8 @@ model ProgramEnrollment {
   parentEmail                String?
   parentEmailsEnabled        Boolean                 @default(true)
   parentPromptDismissedAt    DateTime?
+  lastTaskFeedbackNotifyAt   DateTime?
+  taskFeedbackNotifyPending  Boolean                 @default(false)
   createdAt                  DateTime                @default(now())
   updatedAt                  DateTime                @updatedAt
   taskCompletions            TaskCompletion[]

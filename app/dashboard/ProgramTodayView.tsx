@@ -748,6 +748,17 @@ export default function ProgramTodayView() {
   }, [loadToday]);
 
   useEffect(() => {
+    if (!payload || loading) {
+      return;
+    }
+    if (window.location.hash === "#coach-feedback") {
+      window.requestAnimationFrame(() => {
+        document.getElementById("coach-feedback")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    }
+  }, [payload, loading]);
+
+  useEffect(() => {
     void (async () => {
       const response = await fetch("/api/program/email-settings");
       if (!response.ok) {
@@ -860,7 +871,7 @@ export default function ProgramTodayView() {
       {payload.unseenCoachFeedback &&
       payload.unseenCoachFeedback.length > 0 &&
       payload.viewedProgramDay === payload.todayProgramDay ? (
-        <section className={`${CARD} border-[#52B788]/40`}>
+        <section id="coach-feedback" className={`${CARD} border-[#52B788]/40 scroll-mt-24`}>
           <p className="text-xs font-bold tracking-wide text-[#9df3bd]">NEW FEEDBACK FROM COACH BROC</p>
           <ul className="mt-3 space-y-2">
             {payload.unseenCoachFeedback.map((item) => (

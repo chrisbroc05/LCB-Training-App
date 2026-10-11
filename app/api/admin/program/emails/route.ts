@@ -21,6 +21,7 @@ import {
   sendTestCoachReplyEmail,
   sendTestCoachReplyPush,
 } from "@/lib/direct-messaging-notifications";
+import { sendTestTaskFeedbackPush } from "@/lib/task-feedback-notifications";
 import { getPlayerFirstName } from "@/lib/program-email-templates";
 import { sendPushToUser } from "@/lib/push-send";
 import { sendTestCoachSubmissionNotificationEmail } from "@/lib/notifications";
@@ -294,6 +295,14 @@ export async function POST(request: Request) {
         await sendTestCoachReplyPush({
           userId: enrollment.userId,
           body: sampleBody,
+        });
+        return NextResponse.json({ success: true });
+      }
+
+      if (messageTestType === "COACH_TASK_FEEDBACK_PUSH") {
+        await sendTestTaskFeedbackPush({
+          userId: enrollment.userId,
+          enrollmentId: body.enrollmentId.trim(),
         });
         return NextResponse.json({ success: true });
       }

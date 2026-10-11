@@ -1,30 +1,114 @@
 import "server-only";
 
-import { getPlayerFirstName } from "@/lib/program-email-templates";
-import {
-  getChicagoDateTimeParts,
-  getChicagoDayStart,
-} from "@/lib/program-email-chicago";
 import { isPlayerPushQuietHours } from "@/lib/direct-messaging-quiet-hours";
-import { buildMemberEmailHtml, getPublicAppUrl } from "@/lib/email-layout";
-import { hasProgramEmailBeenSent, sendProgramEmail } from "@/lib/program-email-send";
-import { buildPushDedupeKey, sendPushToUser, userHasPushSubscriptions } from "@/lib/push-send";
-import { getWeekdayNameForProgramDay } from "@/lib/program-schedule";
+import { buildEmailButton, buildMemberEmailHtml, getPublicAppUrl } from "@/lib/email-layout";
+import { sendProgramEmail } from "@/lib/program-email-send";
+import { sendPushToUserSafe, userHasPushSubscriptions } from "@/lib/push-send";
 import { prisma } from "@/lib/prisma";
 
-const BATCH_WINDOW_MS = 10 * 60 * 1000;
+export const COACH_TASK_FEEDBACK_PUSH_TITLE = "Coach Broc left you feedback";
+export const COACH_TASK_FEEDBACK_PUSH_BODY = "Tap to take a look.";
 
-type PendingFeedbackBatch = {
+const COOLDOWN_MS = 30 * 60 * 1000;
+
+function isWithinNotifyCooldown(lastAt: Date | null | undefined, now: Date) {
+  if (!lastAt) {
+    return false;
+  }
+  return now.getTime() - lastAt.getTime() < COOLDOWN_MS;
+}
+
+async function buildFeedbackViewUrl(enrollmentId: string) {
+  const unseen = await prisma.taskFeedback.findMany({
+    where: {
+      enrollmentId,
+      seenAt: null,
+      OR: [{ liked: true }, { comment: { not: null } }],
+    },
+    orderBy: [{ programDay: "desc" }, { updatedAt: "desc" }],
+    select: { programDay: true },
+  });
+
+  if (unseen.length === 1) {
+    return `/dashboard/today?programDay=${unseen[0]!.programDay}#coach-feedback`;
+  }
+
+  return "/dashboard/today#coach-feedback";
+}
+
+async function markFeedbackNotified(enrollmentId: string, now: Date) {
+  await prisma.programEnrollment.update({
+    where: { id: enrollmentId },
+    data: {
+      lastTaskFeedbackNotifyAt: now,
+      taskFeedbackNotifyPending: false,
+    },
+  });
+}
+
+async function sendFeedbackEmail(params: {
+  enrollmentId: string;
+  toEmail: string;
+  urlPath: string;
+  now: Date;
+}) {
+  const viewUrl = `${getPublicAppUrl()}${params.urlPath}`;
+  const subject = COACH_TASK_FEEDBACK_PUSH_TITLE;
+  const bodyContentHtml = `<h1 style="margin:0 0 16px 0; font-family:Arial, Helvetica, sans-serif; font-size:24px; line-height:1.3; color:#0A1628;">${subject}</h1>
+      <p style="margin:0 0 16px 0; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:1.7; color:#0A1628;">${COACH_TASK_FEEDBACK_PUSH_BODY}</p>
+      ${buildEmailButton("View feedback", viewUrl)}`;
+  const text = `${subject}\n\n${COACH_TASK_FEEDBACK_PUSH_BODY}\n\nView feedback: ${viewUrl}`;
+
+  await sendProgramEmail({
+    to: params.toEmail,
+    subject,
+    html: buildMemberEmailHtml({ title: subject, bodyContentHtml }),
+    text,
+    enrollmentId: params.enrollmentId,
+    recipient: "player",
+    type: "COACH_TASK_FEEDBACK",
+    dateKey: `coach-task-feedback-email:${params.enrollmentId}:${params.now.toISOString()}`,
+  });
+}
+
+async function deliverTaskFeedbackNotification(params: {
   userId: string;
   enrollmentId: string;
-  items: Array<{ programDay: number; taskKey: string; liked: boolean; comment: string | null }>;
-  firstAt: number;
-};
+  userEmail: string;
+  now: Date;
+}) {
+  const url = await buildFeedbackViewUrl(params.enrollmentId);
+  const dedupeKey = `coach-task-feedback:${params.enrollmentId}:${params.now.getTime()}`;
 
-const pendingBatches = new Map<string, PendingFeedbackBatch>();
+  const hasPush = await userHasPushSubscriptions(params.userId);
+  if (hasPush) {
+    const result = await sendPushToUserSafe(
+      params.userId,
+      {
+        title: COACH_TASK_FEEDBACK_PUSH_TITLE,
+        body: COACH_TASK_FEEDBACK_PUSH_BODY,
+        url,
+      },
+      { type: "COACH_TASK_FEEDBACK", dedupeKey },
+    );
 
-function getBatchKey(userId: string) {
-  return userId;
+    if (result.sent > 0) {
+      await markFeedbackNotified(params.enrollmentId, params.now);
+    }
+    return;
+  }
+
+  if (!params.userEmail) {
+    return;
+  }
+
+  await sendFeedbackEmail({
+    enrollmentId: params.enrollmentId,
+    toEmail: params.userEmail,
+    urlPath: url,
+    now: params.now,
+  });
+  await markFeedbackNotified(params.enrollmentId, params.now);
 }
 
 export async function notifyPlayerOfTaskFeedback(params: {
@@ -36,137 +120,92 @@ export async function notifyPlayerOfTaskFeedback(params: {
   liked: boolean;
   comment: string | null;
 }) {
-  const key = getBatchKey(params.userId);
-  const now = Date.now();
-  const existing = pendingBatches.get(key);
+  try {
+    const now = new Date();
 
-  if (existing && now - existing.firstAt < BATCH_WINDOW_MS) {
-    existing.items.push({
-      programDay: params.programDay,
-      taskKey: params.taskKey,
-      liked: params.liked,
-      comment: params.comment,
-    });
-    pendingBatches.set(key, existing);
-    scheduleBatchFlush(key);
-    return;
-  }
-
-  pendingBatches.set(key, {
-    userId: params.userId,
-    enrollmentId: params.enrollmentId,
-    items: [
-      {
-        programDay: params.programDay,
-        taskKey: params.taskKey,
-        liked: params.liked,
-        comment: params.comment,
+    const enrollment = await prisma.programEnrollment.findUnique({
+      where: { id: params.enrollmentId },
+      select: {
+        lastTaskFeedbackNotifyAt: true,
+        user: { select: { email: true } },
       },
-    ],
-    firstAt: now,
-  });
-  scheduleBatchFlush(key);
+    });
+
+    if (!enrollment) {
+      return;
+    }
+
+    if (isWithinNotifyCooldown(enrollment.lastTaskFeedbackNotifyAt, now)) {
+      return;
+    }
+
+    if (isPlayerPushQuietHours(now)) {
+      await prisma.programEnrollment.update({
+        where: { id: params.enrollmentId },
+        data: { taskFeedbackNotifyPending: true },
+      });
+      return;
+    }
+
+    await deliverTaskFeedbackNotification({
+      userId: params.userId,
+      enrollmentId: params.enrollmentId,
+      userEmail: enrollment.user.email,
+      now,
+    });
+  } catch (error) {
+    console.error("Task feedback notification failed", error);
+  }
 }
 
-const flushTimers = new Map<string, ReturnType<typeof setTimeout>>();
-
-function scheduleBatchFlush(key: string) {
-  const existing = flushTimers.get(key);
-  if (existing) {
-    clearTimeout(existing);
-  }
-
-  flushTimers.set(
-    key,
-    setTimeout(() => {
-      flushTimers.delete(key);
-      void flushFeedbackBatch(key);
-    }, BATCH_WINDOW_MS),
-  );
-}
-
-async function flushFeedbackBatch(key: string) {
-  const batch = pendingBatches.get(key);
-  if (!batch) {
+export async function processQueuedTaskFeedbackNotifications(now = new Date()) {
+  if (isPlayerPushQuietHours(now)) {
     return;
   }
-  pendingBatches.delete(key);
 
-  const enrollment = await prisma.programEnrollment.findUnique({
-    where: { id: batch.enrollmentId },
-    select: { startDate: true, user: { select: { name: true, email: true } } },
+  const pending = await prisma.programEnrollment.findMany({
+    where: { taskFeedbackNotifyPending: true },
+    include: {
+      user: {
+        select: {
+          id: true,
+          email: true,
+        },
+      },
+    },
   });
 
-  if (!enrollment?.startDate) {
-    return;
+  for (const enrollment of pending) {
+    try {
+      await deliverTaskFeedbackNotification({
+        userId: enrollment.user.id,
+        enrollmentId: enrollment.id,
+        userEmail: enrollment.user.email,
+        now,
+      });
+    } catch (error) {
+      console.error("Queued task feedback notification failed", error);
+    }
   }
+}
 
-  const now = new Date();
-  const { dateKey } = getChicagoDateTimeParts(now);
-  const dedupeKey = buildPushDedupeKey(batch.userId, "COACH_TASK_FEEDBACK", `${dateKey}:${batch.firstAt}`);
-
-  const hasPush = await userHasPushSubscriptions(batch.userId);
-  const firstItem = batch.items[0]!;
-  const weekday =
-    enrollment.startDate && firstItem.programDay > 0
-      ? getWeekdayNameForProgramDay(enrollment.startDate, firstItem.programDay)
-      : "today";
-
-  let title = "Coach Broc liked your task";
-  let body = "Coach Broc left feedback on your work.";
-  let url = `/dashboard/today?programDay=${firstItem.programDay}`;
-
-  if (batch.items.length > 1) {
-    title = "New feedback from Coach Broc";
-    body = `Coach Broc left feedback on ${batch.items.length} tasks.`;
-  } else if (firstItem.comment) {
-    title = "Coach Broc commented on your task";
-    const preview = firstItem.comment.slice(0, 80);
-    body = `Re: ${weekday}: ${preview}${firstItem.comment.length > 80 ? "..." : ""}`;
-  } else if (firstItem.liked) {
-    body = `Coach Broc liked your task from ${weekday}.`;
-  }
-
-  const inQuietHours = isPlayerPushQuietHours(now);
-
-  if (hasPush && !inQuietHours) {
-    await sendPushToUser(
-      batch.userId,
-      { title, body, url },
-      { type: "COACH_TASK_FEEDBACK", dedupeKey },
-    );
-    return;
-  }
-
-  const email = enrollment.user.email;
-  if (!email) {
-    return;
-  }
-
-  const emailDedupeKey = `coach-task-feedback:${batch.enrollmentId}:${batch.firstAt}`;
-  if (
-    await hasProgramEmailBeenSent({
-      enrollmentId: batch.enrollmentId,
-      recipient: "player",
+export async function sendTestTaskFeedbackPush(params: { userId: string; enrollmentId: string }) {
+  const url = await buildFeedbackViewUrl(params.enrollmentId);
+  const result = await sendPushToUserSafe(
+    params.userId,
+    {
+      title: COACH_TASK_FEEDBACK_PUSH_TITLE,
+      body: COACH_TASK_FEEDBACK_PUSH_BODY,
+      url,
+    },
+    {
       type: "COACH_TASK_FEEDBACK",
-      dateKey: emailDedupeKey,
-    })
-  ) {
-    return;
+      dedupeKey: `coach-task-feedback:test:${Date.now()}`,
+      skipDedupeCheck: true,
+    },
+  );
+
+  if (result.sent === 0) {
+    throw new Error("Unable to send test feedback push.");
   }
-
-  const watchUrl = `${getPublicAppUrl()}${url}`;
-  const bodyContentHtml = `<p style="margin:0 0 12px 0; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:1.6; color:#0A1628;">${body}</p>
-    <p style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:1.5; color:#0A1628;"><a href="${watchUrl}">Open in the app</a></p>`;
-
-  await sendProgramEmail({
-    to: email,
-    subject: title,
-    html: buildMemberEmailHtml({ title, bodyContentHtml }),
-    text: `${title}\n\n${body}\n\nOpen: ${watchUrl}`,
-    enrollmentId: batch.enrollmentId,
-    recipient: "player",
-    type: "COACH_TASK_FEEDBACK",
-    dateKey: emailDedupeKey,
-  });
 }
