@@ -6,6 +6,11 @@ import {
   buildAdminProgramPlayerDetail,
   buildAdminWeekDayTasks,
 } from "@/lib/admin-program-player";
+import {
+  buildAdminProgramPlayerProfile,
+  getCalendarDateLabel,
+  serializeFeedbackForTask,
+} from "@/lib/admin-program-player-profile";
 import { loadEnrollmentPlanOverrideBundle } from "@/lib/program-plan-overrides-server";
 import { toEnrollmentPlanInput } from "@/lib/program-today-server";
 import { prisma } from "@/lib/prisma";
@@ -54,7 +59,7 @@ export async function GET(request: Request, context: RouteContext) {
     },
   });
 
-  const weekDays =
+  const rawWeekDays =
     detail.planInput && enrollmentRecord
       ? buildAdminWeekDayTasks({
           enrollment: enrollmentRecord,
@@ -64,6 +69,21 @@ export async function GET(request: Request, context: RouteContext) {
         })
       : [];
 
+  const profile = await buildAdminProgramPlayerProfile(detail);
+  const feedbackMap = profile?.feedbackMap ?? {};
+
+  const weekDays = rawWeekDays.map((day) => ({
+    ...day,
+    calendarDate:
+      enrollmentRecord?.startDate && day.programDay > 0
+        ? getCalendarDateLabel(enrollmentRecord.startDate, day.programDay)
+        : "",
+    tasks: day.tasks.map((task) => ({
+      ...task,
+      feedback: serializeFeedbackForTask(feedbackMap, day.programDay, task.key),
+    })),
+  }));
+
   const cues = await prisma.coachCue.findMany({
     where: { archived: false },
     orderBy: [{ isDefault: "desc" }, { defaultWeek: "asc" }, { label: "asc" }],
@@ -71,6 +91,7 @@ export async function GET(request: Request, context: RouteContext) {
 
   return NextResponse.json({
     ...detail,
+    profile,
     selectedWeek,
     weekDays,
     cues: cues.map((cue) => ({

@@ -80,6 +80,7 @@ export const DEMO_PARENT_RECAP_PARAMS = {
   nextWeekPhase: "Build",
   messagesThisWeek: 3,
   coachVideosThisWeek: 1,
+  coachTaskFeedbackThisWeek: 2,
   parentMessagesUrl: "https://lcbtraining.com/messages/parent",
   unsubscribeUrl: "https://lcbtraining.com/program/parent/unsubscribe",
 };

@@ -29,6 +29,7 @@ type MessageChatViewProps = {
   onSend?: (body: string) => Promise<void>;
   onPoll?: () => Promise<void>;
   onMarkRead?: () => Promise<void>;
+  initialDraft?: string;
 };
 
 export default function MessageChatView({
@@ -41,9 +42,16 @@ export default function MessageChatView({
   onSend,
   onPoll,
   onMarkRead,
+  initialDraft = "",
 }: MessageChatViewProps) {
-  const [draft, setDraft] = useState("");
+  const [draft, setDraft] = useState(initialDraft);
   const bottomRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (initialDraft) {
+      setDraft(initialDraft);
+    }
+  }, [initialDraft]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });

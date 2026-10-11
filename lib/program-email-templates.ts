@@ -291,6 +291,7 @@ export function buildParentWeeklyRecapEmail(params: {
   nextWeekPhase: string;
   messagesThisWeek: number;
   coachVideosThisWeek: number;
+  coachTaskFeedbackThisWeek: number;
   parentMessagesUrl: string;
   unsubscribeUrl: string;
 }) {
@@ -349,6 +350,11 @@ export function buildParentWeeklyRecapEmail(params: {
       ${buildEmailButton("View messages", params.parentMessagesUrl)}`
           : ""
       }
+      ${
+        params.coachTaskFeedbackThisWeek > 0
+          ? `<p style="margin:0 0 16px 0; font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:1.5; color:#0A1628;">Coach Broc left feedback on ${params.coachTaskFeedbackThisWeek} task${params.coachTaskFeedbackThisWeek === 1 ? "" : "s"} this week</p>`
+          : ""
+      }
       ${buildEmailButton("See the program", programUrl)}
       ${buildParentUnsubscribeFooterHtml(params.unsubscribeUrl)}`;
 
@@ -389,6 +395,10 @@ ${
 }${
   params.messagesThisWeek > 0
     ? `\n${params.playerFirstName} and Coach Broc exchanged ${params.messagesThisWeek} message${params.messagesThisWeek === 1 ? "" : "s"} this week\nView messages: ${params.parentMessagesUrl}\n`
+    : ""
+}${
+  params.coachTaskFeedbackThisWeek > 0
+    ? `\nCoach Broc left feedback on ${params.coachTaskFeedbackThisWeek} task${params.coachTaskFeedbackThisWeek === 1 ? "" : "s"} this week\n`
     : ""
 }
 See the program: ${programUrl}${buildParentUnsubscribeFooterText(params.unsubscribeUrl)}

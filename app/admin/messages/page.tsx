@@ -79,15 +79,16 @@ export default function AdminMessagesPage() {
           <p className="text-sm text-zinc-400">No conversations yet.</p>
         ) : null}
         {inbox.map((item) => (
-          <Link
+          <div
             key={item.id}
-            href={`/admin/messages/${item.id}`}
-            className="block rounded-2xl border border-[#2b3650] bg-[#0b1324]/80 px-4 py-4 transition hover:border-[#52B788]/40"
+            className="rounded-2xl border border-[#2b3650] bg-[#0b1324]/80 px-4 py-4"
           >
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="font-semibold text-zinc-100">
-                  {item.playerName}
+                  <Link href={`/admin/program/${item.enrollmentId}`} className="hover:text-[#52B788]">
+                    {item.playerName}
+                  </Link>
                   {item.coachUnreadCount > 0 ? (
                     <span className="ml-2 inline-flex rounded-full bg-[#ef4444] px-2 py-0.5 text-[11px] font-semibold text-white">
                       {item.coachUnreadCount}
@@ -104,9 +105,15 @@ export default function AdminMessagesPage() {
                   </p>
                 ) : null}
               </div>
-              <p className="shrink-0 text-xs text-zinc-500">{formatDateTime(item.lastMessageAt)}</p>
+              <Link
+                href={`/admin/messages/${item.id}`}
+                className="shrink-0 text-xs font-semibold text-[#52B788]"
+              >
+                Chat
+              </Link>
             </div>
-          </Link>
+            <p className="mt-2 text-xs text-zinc-500">{formatDateTime(item.lastMessageAt)}</p>
+          </div>
         ))}
       </div>
     </div>

@@ -82,6 +82,7 @@ enum ProgramEmailType {
   COACH_DAILY_SUMMARY
   COACH_MESSAGE_REPLY
   COACH_VIDEO
+  COACH_TASK_FEEDBACK
   SETUP_REMINDER
 }
 
@@ -101,6 +102,7 @@ enum PushNotificationType {
   COACH_WAIVER_SIGNED
   COACH_VIDEO
   SETUP_REMINDER
+  COACH_TASK_FEEDBACK
   TEST
 }
 
@@ -298,6 +300,8 @@ model ProgramEnrollment {
   emailLogs                  EmailLog[]
   conversation               Conversation?
   coachVideos                CoachVideo[]
+  coachNotes                 CoachNote[]
+  taskFeedbacks              TaskFeedback[]
 }
 
 model CoachVideo {
@@ -493,10 +497,42 @@ model TaskCompletion {
   completedAt    DateTime          @default(now())
   sourceDayLogId String?
   sourceDayLog   DayLog?           @relation(fields: [sourceDayLogId], references: [id], onDelete: SetNull)
+  taskFeedback   TaskFeedback?
 
   @@unique([enrollmentId, programDay, taskKey])
   @@index([enrollmentId, programDay])
   @@index([sourceDayLogId])
+}
+
+model CoachNote {
+  id           String            @id @default(cuid())
+  enrollmentId String
+  enrollment   ProgramEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  body         String            @db.VarChar(2000)
+  pinned       Boolean           @default(false)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  @@index([enrollmentId, pinned, updatedAt(sort: Desc)])
+}
+
+model TaskFeedback {
+  id               String            @id @default(cuid())
+  enrollmentId     String
+  enrollment       ProgramEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  programDay       Int
+  taskKey          String
+  taskCompletionId String?           @unique
+  taskCompletion   TaskCompletion?   @relation(fields: [taskCompletionId], references: [id], onDelete: SetNull)
+  liked            Boolean           @default(false)
+  comment          String?           @db.VarChar(500)
+  seenAt           DateTime?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  @@unique([enrollmentId, programDay, taskKey])
+  @@index([enrollmentId, seenAt])
+  @@index([enrollmentId, programDay])
 }
 
 model Notification {

@@ -36,12 +36,16 @@ type WeekTask = {
   completedAt?: string | null;
   isCoachAdded?: boolean;
   drills?: Array<{ title: string; href: string }>;
+  feedback?: { id: string; liked: boolean; comment: string | null } | null;
 };
 
 type WeekDay = {
   programDay: number;
   dayOfWeek: number;
   isRestDay: boolean;
+  calendarDate?: string;
+  weekdayName?: string;
+  isNotStarted?: boolean;
   tasks: WeekTask[];
 };
 
@@ -111,6 +115,7 @@ type PlayerDetail = {
   weekSubmissions: Array<{ type: string; id: number; href: string; createdAt: string }>;
   selectedWeek: number;
   weekDays: WeekDay[];
+  profile?: unknown;
   cues: Array<{ id: string; displayLabel: string }>;
   customTasks: Array<{
     id: string;
@@ -274,12 +279,32 @@ function CustomTaskForm({
   );
 }
 
-export default function AdminProgramPlayerPanel({ enrollmentId }: { enrollmentId: string }) {
+export default function AdminProgramPlayerPanel({
+  enrollmentId,
+  onFeedbackChange,
+  embedded = false,
+  showSendVideo = false,
+  onSendVideoClose,
+}: {
+  enrollmentId: string;
+  onFeedbackChange?: () => void;
+  embedded?: boolean;
+  showSendVideo?: boolean;
+  onSendVideoClose?: () => void;
+}) {
   const router = useRouter();
   const [detail, setDetail] = useState<PlayerDetail | null>(null);
   const [openingMessage, setOpeningMessage] = useState(false);
   const [savingTestAccount, setSavingTestAccount] = useState(false);
-  const [showSendVideo, setShowSendVideo] = useState(false);
+  const [localSendVideo, setLocalSendVideo] = useState(false);
+  const sendVideoOpen = embedded ? showSendVideo : localSendVideo;
+  const closeSendVideo = () => {
+    if (embedded) {
+      onSendVideoClose?.();
+    } else {
+      setLocalSendVideo(false);
+    }
+  };
   const [selectedWeek, setSelectedWeek] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -288,6 +313,23 @@ export default function AdminProgramPlayerPanel({ enrollmentId }: { enrollmentId
   const [focusTarget, setFocusTarget] = useState<"this_week" | "next_week">("this_week");
   const [focusSuccess, setFocusSuccess] = useState("");
   const [taskForm, setTaskForm] = useState<TaskFormState | null>(null);
+  const [commentDraftKey, setCommentDraftKey] = useState<string | null>(null);
+  const [commentDraft, setCommentDraft] = useState("");
+
+  const saveTaskFeedback = async (params: {
+    programDay: number;
+    taskKey: string;
+    liked?: boolean;
+    comment?: string | null;
+  }) => {
+    await fetch(`/api/admin/program/enrollments/${enrollmentId}/task-feedback`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(params),
+    });
+    await loadDetail(selectedWeek);
+    onFeedbackChange?.();
+  };
 
   const loadDetail = useCallback(async (week?: number) => {
     setError("");
@@ -479,8 +521,46 @@ export default function AdminProgramPlayerPanel({ enrollmentId }: { enrollmentId
   const currentCueLabel =
     detail.focus.override?.cueLabel ?? detail.focus.defaultCueLabel;
 
+  const weekTaskSummary = detail.weekDays.reduce(
+    (acc, day) => {
+      if (day.isRestDay) {
+        return acc;
+      }
+      for (const task of day.tasks) {
+        acc.due += 1;
+        if (task.completed) {
+          acc.done += 1;
+        }
+      }
+      return acc;
+    },
+    { done: 0, due: 0 },
+  );
+  const weekGameCount =
+    detail.dayLogs?.filter(
+      (log) =>
+        log.type === "GAME" &&
+        detail.weekDays.some((day) => day.programDay === log.programDay),
+    ).length ?? 0;
+
   return (
-    <div className="space-y-8">
+    <div className={`space-y-8 ${embedded ? "flex flex-col" : ""}`}>
+      {embedded && sendVideoOpen ? (
+        <div className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4">
+          <SendCoachVideoPanel
+            userId={detail.enrollment.userId}
+            enrollmentId={detail.enrollment.id}
+            playerLabel={detail.enrollment.name ?? detail.enrollment.email}
+            onClose={closeSendVideo}
+            onSent={() => {
+              closeSendVideo();
+              void loadDetail(selectedWeek);
+            }}
+          />
+        </div>
+      ) : null}
+
+      {!embedded ? (
       <section className="rounded-3xl border border-[#18243a] bg-[#0b1324]/80 p-5 sm:p-8">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <Link href="/admin/program" className="text-sm font-semibold text-[#52B788]">
@@ -489,7 +569,7 @@ export default function AdminProgramPlayerPanel({ enrollmentId }: { enrollmentId
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={() => setShowSendVideo((current) => !current)}
+              onClick={() => setLocalSendVideo((current) => !current)}
               className="rounded-full bg-[#22c55e] px-4 py-2 text-sm font-semibold text-black"
             >
               Send video
@@ -520,14 +600,15 @@ export default function AdminProgramPlayerPanel({ enrollmentId }: { enrollmentId
             </button>
           </div>
         </div>
-        {showSendVideo ? (
+        {sendVideoOpen ? (
           <div className="mt-4">
             <SendCoachVideoPanel
               userId={detail.enrollment.userId}
               enrollmentId={detail.enrollment.id}
               playerLabel={detail.enrollment.name ?? detail.enrollment.email}
-              onClose={() => setShowSendVideo(false)}
+              onClose={closeSendVideo}
               onSent={() => {
+                closeSendVideo();
                 void loadDetail(selectedWeek);
               }}
             />
@@ -668,11 +749,41 @@ export default function AdminProgramPlayerPanel({ enrollmentId }: { enrollmentId
           </p>
         </div>
       </section>
+      ) : null}
 
       {error ? <p className="text-sm text-red-300">{error}</p> : null}
 
-      <section className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-5 space-y-4">
+      <section
+        id="settings"
+        className={`rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-5 space-y-4 ${embedded ? "order-[50]" : ""}`}
+      >
         <h2 className="text-lg font-semibold text-zinc-100">Program settings</h2>
+        {embedded ? (
+          <label className="flex items-center gap-2 text-sm text-zinc-300">
+            <input
+              type="checkbox"
+              checked={detail.enrollment.isTestAccount}
+              disabled={savingTestAccount}
+              onChange={(event) => {
+                const isTestAccount = event.target.checked;
+                setSavingTestAccount(true);
+                void (async () => {
+                  const response = await fetch(`/api/admin/program/enrollments/${enrollmentId}`, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ isTestAccount }),
+                  });
+                  setSavingTestAccount(false);
+                  if (response.ok) {
+                    await loadDetail(selectedWeek);
+                  }
+                })();
+              }}
+              className="h-4 w-4 rounded border-[#2b3650]"
+            />
+            Test account (hidden from overview)
+          </label>
+        ) : null}
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
@@ -781,7 +892,10 @@ export default function AdminProgramPlayerPanel({ enrollmentId }: { enrollmentId
         </div>
       </section>
 
-      <section className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-5 space-y-4">
+      <section
+        id={embedded ? "this-week" : undefined}
+        className={`rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-5 space-y-4 ${embedded ? "order-[1]" : ""}`}
+      >
         <h2 className="text-lg font-semibold text-zinc-100">This week&apos;s focus</h2>
         <p className="text-sm text-zinc-300">
           Current focus: <span className="font-semibold text-[#9df3bd]">{currentCueLabel}</span>
@@ -886,7 +1000,10 @@ export default function AdminProgramPlayerPanel({ enrollmentId }: { enrollmentId
       </section>
 
       {detail.stats && detail.stats.totals.games > 0 ? (
-        <section className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-5 space-y-4">
+        <section
+          id="stats"
+          className={`rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-5 space-y-4 ${embedded ? "order-[3]" : ""}`}
+        >
           <h2 className="text-lg font-semibold text-zinc-100">Stats</h2>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             {[
@@ -928,7 +1045,10 @@ export default function AdminProgramPlayerPanel({ enrollmentId }: { enrollmentId
         </section>
       ) : null}
 
-      <section className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-5">
+      <section
+        id={embedded ? undefined : "this-week"}
+        className={`rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-5 ${embedded ? "order-[2]" : ""}`}
+      >
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-lg font-semibold text-zinc-100">Week view</h2>
           <select
@@ -947,6 +1067,10 @@ export default function AdminProgramPlayerPanel({ enrollmentId }: { enrollmentId
             ))}
           </select>
         </div>
+        <p className="mt-3 text-sm text-zinc-400">
+          {weekTaskSummary.done} of {weekTaskSummary.due} tasks, {weekGameCount} game
+          {weekGameCount === 1 ? "" : "s"} logged
+        </p>
         <div className="mt-4 space-y-4">
           {detail.weekDays.map((day) => {
             const weekdayName =
@@ -1028,6 +1152,67 @@ export default function AdminProgramPlayerPanel({ enrollmentId }: { enrollmentId
                               Completed {formatDateTime(task.completedAt)}
                             </p>
                           ) : null}
+                          {"calendarDate" in day && day.calendarDate ? (
+                            <p className="mt-1 text-xs text-zinc-500">{day.calendarDate}</p>
+                          ) : null}
+                          <div className="mt-2 flex flex-wrap items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                void saveTaskFeedback({
+                                  programDay: day.programDay,
+                                  taskKey: task.key,
+                                  liked: !task.feedback?.liked,
+                                  comment: task.feedback?.comment ?? null,
+                                })
+                              }
+                              className={`rounded-full px-2 py-1 text-xs font-semibold ${
+                                task.feedback?.liked
+                                  ? "bg-[#52B788] text-black"
+                                  : "border border-[#2b3650] text-zinc-400"
+                              }`}
+                            >
+                              Like
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setCommentDraftKey(`${day.programDay}:${task.key}`);
+                                setCommentDraft(task.feedback?.comment ?? "");
+                              }}
+                              className="rounded-full border border-[#2b3650] px-2 py-1 text-xs font-semibold text-zinc-300"
+                            >
+                              Comment
+                            </button>
+                          </div>
+                          {task.feedback?.comment ? (
+                            <p className="mt-2 text-xs text-zinc-400">Coach: {task.feedback.comment}</p>
+                          ) : null}
+                          {commentDraftKey === `${day.programDay}:${task.key}` ? (
+                            <div className="mt-2 space-y-2">
+                              <textarea
+                                value={commentDraft}
+                                onChange={(event) => setCommentDraft(event.target.value)}
+                                rows={2}
+                                className="w-full rounded-lg border border-[#2b3650] bg-black/30 px-2 py-1 text-xs text-zinc-100"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  void saveTaskFeedback({
+                                    programDay: day.programDay,
+                                    taskKey: task.key,
+                                    liked: task.feedback?.liked ?? false,
+                                    comment: commentDraft,
+                                  });
+                                  setCommentDraftKey(null);
+                                }}
+                                className="rounded-full bg-[#52B788] px-3 py-1 text-xs font-semibold text-black"
+                              >
+                                Save
+                              </button>
+                            </div>
+                          ) : null}
                           {task.isCoachAdded && isEditable ? (
                             <div className="relative z-10 mt-2 flex flex-wrap gap-2">
                               <button
@@ -1102,7 +1287,9 @@ export default function AdminProgramPlayerPanel({ enrollmentId }: { enrollmentId
         </div>
       </section>
 
-      <section className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-5">
+      <section
+        className={`rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-5 ${embedded ? "hidden" : ""}`}
+      >
         <h2 className="text-lg font-semibold text-zinc-100">This week&apos;s submissions</h2>
         {detail.weekSubmissions.length === 0 ? (
           <p className="mt-2 text-sm text-zinc-400">No submissions since Monday.</p>

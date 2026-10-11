@@ -26,12 +26,19 @@ export async function GET(request: Request) {
         userEmail: true,
         status: true,
         memberVimeoLink: true,
+        user: { select: { programEnrollment: { select: { id: true } } } },
       },
     });
 
     return NextResponse.json({
       submissions: submissions.map((submission) => ({
-        ...submission,
+        id: submission.id,
+        playerName: submission.playerName,
+        topic: submission.topic,
+        createdAt: submission.createdAt,
+        userEmail: submission.userEmail,
+        status: submission.status,
+        enrollmentId: submission.user.programEnrollment?.id ?? null,
         badgeStatus: submission.status === "PENDING" ? "PENDING" : "RESPONDED",
         hasMemberVimeoLink: Boolean(submission.memberVimeoLink),
       })),
@@ -47,12 +54,18 @@ export async function GET(request: Request) {
       userEmail: true,
       status: true,
       memberVimeoLink: true,
+      user: { select: { programEnrollment: { select: { id: true } } } },
     },
   });
 
   return NextResponse.json({
     submissions: submissions.map((submission) => ({
-      ...submission,
+      id: submission.id,
+      playerName: submission.playerName,
+      createdAt: submission.createdAt,
+      userEmail: submission.userEmail,
+      status: submission.status,
+      enrollmentId: submission.user.programEnrollment?.id ?? null,
       badgeStatus: submission.status === "PENDING" ? "PENDING" : "RESPONDED",
       hasMemberVimeoLink: Boolean(submission.memberVimeoLink),
     })),

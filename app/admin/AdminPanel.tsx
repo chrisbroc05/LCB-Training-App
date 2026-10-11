@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import GoalCheckinsPanel from "@/app/admin/GoalCheckinsPanel";
@@ -35,6 +36,7 @@ type SubmissionListItem = {
   topic?: string | null;
   createdAt: string;
   userEmail: string;
+  enrollmentId?: string | null;
   badgeStatus: "PENDING" | "RESPONDED";
   hasMemberVimeoLink?: boolean;
 };
@@ -534,7 +536,17 @@ export default function AdminPanel() {
               }`}
             >
               <div className="flex items-center justify-between gap-2">
-                <p className="text-sm font-semibold text-zinc-100">{item.playerName}</p>
+                {item.enrollmentId ? (
+                  <Link
+                    href={`/admin/program/${item.enrollmentId}`}
+                    onClick={(event) => event.stopPropagation()}
+                    className="text-sm font-semibold text-zinc-100 hover:text-[#52B788]"
+                  >
+                    {item.playerName}
+                  </Link>
+                ) : (
+                  <p className="text-sm font-semibold text-zinc-100">{item.playerName}</p>
+                )}
                 <div className="flex items-center gap-2">
                   <span
                     className="inline-flex h-5 w-5 items-center justify-center"

@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import MessageChatView, { type MessageChatItem } from "@/components/MessageChatView";
 import { setCoachUnreadCount } from "@/lib/messaging-unread-client";
 
 export default function AdminConversationPage() {
   const params = useParams<{ conversationId: string }>();
+  const searchParams = useSearchParams();
   const conversationId = params.conversationId;
+  const initialDraft = searchParams.get("draft") ?? "";
   const [playerName, setPlayerName] = useState("");
   const [enrollmentId, setEnrollmentId] = useState("");
   const [messages, setMessages] = useState<MessageChatItem[]>([]);
@@ -96,7 +98,15 @@ export default function AdminConversationPage() {
     <div className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6 sm:py-10">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-zinc-100">{playerName}</h1>
+          <h1 className="text-2xl font-semibold text-zinc-100">
+            {enrollmentId ? (
+              <Link href={`/admin/program/${enrollmentId}`} className="hover:text-[#52B788]">
+                {playerName}
+              </Link>
+            ) : (
+              playerName
+            )}
+          </h1>
           <p className="mt-1 text-sm text-zinc-400">Direct messages</p>
         </div>
         <div className="flex gap-3 text-sm">
@@ -116,6 +126,7 @@ export default function AdminConversationPage() {
           messages={messages}
           sending={sending}
           error={error}
+          initialDraft={initialDraft}
           onSend={handleSend}
           onPoll={loadMessages}
           onMarkRead={markRead}

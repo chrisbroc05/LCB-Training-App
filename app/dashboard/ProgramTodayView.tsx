@@ -62,6 +62,19 @@ type ProgramTodayTask = {
   completed: boolean;
   note?: string;
   countedFromLog?: "game" | "practice" | null;
+  coachFeedback?: {
+    liked: boolean;
+    comment: string | null;
+  } | null;
+};
+
+type UnseenCoachFeedbackItem = {
+  programDay: number;
+  taskKey: string;
+  taskTitle: string;
+  liked: boolean;
+  comment: string | null;
+  weekdayName: string;
 };
 
 type DayLogPayload = {
@@ -133,6 +146,7 @@ type ProgramTodayPayload = {
   dayLogs?: DayLogPayload[];
   seasonStats?: SeasonStatsPayload | null;
   canLogDay?: boolean;
+  unseenCoachFeedback?: UnseenCoachFeedbackItem[];
 };
 
 type AnswerSheetState = {
@@ -456,9 +470,40 @@ function WeekDayCircle({
   return <div aria-label={`${day.weekdayName} ${day.status}`}>{inner}</div>;
 }
 
+function CoachTaskFeedback({
+  feedback,
+  taskTitle,
+  weekdayName,
+}: {
+  feedback: NonNullable<ProgramTodayTask["coachFeedback"]>;
+  taskTitle: string;
+  weekdayName: string;
+}) {
+  return (
+    <div className="mt-3 rounded-xl border border-[#52B788]/30 bg-[#52B788]/10 px-4 py-3">
+      <p className="text-xs font-bold tracking-wide text-[#9df3bd]">FROM COACH BROC</p>
+      {feedback.liked ? (
+        <p className="mt-1 text-sm font-semibold text-zinc-100">Coach Broc liked this</p>
+      ) : null}
+      {feedback.comment ? (
+        <p className="mt-2 whitespace-pre-wrap text-sm text-zinc-200">{feedback.comment}</p>
+      ) : null}
+      {feedback.comment ? (
+        <Link
+          href={`/messages?draft=${encodeURIComponent(`Re: ${taskTitle} (${weekdayName}): `)}`}
+          className="mt-2 inline-block text-sm font-semibold text-[#52B788]"
+        >
+          Reply
+        </Link>
+      ) : null}
+    </div>
+  );
+}
+
 function TaskCard({
   task,
   programDay,
+  weekdayName,
   canComplete,
   canAccessPlaybook,
   onUpdate,
@@ -466,6 +511,7 @@ function TaskCard({
 }: {
   task: ProgramTodayTask;
   programDay: number;
+  weekdayName: string;
   canComplete: boolean;
   canAccessPlaybook: boolean;
   onUpdate: () => void;
@@ -599,6 +645,14 @@ function TaskCard({
             </button>
           ) : null}
         </div>
+      ) : null}
+
+      {task.coachFeedback ? (
+        <CoachTaskFeedback
+          feedback={task.coachFeedback}
+          taskTitle={task.title}
+          weekdayName={weekdayName}
+        />
       ) : null}
 
       {!task.completed && canComplete && !isWorkout ? (
@@ -803,6 +857,33 @@ export default function ProgramTodayView() {
         />
       </section>
 
+      {payload.unseenCoachFeedback &&
+      payload.unseenCoachFeedback.length > 0 &&
+      payload.viewedProgramDay === payload.todayProgramDay ? (
+        <section className={`${CARD} border-[#52B788]/40`}>
+          <p className="text-xs font-bold tracking-wide text-[#9df3bd]">NEW FEEDBACK FROM COACH BROC</p>
+          <ul className="mt-3 space-y-2">
+            {payload.unseenCoachFeedback.map((item) => (
+              <li key={`${item.programDay}:${item.taskKey}`}>
+                <button
+                  type="button"
+                  onClick={() => void loadToday(item.programDay)}
+                  className="w-full rounded-xl border border-[#2b3650] bg-black/20 px-4 py-3 text-left"
+                >
+                  <p className="text-sm font-semibold text-zinc-100">{item.taskTitle}</p>
+                  <p className="text-xs text-zinc-500">{item.weekdayName}</p>
+                  {item.comment ? (
+                    <p className="mt-1 line-clamp-2 text-sm text-zinc-300">{item.comment}</p>
+                  ) : (
+                    <p className="mt-1 text-sm text-zinc-400">Coach Broc liked this</p>
+                  )}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
       {showParentPrompt ? (
         <section className={`${CARD} border-[#52B788]/40`}>
           <div className="flex items-start justify-between gap-3">
@@ -928,6 +1009,7 @@ export default function ProgramTodayView() {
                 key={task.key}
                 task={task}
                 programDay={payload.viewedProgramDay}
+                weekdayName={payload.viewedWeekdayName || "Today"}
                 canComplete={payload.canCompleteTasks}
                 canAccessPlaybook={payload.canAccessPlaybook}
                 onUpdate={() => void loadToday(viewedProgramDay ?? undefined)}

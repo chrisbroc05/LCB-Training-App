@@ -430,6 +430,17 @@ export async function buildWeeklyRecapData(
     }
   }
 
+  const coachTaskFeedbackThisWeek =
+    weekDays.length > 0
+      ? await prisma.taskFeedback.count({
+          where: {
+            enrollmentId: enrollment.id,
+            programDay: { in: weekDays },
+            OR: [{ liked: true }, { comment: { not: null } }],
+          },
+        })
+      : 0;
+
   return {
     playerFirstName: getPlayerFirstName(enrollment.user.name, enrollment.user.email),
     weekNumber: recapWeekNumber,
@@ -445,6 +456,7 @@ export async function buildWeeklyRecapData(
     nextWeekPhase,
     messagesThisWeek,
     coachVideosThisWeek,
+    coachTaskFeedbackThisWeek,
     parentMessagesUrl: buildParentMessagesUrl(enrollment.id),
     unsubscribeUrl: buildParentUnsubscribeUrl(enrollment.id),
   };

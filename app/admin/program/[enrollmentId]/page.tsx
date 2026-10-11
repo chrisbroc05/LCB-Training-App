@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
-import AdminProgramPlayerPanel from "@/app/admin/program/[enrollmentId]/AdminProgramPlayerPanel";
+import AdminProgramPlayerProfile from "@/app/admin/program/[enrollmentId]/AdminProgramPlayerProfile";
 import { authOptions } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin";
 
@@ -17,8 +17,8 @@ export default async function AdminProgramPlayerPage({ params }: AdminProgramPla
   const { enrollmentId } = await params;
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
-      <AdminProgramPlayerPanel enrollmentId={enrollmentId} />
+    <div className="mx-auto w-full max-w-lg px-4 py-6 sm:max-w-2xl sm:px-6 sm:py-8">
+      <AdminProgramPlayerProfile enrollmentId={enrollmentId} />
     </div>
   );
 }

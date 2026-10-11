@@ -49,6 +49,12 @@ import {
   formatGameSummary,
   formatRate,
 } from "@/lib/program-stats";
+import {
+  loadTaskFeedbackMap,
+  loadUnseenTaskFeedbackForPlayer,
+  markTaskFeedbackSeenForProgramDay,
+} from "@/lib/task-feedback-server";
+import { resolveTaskTitle } from "@/lib/admin-program-player";
 import { prisma } from "@/lib/prisma";
 
 export type ProgramTaskCompletionRecord = {
@@ -62,6 +68,10 @@ export type ProgramTodayTask = ProgramDailyTask & {
   note?: string;
   completedAt?: string;
   countedFromLog?: "game" | "practice" | null;
+  coachFeedback?: {
+    liked: boolean;
+    comment: string | null;
+  } | null;
 };
 
 export type ProgramWeekDayStatus = {
@@ -286,16 +296,59 @@ export async function buildProgramTodayPayload(params: {
     });
   }
 
+  const feedbackMap = await loadTaskFeedbackMap(params.enrollment.id);
+
   const tasks: ProgramTodayTask[] = viewedTasks.map((task) => {
     const saved = completionMap.get(`${viewedDayInfo.programDay}:${task.key}`);
+    const feedback = feedbackMap.get(`${viewedDayInfo.programDay}:${task.key}`);
     return {
       ...task,
       completed: Boolean(saved),
       note: saved?.note,
       completedAt: saved?.completedAt,
       countedFromLog: saved?.countedFromLog ?? null,
+      coachFeedback: feedback
+        ? {
+            liked: feedback.liked,
+            comment: feedback.comment,
+          }
+        : null,
     };
   });
+
+  if (viewedDayInfo.programDay > 0) {
+    await markTaskFeedbackSeenForProgramDay(
+      params.enrollment.id,
+      viewedDayInfo.programDay,
+    );
+  }
+
+  const unseenFeedbackRows = await loadUnseenTaskFeedbackForPlayer(params.enrollment.id);
+  const unseenCoachFeedback = await Promise.all(
+    unseenFeedbackRows.map(async (row) => {
+      let taskTitle = row.taskKey;
+      if (planInput && params.enrollment.startDate) {
+        taskTitle = resolveTaskTitle(
+          planInput,
+          { startDate: params.enrollment.startDate },
+          overrideBundle,
+          row.programDay,
+          row.taskKey,
+        );
+      }
+      return {
+        programDay: row.programDay,
+        taskKey: row.taskKey,
+        taskTitle,
+        liked: row.liked,
+        comment: row.comment,
+        weekdayName:
+          params.enrollment.startDate && row.programDay > 0
+            ? getWeekdayNameForProgramDay(params.enrollment.startDate, row.programDay)
+            : "Day",
+      };
+    }),
+  );
 
   const dayLogs = await prisma.dayLog.findMany({
     where: {
@@ -605,6 +658,7 @@ export async function buildProgramTodayPayload(params: {
     isViewingPastDay:
       viewedDayInfo.programDay < todayInfo.programDay &&
       viewedDayInfo.programDay !== yesterdayInfo.programDay,
+    unseenCoachFeedback,
   };
 }
 

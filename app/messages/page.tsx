@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import MessageChatView, {
   PROGRAM_ENDED_CHAT_MESSAGE,
   type MessageChatItem,
@@ -8,6 +9,8 @@ import MessageChatView, {
 import { setPlayerUnreadCount } from "@/lib/messaging-unread-client";
 
 export default function MessagesPage() {
+  const searchParams = useSearchParams();
+  const initialDraft = searchParams.get("draft") ?? "";
   const [messages, setMessages] = useState<MessageChatItem[]>([]);
   const [access, setAccess] = useState<"none" | "active" | "read_only">("none");
   const [loading, setLoading] = useState(true);
@@ -105,6 +108,7 @@ export default function MessagesPage() {
           showDisclaimer={access === "active"}
           sending={sending}
           error={error}
+          initialDraft={initialDraft}
           onSend={access === "active" ? handleSend : undefined}
           onPoll={loadMessages}
           onMarkRead={markRead}
