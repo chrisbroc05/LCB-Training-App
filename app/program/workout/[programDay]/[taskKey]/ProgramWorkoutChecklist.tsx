@@ -9,6 +9,7 @@ import {
   canSaveProgramNote,
   getWorkoutNotePlaceholder,
 } from "@/lib/program-note-shared";
+import { formatWorkoutAgeGroupDisplay } from "@/lib/program-enrollment-shared";
 import type { WorkoutWithCues } from "@/lib/workout-program-types";
 
 type ProgramWorkoutChecklistProps = {
@@ -95,7 +96,8 @@ export default function ProgramWorkoutChecklist({
       <header className="mt-4 rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-5">
         <h1 className="text-2xl font-semibold text-zinc-100">{workout.title}</h1>
         <p className="mt-2 text-sm text-zinc-400">
-          Week {workout.weekNumber} | {workout.ageGroup} | {workout.category.replace("_", " ")}
+          Week {workout.weekNumber} | {formatWorkoutAgeGroupDisplay(workout.ageGroup)} |{" "}
+          {workout.category.replace("_", " ")}
         </p>
         {workout.safetyNote ? (
           <p className="mt-3 rounded-xl border border-yellow-500/40 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-100">

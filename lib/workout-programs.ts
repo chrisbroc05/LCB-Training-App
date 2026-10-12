@@ -30,7 +30,7 @@ export const RESOURCES_AGE_GROUP_STORAGE_KEY = "lcb-resources-age-group";
 export const ageGroupOptions: { key: AgeGroupKey; label: string }[] = [
   { key: "8-11", label: "Ages 8-11" },
   { key: "12-15", label: "Ages 12-15" },
-  { key: "16-18", label: "Ages 16-18" },
+  { key: "16-18", label: "Ages 16+" },
 ];
 
 export const ageGroupDetails: Record<
@@ -49,7 +49,7 @@ export const ageGroupDetails: Record<
     description: "Progressive programs building real athletic strength and speed.",
   },
   "16-18": {
-    header: "Ages 16-18 Programs",
+    header: "Ages 16+ Programs",
     description: "Advanced programs designed to get you ready for the next level.",
   },
 };

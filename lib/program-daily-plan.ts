@@ -30,7 +30,7 @@ import {
   type ProgramDrillRef,
 } from "@/lib/program-drill-tags";
 import {
-  PROGRAM_AGE_GROUP_LABELS,
+  PROGRAM_AGE_GROUP_WORKOUT_AGE,
   type ProgramAgeGroup,
   type ProgramEquipmentOption,
   type ProgramFocusArea,
@@ -111,7 +111,7 @@ const DROP_RANK = {
 } as const;
 
 function toWorkoutAgeGroup(ageGroup: ProgramAgeGroup): WorkoutAgeGroup {
-  return PROGRAM_AGE_GROUP_LABELS[ageGroup] as WorkoutAgeGroup;
+  return PROGRAM_AGE_GROUP_WORKOUT_AGE[ageGroup];
 }
 
 function hasFocus(focusAreas: ProgramFocusArea[], area: ProgramFocusArea) {

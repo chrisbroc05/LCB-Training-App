@@ -23,6 +23,7 @@ import {
   buildOverridesForWeekAndDay,
   loadEnrollmentPlanOverrideBundle,
 } from "@/lib/program-plan-overrides-server";
+import { buildAdminPlayerVideoSections } from "@/lib/coach-video-server";
 import { loadTaskFeedbackMap } from "@/lib/task-feedback-server";
 import { formatDateWithYear, formatDateTime, formatRelativeTime } from "@/lib/format-date";
 import { prisma } from "@/lib/prisma";
@@ -93,6 +94,7 @@ export async function buildAdminProgramPlayerProfile(
       })),
       goals: { current: null, history: [] },
       submissions: [],
+      videoSections: { fromPlayer: [], sentByCoach: [] },
       testingSummary: null,
       feedbackMap: {},
     };
@@ -321,6 +323,7 @@ export async function buildAdminProgramPlayerProfile(
 
   const pinnedNotePreview = coachNotes.find((n) => n.pinned)?.body.slice(0, 120) ?? null;
   const playerFirstName = getPlayerFirstName(detail.enrollment.name, detail.enrollment.email);
+  const videoSections = await buildAdminPlayerVideoSections(enrollment.userId);
 
   return {
     header: {
@@ -394,13 +397,7 @@ export async function buildAdminProgramPlayerProfile(
       })),
     },
     submissions: allSubmissions,
-    coachVideosSent: detail.coachVideosSent.map((video) => ({
-      id: video.id,
-      title: video.title,
-      createdAt: video.createdAt,
-      viewedAt: video.viewedAt,
-      href: `/videos/${video.id}`,
-    })),
+    videoSections,
     testingSummary,
     feedbackMap: Object.fromEntries(
       [...feedbackMap.entries()].map(([key, value]) => [

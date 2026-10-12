@@ -34,11 +34,26 @@ export const PROGRAM_POSITION_OPTIONS = [
   "Utility",
 ] as const;
 
+/** Player- and parent-facing labels (DB still stores AGE_16_18). */
 export const PROGRAM_AGE_GROUP_LABELS: Record<ProgramAgeGroup, string> = {
+  AGE_8_11: "8-11",
+  AGE_12_15: "12-15",
+  AGE_16_18: "16+",
+};
+
+/** Workout JSON and PDF filenames still use 16-18 internally. */
+export const PROGRAM_AGE_GROUP_WORKOUT_AGE: Record<
+  ProgramAgeGroup,
+  "8-11" | "12-15" | "16-18"
+> = {
   AGE_8_11: "8-11",
   AGE_12_15: "12-15",
   AGE_16_18: "16-18",
 };
+
+export function formatWorkoutAgeGroupDisplay(ageGroup: "8-11" | "12-15" | "16-18") {
+  return ageGroup === "16-18" ? "16+" : ageGroup;
+}
 
 export const PROGRAM_SEASON_MODE_LABELS: Record<ProgramSeasonMode, string> = {
   IN_SEASON: "In season",

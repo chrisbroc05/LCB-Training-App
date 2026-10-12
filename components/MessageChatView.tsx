@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import CoachVideoMessageEmbed from "@/components/CoachVideoMessageEmbed";
 import { useEffect, useRef, useState } from "react";
 import { formatTime } from "@/lib/format-date";
 import { parseCoachVideoLinkFromMessage } from "@/lib/coach-video-shared";
@@ -30,6 +31,7 @@ type MessageChatViewProps = {
   onPoll?: () => Promise<void>;
   onMarkRead?: () => Promise<void>;
   initialDraft?: string;
+  embedCoachVideos?: boolean;
 };
 
 export default function MessageChatView({
@@ -43,6 +45,7 @@ export default function MessageChatView({
   onPoll,
   onMarkRead,
   initialDraft = "",
+  embedCoachVideos = false,
 }: MessageChatViewProps) {
   const [draft, setDraft] = useState(initialDraft);
   const bottomRef = useRef<HTMLDivElement | null>(null);
@@ -121,7 +124,11 @@ export default function MessageChatView({
                   : "rounded-br-md bg-[#2D6A4F] text-[#F4F6F8]"
               }`}
             >
-              <MessageBody body={message.body} fromCoach={message.fromCoach} />
+              <MessageBody
+                body={message.body}
+                fromCoach={message.fromCoach}
+                embedCoachVideos={embedCoachVideos}
+              />
               <p className="mt-2 text-[11px] opacity-70">{formatTime(message.createdAt)}</p>
             </div>
           </div>
@@ -162,7 +169,15 @@ export default function MessageChatView({
   );
 }
 
-function MessageBody({ body, fromCoach }: { body: string; fromCoach: boolean }) {
+function MessageBody({
+  body,
+  fromCoach,
+  embedCoachVideos,
+}: {
+  body: string;
+  fromCoach: boolean;
+  embedCoachVideos: boolean;
+}) {
   const videoId = fromCoach ? parseCoachVideoLinkFromMessage(body) : null;
   const lines = body.split("\n");
 
@@ -172,13 +187,15 @@ function MessageBody({ body, fromCoach }: { body: string; fromCoach: boolean }) 
         const trimmed = line.trim();
         if (videoId && trimmed === `/videos/${videoId}`) {
           return (
-            <Link
-              key={`${line}-${index}`}
-              href={`/videos/${videoId}`}
-              className="inline-flex rounded-full bg-[#52B788] px-3 py-1 text-xs font-semibold text-[#0A1628]"
-            >
-              Watch video
-            </Link>
+            <div key={`${line}-${index}`} className="space-y-2">
+              <Link
+                href={`/videos/${videoId}`}
+                className="inline-flex rounded-full bg-[#52B788] px-3 py-1 text-xs font-semibold text-[#0A1628]"
+              >
+                Watch video
+              </Link>
+              {embedCoachVideos ? <CoachVideoMessageEmbed videoId={videoId} /> : null}
+            </div>
           );
         }
 

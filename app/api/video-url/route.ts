@@ -8,7 +8,7 @@ import {
   parseR2VideoReference,
   R2_VIDEO_PREFIX,
 } from "@/lib/r2";
-import { userCanAccessR2VideoKey } from "@/lib/r2-video-access";
+import { adminCanAccessR2VideoKey, userCanAccessR2VideoKey } from "@/lib/r2-video-access";
 
 type VideoUrlRequestBody = {
   r2Key?: string;
@@ -46,7 +46,12 @@ export async function POST(request: Request) {
   }
 
   const isAdmin = isAdminEmail(session.user.email);
-  if (!isAdmin) {
+  if (isAdmin) {
+    const hasAccess = await adminCanAccessR2VideoKey(r2Key);
+    if (!hasAccess) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+  } else {
     const hasAccess = await userCanAccessR2VideoKey(session.user.id, r2Key);
     if (!hasAccess) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });

@@ -8,6 +8,7 @@ import {
   parseR2VideoReference,
   R2_VIDEO_PREFIX,
 } from "@/lib/r2";
+import { adminCanAccessR2VideoKey } from "@/lib/r2-video-access";
 
 type VideoDownloadUrlRequestBody = {
   r2Key?: string;
@@ -42,6 +43,11 @@ export async function POST(request: Request) {
   const r2Key = normalizeR2Key(body.r2Key ?? "");
   if (!r2Key || !isValidR2ObjectKey(r2Key)) {
     return NextResponse.json({ error: "Invalid video key." }, { status: 400 });
+  }
+
+  const hasAccess = await adminCanAccessR2VideoKey(r2Key);
+  if (!hasAccess) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   try {

@@ -3,7 +3,8 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin";
-import { getR2ObjectStream } from "@/lib/r2";
+import { getR2ObjectStream, isValidR2ObjectKey } from "@/lib/r2";
+import { adminCanAccessR2VideoKey } from "@/lib/r2-video-access";
 
 type RouteContext = {
   params: Promise<{
@@ -20,11 +21,13 @@ export async function GET(request: Request, context: RouteContext) {
   const { key: keySegments } = await context.params;
   const key = keySegments.map((segment) => decodeURIComponent(segment)).join("/");
 
-  if (
-    (!key.startsWith("submissions/") && !key.startsWith("responses/")) ||
-    key.includes("..")
-  ) {
+  if (!isValidR2ObjectKey(key)) {
     return NextResponse.json({ error: "Invalid video key." }, { status: 400 });
+  }
+
+  const hasAccess = await adminCanAccessR2VideoKey(key);
+  if (!hasAccess) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const asDownload = new URL(request.url).searchParams.get("download") === "1";

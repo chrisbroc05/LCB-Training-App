@@ -130,6 +130,7 @@ export default function AdminConversationPage() {
           onSend={handleSend}
           onPoll={loadMessages}
           onMarkRead={markRead}
+          embedCoachVideos
         />
       </div>
     </div>

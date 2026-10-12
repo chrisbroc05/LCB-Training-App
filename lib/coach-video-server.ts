@@ -1,7 +1,10 @@
 import "server-only";
 
 import type { CoachVideoDrillCategory } from "@prisma/client";
+import { isAdminEmail } from "@/lib/admin";
+import { buildAdminSubmissionUrl } from "@/lib/coach-push-shared";
 import { prisma } from "@/lib/prisma";
+import { normalizeStoredVideoToR2Key } from "@/lib/r2-video-access";
 import {
   headR2Object,
   isAllowedSubmissionVideoContentType,
@@ -298,6 +301,139 @@ export async function listPlayerVideos(userId: string): Promise<CoachVideoListIt
 export async function getPlayerVideoById(userId: string, videoId: string) {
   const items = await listPlayerVideos(userId);
   return items.find((item) => item.id === videoId) ?? null;
+}
+
+export async function getCoachVideoListItemForViewer(params: {
+  viewerUserId: string;
+  viewerEmail: string;
+  videoId: string;
+}): Promise<CoachVideoListItem | null> {
+  if (isAdminEmail(params.viewerEmail)) {
+    const coachVideo = await prisma.coachVideo.findUnique({
+      where: { id: params.videoId },
+      select: {
+        id: true,
+        title: true,
+        note: true,
+        createdAt: true,
+        viewedAt: true,
+        videoKey: true,
+        drillCategory: true,
+      },
+    });
+
+    if (coachVideo) {
+      return {
+        id: coachVideo.id,
+        source: "coach_video",
+        title: coachVideo.title,
+        note: coachVideo.note,
+        createdAt: coachVideo.createdAt.toISOString(),
+        viewedAt: coachVideo.viewedAt?.toISOString() ?? null,
+        videoKey: coachVideo.videoKey,
+        drillCategory: coachVideo.drillCategory as CoachVideoDrillCategoryValue | null,
+        submissionType: null,
+        submissionId: null,
+      };
+    }
+
+    if (params.videoId.startsWith("swing-")) {
+      const submissionId = params.videoId.slice("swing-".length);
+      const submission = await prisma.swingAnalysisSubmission.findUnique({
+        where: { id: submissionId },
+        select: { userId: true },
+      });
+      if (submission) {
+        return getPlayerVideoById(submission.userId, params.videoId);
+      }
+    }
+
+    if (params.videoId.startsWith("mental-")) {
+      const submissionId = params.videoId.slice("mental-".length);
+      const submission = await prisma.mentalGameSubmission.findUnique({
+        where: { id: submissionId },
+        select: { userId: true },
+      });
+      if (submission) {
+        return getPlayerVideoById(submission.userId, params.videoId);
+      }
+    }
+
+    return null;
+  }
+
+  return getPlayerVideoById(params.viewerUserId, params.videoId);
+}
+
+export type AdminPlayerSubmissionVideo = {
+  id: string;
+  type: "swing" | "mental";
+  title: string;
+  createdAt: string;
+  href: string;
+  status: string;
+  note: string | null;
+  playerVideoKey: string | null;
+};
+
+export async function buildAdminPlayerVideoSections(userId: string) {
+  const [swingRows, mentalRows, sentByCoach] = await Promise.all([
+    prisma.swingAnalysisSubmission.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+      select: {
+        id: true,
+        createdAt: true,
+        status: true,
+        notes: true,
+        submittedVideo: true,
+      },
+    }),
+    prisma.mentalGameSubmission.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+      select: {
+        id: true,
+        createdAt: true,
+        status: true,
+        message: true,
+        videoPath: true,
+        topic: true,
+      },
+    }),
+    listPlayerVideos(userId),
+  ]);
+
+  const fromPlayer: AdminPlayerSubmissionVideo[] = [
+    ...swingRows.map((row) => ({
+      id: row.id,
+      type: "swing" as const,
+      title: "Swing submission",
+      createdAt: row.createdAt.toISOString(),
+      href: buildAdminSubmissionUrl("swing", row.id),
+      status: row.status,
+      note: row.notes?.trim() || null,
+      playerVideoKey: normalizeStoredVideoToR2Key(row.submittedVideo),
+    })),
+    ...mentalRows.map((row) => ({
+      id: row.id,
+      type: "mental" as const,
+      title: `Mental game: ${row.topic}`,
+      createdAt: row.createdAt.toISOString(),
+      href: buildAdminSubmissionUrl("mental", row.id),
+      status: row.status,
+      note: row.message?.trim() || null,
+      playerVideoKey: normalizeStoredVideoToR2Key(row.videoPath),
+    })),
+  ].sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+
+  const sent = sentByCoach.filter(
+    (item) => item.source === "coach_video" || item.source === "submission_response",
+  );
+
+  return { fromPlayer, sentByCoach: sent };
 }
 
 export async function countCoachVideosForUserInRange(

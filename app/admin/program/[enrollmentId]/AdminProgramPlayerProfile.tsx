@@ -4,7 +4,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import AdminProgramPlayerPanel from "@/app/admin/program/[enrollmentId]/AdminProgramPlayerPanel";
+import AdminPlayerVideoInlineCard from "@/app/admin/program/[enrollmentId]/AdminPlayerVideoInlineCard";
 import { formatDateTime } from "@/lib/format-date";
+import type { CoachVideoListItem } from "@/lib/coach-video-shared";
 
 const SECTIONS = [
   { id: "overview", label: "Overview" },
@@ -129,13 +131,19 @@ type ProfilePayload = {
     href: string;
     respondedAt: string | null;
   }>;
-  coachVideosSent: Array<{
-    id: string;
-    title: string;
-    createdAt: string;
-    viewedAt: string | null;
-    href: string;
-  }>;
+  videoSections: {
+    fromPlayer: Array<{
+      id: string;
+      type: "swing" | "mental";
+      title: string;
+      createdAt: string;
+      href: string;
+      status: string;
+      note: string | null;
+      playerVideoKey: string | null;
+    }>;
+    sentByCoach: CoachVideoListItem[];
+  };
   goalChatPrefill: string;
   testingSummary: { playerId: string; href: string } | null;
 };
@@ -260,8 +268,6 @@ export default function AdminProgramPlayerProfile({ enrollmentId }: { enrollment
     });
     await loadProfile();
   };
-
-  const baselineSwing = profile?.submissions.find((item) => item.type === "swing") ?? null;
 
   return (
     <div className="flex flex-col space-y-6 pb-24">
@@ -532,45 +538,57 @@ export default function AdminProgramPlayerProfile({ enrollmentId }: { enrollment
       </CollapsibleSection>
 
       <CollapsibleSection id="videos" title="Videos">
-        {baselineSwing ? (
-          <article className="rounded-xl border border-[#52B788]/40 bg-[#52B788]/10 p-3">
-            <p className="text-xs font-semibold text-[#9df3bd]">Week 1 baseline (newest swing on file)</p>
-            <Link href={baselineSwing.href} className="mt-1 block text-sm font-semibold text-[#52B788]">
-              Swing #{baselineSwing.id}
-            </Link>
-          </article>
-        ) : null}
-        <p className="text-xs font-semibold text-zinc-500">Player submissions</p>
-        {profile?.submissions.length ? (
-          <ul className="space-y-2">
-            {profile.submissions.map((submission) => (
-              <li key={`${submission.type}-${submission.id}`} className="rounded-lg border border-[#2b3650] p-3">
-                <Link href={submission.href} className="text-sm font-semibold text-[#52B788]">
-                  {submission.type === "swing" ? "Swing" : "Mental"} #{submission.id}
-                </Link>
-                <p className="text-xs text-zinc-500">{formatDateTime(submission.createdAt)}</p>
-                <p className="text-xs text-zinc-400">{submission.status}</p>
-                {submission.note ? <p className="mt-1 text-sm text-zinc-300">{submission.note}</p> : null}
-              </li>
-            ))}
-          </ul>
+        <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Videos from player</p>
+        {profile?.videoSections.fromPlayer.length ? (
+          <div className="space-y-4">
+            {profile.videoSections.fromPlayer.map((item) =>
+              item.playerVideoKey ? (
+                <AdminPlayerVideoInlineCard
+                  key={`${item.type}-${item.id}`}
+                  title={item.title}
+                  createdAt={item.createdAt}
+                  videoKey={item.playerVideoKey}
+                  note={item.note}
+                  href={item.href}
+                />
+              ) : (
+                <article
+                  key={`${item.type}-${item.id}`}
+                  className="rounded-xl border border-[#2b3650] bg-black/20 p-3"
+                >
+                  <Link href={item.href} className="text-sm font-semibold text-[#52B788]">
+                    {item.title}
+                  </Link>
+                  <p className="mt-1 text-xs text-zinc-500">{formatDateTime(item.createdAt)}</p>
+                  <p className="text-xs text-zinc-400">{item.status}</p>
+                  {item.note ? <p className="mt-2 text-sm text-zinc-300">{item.note}</p> : null}
+                </article>
+              ),
+            )}
+          </div>
         ) : (
           <p className="text-sm text-zinc-500">No submissions yet.</p>
         )}
-        <p className="text-xs font-semibold text-zinc-500">Videos you sent</p>
-        {profile?.coachVideosSent.length ? (
-          <ul className="space-y-2 text-sm">
-            {profile.coachVideosSent.map((video) => (
-              <li key={video.id} className="flex flex-wrap justify-between gap-2 rounded-lg border border-[#2b3650] p-3">
-                <Link href={video.href} className="font-semibold text-zinc-100">
-                  {video.title}
-                </Link>
-                <span className="text-xs text-zinc-500">
-                  {formatDateTime(video.createdAt)} . {video.viewedAt ? "Watched" : "Not watched"}
-                </span>
-              </li>
+        <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Videos I&apos;ve sent</p>
+        {profile?.videoSections.sentByCoach.length ? (
+          <div className="space-y-4">
+            {profile.videoSections.sentByCoach.map((video) => (
+              <AdminPlayerVideoInlineCard
+                key={video.id}
+                title={video.title}
+                createdAt={video.createdAt}
+                videoKey={video.videoKey}
+                note={video.note}
+                watchedLabel={
+                  video.source === "coach_video"
+                    ? video.viewedAt
+                      ? "Watched"
+                      : "Not watched yet"
+                    : "Response video"
+                }
+              />
             ))}
-          </ul>
+          </div>
         ) : (
           <p className="text-sm text-zinc-500">No coach videos sent yet.</p>
         )}

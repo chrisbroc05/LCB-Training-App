@@ -23,26 +23,22 @@ export default function VideoDetailPage() {
     }
 
     void (async () => {
-      const response = await fetch("/api/coach-videos", { cache: "no-store" });
+      const response = await fetch(`/api/coach-videos/${encodeURIComponent(videoId)}`, {
+        cache: "no-store",
+      });
       const data = (await response.json().catch(() => ({}))) as {
-        videos?: CoachVideoListItem[];
+        video?: CoachVideoListItem;
         error?: string;
       };
 
       setLoading(false);
 
-      if (!response.ok) {
-        setError(data.error ?? "Unable to load video.");
+      if (!response.ok || !data.video) {
+        setError(data.error ?? "Video not found.");
         return;
       }
 
-      const match = (data.videos ?? []).find((item) => item.id === videoId) ?? null;
-      if (!match) {
-        setError("Video not found.");
-        return;
-      }
-
-      setVideo(match);
+      setVideo(data.video);
     })();
   }, [videoId]);
 
