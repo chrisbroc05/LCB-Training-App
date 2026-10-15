@@ -12,12 +12,19 @@ import {
   buildOverridesForWeekAndDay,
   loadEnrollmentPlanOverrideBundle,
 } from "@/lib/program-plan-overrides-server";
+import {
+  TASK_COMPLETION_TYPE_OWN_LIFT,
+  TASK_COMPLETION_TYPE_STANDARD,
+  parseCompletionTypeFromRequest,
+  validateOwnLiftNote,
+} from "@/lib/program-task-completion-shared";
 import { prisma } from "@/lib/prisma";
 
 type CompleteBody = {
   programDay?: number;
   taskKey?: string;
   note?: string;
+  completionType?: string;
 };
 
 export async function POST(request: Request) {
@@ -68,7 +75,24 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Task not found for this program day." }, { status: 400 });
   }
 
-  const validated = validateTaskNote(task, note);
+  const completionType = parseCompletionTypeFromRequest(body?.completionType);
+  if (!completionType) {
+    return NextResponse.json({ error: "Invalid completion type." }, { status: 400 });
+  }
+
+  if (completionType === TASK_COMPLETION_TYPE_OWN_LIFT) {
+    if (task.type !== "strength") {
+      return NextResponse.json(
+        { error: "Own lift completion is only available for strength workouts." },
+        { status: 400 },
+      );
+    }
+  }
+
+  const validated =
+    completionType === TASK_COMPLETION_TYPE_OWN_LIFT
+      ? validateOwnLiftNote(note)
+      : validateTaskNote(task, note);
   if (!validated.ok) {
     return NextResponse.json({ error: validated.error }, { status: 400 });
   }
@@ -86,10 +110,12 @@ export async function POST(request: Request) {
       programDay,
       taskKey,
       taskType: task.type,
+      completionType,
       note: validated.note,
     },
     update: {
       note: validated.note,
+      completionType,
       completedAt: new Date(),
     },
   });
@@ -98,6 +124,7 @@ export async function POST(request: Request) {
     completion: {
       taskKey: completion.taskKey,
       note: completion.note,
+      completionType: completion.completionType,
       completedAt: completion.completedAt.toISOString(),
     },
   });

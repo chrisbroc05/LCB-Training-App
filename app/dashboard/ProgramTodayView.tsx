@@ -5,7 +5,9 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import ProgramDayLogSection from "@/app/dashboard/ProgramDayLogSection";
 import ProgramPushPrompt from "@/components/ProgramPushPrompt";
 import VideosFromCoachLink from "@/components/VideosFromCoachLink";
+import OwnLiftBottomSheet from "@/app/components/OwnLiftBottomSheet";
 import ProgramNoteField from "@/app/components/ProgramNoteField";
+import { isOwnLiftCompletion } from "@/lib/program-task-completion-shared";
 import { escapeHtml } from "@/lib/escape-text";
 import {
   canSaveProgramNote,
@@ -63,6 +65,7 @@ type ProgramTodayTask = {
   trackSafetyNote?: string;
   trackEquipmentNote?: string;
   trackEquipmentNoteUrl?: string;
+  completionType?: string;
   completed: boolean;
   note?: string;
   countedFromLog?: "game" | "practice" | null;
@@ -524,7 +527,10 @@ function TaskCard({
   onOpenAnswer: (sheet: NonNullable<AnswerSheetState>) => void;
 }) {
   const isWorkout = task.type === "speed" || task.type === "strength" || task.type === "mobility";
+  const isStrengthWorkout = task.type === "strength";
   const isTrack = task.type === "track";
+  const [ownLiftOpen, setOwnLiftOpen] = useState(false);
+  const loggedOwnLift = task.completed && isOwnLiftCompletion(task.completionType);
   const category = getTaskCategory(task.type);
   const usesAnswerSheet =
     task.type === "mindset" ||
@@ -618,12 +624,23 @@ function TaskCard({
       ) : null}
 
       {isWorkout ? (
-        <Link
-          href={`/program/workout/${programDay}/${encodeURIComponent(task.key)}`}
-          className={`${BTN_PRIMARY} mt-4`}
-        >
-          Open workout
-        </Link>
+        <>
+          <Link
+            href={`/program/workout/${programDay}/${encodeURIComponent(task.key)}`}
+            className={`${BTN_PRIMARY} mt-4`}
+          >
+            Open workout
+          </Link>
+          {isStrengthWorkout && !task.completed && canComplete ? (
+            <button
+              type="button"
+              onClick={() => setOwnLiftOpen(true)}
+              className={`${BTN_OUTLINE} mt-2 w-full`}
+            >
+              I did my own lift today
+            </button>
+          ) : null}
+        </>
       ) : null}
 
       {isTrack ? (
@@ -666,8 +683,15 @@ function TaskCard({
             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#52B788] text-[#0A1628]">
               <CheckIcon />
             </span>
-            <p className="text-sm font-semibold">Completed</p>
+            <p className="text-sm font-semibold">
+              {loggedOwnLift ? "Own lift" : "Completed"}
+            </p>
           </div>
+          {loggedOwnLift ? (
+            <span className="mt-2 inline-block rounded-full bg-[#52B788]/15 px-2.5 py-0.5 text-xs font-semibold text-[#9df3bd]">
+              Own lift
+            </span>
+          ) : null}
           {task.note ? (
             <div className="mt-3 rounded-xl border border-[#2b3650] bg-black/30 px-4 py-3">
               <p
@@ -693,6 +717,15 @@ function TaskCard({
           feedback={task.coachFeedback}
           taskTitle={task.title}
           weekdayName={weekdayName}
+        />
+      ) : null}
+
+      {ownLiftOpen ? (
+        <OwnLiftBottomSheet
+          programDay={programDay}
+          taskKey={task.key}
+          onClose={() => setOwnLiftOpen(false)}
+          onSaved={() => onUpdate()}
         />
       ) : null}
 

@@ -95,6 +95,7 @@ export async function buildAdminProgramPlayerDetail(enrollmentId: string, now = 
           programDay: true,
           taskKey: true,
           note: true,
+          completionType: true,
           completedAt: true,
         },
       },
@@ -376,6 +377,7 @@ export function buildAdminWeekDayTasks(params: {
       programDay: number;
       taskKey: string;
       note: string;
+      completionType: string;
       completedAt: Date;
     }>;
   };
@@ -412,6 +414,7 @@ export function buildAdminWeekDayTasks(params: {
               ...task,
               completed: Boolean(completion),
               note: completion?.note ?? null,
+              completionType: completion?.completionType ?? null,
               completedAt: completion?.completedAt.toISOString() ?? null,
             };
           });

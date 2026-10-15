@@ -4,6 +4,10 @@ import ProgramWorkoutChecklist from "@/app/program/workout/[programDay]/[taskKey
 import { authOptions } from "@/lib/auth";
 import { findDailyTask } from "@/lib/program-daily-plan";
 import {
+  buildOverridesForWeekAndDay,
+  loadEnrollmentPlanOverrideBundle,
+} from "@/lib/program-plan-overrides-server";
+import {
   buildProgramDayInfoForProgramDay,
   toEnrollmentPlanInput,
 } from "@/lib/program-today-server";
@@ -43,7 +47,16 @@ export default async function ProgramWorkoutPage({ params }: ProgramWorkoutPageP
     { startDate: enrollment.startDate },
     programDay,
   );
-  const task = findDailyTask(planInput, dayInfo, decodeURIComponent(taskKey));
+  const overrideBundle = await loadEnrollmentPlanOverrideBundle(
+    enrollment.id,
+    enrollment.startDate,
+  );
+  const overrides = buildOverridesForWeekAndDay(
+    overrideBundle,
+    dayInfo.weekNumber,
+    programDay,
+  );
+  const task = findDailyTask(planInput, dayInfo, decodeURIComponent(taskKey), overrides);
   if (!task?.workout) {
     redirect("/dashboard");
   }
@@ -79,6 +92,8 @@ export default async function ProgramWorkoutPage({ params }: ProgramWorkoutPageP
         inSeasonNote={task.inSeasonNote}
         initialNote={completion?.note ?? ""}
         initialCompleted={Boolean(completion)}
+        initialCompletionType={completion?.completionType ?? null}
+        isStrengthWorkout={task.type === "strength"}
       />
     </div>
   );

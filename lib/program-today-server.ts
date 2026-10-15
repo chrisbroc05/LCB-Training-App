@@ -61,11 +61,13 @@ export type ProgramTaskCompletionRecord = {
   taskKey: string;
   note: string;
   completedAt: string;
+  completionType?: string;
 };
 
 export type ProgramTodayTask = ProgramDailyTask & {
   completed: boolean;
   note?: string;
+  completionType?: string;
   completedAt?: string;
   countedFromLog?: "game" | "practice" | null;
   coachFeedback?: {
@@ -269,6 +271,7 @@ export async function buildProgramTodayPayload(params: {
       programDay: true,
       taskKey: true,
       note: true,
+      completionType: true,
       completedAt: true,
       sourceDayLogId: true,
       sourceDayLog: {
@@ -287,6 +290,7 @@ export async function buildProgramTodayPayload(params: {
     completionMap.set(`${completion.programDay}:${completion.taskKey}`, {
       taskKey: completion.taskKey,
       note: completion.note,
+      completionType: completion.completionType,
       completedAt: completion.completedAt.toISOString(),
       countedFromLog: completion.sourceDayLog
         ? completion.sourceDayLog.type === "GAME"
@@ -305,6 +309,7 @@ export async function buildProgramTodayPayload(params: {
       ...task,
       completed: Boolean(saved),
       note: saved?.note,
+      completionType: saved?.completionType,
       completedAt: saved?.completedAt,
       countedFromLog: saved?.countedFromLog ?? null,
       coachFeedback: feedback

@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import OwnLiftBottomSheet from "@/app/components/OwnLiftBottomSheet";
 import ProgramNoteField from "@/app/components/ProgramNoteField";
+import { isOwnLiftCompletion } from "@/lib/program-task-completion-shared";
 import { escapeHtml } from "@/lib/escape-text";
 import {
   canSaveProgramNote,
@@ -19,6 +21,8 @@ type ProgramWorkoutChecklistProps = {
   inSeasonNote?: string;
   initialNote?: string;
   initialCompleted: boolean;
+  initialCompletionType?: string | null;
+  isStrengthWorkout: boolean;
 };
 
 export default function ProgramWorkoutChecklist({
@@ -28,14 +32,19 @@ export default function ProgramWorkoutChecklist({
   inSeasonNote,
   initialNote = "",
   initialCompleted,
+  initialCompletionType = null,
+  isStrengthWorkout,
 }: ProgramWorkoutChecklistProps) {
   const router = useRouter();
   const [checked, setChecked] = useState<Record<string, boolean>>({});
   const [note, setNote] = useState(initialNote);
   const [savedNote, setSavedNote] = useState(initialNote);
   const [completed, setCompleted] = useState(initialCompleted);
+  const [completionType, setCompletionType] = useState(initialCompletionType);
+  const [ownLiftOpen, setOwnLiftOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const loggedOwnLift = completed && isOwnLiftCompletion(completionType);
 
   const saveCompletion = async () => {
     setSaving(true);
@@ -60,6 +69,7 @@ export default function ProgramWorkoutChecklist({
     }
 
     setSavedNote(note);
+    setCompletionType("STANDARD");
     setCompleted(true);
     router.push("/dashboard/today");
   };
@@ -82,6 +92,7 @@ export default function ProgramWorkoutChecklist({
     }
 
     setCompleted(false);
+    setCompletionType(null);
   };
 
   return (
@@ -116,6 +127,24 @@ export default function ProgramWorkoutChecklist({
         ) : null}
       </header>
 
+      {loggedOwnLift ? (
+        <section className="mobile-card mt-6 rounded-2xl border border-[#52B788]/40 bg-[#52B788]/10 p-5">
+          <p className="text-sm font-bold tracking-wide text-[#9df3bd]">OWN LIFT</p>
+          <p
+            className="mt-3 whitespace-pre-wrap text-sm text-zinc-200"
+            dangerouslySetInnerHTML={{ __html: escapeHtml(savedNote) }}
+          />
+          <button
+            type="button"
+            onClick={() => void undoCompletion()}
+            disabled={saving}
+            className="mt-4 rounded-full border border-[#2b3650] px-5 py-3 text-sm font-semibold text-zinc-300"
+          >
+            Undo
+          </button>
+        </section>
+      ) : (
+      <>
       <div className="mt-6 space-y-5">
         {workout.sections.map((section) => (
           <section
@@ -176,6 +205,16 @@ export default function ProgramWorkoutChecklist({
         ))}
       </div>
 
+      {!loggedOwnLift && isStrengthWorkout && !completed ? (
+        <button
+          type="button"
+          onClick={() => setOwnLiftOpen(true)}
+          className="mt-6 w-full rounded-full border border-[#2b3650] px-5 py-3 text-sm font-semibold text-zinc-200"
+        >
+          I did my own lift today
+        </button>
+      ) : null}
+
       <section className="mobile-card mt-8 rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-5">
         <h2 className="text-lg font-semibold text-zinc-100">Finish this workout</h2>
         <div className="mt-4">
@@ -213,6 +252,17 @@ export default function ProgramWorkoutChecklist({
           </button>
         )}
       </section>
+      </>
+      )}
+
+      {ownLiftOpen ? (
+        <OwnLiftBottomSheet
+          programDay={programDay}
+          taskKey={taskKey}
+          onClose={() => setOwnLiftOpen(false)}
+          onSaved={() => router.push("/dashboard/today")}
+        />
+      ) : null}
     </div>
   );
 }

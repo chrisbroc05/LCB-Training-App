@@ -511,6 +511,7 @@ model TaskCompletion {
   programDay     Int
   taskKey        String
   taskType       String
+  completionType String            @default("STANDARD")
   note           String
   completedAt    DateTime          @default(now())
   sourceDayLogId String?

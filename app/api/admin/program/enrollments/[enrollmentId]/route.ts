@@ -53,6 +53,7 @@ export async function GET(request: Request, context: RouteContext) {
           programDay: true,
           taskKey: true,
           note: true,
+          completionType: true,
           completedAt: true,
         },
       },

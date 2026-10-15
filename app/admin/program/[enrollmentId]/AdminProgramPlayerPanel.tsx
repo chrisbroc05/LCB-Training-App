@@ -33,6 +33,7 @@ type WeekTask = {
   focus?: string;
   completed: boolean;
   note?: string | null;
+  completionType?: string | null;
   completedAt?: string | null;
   isCoachAdded?: boolean;
   drills?: Array<{ title: string; href: string }>;
@@ -1208,6 +1209,11 @@ export default function AdminProgramPlayerPanel({
                           <div className="flex flex-wrap items-start justify-between gap-2">
                             <div>
                               <p className="text-sm font-semibold text-zinc-100">{task.title}</p>
+                              {task.completionType === "OWN_LIFT" ? (
+                                <span className="mt-1 inline-block rounded-full bg-[#52B788]/15 px-2 py-0.5 text-[10px] font-semibold text-[#9df3bd]">
+                                  Own lift
+                                </span>
+                              ) : null}
                               <p className="mt-1 text-sm text-zinc-400">{task.target}</p>
                               {task.focus ? (
                                 <p className="mt-1 text-xs text-[#52B788]">{task.focus}</p>
