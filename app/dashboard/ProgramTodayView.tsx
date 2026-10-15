@@ -59,6 +59,10 @@ type ProgramTodayTask = {
   mindsetPrompt?: string;
   reflectionFields?: Array<{ key: string; label: string }>;
   isCoachAdded?: boolean;
+  trackKey?: string;
+  trackSafetyNote?: string;
+  trackEquipmentNote?: string;
+  trackEquipmentNoteUrl?: string;
   completed: boolean;
   note?: string;
   countedFromLog?: "game" | "practice" | null;
@@ -179,6 +183,8 @@ function getTaskCategory(type: string): TaskCategory {
       return { label: "REFLECTION", icon: "R" };
     case "custom":
       return { label: "COACH", icon: "C" };
+    case "track":
+      return { label: "ADD-ON", icon: "+" };
     default:
       return { label: "MINDSET", icon: "I" };
   }
@@ -518,6 +524,7 @@ function TaskCard({
   onOpenAnswer: (sheet: NonNullable<AnswerSheetState>) => void;
 }) {
   const isWorkout = task.type === "speed" || task.type === "strength" || task.type === "mobility";
+  const isTrack = task.type === "track";
   const category = getTaskCategory(task.type);
   const usesAnswerSheet =
     task.type === "mindset" ||
@@ -619,6 +626,40 @@ function TaskCard({
         </Link>
       ) : null}
 
+      {isTrack ? (
+        <>
+          {task.trackSafetyNote ? (
+            <p className="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">
+              {task.trackSafetyNote}
+            </p>
+          ) : null}
+          {task.trackEquipmentNote ? (
+            <p className="mt-2 text-xs text-zinc-400">
+              {task.trackEquipmentNote}
+              {task.trackEquipmentNoteUrl ? (
+                <>
+                  {" "}
+                  <a
+                    href={task.trackEquipmentNoteUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-semibold text-[#52B788]"
+                  >
+                    View J-Bands
+                  </a>
+                </>
+              ) : null}
+            </p>
+          ) : null}
+          <Link
+            href={`/program/track/${programDay}/${encodeURIComponent(task.key)}`}
+            className={`${BTN_PRIMARY} mt-4`}
+          >
+            Open track workout
+          </Link>
+        </>
+      ) : null}
+
       {task.completed ? (
         <div className="mt-4 border-t border-[#18243a] pt-4">
           <div className="flex items-center gap-2 text-[#9df3bd]">
@@ -655,7 +696,7 @@ function TaskCard({
         />
       ) : null}
 
-      {!task.completed && canComplete && !isWorkout ? (
+      {!task.completed && canComplete && !isWorkout && !isTrack ? (
         <>
           {usesAnswerSheet ? (
             <button

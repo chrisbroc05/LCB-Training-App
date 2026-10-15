@@ -117,6 +117,16 @@ type PlayerDetail = {
   weekDays: WeekDay[];
   profile?: unknown;
   cues: Array<{ id: string; displayLabel: string }>;
+  enrollmentTracks: Array<{
+    trackKey: string;
+    label: string;
+    description: string;
+    minutesLabel: string;
+    active: boolean;
+    startedAt: string | null;
+    note: string;
+    enrollmentTrackId: string | null;
+  }>;
   customTasks: Array<{
     id: string;
     programDay: number;
@@ -869,6 +879,75 @@ export default function AdminProgramPlayerPanel({
               </button>
             );
           })}
+        </div>
+        <div className="border-t border-[#18243a] pt-4 space-y-3">
+          <h3 className="text-sm font-semibold text-zinc-200">Add-on tracks</h3>
+          <p className="text-xs text-zinc-500">
+            Extra daily tasks on top of the normal plan. Turning a track on starts it today.
+          </p>
+          {detail.enrollmentTracks.map((track) => (
+            <div
+              key={track.trackKey}
+              className="rounded-xl border border-[#2b3650] bg-black/20 p-3 space-y-2"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <p className="text-sm font-semibold text-zinc-100">{track.label}</p>
+                  <p className="mt-1 text-xs text-zinc-500">{track.minutesLabel}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    void (async () => {
+                      const response = await fetch(
+                        `/api/admin/program/enrollments/${enrollmentId}/tracks`,
+                        {
+                          method: "PATCH",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            trackKey: track.trackKey,
+                            active: !track.active,
+                            note: track.note || null,
+                          }),
+                        },
+                      );
+                      if (response.ok) {
+                        await loadDetail(selectedWeek);
+                      }
+                    })()
+                  }
+                  className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
+                    track.active
+                      ? "bg-[#22c55e]/20 text-[#9df3bd]"
+                      : "border border-[#2b3650] text-zinc-400"
+                  }`}
+                >
+                  {track.active ? "On" : "Off"}
+                </button>
+              </div>
+              <label className="block text-xs text-zinc-500">
+                Optional note
+                <input
+                  type="text"
+                  defaultValue={track.note}
+                  onBlur={(event) => {
+                    const note = event.target.value;
+                    void fetch(`/api/admin/program/enrollments/${enrollmentId}/tracks`, {
+                      method: "PATCH",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        trackKey: track.trackKey,
+                        active: track.active,
+                        note,
+                      }),
+                    });
+                  }}
+                  className="mt-1 w-full rounded-lg border border-[#2b3650] bg-black/30 px-3 py-2 text-sm text-zinc-200"
+                  placeholder="Coach note for this track"
+                />
+              </label>
+            </div>
+          ))}
         </div>
         <p className="text-sm font-medium text-zinc-300">Strength workout variant</p>
         <div className="flex flex-wrap gap-2">

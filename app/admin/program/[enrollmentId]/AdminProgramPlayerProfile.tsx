@@ -74,6 +74,7 @@ type ProfilePayload = {
     parentName: string | null;
     parentEmailsEnabled: boolean;
     dailyRoutineEmailsEnabled: boolean;
+    activeTrackPills: Array<{ trackKey: string; label: string; note: string | null }>;
     inPersonTraining: {
       trainsInPerson: boolean;
       emergencyContactName: string | null;
@@ -309,6 +310,19 @@ export default function AdminProgramPlayerProfile({ enrollmentId }: { enrollment
             {header.pinnedNotePreview ? (
               <p className="mt-2 text-xs italic text-zinc-400">{header.pinnedNotePreview}</p>
             ) : null}
+            {overview?.activeTrackPills && overview.activeTrackPills.length > 0 ? (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {overview.activeTrackPills.map((pill) => (
+                  <span
+                    key={pill.trackKey}
+                    className="rounded-full bg-[#52B788]/15 px-2.5 py-0.5 text-xs font-semibold text-[#9df3bd]"
+                    title={pill.note ?? undefined}
+                  >
+                    {pill.label}
+                  </span>
+                ))}
+              </div>
+            ) : null}
           </>
         ) : null}
         <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
@@ -392,6 +406,18 @@ export default function AdminProgramPlayerProfile({ enrollmentId }: { enrollment
 
       {overview ? (
         <CollapsibleSection id="overview" title="Overview">
+          {overview.activeTrackPills.length > 0 ? (
+            <div className="mb-4 flex flex-wrap gap-2">
+              {overview.activeTrackPills.map((pill) => (
+                <span
+                  key={pill.trackKey}
+                  className="rounded-full border border-[#52B788]/40 bg-[#52B788]/10 px-3 py-1 text-xs font-semibold text-[#9df3bd]"
+                >
+                  {pill.label}
+                </span>
+              ))}
+            </div>
+          ) : null}
           {overview.knownFor ? (
             <p className="text-2xl font-semibold leading-snug text-zinc-100">
               &quot;{overview.knownFor}&quot;

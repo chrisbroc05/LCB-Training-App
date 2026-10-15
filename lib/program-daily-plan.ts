@@ -23,6 +23,7 @@ import {
   applyDailyPlanOverrides,
   type ProgramDailyPlanOverrides,
 } from "@/lib/program-plan-overrides";
+import { applyEnrollmentTrackTasks } from "@/lib/program-track-plan";
 import {
   getFieldingDrillsForDay,
   getHittingDrillsForDay,
@@ -54,7 +55,8 @@ export type ProgramTaskType =
   | "reflection"
   | "sprint"
   | "core"
-  | "custom";
+  | "custom"
+  | "track";
 
 export type ProgramWorkoutRef = {
   category: WorkoutCategory;
@@ -84,6 +86,16 @@ export type ProgramDailyTask = {
   mindsetPrompt?: string;
   reflectionFields?: Array<{ key: string; label: string }>;
   isCoachAdded?: boolean;
+  trackKey?: string;
+  trackSafetyNote?: string;
+  trackEquipmentNote?: string;
+  trackEquipmentNoteUrl?: string;
+  trackExercises?: Array<{
+    name: string;
+    prescription: string;
+    formCue: string;
+    optional?: boolean;
+  }>;
 };
 
 export type ProgramEnrollmentPlanInput = {
@@ -701,7 +713,8 @@ export function getDailyPlan(
 
   tasks = enforceMaxTasks(tasks, enrollment, programDayInfo, inSeason);
   const finalized = finalizeTasks(tasks);
-  return applyDailyPlanOverrides(finalized, programDayInfo.programDay, overrides);
+  const withOverrides = applyDailyPlanOverrides(finalized, programDayInfo.programDay, overrides);
+  return applyEnrollmentTrackTasks(withOverrides, programDayInfo, overrides?.activeTracks);
 }
 
 export function getTaskKeysForDay(

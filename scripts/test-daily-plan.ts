@@ -321,8 +321,47 @@ function printProgramWeekSamples() {
   }
 }
 
+function assertEnrollmentTrackCase() {
+  const enrollment: ProgramEnrollmentPlanInput = {
+    ageGroup: "AGE_12_15",
+    focusAreas: ["hitting", "fielding"],
+    equipment: ["nothing_special"],
+    seasonMode: "OFF_SEASON",
+  };
+  const mondayWeek1 = makeDayInfo(1, 1);
+  const baseCount = getDailyPlan(enrollment, mondayWeek1).length;
+  if (baseCount > 4) {
+    throw new Error(`Expected at most 4 base tasks, got ${baseCount}.`);
+  }
+
+  const withTracks = getDailyPlan(enrollment, mondayWeek1, {
+    activeTracks: [
+      { trackKey: "arm_care", startedProgramDay: 1 },
+      { trackKey: "catcher", startedProgramDay: 1 },
+    ],
+  });
+  const trackTasks = withTracks.filter((task) => task.type === "track");
+  if (trackTasks.length !== 1 || trackTasks[0]?.trackKey !== "arm_care") {
+    throw new Error("Monday week 1 should include arm_care track only.");
+  }
+  if (withTracks.filter((task) => task.type !== "track").length !== baseCount) {
+    throw new Error("Track tasks must not replace base plan tasks.");
+  }
+
+  const week6Tuesday = makeDayInfo(6, 2);
+  const week6Tracks = getDailyPlan(enrollment, week6Tuesday, {
+    activeTracks: [{ trackKey: "catcher", startedProgramDay: 1 }],
+  }).filter((task) => task.type === "track");
+  if (week6Tracks.length !== 1 || !week6Tracks[0]?.trackExercises?.length) {
+    throw new Error("Week 6 Tuesday should include catcher track exercises.");
+  }
+
+  console.log("Enrollment track daily plan test passed.");
+}
+
 assertFocusOverrideCase();
 assertCustomTaskReplaceCase();
+assertEnrollmentTrackCase();
 assertSaturdayStartUsesRealWeekday();
 printProgramWeekSamples();
 

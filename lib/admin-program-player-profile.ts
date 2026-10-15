@@ -26,6 +26,7 @@ import {
 import { buildAdminPlayerVideoSections } from "@/lib/coach-video-server";
 import { loadTaskFeedbackMap } from "@/lib/task-feedback-server";
 import { formatDateWithYear, formatDateTime, formatRelativeTime } from "@/lib/format-date";
+import { getProgramTrackDefinition } from "@/lib/program-tracks";
 import { prisma } from "@/lib/prisma";
 import type { buildAdminProgramPlayerDetail } from "@/lib/admin-program-player";
 
@@ -53,6 +54,10 @@ export async function buildAdminProgramPlayerProfile(
       conversation: { select: { coachUnreadCount: true, id: true } },
       taskCompletions: {
         select: { programDay: true, taskKey: true, note: true, completedAt: true, id: true },
+      },
+      enrollmentTracks: {
+        where: { active: true },
+        select: { trackKey: true, note: true },
       },
     },
   });
@@ -359,6 +364,11 @@ export async function buildAdminProgramPlayerProfile(
       dailyRoutineEmailsEnabled: detail.enrollment.dailyRoutineEmailsEnabled,
       inPersonTraining: detail.enrollment.inPersonTraining,
       legalAcceptance: detail.enrollment.legalAcceptance,
+      activeTrackPills: enrollment.enrollmentTracks.map((track) => ({
+        trackKey: track.trackKey,
+        label: getProgramTrackDefinition(track.trackKey)?.label ?? track.trackKey,
+        note: track.note,
+      })),
     },
     goalChatPrefill: `Hey ${playerFirstName}, let's set your goals for this month. What are 1-2 things you want to get better at?`,
     attention,

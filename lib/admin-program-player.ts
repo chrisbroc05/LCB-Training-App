@@ -59,6 +59,7 @@ import {
 import { formatRefundLabel } from "@/lib/stripe-refund-shared";
 import { serializeInPersonTrainingInfo } from "@/lib/in-person-training-shared";
 import { listAdminCoachVideosForUser } from "@/lib/coach-video-server";
+import { serializeEnrollmentTracks } from "@/lib/program-tracks-server";
 
 export async function buildAdminProgramPlayerDetail(enrollmentId: string, now = new Date()) {
   const enrollment = await prisma.programEnrollment.findUnique({
@@ -101,6 +102,7 @@ export async function buildAdminProgramPlayerDetail(enrollmentId: string, now = 
         include: { cue: true },
       },
       customTasks: true,
+      enrollmentTracks: true,
     },
   });
 
@@ -110,7 +112,10 @@ export async function buildAdminProgramPlayerDetail(enrollmentId: string, now = 
 
   const schedule = getProgramDay({ startDate: enrollment.startDate }, now);
   const planInput = toEnrollmentPlanInput(enrollment);
-  const overrideBundle = await loadEnrollmentPlanOverrideBundle(enrollment.id);
+  const overrideBundle = await loadEnrollmentPlanOverrideBundle(
+    enrollment.id,
+    enrollment.startDate,
+  );
 
   const completedWorkDays = new Set<number>();
   if (planInput && enrollment.startDate) {
@@ -312,6 +317,7 @@ export async function buildAdminProgramPlayerDetail(enrollmentId: string, now = 
       drillIds: task.drillIds,
       replacesTaskKey: task.replacesTaskKey,
     })),
+    enrollmentTracks: serializeEnrollmentTracks(enrollment.enrollmentTracks),
     weekFocusOverrides: enrollment.weekFocusOverrides.map((item) => ({
       id: item.id,
       weekNumber: item.weekNumber,

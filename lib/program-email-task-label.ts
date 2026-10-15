@@ -18,6 +18,8 @@ export function getTaskCategoryLabel(type: string) {
       return "REFLECTION";
     case "custom":
       return "COACH";
+    case "track":
+      return "ADD-ON";
     case "playbook":
       return "MINDSET";
     default:

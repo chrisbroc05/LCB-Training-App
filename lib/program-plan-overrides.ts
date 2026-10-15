@@ -4,6 +4,7 @@ import {
 } from "@/lib/drill-library-videos";
 import type { ProgramDrillRef } from "@/lib/program-drill-tags";
 import type { ProgramDailyTask } from "@/lib/program-daily-plan";
+import type { ProgramActiveTrackInput } from "@/lib/program-track-plan";
 
 export type ProgramFocusOverrideInput = {
   cueLabel: string;
@@ -24,6 +25,7 @@ export type ProgramCustomTaskInput = {
 export type ProgramDailyPlanOverrides = {
   focusOverride?: ProgramFocusOverrideInput | null;
   customTasks?: ProgramCustomTaskInput[];
+  activeTracks?: ProgramActiveTrackInput[];
 };
 
 const drillByVimeoId = new Map<string, ProgramDrillRef>();

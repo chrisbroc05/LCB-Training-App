@@ -48,6 +48,8 @@ export function getPushCategoryKeyFromTaskType(type: string): PushCategoryKey | 
     case "playbook":
     case "reflection":
       return "mindset";
+    case "track":
+      return "workout";
     default:
       return null;
   }
