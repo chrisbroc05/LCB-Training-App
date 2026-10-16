@@ -9,7 +9,8 @@ import {
   getCoachingSubmissionAvailability,
   getCoachingSubmissionLockReason,
 } from "@/lib/coaching-submissions";
-import { freeSubmissionUsedUpgradeMessage, memorableRequiredMessage } from "@/lib/membership";
+import { PLAYBOOK_SUBMISSIONS_EXHAUSTED_MESSAGE } from "@/lib/coaching-submissions";
+import { freeSubmissionUsedUpgradeMessage } from "@/lib/membership";
 
 export default async function MentalGamePage() {
   const session = await getServerSession(authOptions);
@@ -25,19 +26,19 @@ export default async function MentalGamePage() {
   const membershipTier = userFields.membershipTier;
   const lockReason = getCoachingSubmissionLockReason(userFields);
 
-  if (membershipTier === "BASIC" || lockReason === "basic") {
+  const availability = getCoachingSubmissionAvailability(userFields);
+
+  if (lockReason === "playbook-used") {
     return (
       <LockedFeaturePanel
         title="Coaching Submissions"
         description="Submit what you are dealing with mentally so your coach can send support and adjustments."
-        message={memorableRequiredMessage}
-        upgradeLabel="Join the 12-Week Program"
+        message={PLAYBOOK_SUBMISSIONS_EXHAUSTED_MESSAGE}
+        upgradeLabel="View the 12-Week Program"
         upgradeHref="/program"
       />
     );
   }
-
-  const availability = getCoachingSubmissionAvailability(userFields);
 
   if (lockReason === "free-used") {
     return (

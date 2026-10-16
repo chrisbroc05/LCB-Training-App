@@ -153,6 +153,7 @@ model User {
   onboardingEmail2Sent   Boolean                @default(false)
   onboardingEmail3Sent   Boolean                @default(false)
   freeSubmissionUsed     Boolean                @default(false)
+  playbookSubmissionsUsed Int                   @default(0)
   coachingSubmissionsUsedThisMonth Int          @default(0)
   coachingSubmissionPeriod         String?
   eliteRolloverCredits             Int          @default(0)

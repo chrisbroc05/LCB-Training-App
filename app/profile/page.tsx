@@ -145,9 +145,11 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
   const submissionsRemaining =
     membershipTier === "TWELVE_WEEK"
       ? null
-      : membershipTier === "MEMORABLE" || membershipTier === "ELITE"
+      : membershipTier === "BASIC"
         ? (availability?.remaining ?? 0)
-        : null;
+        : membershipTier === "MEMORABLE" || membershipTier === "ELITE"
+          ? (availability?.remaining ?? 0)
+          : null;
   const showLifetimeAccess = isLifetimeBasicMember(membershipTier, user.stripeSubscriptionId);
 
   let playbookProgress = null;

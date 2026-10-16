@@ -126,7 +126,7 @@ export function getTwelveWeekOfferLine() {
 }
 
 export function getPlaybookOfferLine() {
-  return `${PLAYBOOK_NAME}, $59`;
+  return `${PLAYBOOK_NAME}, $59 (includes 2 personal swing or video breakdowns from Coach Broc)`;
 }
 
 export function getRemoteSessionOfferLine() {

@@ -1,6 +1,14 @@
 import type { MembershipTier, SubscriptionStatus } from "@prisma/client";
-import { getCoachingSubmissionAvailability } from "@/lib/coaching-submissions";
 import {
+  getCoachingSubmissionAvailability,
+  PLAYBOOK_LIFETIME_SUBMISSION_LIMIT,
+} from "@/lib/coaching-submissions";
+import {
+  buildMemberProductAccessSummary,
+  formatMemberProductAccessCompact,
+} from "@/lib/admin-product-access-shared";
+import {
+  formatDatabaseTierLabel,
   isDatabaseTier,
   type DatabaseTier,
   validDatabaseTiers,
@@ -31,6 +39,7 @@ export const adminMemberListSelect = {
   twelveWeekCallBooked: true,
   twelveWeekCallScheduledAt: true,
   freeSubmissionUsed: true,
+  playbookSubmissionsUsed: true,
   coachingSubmissionsUsedThisMonth: true,
   coachingSubmissionPeriod: true,
   eliteRolloverCredits: true,
@@ -57,6 +66,7 @@ type AdminMemberListRecord = {
   twelveWeekCallBooked: boolean;
   twelveWeekCallScheduledAt: Date | null;
   freeSubmissionUsed: boolean;
+  playbookSubmissionsUsed: number;
   coachingSubmissionsUsedThisMonth: number;
   coachingSubmissionPeriod: string | null;
   eliteRolloverCredits: number;
@@ -86,6 +96,17 @@ export function buildManualTierUpdateData(tier: DatabaseTier) {
     };
   }
 
+  if (tier === "BASIC") {
+    return {
+      ...baseUpdate,
+      twelveWeekProgramStartedAt: null,
+      twelveWeekProgramEndsAt: null,
+      twelveWeekCallBooked: false,
+      twelveWeekCallScheduledAt: null,
+      playbookSubmissionsUsed: 0,
+    };
+  }
+
   return {
     ...baseUpdate,
     twelveWeekProgramStartedAt: null,
@@ -101,10 +122,13 @@ export function serializeAdminMemberSummary(user: AdminMemberListRecord) {
   const availability = getCoachingSubmissionAvailability({
     membershipTier: user.membershipTier,
     freeSubmissionUsed: user.freeSubmissionUsed,
+    playbookSubmissionsUsed: user.playbookSubmissionsUsed,
     coachingSubmissionsUsedThisMonth: user.coachingSubmissionsUsedThisMonth,
     coachingSubmissionPeriod: user.coachingSubmissionPeriod,
     eliteRolloverCredits: user.eliteRolloverCredits,
   });
+
+  const tierLabel = formatDatabaseTierLabel(user.membershipTier);
 
   return {
     id: user.id,
@@ -115,6 +139,8 @@ export function serializeAdminMemberSummary(user: AdminMemberListRecord) {
     signedUpBy: formatSignedUpBy(user.accountRole, user.accountHolderName),
     email: user.email,
     membershipTier: user.membershipTier,
+    productAccessCompact: formatMemberProductAccessCompact(user.membershipTier),
+    productAccess: buildMemberProductAccessSummary(user.membershipTier, tierLabel),
     signupDate: user.signupDate.toISOString(),
     lastActiveAt: null,
     submissionCount,
@@ -126,6 +152,10 @@ export function serializeAdminMemberSummary(user: AdminMemberListRecord) {
       user.membershipTier === "MEMORABLE" || user.membershipTier === "ELITE"
         ? availability.remaining
         : null,
+    playbookSubmissionsRemaining:
+      user.membershipTier === "BASIC" ? availability.remaining : null,
+    playbookSubmissionsLimit:
+      user.membershipTier === "BASIC" ? PLAYBOOK_LIFETIME_SUBMISSION_LIMIT : null,
   };
 }
 
@@ -169,6 +199,7 @@ export const adminMemberDetailSelect = {
   twelveWeekCallScheduledAt: true,
   adminNotes: true,
   freeSubmissionUsed: true,
+  playbookSubmissionsUsed: true,
   coachingSubmissionsUsedThisMonth: true,
   coachingSubmissionPeriod: true,
   eliteRolloverCredits: true,
@@ -262,6 +293,7 @@ type AdminMemberDetailRecord = {
   twelveWeekCallScheduledAt: Date | null;
   adminNotes: string | null;
   freeSubmissionUsed: boolean;
+  playbookSubmissionsUsed: number;
   coachingSubmissionsUsedThisMonth: number;
   coachingSubmissionPeriod: string | null;
   eliteRolloverCredits: number;

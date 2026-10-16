@@ -4,6 +4,7 @@ import { isFreeSwingAuthFlow } from "@/lib/free-swing-flow";
 const PLAYBOOK_TIERS = new Set(["basic", "memorable", "elite"]);
 
 export const PLAYBOOK_INCLUDED_ITEMS = [
+  "2 personal swing or video breakdowns from Coach Broc (lifetime)",
   "The Next Level Playbook -- 4 interactive chapters with reflection questions",
   "Full hitting, fielding, and mindset video drill library",
   "8 downloadable workout programs",

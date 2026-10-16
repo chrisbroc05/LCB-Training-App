@@ -253,10 +253,10 @@ export function buildFollowupKnownForDay10Email(recipient: MarketingEmailRecipie
   const programUrl = getMarketingProgramUrl();
   const assessmentCallUrl = getMarketingAssessmentCallUrl();
   const playbookLine = recipient.ownsPlaybook
-    ? ""
+    ? `<p style="margin:16px 0 0 0; font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:1.7; color:#6B7280;">You still have 2 lifetime coaching submissions included with your Playbook. Send a swing video or mindset question whenever you are ready.</p>`
     : `<p style="margin:16px 0 0 0; font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:1.7; color:#6B7280;">Other ways to work with me: ${escapeHtml(getPlaybookOfferLine())} or ${escapeHtml(getInPersonLessonsLine())}.</p>`;
   const playbookText = recipient.ownsPlaybook
-    ? ""
+    ? "\nYou still have 2 lifetime coaching submissions included with your Playbook. Send a swing video or mindset question whenever you are ready."
     : `\nOther ways to work with me: ${getPlaybookOfferLine()} or ${getInPersonLessonsLine()}.`;
 
   const bodyContentHtml = `<h1 style="margin:0 0 16px 0; font-family:Arial, Helvetica, sans-serif; font-size:24px; line-height:1.3; color:#0A1628;">What do you want to be known for?</h1>

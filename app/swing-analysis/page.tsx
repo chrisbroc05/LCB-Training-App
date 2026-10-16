@@ -9,7 +9,8 @@ import {
   getCoachingSubmissionAvailability,
   getCoachingSubmissionLockReason,
 } from "@/lib/coaching-submissions";
-import { freeSubmissionUsedUpgradeMessage, memorableRequiredMessage } from "@/lib/membership";
+import { PLAYBOOK_SUBMISSIONS_EXHAUSTED_MESSAGE } from "@/lib/coaching-submissions";
+import { freeSubmissionUsedUpgradeMessage } from "@/lib/membership";
 
 export default async function SwingAnalysisPage() {
   const session = await getServerSession(authOptions);
@@ -25,19 +26,19 @@ export default async function SwingAnalysisPage() {
   const membershipTier = userFields.membershipTier;
   const lockReason = getCoachingSubmissionLockReason(userFields);
 
-  if (membershipTier === "BASIC" || lockReason === "basic") {
+  const availability = getCoachingSubmissionAvailability(userFields);
+
+  if (lockReason === "playbook-used") {
     return (
       <LockedFeaturePanel
         title="Coaching Submissions"
         description="Upload your latest swing video and include context so our coaches can provide targeted feedback."
-        message={memorableRequiredMessage}
-        upgradeLabel="Join the 12-Week Program"
+        message={PLAYBOOK_SUBMISSIONS_EXHAUSTED_MESSAGE}
+        upgradeLabel="View the 12-Week Program"
         upgradeHref="/program"
       />
     );
   }
-
-  const availability = getCoachingSubmissionAvailability(userFields);
 
   if (lockReason === "free-used") {
     return (

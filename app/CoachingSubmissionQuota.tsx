@@ -1,5 +1,11 @@
+import Link from "next/link";
 import type { CoachingSubmissionAvailability } from "@/lib/coaching-submissions";
-import { getCoachingSubmissionPeriodLabel } from "@/lib/coaching-submissions";
+import {
+  formatPlaybookSubmissionQuotaLabel,
+  getCoachingSubmissionPeriodLabel,
+  PLAYBOOK_LIFETIME_SUBMISSION_LIMIT,
+  PLAYBOOK_SUBMISSIONS_EXHAUSTED_MESSAGE,
+} from "@/lib/coaching-submissions";
 import type { DatabaseTier } from "@/lib/membership";
 
 type CoachingSubmissionQuotaProps = {
@@ -12,7 +18,29 @@ export default function CoachingSubmissionQuota({
   membershipTier,
 }: CoachingSubmissionQuotaProps) {
   if (membershipTier === "BASIC") {
-    return null;
+    const limit = availability.lifetimeLimit ?? PLAYBOOK_LIFETIME_SUBMISSION_LIMIT;
+    return (
+      <div className="mt-4 rounded-xl border border-[#2b3650] bg-black/30 px-4 py-3 text-sm text-zinc-300">
+        {availability.remaining > 0 ? (
+          <p>
+            <span className="font-semibold text-[#9df3bd]">
+              {formatPlaybookSubmissionQuotaLabel(availability.remaining, limit)}
+            </span>{" "}
+            (swing video or mindset support).
+          </p>
+        ) : (
+          <>
+            <p>{PLAYBOOK_SUBMISSIONS_EXHAUSTED_MESSAGE}</p>
+            <Link
+              href="/program"
+              className="mt-2 inline-flex text-sm font-semibold text-[#98b144] transition hover:text-[#b5d84f]"
+            >
+              View the 12-Week Program
+            </Link>
+          </>
+        )}
+      </div>
+    );
   }
 
   if (membershipTier === "FREE") {

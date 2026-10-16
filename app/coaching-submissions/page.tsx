@@ -10,7 +10,15 @@ import {
   getCoachingSubmissionAvailability,
   getCoachingSubmissionLockReason,
 } from "@/lib/coaching-submissions";
-import { canAccessCoachingNav, getCoachingResponseTimeLabel, memorableRequiredMessage, freeSubmissionUsedUpgradeMessage, type DatabaseTier } from "@/lib/membership";
+import {
+  PLAYBOOK_SUBMISSIONS_EXHAUSTED_MESSAGE,
+} from "@/lib/coaching-submissions";
+import {
+  canAccessCoachingNav,
+  getCoachingResponseTimeLabel,
+  freeSubmissionUsedUpgradeMessage,
+  type DatabaseTier,
+} from "@/lib/membership";
 
 export default async function CoachingSubmissionsPage() {
   const session = await getServerSession(authOptions);
@@ -27,13 +35,13 @@ export default async function CoachingSubmissionsPage() {
   const availability = getCoachingSubmissionAvailability(userFields);
   const lockReason = getCoachingSubmissionLockReason(userFields);
 
-  if (membershipTier === "BASIC") {
+  if (lockReason === "playbook-used") {
     return (
       <LockedFeaturePanel
         title="Coaching Submissions"
         description="Submit swing videos and mindset questions for personalized feedback from Coach Broc."
-        message={memorableRequiredMessage}
-        upgradeLabel="Join the 12-Week Program"
+        message={PLAYBOOK_SUBMISSIONS_EXHAUSTED_MESSAGE}
+        upgradeLabel="View the 12-Week Program"
         upgradeHref="/program"
       />
     );
@@ -107,7 +115,7 @@ export default async function CoachingSubmissionsPage() {
           </article>
         </div>
 
-        {canAccessCoachingNav(membershipTier) ? (
+        {canAccessCoachingNav(membershipTier) || membershipTier === "BASIC" ? (
           <Link
             href="/profile"
             className="mt-6 inline-flex text-sm font-medium text-[#98b144] transition hover:text-[#b5d84f]"

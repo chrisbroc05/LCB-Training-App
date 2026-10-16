@@ -65,7 +65,8 @@ export default async function UpgradePage({ searchParams }: UpgradePageProps) {
         )}
         {reason === "basic-required" && (
           <p className="mt-4 rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-100">
-            Unlock The Next Level Playbook ($59 one-time) or join the 12-Week Coaching Program for
+            Unlock The Next Level Playbook ($59 one-time, includes 2 coaching breakdowns) or join the
+            12-Week Coaching Program for
             the full training library, drill library, and coaching support.
           </p>
         )}

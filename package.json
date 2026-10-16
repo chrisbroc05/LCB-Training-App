@@ -15,6 +15,7 @@
     "test:daily-plan": "npx --yes tsx scripts/test-daily-plan.ts",
     "test:program-stats": "npx --yes tsx scripts/test-program-stats.ts",
     "test:program-task-completion": "npx --yes tsx scripts/test-program-task-completion.ts",
+    "test:coaching-submissions": "npx --yes tsx scripts/test-coaching-submissions.ts",
     "export:app-highlight": "npx --yes tsx scripts/export-app-highlight-local.ts && python3 marketing/build_app_highlight_pdf.py"
   },
   "dependencies": {

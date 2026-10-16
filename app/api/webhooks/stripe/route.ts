@@ -4,9 +4,10 @@ import { prisma } from "@/lib/prisma";
 import { isDatabaseTier } from "@/lib/membership";
 import { stripe } from "@/lib/stripe";
 import { sendCoachNewProgramPlayerPushForUser } from "@/lib/coach-push-instant";
+import { getPlaybookSubmissionResetData } from "@/lib/coaching-submissions";
 import { ensureProgramEnrollmentForUser } from "@/lib/program-enrollment";
 import { getTwelveWeekProgramEndDate } from "@/lib/twelve-week-program";
-import { sendPaymentFailedEmail } from "@/lib/notifications";
+import { sendPaymentFailedEmail, sendPlaybookPurchaseConfirmationEmail } from "@/lib/notifications";
 import { processStripeChargeRefund } from "@/lib/stripe-refund-server";
 
 function mapPriceIdToTier(priceId?: string | null) {
@@ -89,6 +90,11 @@ export async function POST(request: Request) {
       isDatabaseTier(membershipTier)
     ) {
       if (checkoutSession.mode === "payment" && membershipTier === "BASIC") {
+        const basicBuyer = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { email: true, name: true, membershipTier: true },
+        });
+
         await prisma.user.updateMany({
           where: { id: userId },
           data: {
@@ -100,8 +106,21 @@ export async function POST(request: Request) {
             stripePriceId: process.env.STRIPE_BASIC_PRICE_ID ?? null,
             subscriptionCurrentPeriodEnd: null,
             subscriptionCancelAtPeriodEnd: false,
+            ...getPlaybookSubmissionResetData(),
           },
         });
+
+        if (basicBuyer?.email && basicBuyer.membershipTier !== "BASIC") {
+          const firstName = basicBuyer.name?.trim().split(/\s+/)[0] || "there";
+          try {
+            await sendPlaybookPurchaseConfirmationEmail({
+              toEmail: basicBuyer.email,
+              firstName,
+            });
+          } catch (error) {
+            console.error("Failed to send Playbook purchase confirmation email", error);
+          }
+        }
       } else if (checkoutSession.mode === "payment" && membershipTier === "TWELVE_WEEK") {
         const startedAt = new Date();
         const existingUser = await prisma.user.findUnique({

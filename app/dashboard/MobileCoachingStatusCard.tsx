@@ -1,5 +1,10 @@
 import Link from "next/link";
-import type { CoachingSubmissionAvailability } from "@/lib/coaching-submissions";
+import {
+  formatPlaybookSubmissionQuotaLabel,
+  PLAYBOOK_LIFETIME_SUBMISSION_LIMIT,
+  PLAYBOOK_SUBMISSIONS_EXHAUSTED_MESSAGE,
+  type CoachingSubmissionAvailability,
+} from "@/lib/coaching-submissions";
 import type { DatabaseTier } from "@/lib/membership";
 
 type UnreadResponseNotification = {
@@ -42,18 +47,36 @@ export default function MobileCoachingStatusCard({
   }
 
   if (membershipTier === "BASIC") {
+    const remaining = coachingAvailability?.remaining ?? 0;
+    const limit = coachingAvailability?.lifetimeLimit ?? PLAYBOOK_LIFETIME_SUBMISSION_LIMIT;
+    if (remaining > 0) {
+      return (
+        <article className="mobile-card border-[#22c55e]/40 bg-[#22c55e]/10">
+          <h2 className="text-lg font-semibold text-zinc-100">Coaching Submissions</h2>
+          <p className="mt-2 text-sm text-zinc-300">
+            <span className="font-semibold text-[#9df3bd]">
+              {formatPlaybookSubmissionQuotaLabel(remaining, limit)}
+            </span>
+          </p>
+          <Link
+            href="/coaching-submissions"
+            className="mt-4 inline-flex h-11 w-full items-center justify-center rounded-full bg-[#22c55e] px-4 text-sm font-semibold text-black"
+          >
+            Submit Now
+          </Link>
+        </article>
+      );
+    }
+
     return (
       <article className="mobile-card">
         <h2 className="text-lg font-semibold text-zinc-100">Coaching Submissions</h2>
-        <p className="mt-2 text-sm text-zinc-300">
-          Join the 12-Week Coaching Program for unlimited coaching submissions and personal feedback
-          from Coach Broc.
-        </p>
+        <p className="mt-2 text-sm text-zinc-300">{PLAYBOOK_SUBMISSIONS_EXHAUSTED_MESSAGE}</p>
         <Link
           href="/program"
           className="mt-4 inline-flex h-11 w-full items-center justify-center rounded-full bg-[#22c55e] px-4 text-sm font-semibold text-black"
         >
-          Join the 12-Week Program
+          View the 12-Week Program
         </Link>
       </article>
     );

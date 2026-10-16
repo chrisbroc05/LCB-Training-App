@@ -18,6 +18,7 @@ type MemberSummary = {
   name: string | null;
   email: string;
   membershipTier: DatabaseTier;
+  productAccessCompact: string;
   signupDate: string;
   lastActiveAt: string | null;
   submissionCount: number;
@@ -26,6 +27,8 @@ type MemberSummary = {
   twelveWeekCallBooked: boolean;
   twelveWeekCallScheduledAt: string | null;
   monthlySubmissionsRemaining: number | null;
+  playbookSubmissionsRemaining: number | null;
+  playbookSubmissionsLimit: number | null;
 };
 
 function formatRemainingSubmissions(member: MemberSummary) {
@@ -383,6 +386,24 @@ export default function MembersPanel() {
     }
   };
 
+  const handleMemberUpdated = (member: MemberDetail) => {
+    setDetail(member);
+    setTierDraft(member.membershipTier);
+    setNotesDraft(member.adminNotes ?? "");
+    setPlaybookNotesDraft(member.playbook?.coachNotes ?? "");
+    setMembers((current) =>
+      current.map((row) =>
+        row.id === member.id
+          ? {
+              ...row,
+              membershipTier: member.membershipTier,
+              productAccessCompact: member.productAccessCompact,
+            }
+          : row,
+      ),
+    );
+  };
+
   const openCallEditForm = () => {
     if (!detail) {
       return;
@@ -448,6 +469,7 @@ export default function MembersPanel() {
             setShowCallForm(false);
             setCallError("");
           },
+          onMemberUpdated: handleMemberUpdated,
         }
       : null;
 
@@ -549,6 +571,7 @@ export default function MembersPanel() {
                         </div>
                         <TierBadge tier={member.membershipTier} />
                       </div>
+                      <p className="mt-2 text-xs text-zinc-500">{member.productAccessCompact}</p>
                       <div className="mt-3 flex items-center justify-between text-xs text-zinc-400">
                         <span>Member since {formatDateWithYear(member.signupDate)}</span>
                         <span>
@@ -569,6 +592,7 @@ export default function MembersPanel() {
                       <th className="px-3 py-3 font-semibold">Name</th>
                       <th className="px-3 py-3 font-semibold">Email</th>
                       <th className="px-3 py-3 font-semibold">Tier</th>
+                      <th className="px-3 py-3 font-semibold">Products</th>
                       <th className="px-3 py-3 font-semibold">Member Since</th>
                       <th className="px-3 py-3 font-semibold">Last Active</th>
                       <th className="px-3 py-3 font-semibold">Submissions</th>
@@ -594,6 +618,9 @@ export default function MembersPanel() {
                           <td className="px-3 py-3 text-zinc-300">{member.email}</td>
                           <td className="px-3 py-3">
                             <TierBadge tier={member.membershipTier} />
+                          </td>
+                          <td className="px-3 py-3 text-xs text-zinc-400">
+                            {member.productAccessCompact}
                           </td>
                           <td className="px-3 py-3 text-zinc-300">
                             {formatOptionalDate(member.signupDate)}

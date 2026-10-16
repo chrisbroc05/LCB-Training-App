@@ -14,6 +14,8 @@ import {
   escapeHtml,
   getPublicAppUrl,
 } from "@/lib/email-layout";
+import { getCalendlyBookingUrl } from "@/lib/calendly-booking";
+import { PLAYBOOK_SUBMISSIONS_INCLUDED_COPY } from "@/lib/coaching-submissions-shared";
 import { getDrillLibraryVideoId, getDrillLibraryVideosByIds } from "@/lib/drill-library-videos";
 import {
   buildCoachSubmissionNotificationEmailContent,
@@ -907,6 +909,99 @@ export async function sendAccountDeletionRequestNotification(params: {
           adminUrl,
         )}" target="_blank" rel="noopener noreferrer" style="color:#8fd7ff; text-decoration:underline;">Log in to review at lcbtraining.com/admin</a></p>`,
     }),
+  });
+}
+
+export async function sendPlaybookPurchaseConfirmationEmail(params: {
+  toEmail: string;
+  firstName: string;
+}) {
+  const transporter = createTransporter();
+  const appUrl = getPublicAppUrl();
+  const dashboardUrl = `${appUrl}/dashboard`;
+  const playbookUrl = `${appUrl}/playbook/read`;
+  const drillLibraryUrl = buildDrillLibraryUrl();
+
+  const subject = "Welcome to The Next Level Playbook";
+  const text = `Hi ${params.firstName},
+
+Thank you for your purchase. The Next Level Playbook is unlocked on your account.
+
+Your purchase includes ${PLAYBOOK_SUBMISSIONS_INCLUDED_COPY} (lifetime, not monthly).
+
+Start here:
+- Dashboard: ${dashboardUrl}
+- Playbook: ${playbookUrl}
+- Drill library: ${drillLibraryUrl}
+
+You also have access to workout programs and bonus PDF resources from your dashboard.
+
+Work Hard. Be Memorable.
+Coach Broc
+LCB Training`;
+
+  const html = buildMemberEmailHtml({
+    title: subject,
+    bodyContentHtml: `<p style="margin:0 0 16px 0; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:1.7; color:#0A1628;">Hi ${escapeHtml(
+      params.firstName,
+    )},</p>
+      <p style="margin:0 0 16px 0; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:1.7; color:#0A1628;">Thank you for your purchase. <strong>The Next Level Playbook</strong> is unlocked on your account, along with the full drill library, workout programs, and bonus resources.</p>
+      <p style="margin:0 0 16px 0; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:1.7; color:#0A1628;">You also have <strong>${escapeHtml(
+        PLAYBOOK_SUBMISSIONS_INCLUDED_COPY,
+      )}</strong> (lifetime, not monthly). Send a swing video or mindset question from Coaching Submissions whenever you are ready.</p>
+      ${buildEmailButton("Open your dashboard", dashboardUrl)}
+      <p style="margin:20px 0 8px 0; font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:1.7; color:#0A1628;">Jump straight into the Playbook: <a href="${escapeHtml(
+        playbookUrl,
+      )}" style="color:#2D6A4F;">${escapeHtml(playbookUrl)}</a></p>
+      <p style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:1.7; color:#0A1628;">Drill library: <a href="${escapeHtml(
+        drillLibraryUrl,
+      )}" style="color:#2D6A4F;">${escapeHtml(drillLibraryUrl)}</a></p>`,
+  });
+
+  await transporter.sendMail({
+    from: process.env.NOTIFICATION_EMAIL,
+    to: params.toEmail,
+    replyTo: EMAIL_REPLY_TO,
+    subject,
+    text,
+    html,
+  });
+}
+
+export async function sendRemoteSessionPurchaseConfirmationEmail(params: {
+  toEmail: string;
+  firstName: string;
+}) {
+  const transporter = createTransporter();
+  const bookingUrl = getCalendlyBookingUrl();
+
+  const subject = "Book your LCB Remote Session";
+  const text = `Hi ${params.firstName},
+
+Thank you for your remote session purchase. Use the link below to pick a time that works for you:
+
+${bookingUrl}
+
+See you soon.
+Coach Broc
+LCB Training`;
+
+  const html = buildMemberEmailHtml({
+    title: subject,
+    bodyContentHtml: `<p style="margin:0 0 16px 0; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:1.7; color:#0A1628;">Hi ${escapeHtml(
+      params.firstName,
+    )},</p>
+      <p style="margin:0 0 16px 0; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:1.7; color:#0A1628;">Thank you for your remote session purchase. Pick a time that works for you using the button below.</p>
+      ${buildEmailButton("Book your session", bookingUrl)}`,
+  });
+
+  await transporter.sendMail({
+    from: process.env.NOTIFICATION_EMAIL,
+    to: params.toEmail,
+    replyTo: EMAIL_REPLY_TO,
+    subject,
+    text,
+    html,
   });
 }
 

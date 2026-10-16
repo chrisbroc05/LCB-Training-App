@@ -32,9 +32,10 @@ export const membershipTiers: MembershipTier[] = [
     name: "Basic",
     priceLabel: "$59 one-time",
     summary:
-      "The Next Level Playbook plus the full drill library, workout programs, and bonus resources.",
+      "The Next Level Playbook plus 2 personal swing or video breakdowns from Coach Broc, the full drill library, workout programs, and bonus resources.",
     features: [
       "The Next Level Playbook -- 4 interactive chapters with reflection questions",
+      "2 personal swing or video breakdowns from Coach Broc (lifetime, not monthly)",
       "Full hitting, fielding, and mindset video drill library",
       "8 downloadable workout programs",
       "Pre-Game Warmup Routine, Nutrition Guide, Mental Game Workbook, and Parent Guide",

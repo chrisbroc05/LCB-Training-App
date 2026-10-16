@@ -1,5 +1,6 @@
 "use client";
 
+import AdminGrantAccessByEmailPanel from "@/app/admin/AdminGrantAccessByEmailPanel";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -31,9 +32,7 @@ type TwelveWeekEnrollmentRecord = {
 
 export default function TwelveWeekPlayersSection() {
   const [enrollments, setEnrollments] = useState<TwelveWeekEnrollmentRecord[]>([]);
-  const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(true);
-  const [grantLoading, setGrantLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [startDateDrafts, setStartDateDrafts] = useState<Record<string, string>>({});
@@ -73,38 +72,6 @@ export default function TwelveWeekPlayersSection() {
   useEffect(() => {
     void loadEnrollments();
   }, []);
-
-  const handleGrantAccess = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setGrantLoading(true);
-    setError("");
-    setSuccess("");
-
-    try {
-      const response = await fetch("/api/admin/grant-program-access", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-
-      const data = (await response.json().catch(() => ({}))) as {
-        error?: string;
-        user?: { email: string };
-      };
-
-      if (!response.ok) {
-        throw new Error(data.error ?? "Unable to grant program access.");
-      }
-
-      setSuccess(`Program access granted to ${data.user?.email ?? email}.`);
-      setEmail("");
-      await loadEnrollments();
-    } catch (grantError) {
-      setError(grantError instanceof Error ? grantError.message : "Unable to grant program access.");
-    } finally {
-      setGrantLoading(false);
-    }
-  };
 
   const handleStartDateSave = async (enrollmentId: string) => {
     const startDate = startDateDrafts[enrollmentId];
@@ -159,23 +126,11 @@ export default function TwelveWeekPlayersSection() {
             Program overview
           </Link>
         </div>
-        <form onSubmit={handleGrantAccess} className="flex w-full flex-col gap-3 sm:flex-row lg:max-w-xl">
-          <input
-            type="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            placeholder="player@email.com"
-            className="w-full rounded-xl border border-[#2b3650] bg-black px-4 py-3 text-zinc-100"
-            required
-          />
-          <button
-            type="submit"
-            disabled={grantLoading}
-            className="rounded-xl bg-[#2D6A4F] px-5 py-3 text-sm font-semibold text-white disabled:opacity-70"
-          >
-            {grantLoading ? "Granting..." : "Grant program access"}
-          </button>
-        </form>
+        <AdminGrantAccessByEmailPanel
+          onSuccess={() => {
+            void loadEnrollments();
+          }}
+        />
       </div>
 
       {error ? <p className="mt-4 text-sm text-red-300">{error}</p> : null}

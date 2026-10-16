@@ -49,9 +49,13 @@ export default function AccountSummaryCard({
         </div>
         {submissionsRemaining !== null ? (
           <div className="sm:col-span-2">
-            <p className={profileLabelClass}>Coaching submissions remaining this month</p>
+            <p className={profileLabelClass}>
+              {membershipTier === "BASIC"
+                ? "Playbook coaching submissions remaining (lifetime)"
+                : "Coaching submissions remaining this month"}
+            </p>
             <p className={`${profileValueClass} text-2xl font-bold text-[#9df3bd]`}>
-              {submissionsRemaining}
+              {membershipTier === "BASIC" ? `${submissionsRemaining} of 2` : submissionsRemaining}
             </p>
           </div>
         ) : null}
@@ -61,8 +65,8 @@ export default function AccountSummaryCard({
               Lifetime Access
             </span>
             <p className={`mt-2 ${profileBodyTextClass}`}>
-              Your Basic membership includes lifetime access to the full LCB Training library and
-              The Next Level Playbook.
+              Your Basic membership includes lifetime access to the full LCB Training library,
+              The Next Level Playbook, and 2 personal swing or video breakdowns from Coach Broc.
             </p>
           </div>
         ) : null}

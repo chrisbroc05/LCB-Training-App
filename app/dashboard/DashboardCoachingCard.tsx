@@ -21,6 +21,38 @@ export default function DashboardCoachingCard({
   assessmentCallBooked,
   assessmentCallDate,
 }: DashboardCoachingCardProps) {
+  if (membershipTier === "BASIC") {
+    const canSubmit = coachingAvailability?.canSubmit ?? false;
+    return (
+      <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
+        <h2 className="text-lg font-semibold text-zinc-100">Coaching Submissions</h2>
+        {coachingAvailability ? (
+          <div className="mt-3">
+            <CoachingSubmissionQuota
+              availability={coachingAvailability}
+              membershipTier={membershipTier}
+            />
+          </div>
+        ) : null}
+        {canSubmit ? (
+          <Link
+            href="/coaching-submissions"
+            className="mt-4 inline-flex rounded-full bg-[#22c55e] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[#35db72]"
+          >
+            Go to Coaching Submissions
+          </Link>
+        ) : (
+          <Link
+            href="/program"
+            className="mt-4 inline-flex rounded-full border border-[#2b3650] bg-black/40 px-4 py-2 text-sm font-semibold text-zinc-300 transition hover:border-[#7f9434] hover:text-[#98b144]"
+          >
+            Explore the 12-Week Program
+          </Link>
+        )}
+      </article>
+    );
+  }
+
   if (canAccessCoachingNav(membershipTier) && membershipTier !== "FREE") {
     return (
       <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">

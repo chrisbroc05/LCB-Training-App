@@ -9,7 +9,9 @@ import {
 } from "@/lib/assessment-call";
 import { formatOptionalDate, formatOptionalDateTime } from "@/lib/format-date";
 import { formatDatabaseTierLabel, validDatabaseTiers, type DatabaseTier } from "@/lib/membership";
+import AdminProductAccessPanel from "@/app/admin/AdminProductAccessPanel";
 import TierBadge from "@/app/admin/TierBadge";
+import type { MemberProductAccessSummary } from "@/lib/admin-product-access-shared";
 import type { InPersonTrainingInfo } from "@/lib/in-person-training-shared";
 
 export type MemberDetail = {
@@ -17,6 +19,8 @@ export type MemberDetail = {
   name: string | null;
   email: string;
   membershipTier: DatabaseTier;
+  productAccessCompact: string;
+  productAccess: MemberProductAccessSummary;
   signupDate: string;
   lastActiveAt: string | null;
   submissionCount: number;
@@ -25,6 +29,8 @@ export type MemberDetail = {
   twelveWeekCallBooked: boolean;
   twelveWeekCallScheduledAt: string | null;
   monthlySubmissionsRemaining: number | null;
+  playbookSubmissionsRemaining: number | null;
+  playbookSubmissionsLimit: number | null;
   adminNotes: string | null;
   legalAcceptance: {
     termsVersion: string | null;
@@ -115,6 +121,7 @@ type MemberDetailContentProps = {
   onClearCall: () => void;
   onOpenCallEditForm: () => void;
   onCancelCallForm: () => void;
+  onMemberUpdated: (member: MemberDetail) => void;
 };
 
 export default function MemberDetailContent({
@@ -150,6 +157,7 @@ export default function MemberDetailContent({
   onClearCall,
   onOpenCallEditForm,
   onCancelCallForm,
+  onMemberUpdated,
 }: MemberDetailContentProps) {
   const isTwelveWeekMember = detail.membershipTier === "TWELVE_WEEK";
   const callBooked = isTwelveWeekMember
@@ -170,6 +178,9 @@ export default function MemberDetailContent({
         <p className="mt-1 text-sm text-zinc-300">{detail.email}</p>
         <div className="mt-3 flex flex-wrap items-center gap-3">
           <TierBadge tier={detail.membershipTier} />
+          <span className="rounded-full border border-[#2b3650] px-2.5 py-0.5 text-[11px] font-medium text-zinc-300">
+            {detail.productAccessCompact}
+          </span>
           <button
             type="button"
             onClick={() => setShowSendVideo((current) => !current)}
@@ -214,6 +225,12 @@ export default function MemberDetailContent({
         {isTwelveWeekMember ? (
           <p className="mt-2">
             <span className="font-semibold text-zinc-100">Coaching submissions:</span> Unlimited
+          </p>
+        ) : detail.playbookSubmissionsRemaining !== null &&
+          detail.playbookSubmissionsLimit !== null ? (
+          <p className="mt-2">
+            <span className="font-semibold text-zinc-100">Submissions left:</span>{" "}
+            {detail.playbookSubmissionsRemaining} of {detail.playbookSubmissionsLimit}
           </p>
         ) : detail.monthlySubmissionsRemaining !== null ? (
           <p className="mt-2">
@@ -487,6 +504,13 @@ export default function MemberDetailContent({
           </div>
         )}
       </div>
+
+      <AdminProductAccessPanel
+        memberId={detail.id}
+        memberEmail={detail.email}
+        productAccess={detail.productAccess}
+        onUpdated={onMemberUpdated}
+      />
 
       <div className="rounded-xl border border-[#2b3650] bg-[#0b1324]/70 p-4">
         <p className="text-sm font-semibold text-zinc-100">Manual Tier Override</p>

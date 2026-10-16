@@ -98,7 +98,15 @@ function getQuickLinks(membershipTier: DatabaseTier, hasFreeSubmissionRemaining:
     });
   }
 
-  if (canAccessCoachingNav(membershipTier)) {
+  if (membershipTier === "BASIC") {
+    links.push({
+      href: "/coaching-submissions",
+      label: "Coaching Submissions",
+      description: "Use your 2 lifetime Playbook submissions for swing video or mindset support.",
+    });
+  }
+
+  if (canAccessCoachingNav(membershipTier) || membershipTier === "BASIC") {
     links.push({
       href: "/profile",
       label: "My Submissions",
@@ -326,7 +334,8 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
               Welcome to The Next Level Playbook. You are all set.
             </h1>
             <p className="mt-2 text-zinc-300">
-              Your playbook, drill library, and resources are ready whenever you are.
+              Your playbook, drill library, resources, and 2 lifetime coaching submissions are ready
+              whenever you are.
             </p>
           </>
         ) : isTwelveWeekProgramMember(membershipTier) ? (

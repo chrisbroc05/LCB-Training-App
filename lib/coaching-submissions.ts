@@ -1,52 +1,38 @@
-import { formatDateWithYear, formatMonthYear } from "@/lib/format-date";
 import type { DatabaseTier } from "@/lib/membership";
 import { prisma } from "@/lib/prisma";
+import {
+  ELITE_MONTHLY_LIMIT,
+  ELITE_ROLLOVER_CAP,
+  type CoachingSubmissionAvailability,
+  type CoachingSubmissionLockReason,
+  type CoachingSubmissionUserFields,
+  getCoachingSubmissionAvailability,
+  getCoachingSubmissionLockReason,
+  getCoachingSubmissionPeriodKey,
+  canSubmitCoachingForms,
+} from "@/lib/coaching-submissions-shared";
 
-export const MEMORABLE_MONTHLY_LIMIT = 2;
-export const ELITE_MONTHLY_LIMIT = 4;
-export const ELITE_ROLLOVER_CAP = 8;
-export const ELITE_TOTAL_AVAILABLE_CAP = 8;
-
-export type CoachingSubmissionLockReason = "basic" | "free-used" | "monthly-limit" | null;
-
-export type CoachingSubmissionUserFields = {
-  membershipTier: DatabaseTier;
-  freeSubmissionUsed: boolean;
-  coachingSubmissionsUsedThisMonth: number;
-  coachingSubmissionPeriod: string | null;
-  eliteRolloverCredits: number;
-};
-
-export type CoachingSubmissionAvailability = {
-  canSubmit: boolean;
-  lockReason: CoachingSubmissionLockReason;
-  remaining: number;
-  monthlyRemaining: number | null;
-  rolloverCredits: number | null;
-  monthlyLimit: number | null;
-  periodKey: string;
-  resetsOnLabel: string;
-};
-
-export function getCoachingSubmissionPeriodKey(date = new Date()) {
-  const year = date.getUTCFullYear();
-  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
-  return `${year}-${month}`;
-}
-
-export function getCoachingSubmissionPeriodLabel(periodKey: string) {
-  const [year, month] = periodKey.split("-").map(Number);
-  if (!year || !month) {
-    return periodKey;
-  }
-
-  return formatMonthYear(new Date(Date.UTC(year, month - 1, 1)));
-}
-
-export function getNextCoachingSubmissionResetLabel(date = new Date()) {
-  const nextMonth = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 1));
-  return formatDateWithYear(nextMonth);
-}
+export {
+  FREE_LIFETIME_SUBMISSION_LIMIT,
+  PLAYBOOK_LIFETIME_SUBMISSION_LIMIT,
+  MEMORABLE_MONTHLY_LIMIT,
+  ELITE_MONTHLY_LIMIT,
+  ELITE_ROLLOVER_CAP,
+  ELITE_TOTAL_AVAILABLE_CAP,
+  canAccessCoachingSubmissionForms,
+  formatPlaybookSubmissionQuotaLabel,
+  PLAYBOOK_SUBMISSIONS_EXHAUSTED_MESSAGE,
+  PLAYBOOK_SUBMISSIONS_INCLUDED_COPY,
+  getCoachingSubmissionPeriodKey,
+  getCoachingSubmissionPeriodLabel,
+  getNextCoachingSubmissionResetLabel,
+  getCoachingSubmissionAvailability,
+  canSubmitCoachingForms,
+  getCoachingSubmissionLockReason,
+  type CoachingSubmissionAvailability,
+  type CoachingSubmissionLockReason,
+  type CoachingSubmissionUserFields,
+} from "@/lib/coaching-submissions-shared";
 
 function applyPeriodResetIfNeeded(
   user: CoachingSubmissionUserFields,
@@ -75,127 +61,44 @@ function applyPeriodResetIfNeeded(
   return nextUser;
 }
 
-export function getCoachingSubmissionAvailability(
-  user: CoachingSubmissionUserFields,
-  now = new Date(),
-): CoachingSubmissionAvailability {
-  const periodKey = getCoachingSubmissionPeriodKey(now);
-  const syncedUser = applyPeriodResetIfNeeded(user, periodKey);
-  const resetsOnLabel = getNextCoachingSubmissionResetLabel(now);
+const coachingSubmissionUserSelect = {
+  membershipTier: true,
+  freeSubmissionUsed: true,
+  playbookSubmissionsUsed: true,
+  coachingSubmissionsUsedThisMonth: true,
+  coachingSubmissionPeriod: true,
+  eliteRolloverCredits: true,
+} as const;
 
-  if (syncedUser.membershipTier === "TWELVE_WEEK") {
-    return {
-      canSubmit: true,
-      lockReason: null,
-      remaining: 999,
-      monthlyRemaining: null,
-      rolloverCredits: null,
-      monthlyLimit: null,
-      periodKey,
-      resetsOnLabel,
-    };
-  }
-
-  if (syncedUser.membershipTier === "BASIC") {
-    return {
-      canSubmit: false,
-      lockReason: "basic",
-      remaining: 0,
-      monthlyRemaining: null,
-      rolloverCredits: null,
-      monthlyLimit: null,
-      periodKey,
-      resetsOnLabel,
-    };
-  }
-
-  if (syncedUser.membershipTier === "FREE") {
-    const remaining = syncedUser.freeSubmissionUsed ? 0 : 1;
-    return {
-      canSubmit: remaining > 0,
-      lockReason: syncedUser.freeSubmissionUsed ? "free-used" : null,
-      remaining,
-      monthlyRemaining: null,
-      rolloverCredits: null,
-      monthlyLimit: null,
-      periodKey,
-      resetsOnLabel,
-    };
-  }
-
-  if (syncedUser.membershipTier === "MEMORABLE") {
-    const monthlyRemaining = Math.max(
-      0,
-      MEMORABLE_MONTHLY_LIMIT - syncedUser.coachingSubmissionsUsedThisMonth,
-    );
-
-    return {
-      canSubmit: monthlyRemaining > 0,
-      lockReason: monthlyRemaining > 0 ? null : "monthly-limit",
-      remaining: monthlyRemaining,
-      monthlyRemaining,
-      rolloverCredits: null,
-      monthlyLimit: MEMORABLE_MONTHLY_LIMIT,
-      periodKey,
-      resetsOnLabel,
-    };
-  }
-
-  const monthlyRemaining = Math.max(
-    0,
-    ELITE_MONTHLY_LIMIT - syncedUser.coachingSubmissionsUsedThisMonth,
-  );
-  const remaining = Math.min(
-    ELITE_TOTAL_AVAILABLE_CAP,
-    monthlyRemaining + syncedUser.eliteRolloverCredits,
-  );
-
+function toCoachingSubmissionUserFields(user: {
+  membershipTier: string;
+  freeSubmissionUsed: boolean;
+  playbookSubmissionsUsed: number;
+  coachingSubmissionsUsedThisMonth: number;
+  coachingSubmissionPeriod: string | null;
+  eliteRolloverCredits: number;
+}): CoachingSubmissionUserFields {
   return {
-    canSubmit: remaining > 0,
-    lockReason: remaining > 0 ? null : "monthly-limit",
-    remaining,
-    monthlyRemaining,
-    rolloverCredits: syncedUser.eliteRolloverCredits,
-    monthlyLimit: ELITE_MONTHLY_LIMIT,
-    periodKey,
-    resetsOnLabel,
+    membershipTier: user.membershipTier as DatabaseTier,
+    freeSubmissionUsed: user.freeSubmissionUsed,
+    playbookSubmissionsUsed: user.playbookSubmissionsUsed,
+    coachingSubmissionsUsedThisMonth: user.coachingSubmissionsUsedThisMonth,
+    coachingSubmissionPeriod: user.coachingSubmissionPeriod,
+    eliteRolloverCredits: user.eliteRolloverCredits,
   };
-}
-
-export function canSubmitCoachingForms(user: CoachingSubmissionUserFields) {
-  return getCoachingSubmissionAvailability(user).canSubmit;
-}
-
-export function getCoachingSubmissionLockReason(
-  user: CoachingSubmissionUserFields,
-): CoachingSubmissionLockReason {
-  return getCoachingSubmissionAvailability(user).lockReason;
 }
 
 export async function ensureCoachingSubmissionPeriod(userId: string) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: {
-      membershipTier: true,
-      freeSubmissionUsed: true,
-      coachingSubmissionsUsedThisMonth: true,
-      coachingSubmissionPeriod: true,
-      eliteRolloverCredits: true,
-    },
+    select: coachingSubmissionUserSelect,
   });
 
   if (!user) {
     return null;
   }
 
-  const currentFields: CoachingSubmissionUserFields = {
-    membershipTier: user.membershipTier as DatabaseTier,
-    freeSubmissionUsed: user.freeSubmissionUsed,
-    coachingSubmissionsUsedThisMonth: user.coachingSubmissionsUsedThisMonth,
-    coachingSubmissionPeriod: user.coachingSubmissionPeriod,
-    eliteRolloverCredits: user.eliteRolloverCredits,
-  };
-
+  const currentFields = toCoachingSubmissionUserFields(user);
   const periodKey = getCoachingSubmissionPeriodKey();
   const syncedFields = applyPeriodResetIfNeeded(currentFields, periodKey);
 
@@ -229,13 +132,7 @@ export async function consumeCoachingSubmission(
 ) {
   const user = await tx.user.findUnique({
     where: { id: userId },
-    select: {
-      membershipTier: true,
-      freeSubmissionUsed: true,
-      coachingSubmissionsUsedThisMonth: true,
-      coachingSubmissionPeriod: true,
-      eliteRolloverCredits: true,
-    },
+    select: coachingSubmissionUserSelect,
   });
 
   if (!user) {
@@ -243,16 +140,7 @@ export async function consumeCoachingSubmission(
   }
 
   const periodKey = getCoachingSubmissionPeriodKey();
-  const syncedUser = applyPeriodResetIfNeeded(
-    {
-      membershipTier: user.membershipTier as DatabaseTier,
-      freeSubmissionUsed: user.freeSubmissionUsed,
-      coachingSubmissionsUsedThisMonth: user.coachingSubmissionsUsedThisMonth,
-      coachingSubmissionPeriod: user.coachingSubmissionPeriod,
-      eliteRolloverCredits: user.eliteRolloverCredits,
-    },
-    periodKey,
-  );
+  const syncedUser = applyPeriodResetIfNeeded(toCoachingSubmissionUserFields(user), periodKey);
 
   const availability = getCoachingSubmissionAvailability(syncedUser);
   if (!availability.canSubmit) {
@@ -263,6 +151,19 @@ export async function consumeCoachingSubmission(
     await tx.user.update({
       where: { id: userId },
       data: {
+        coachingSubmissionPeriod: syncedUser.coachingSubmissionPeriod,
+        coachingSubmissionsUsedThisMonth: syncedUser.coachingSubmissionsUsedThisMonth,
+        eliteRolloverCredits: syncedUser.eliteRolloverCredits,
+      },
+    });
+    return { ok: true as const, availability, membershipTier: syncedUser.membershipTier };
+  }
+
+  if (syncedUser.membershipTier === "BASIC") {
+    await tx.user.update({
+      where: { id: userId },
+      data: {
+        playbookSubmissionsUsed: syncedUser.playbookSubmissionsUsed + 1,
         coachingSubmissionPeriod: syncedUser.coachingSubmissionPeriod,
         coachingSubmissionsUsedThisMonth: syncedUser.coachingSubmissionsUsedThisMonth,
         eliteRolloverCredits: syncedUser.eliteRolloverCredits,
@@ -326,8 +227,8 @@ export function getCoachingSubmissionLimitError(
   membershipTier: DatabaseTier,
   lockReason: CoachingSubmissionLockReason,
 ) {
-  if (membershipTier === "BASIC") {
-    return "Coaching submissions require Memorable or Elite membership.";
+  if (lockReason === "playbook-used") {
+    return "You have used both Playbook coaching submissions.";
   }
 
   if (lockReason === "free-used") {
@@ -338,5 +239,13 @@ export function getCoachingSubmissionLimitError(
     return "You have used all coaching submissions for this month. Your count resets on the 1st.";
   }
 
+  if (membershipTier === "BASIC") {
+    return "You cannot submit a coaching request right now.";
+  }
+
   return "You cannot submit a coaching request right now.";
+}
+
+export function getPlaybookSubmissionResetData() {
+  return { playbookSubmissionsUsed: 0 };
 }
