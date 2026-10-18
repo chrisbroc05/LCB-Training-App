@@ -18,10 +18,7 @@ export default function CoachBioSection() {
     <section className="rounded-3xl bg-[#0A1628] px-5 py-12 sm:px-8 sm:py-14">
       <div className="mx-auto max-w-3xl rounded-3xl border border-[#18243a] bg-[#0b1324]/80 px-6 py-10 sm:px-10 sm:py-12">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-white sm:text-3xl">Meet Your Coach</h2>
-          <p className="mx-auto mt-5 max-w-xl text-lg font-semibold text-[#52B788] sm:text-xl">
-            This is the standard I coach to.
-          </p>
+          <h2 className="text-2xl font-bold text-white sm:text-3xl">Meet Coach Broc</h2>
           <div className="mx-auto mt-5 h-[2px] w-24 rounded-full bg-[#52B788]" />
         </div>
 
@@ -34,21 +31,10 @@ export default function CoachBioSection() {
 
         <div className="mx-auto mt-8 max-w-2xl space-y-5 text-base leading-relaxed text-[#CCCCCC] sm:text-lg">
           <p>
-            When I was thirteen years old playing travel baseball, an opposing coach approached my
-            dad the following weekend and said he remembered me. Not for a great hit, but for two things.
-          </p>
-          <p>
-            First, that I hustled down the line on a routine ground ball to second base and almost
-            beat it out. Second, that on a different play I hit what would normally be a routine pop
-            up, but I hustled out of the box so hard that I was standing on second base by the time the
-            center fielder caught it. If he had dropped it, I likely would have had a triple instead
-            of an easy out.
-          </p>
-          <p>
-            That coach did not remember me for stats. He remembered me for effort. That is the
-            standard I now coach to at LCB Training, and it is why everything we do, from swing
-            mechanics to mindset work, points back to the same question: what do you want to be known
-            for?
+            As a player, I was known for more than my stats. I was known for my effort and my love
+            for the game. That is the standard I now coach to at LCB Training, and it is why
+            everything we do, from swing mechanics to mindset work, points back to one question: what
+            do you want to be known for?
           </p>
           <p>
             I have spent 12+ years in player development and I am currently a High School Varsity
