@@ -124,15 +124,11 @@ export default function CoachBioPage() {
       <div className="mx-auto w-full max-w-4xl px-4 py-10 sm:px-6 sm:py-12">
         <section>
           <SectionLabel>About</SectionLabel>
-          <p className="mt-3 text-lg leading-relaxed text-zinc-200">{coachBioContent.aboutSummary}</p>
-          <details className="mt-4 rounded-2xl border border-[#18243a] bg-[#0b1324]/60 px-4 py-3">
-            <summary className="cursor-pointer text-sm font-medium text-[#52B788]">Read full bio</summary>
-            <div className="mt-3 space-y-3 text-sm leading-relaxed text-zinc-400">
-              {coachBioContent.aboutParagraphs.map((paragraph) => (
-                <p key={paragraph.slice(0, 48)}>{paragraph}</p>
-              ))}
-            </div>
-          </details>
+          <div className="mt-3 space-y-4 text-base leading-relaxed text-zinc-200 sm:text-lg">
+            {coachBioContent.aboutParagraphs.map((paragraph) => (
+              <p key={paragraph.slice(0, 48)}>{paragraph}</p>
+            ))}
+          </div>
         </section>
 
         <div className="mt-10 grid gap-8 sm:grid-cols-2">
