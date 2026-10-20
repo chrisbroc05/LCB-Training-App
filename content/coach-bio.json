@@ -56,6 +56,13 @@
     "websiteUrl": "https://www.lcbtraining.com",
     "instagramHandle": "@lcbtraining"
   },
+  "trainingFocus": [
+    "Hitting",
+    "Fielding",
+    "Speed and agility",
+    "Strength and mobility",
+    "Mindset and player development"
+  ],
   "pdfDownloadPath": "/LCB_Coach_Bio.pdf",
   "coachPhotoPath": "public/images/coach-broc.jpg"
 }

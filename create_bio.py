@@ -168,39 +168,130 @@ def _bullets_html(items: list[str]) -> str:
     return "<br/>".join(f"<b>{esc_html(item)}</b>" for item in items)
 
 
-def _offerings_html(offerings: list[dict]) -> str:
-    parts: list[str] = []
-    for item in offerings:
+def _bullets_plain(items: list[str]) -> str:
+    return "<br/>".join(f"&bull; {esc_html(item)}" for item in items)
+
+
+def _build_offerings_section_cell(
+    offerings: list[dict],
+    width: float,
+    header_style: ParagraphStyle,
+    item_gap: float,
+) -> Table:
+    title_style = ParagraphStyle(
+        "offering_title",
+        fontName="Helvetica-Bold",
+        fontSize=10,
+        leading=12,
+        textColor=NAVY,
+        spaceAfter=2,
+    )
+    body_style = ParagraphStyle(
+        "offering_body",
+        fontName="Helvetica",
+        fontSize=9.5,
+        leading=12.5,
+        textColor=NAVY,
+    )
+    inset = 20
+    inner_width = width - inset
+    rows: list[list] = []
+    for idx, item in enumerate(offerings, start=1):
         title = esc_html(item["title"])
-        summary = esc_html(item.get("summary") or item.get("description", "")).strip()
-        if summary:
-            parts.append(f"<font color='#2D6A4F'><b>{title}</b></font> - {summary}")
-        else:
-            parts.append(f"<font color='#2D6A4F'><b>{title}</b></font>")
-    return "<br/>".join(parts)
+        desc = esc_html(item.get("description") or item.get("summary", "")).strip()
+        rows.append([Paragraph(f"{idx}. {title}", title_style)])
+        if desc:
+            rows.append([Paragraph(desc, body_style)])
+        rows.append([Spacer(1, item_gap)])
 
+    if rows:
+        rows.pop()
 
-def _modern_section_label(text: str, style: ParagraphStyle) -> Paragraph:
-    return Paragraph(esc_html(text).upper(), style)
-
-
-def _modern_panel(body: Paragraph, width: float) -> Table:
-    panel = Table([[body]], colWidths=[width])
-    panel.setStyle(
+    inner = Table(rows, colWidths=[inner_width])
+    inner.setStyle(
         TableStyle(
             [
                 ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                ("BACKGROUND", (0, 0), (-1, -1), LIGHT_GRAY),
-                ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#E5E7EB")),
-                ("LINEBEFORE", (0, 0), (0, -1), 3, LIGHT_GREEN),
-                ("TOPPADDING", (0, 0), (-1, -1), 8),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
-                ("LEFTPADDING", (0, 0), (-1, -1), 10),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+                ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+                ("TOPPADDING", (0, 0), (-1, -1), 0),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
             ]
         )
     )
-    return panel
+    return build_section_cell("What I Offer Teams and Programs", inner, width, header_style)
+
+
+def _training_focus_html(items: list[str]) -> str:
+    chips = " &nbsp;&nbsp;|&nbsp;&nbsp; ".join(f"<b>{esc_html(item)}</b>" for item in items)
+    return chips
+
+
+def _stack_section_cells(cells: list[Table], width: float) -> Table:
+    stack = Table([[cell] for cell in cells], colWidths=[width])
+    stack.setStyle(
+        TableStyle(
+            [
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+                ("TOPPADDING", (0, 0), (-1, -1), 0),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+                ("TOPPADDING", (0, 1), (-1, -1), 5),
+            ]
+        )
+    )
+    return stack
+
+
+def _philosophy_offerings_row(
+    philosophy_cell: Table,
+    experience_cell: Table,
+    accolades_cell: Table,
+    offerings: list[dict],
+    section_header_style: ParagraphStyle,
+    left_width: float,
+    right_width: float,
+) -> Table:
+    base_gap = 6
+    offerings_cell = _build_offerings_section_cell(
+        offerings, right_width, section_header_style, base_gap
+    )
+    left_stack = _stack_section_cells([philosophy_cell, experience_cell, accolades_cell], left_width)
+    _, left_height = left_stack.wrap(left_width, 10_000)
+    _, right_height = offerings_cell.wrap(right_width, 10_000)
+    target_height = max(left_height, right_height)
+    if right_height < target_height:
+        extra = target_height - right_height
+        extra_gap = base_gap + (extra / max(len(offerings), 1))
+        offerings_cell = _build_offerings_section_cell(
+            offerings, right_width, section_header_style, extra_gap
+        )
+        _, right_height = offerings_cell.wrap(right_width, 10_000)
+        if right_height < target_height:
+            stretch_section_cell_to_height(offerings_cell, right_width, target_height)
+    elif left_height < target_height:
+        _, accolades_height = accolades_cell.wrap(left_width, 10_000)
+        stretch_section_cell_to_height(
+            accolades_cell, left_width, accolades_height + (target_height - left_height)
+        )
+        left_stack = _stack_section_cells(
+            [philosophy_cell, experience_cell, accolades_cell], left_width
+        )
+    row = Table([[left_stack, offerings_cell]], colWidths=[left_width, right_width])
+    row.setStyle(
+        TableStyle(
+            [
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+                ("TOPPADDING", (0, 0), (-1, -1), 0),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+                ("RIGHTPADDING", (0, 0), (0, 0), 6),
+            ]
+        )
+    )
+    return row
 
 
 def main() -> None:
@@ -214,14 +305,15 @@ def main() -> None:
         pagesize=letter,
         leftMargin=0.75 * inch,
         rightMargin=0.75 * inch,
-        topMargin=0.32 * inch,
-        bottomMargin=0.32 * inch,
+        topMargin=0.28 * inch,
+        bottomMargin=0.28 * inch,
         title="LCB Coach Bio - Chris Broccolino",
         author="LCB Training",
     )
 
     full_width = 7.0 * inch
-    two_col_widths = [3.5 * inch, 3.5 * inch]
+    left_col_width = 2.95 * inch
+    right_col_width = 4.05 * inch
     slogan = bio["slogan"]
 
     hero_name_style = ParagraphStyle(
@@ -248,13 +340,12 @@ def main() -> None:
         alignment=TA_CENTER,
         textColor=colors.HexColor("#E5E7EB"),
     )
-    label_style = ParagraphStyle(
-        "label",
+    section_header_style = ParagraphStyle(
+        "section-header",
         fontName="Helvetica-Bold",
-        fontSize=8,
-        leading=10,
-        textColor=GREEN,
-        spaceAfter=4,
+        fontSize=10.5,
+        leading=12,
+        textColor=WHITE,
     )
     body_style = ParagraphStyle(
         "body",
@@ -263,26 +354,18 @@ def main() -> None:
         leading=11.5,
         textColor=NAVY,
     )
-    list_style = ParagraphStyle(
-        "list",
+    section_item_style = ParagraphStyle(
+        "section-item",
         fontName="Helvetica",
-        fontSize=8.5,
-        leading=10.5,
-        textColor=NAVY,
-        leftIndent=0,
-    )
-    offerings_style = ParagraphStyle(
-        "offerings",
-        fontName="Helvetica",
-        fontSize=8.5,
-        leading=11,
+        fontSize=8,
+        leading=9.8,
         textColor=NAVY,
     )
     contact_style = ParagraphStyle(
         "contact",
         fontName="Helvetica",
-        fontSize=8,
-        leading=10,
+        fontSize=8.5,
+        leading=11,
         textColor=WHITE,
         alignment=TA_CENTER,
     )
@@ -306,62 +389,95 @@ def main() -> None:
                 ("ALIGN", (0, 0), (-1, -1), "CENTER"),
                 ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
                 ("BACKGROUND", (0, 0), (-1, -1), NAVY),
-                ("TOPPADDING", (0, 0), (0, 0), 10),
-                ("BOTTOMPADDING", (0, -1), (0, -1), 12),
-                ("TOPPADDING", (0, 1), (-1, -1), 2),
-                ("BOTTOMPADDING", (0, 1), (-1, -2), 2),
+                ("TOPPADDING", (0, 0), (0, 0), 9),
+                ("BOTTOMPADDING", (0, -1), (0, -1), 10),
+                ("TOPPADDING", (0, 1), (-1, -1), 3),
+                ("BOTTOMPADDING", (0, 1), (-1, -2), 3),
             ]
         )
     )
     story.append(hero_table)
-    story.append(Spacer(1, 10))
+    story.append(Spacer(1, 5))
 
-    about_summary = esc_html(bio.get("aboutSummary") or " ".join(bio["aboutParagraphs"]))
-    story.append(_modern_section_label("About", label_style))
-    story.append(_modern_panel(Paragraph(about_summary, body_style), full_width))
-    story.append(Spacer(1, 8))
-
-    philosophy_summary = esc_html(bio.get("philosophySummary") or bio["philosophy"])
-    story.append(_modern_section_label("My Philosophy", label_style))
-    story.append(_modern_panel(Paragraph(philosophy_summary, body_style), full_width))
-    story.append(Spacer(1, 8))
-
-    exp_label = _modern_section_label("Experience", label_style)
-    acc_label = _modern_section_label("Accolades", label_style)
-    exp_body = Paragraph(
-        "<br/>".join(f"&bull; {esc_html(item)}" for item in bio["experience"]),
-        list_style,
-    )
-    acc_body = Paragraph(
-        "<br/>".join(f"&bull; {esc_html(item)}" for item in bio["accolades"]),
-        list_style,
-    )
-    exp_col = Table([[exp_label], [exp_body]], colWidths=[two_col_widths[0]])
-    acc_col = Table([[acc_label], [acc_body]], colWidths=[two_col_widths[1]])
-    cred_row = Table([[exp_col, acc_col]], colWidths=two_col_widths)
-    cred_row.setStyle(
-        TableStyle(
-            [
-                ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                ("LEFTPADDING", (0, 0), (-1, -1), 0),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-            ]
+    about_text = "<br/><br/>".join(esc_html(p) for p in bio["aboutParagraphs"])
+    story.append(
+        build_section_cell(
+            "About",
+            Paragraph(about_text, body_style),
+            full_width,
+            section_header_style,
         )
     )
-    story.append(cred_row)
-    story.append(Spacer(1, 8))
+    story.append(Spacer(1, 6))
 
-    story.append(_modern_section_label("What I Offer Teams and Programs", label_style))
-    story.append(
-        _modern_panel(Paragraph(_offerings_html(bio["offerings"]), offerings_style), full_width)
+    training_focus = bio.get("trainingFocus") or []
+    if training_focus:
+        focus_title = ParagraphStyle(
+            "focus_title",
+            fontName="Helvetica-Bold",
+            fontSize=9,
+            leading=11,
+            textColor=GREEN,
+        )
+        focus_table = Table(
+            [
+                [Paragraph("WHAT I TRAIN", focus_title)],
+                [Paragraph(_training_focus_html(training_focus), section_item_style)],
+            ],
+            colWidths=[full_width],
+        )
+        focus_table.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#E8F5EE")),
+                    ("BOX", (0, 0), (-1, -1), 1, LIGHT_GREEN),
+                    ("TOPPADDING", (0, 0), (0, 0), 6),
+                    ("BOTTOMPADDING", (0, -1), (0, -1), 7),
+                    ("TOPPADDING", (0, 1), (0, 1), 2),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 10),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+                ]
+            )
+        )
+        story.append(focus_table)
+        story.append(Spacer(1, 5))
+
+    philosophy_cell = build_section_cell(
+        "My Philosophy",
+        Paragraph(esc_html(bio["philosophy"]), body_style),
+        left_col_width,
+        section_header_style,
     )
-    story.append(Spacer(1, 10))
+    experience_cell = build_section_cell(
+        "Experience",
+        Paragraph(_bullets_plain(bio["experience"]), section_item_style),
+        left_col_width,
+        section_header_style,
+    )
+    accolades_cell = build_section_cell(
+        "Accolades",
+        Paragraph(_bullets_plain(bio["accolades"]), section_item_style),
+        left_col_width,
+        section_header_style,
+    )
+    offerings = bio["offerings"]
+    story.append(
+        _philosophy_offerings_row(
+            philosophy_cell,
+            experience_cell,
+            accolades_cell,
+            offerings,
+            section_header_style,
+            left_col_width,
+            right_col_width,
+        )
+    )
+    story.append(Spacer(1, 5))
 
     contact = bio["contact"]
     contact_line = Paragraph(
-        f"Book a call: {esc_html(contact['calendlyUrl'])}<br/>"
-        f"Email: {esc_html(contact['email'])} | "
-        f"Website: {esc_html(contact['website'])} | "
+        f"<b>Book a call with Coach Broc</b><br/>{esc_html(contact['calendlyUrl'])}<br/>"
+        f"Email: {esc_html(contact['email'])} | Website: {esc_html(contact['website'])} | "
         f"Instagram: {esc_html(contact['instagramHandle'])}",
         contact_style,
     )
@@ -371,8 +487,8 @@ def main() -> None:
             [
                 ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
                 ("BACKGROUND", (0, 0), (-1, -1), NAVY),
-                ("TOPPADDING", (0, 0), (-1, -1), 10),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
+                ("TOPPADDING", (0, 0), (-1, -1), 11),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 11),
                 ("LEFTPADDING", (0, 0), (-1, -1), 12),
                 ("RIGHTPADDING", (0, 0), (-1, -1), 12),
             ]

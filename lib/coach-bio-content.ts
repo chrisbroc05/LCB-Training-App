@@ -18,6 +18,7 @@ export type CoachBioContent = {
   experience: string[];
   philosophy: string;
   philosophySummary: string;
+  trainingFocus: string[];
   offerings: CoachBioOffering[];
   contact: {
     calendlyUrl: string;
