@@ -1,12 +1,13 @@
 {
   "displayName": "Coach Broc (Chris Broccolino)",
-  "titleLine": "Owner and Player Development Coach, LCB Training LLC",
-  "location": "Palatine, IL (NW Chicago suburbs)",
+  "titleLine": "Player Development Coach, LCB Training LLC",
+  "location": "",
   "slogan": "Work Hard. Be Memorable.",
   "aboutParagraphs": [
     "I played the game known for my effort and love for the game, not just my stats. I coach with the same standard. Every player I work with gets asked one question: \"What do you want to be known for?\" Everything we do, from swing mechanics to mindset, connects back to that answer.",
     "I have 12+ years of player development experience and currently coach high school varsity baseball. My goal is to build players who believe in themselves, love the game, and give an effort people notice."
   ],
+  "aboutSummary": "Known for effort, not just stats. I ask every player: What do you want to be known for? 12+ years in player development; current high school varsity coach building belief, love for the game, and noticeable effort.",
   "accolades": [
     "NJCAA National Champion, Oakton Community College",
     "Gold Glove Award",
@@ -20,26 +21,32 @@
     "Owner of LCB Training LLC"
   ],
   "philosophy": "Lessons and team practices are one or two days a week. What happens the other days is what separates players. I give players and teams a plan for the other days, so the work at the facility carries over at home.",
+  "philosophySummary": "Team time is one or two days a week. I build the plan for the other days so training carries over at home.",
   "offerings": [
     {
       "title": "Team Training and Clinics",
+      "summary": "In-person team and group sessions: hitting, fielding, speed, strength.",
       "description": "In-person sessions for teams and groups: hitting, fielding, speed and agility, and strength and mobility."
     },
     {
       "title": "Testing Days",
+      "summary": "Combine-style stations for baselines and tracking progress.",
       "description": "Combine-style testing stations so players and coaches have a baseline and can track progress."
     },
     {
       "title": "Club Development Partnerships",
+      "summary": "Club app access: drills, workouts, Playbook, team focus, and video feedback.",
       "description": "Club-wide access to the LCB Training app: a drill library, age-based workouts (gym, home weights, or bodyweight), The Playbook mindset guide, a weekly team focus, and video feedback from me. Teams train with you during the week, and the app covers the other days."
     },
     {
       "title": "12-Week Coaching Program",
+      "summary": "Personal daily plan, weekly video breakdowns, and direct messaging.",
       "description": "My one-on-one program for players who want a personal daily plan, weekly video breakdowns, and direct messaging with me."
     },
     {
       "title": "Private and Small-Group Lessons",
-      "description": "At the Palatine facility or local fields."
+      "summary": "",
+      "description": ""
     }
   ],
   "contact": {

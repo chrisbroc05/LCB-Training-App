@@ -4,6 +4,7 @@ import { COACH_CALENDLY_URL } from "@/lib/coach-calendly-shared";
 export type CoachBioOffering = {
   title: string;
   description: string;
+  summary: string;
 };
 
 export type CoachBioContent = {
@@ -12,9 +13,11 @@ export type CoachBioContent = {
   location: string;
   slogan: string;
   aboutParagraphs: string[];
+  aboutSummary: string;
   accolades: string[];
   experience: string[];
   philosophy: string;
+  philosophySummary: string;
   offerings: CoachBioOffering[];
   contact: {
     calendlyUrl: string;
@@ -61,4 +64,4 @@ export function getCoachOfferingLink(title: string): CoachOfferingLink | null {
 }
 
 export const coachBioPageDescription =
-  "Player development coach Chris Broccolino (Coach Broc) - team training, testing days, club partnerships, and the 12-Week Coaching Program in Palatine, IL.";
+  "Player development coach Chris Broccolino (Coach Broc) - team training, testing days, club partnerships, and the 12-Week Coaching Program.";

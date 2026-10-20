@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
 import Link from "next/link";
 
 import CoachOptionalPhoto from "@/components/CoachOptionalPhoto";
@@ -42,23 +43,30 @@ export const metadata: Metadata = {
   },
 };
 
+function SectionLabel({ children }: { children: ReactNode }) {
+  return (
+    <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#52B788]">{children}</p>
+  );
+}
+
 function OfferingCard({
   title,
-  description,
+  summary,
 }: {
   title: string;
-  description: string;
+  summary: string;
 }) {
   const link = getCoachOfferingLink(title);
   const cardBody = (
-    <article className="flex h-full flex-col rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-5 shadow-lg shadow-black/30 transition hover:border-[#52B788]/40">
-      <div className="h-1 w-10 rounded-full bg-[#52B788]" />
-      <h3 className="mt-4 text-lg font-semibold text-zinc-100">{title}</h3>
-      <p className="mt-2 flex-1 text-sm leading-relaxed text-zinc-300">{description}</p>
+    <article className="flex h-full flex-col rounded-2xl border border-[#18243a] bg-[#F5F5F5]/5 p-5 backdrop-blur-sm transition hover:border-[#52B788]/45">
+      <h3 className="text-base font-semibold text-zinc-100">{title}</h3>
+      {summary ? (
+        <p className="mt-2 flex-1 text-sm leading-relaxed text-zinc-400">{summary}</p>
+      ) : null}
       {link?.cardCta ? (
-        <span className="mt-4 inline-flex text-sm font-semibold text-[#52B788]">{link.cardCta}</span>
+        <span className="mt-4 text-sm font-semibold text-[#52B788]">{link.cardCta}</span>
       ) : link ? (
-        <span className="mt-4 inline-flex text-sm font-semibold text-[#52B788]">Learn more</span>
+        <span className="mt-4 text-sm font-semibold text-[#52B788]">Learn more</span>
       ) : null}
     </article>
   );
@@ -86,82 +94,91 @@ export default function CoachBioPage() {
   const { contact } = coachBioContent;
 
   return (
-    <div className="min-h-screen bg-black text-zinc-100">
-      <div className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6 sm:py-12">
-        <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start sm:justify-between">
-          <div className="order-2 flex-1 text-center sm:order-1 sm:text-left">
+    <div className="min-h-screen bg-[#050b16] text-zinc-100">
+      <section className="border-b border-[#18243a] bg-[#0A1628]">
+        <div className="mx-auto flex w-full max-w-4xl flex-col items-center gap-6 px-4 py-10 sm:flex-row sm:items-start sm:justify-between sm:px-6 sm:py-12">
+          <div className="flex-1 text-center sm:text-left">
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#52B788]">LCB Training</p>
             <h1 className="mt-2 text-3xl font-bold text-white sm:text-4xl">{coachBioContent.displayName}</h1>
-            <p className="mt-2 text-base font-semibold text-[#52B788]">{coachBioContent.titleLine}</p>
-            <p className="mt-1 text-sm text-zinc-400">{coachBioContent.location}</p>
-            <p className="mt-3 text-base italic text-zinc-200">&quot;{coachBioContent.slogan}&quot;</p>
-            <a
-              href={COACH_BIO_PDF_HREF}
-              className="mt-5 inline-flex w-full items-center justify-center rounded-full border border-[#52B788]/50 bg-[#0A1628] px-4 py-2.5 text-sm font-semibold text-[#52B788] transition hover:border-[#52B788] hover:bg-[#0f1d34] sm:hidden"
-              download
-            >
-              Download PDF
-            </a>
+            <p className="mt-2 text-sm font-medium text-[#52B788] sm:text-base">{coachBioContent.titleLine}</p>
+            {coachBioContent.location ? (
+              <p className="mt-1 text-sm text-zinc-400">{coachBioContent.location}</p>
+            ) : null}
+            <p className="mt-3 text-sm italic text-zinc-300 sm:text-base">
+              &quot;{coachBioContent.slogan}&quot;
+            </p>
           </div>
-          <div className="order-1 flex shrink-0 flex-col items-center gap-3 sm:order-2 sm:items-end">
-            <CoachOptionalPhoto size={168} roundedClass="rounded-2xl" priority />
+          <div className="flex flex-col items-center gap-3">
+            <CoachOptionalPhoto size={152} roundedClass="rounded-2xl ring-2 ring-[#52B788]/30" priority />
             <a
               href={COACH_BIO_PDF_HREF}
-              className="hidden items-center justify-center rounded-full border border-[#52B788]/50 bg-[#0A1628] px-4 py-2.5 text-sm font-semibold text-[#52B788] transition hover:border-[#52B788] hover:bg-[#0f1d34] sm:inline-flex"
+              className="inline-flex items-center justify-center rounded-full border border-[#52B788]/50 px-4 py-2 text-sm font-semibold text-[#52B788] transition hover:border-[#52B788] hover:bg-[#0f1d34]"
               download
             >
               Download PDF
             </a>
           </div>
         </div>
+      </section>
 
-        <section className="mt-10 rounded-3xl border border-[#18243a] bg-[#0A1628] px-5 py-8 sm:px-8">
-          <h2 className="text-xl font-semibold text-white">About</h2>
-          <div className="mt-4 space-y-4 text-base leading-relaxed text-zinc-300">
-            {coachBioContent.aboutParagraphs.map((paragraph) => (
-              <p key={paragraph.slice(0, 48)}>{paragraph}</p>
-            ))}
-          </div>
+      <div className="mx-auto w-full max-w-4xl px-4 py-10 sm:px-6 sm:py-12">
+        <section>
+          <SectionLabel>About</SectionLabel>
+          <p className="mt-3 text-lg leading-relaxed text-zinc-200">{coachBioContent.aboutSummary}</p>
+          <details className="mt-4 rounded-2xl border border-[#18243a] bg-[#0b1324]/60 px-4 py-3">
+            <summary className="cursor-pointer text-sm font-medium text-[#52B788]">Read full bio</summary>
+            <div className="mt-3 space-y-3 text-sm leading-relaxed text-zinc-400">
+              {coachBioContent.aboutParagraphs.map((paragraph) => (
+                <p key={paragraph.slice(0, 48)}>{paragraph}</p>
+              ))}
+            </div>
+          </details>
         </section>
 
-        <div className="mt-8 grid gap-6 sm:grid-cols-2">
-          <section className="rounded-3xl border border-[#18243a] bg-[#0b1324]/80 px-5 py-7 sm:px-6">
-            <h2 className="text-lg font-semibold text-white">Accolades</h2>
-            <ul className="mt-4 space-y-2 text-sm text-zinc-300">
-              {coachBioContent.accolades.map((item) => (
-                <li key={item} className="border-l-2 border-[#52B788] pl-3">
-                  {item}
-                </li>
-              ))}
-            </ul>
-          </section>
-          <section className="rounded-3xl border border-[#18243a] bg-[#0b1324]/80 px-5 py-7 sm:px-6">
-            <h2 className="text-lg font-semibold text-white">Experience</h2>
-            <ul className="mt-4 space-y-2 text-sm text-zinc-300">
+        <div className="mt-10 grid gap-8 sm:grid-cols-2">
+          <section>
+            <SectionLabel>Experience</SectionLabel>
+            <ul className="mt-3 space-y-2 text-sm text-zinc-300">
               {coachBioContent.experience.map((item) => (
-                <li key={item} className="border-l-2 border-[#52B788] pl-3">
-                  {item}
+                <li key={item} className="flex gap-2">
+                  <span className="text-[#52B788]" aria-hidden="true">
+                    -
+                  </span>
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+          <section>
+            <SectionLabel>Accolades</SectionLabel>
+            <ul className="mt-3 space-y-2 text-sm text-zinc-300">
+              {coachBioContent.accolades.map((item) => (
+                <li key={item} className="flex gap-2">
+                  <span className="text-[#52B788]" aria-hidden="true">
+                    -
+                  </span>
+                  <span>{item}</span>
                 </li>
               ))}
             </ul>
           </section>
         </div>
 
-        <section className="mt-8 rounded-3xl border border-[#52B788]/30 bg-gradient-to-br from-[#0f1d34] to-[#050b16] px-5 py-8 sm:px-8">
-          <h2 className="text-xl font-semibold text-white">My Philosophy</h2>
-          <p className="mt-4 text-base leading-relaxed text-zinc-300">{coachBioContent.philosophy}</p>
+        <section className="mt-10 rounded-2xl border-l-4 border-[#52B788] bg-[#0A1628]/80 px-5 py-6 sm:px-6">
+          <SectionLabel>My Philosophy</SectionLabel>
+          <p className="mt-3 text-base leading-relaxed text-zinc-200">{coachBioContent.philosophySummary}</p>
         </section>
 
-        <section className="mt-10">
-          <h2 className="text-2xl font-semibold text-white">What I Offer Teams and Programs</h2>
-          <div className="mt-6 grid gap-5 sm:grid-cols-2">
+        <section className="mt-12">
+          <SectionLabel>What I Offer Teams and Programs</SectionLabel>
+          <div className="mt-5 grid gap-4 sm:grid-cols-2">
             {coachBioContent.offerings.map((offering) => (
-              <OfferingCard key={offering.title} title={offering.title} description={offering.description} />
+              <OfferingCard key={offering.title} title={offering.title} summary={offering.summary} />
             ))}
           </div>
         </section>
 
-        <section className="mt-12 rounded-3xl border border-[#18243a] bg-[#0A1628] px-5 py-10 text-center sm:px-8">
+        <section className="mt-12 rounded-3xl bg-[#0A1628] px-5 py-10 text-center sm:px-8">
           <h2 className="text-xl font-semibold text-white sm:text-2xl">
             Want to bring this to your team or program?
           </h2>

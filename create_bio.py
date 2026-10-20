@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from reportlab.lib import colors
-from reportlab.lib.enums import TA_CENTER
+from reportlab.lib.enums import TA_CENTER, TA_LEFT
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import inch
@@ -164,33 +164,43 @@ def load_coach_bio_json(project_root: Path) -> dict:
         return json.load(handle)
 
 
-def get_coach_photo_flowable(project_root: Path, target_h: float = 1.15 * inch):
-    """Optional headshot from public/images/coach-broc.jpg (skipped if missing)."""
-    photo_path = project_root / "public" / "images" / "coach-broc.jpg"
-    if not photo_path.exists():
-        return None
-    try:
-        image = ImageReader(str(photo_path))
-        src_w, src_h = image.getSize()
-        ratio = target_h / float(src_h)
-        flowable = Image(str(photo_path), width=src_w * ratio, height=target_h)
-        flowable.hAlign = "CENTER"
-        return flowable
-    except Exception:
-        return None
-
-
 def _bullets_html(items: list[str]) -> str:
     return "<br/>".join(f"<b>{esc_html(item)}</b>" for item in items)
 
 
-def _offerings_html(offerings: list[dict], start_index: int = 1) -> str:
+def _offerings_html(offerings: list[dict]) -> str:
     parts: list[str] = []
-    for idx, item in enumerate(offerings, start=start_index):
+    for item in offerings:
         title = esc_html(item["title"])
-        desc = esc_html(item["description"])
-        parts.append(f"<b>{idx}. {title}</b><br/>{desc}")
-    return "<br/><br/>".join(parts)
+        summary = esc_html(item.get("summary") or item.get("description", "")).strip()
+        if summary:
+            parts.append(f"<font color='#2D6A4F'><b>{title}</b></font> - {summary}")
+        else:
+            parts.append(f"<font color='#2D6A4F'><b>{title}</b></font>")
+    return "<br/>".join(parts)
+
+
+def _modern_section_label(text: str, style: ParagraphStyle) -> Paragraph:
+    return Paragraph(esc_html(text).upper(), style)
+
+
+def _modern_panel(body: Paragraph, width: float) -> Table:
+    panel = Table([[body]], colWidths=[width])
+    panel.setStyle(
+        TableStyle(
+            [
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("BACKGROUND", (0, 0), (-1, -1), LIGHT_GRAY),
+                ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#E5E7EB")),
+                ("LINEBEFORE", (0, 0), (0, -1), 3, LIGHT_GREEN),
+                ("TOPPADDING", (0, 0), (-1, -1), 8),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+                ("LEFTPADDING", (0, 0), (-1, -1), 10),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+            ]
+        )
+    )
+    return panel
 
 
 def main() -> None:
@@ -202,182 +212,169 @@ def main() -> None:
     doc = SimpleDocTemplate(
         str(output_path),
         pagesize=letter,
-        leftMargin=0.85 * inch,
-        rightMargin=0.85 * inch,
-        topMargin=0.4 * inch,
-        bottomMargin=0.4 * inch,
+        leftMargin=0.75 * inch,
+        rightMargin=0.75 * inch,
+        topMargin=0.32 * inch,
+        bottomMargin=0.32 * inch,
         title="LCB Coach Bio - Chris Broccolino",
         author="LCB Training",
     )
 
-    full_width = 6.8 * inch
-    two_col_widths = [3.4 * inch, 3.4 * inch]
+    full_width = 7.0 * inch
+    two_col_widths = [3.5 * inch, 3.5 * inch]
+    slogan = bio["slogan"]
 
-    name_style = ParagraphStyle(
-        "name",
+    hero_name_style = ParagraphStyle(
+        "hero_name",
         fontName="Helvetica-Bold",
-        fontSize=21,
-        leading=24,
+        fontSize=18,
+        leading=21,
         alignment=TA_CENTER,
-        textColor=NAVY,
-    )
-    title_style = ParagraphStyle(
-        "title",
-        fontName="Helvetica",
-        fontSize=11,
-        leading=13,
-        alignment=TA_CENTER,
-        textColor=GREEN,
-    )
-    location_style = ParagraphStyle(
-        "location",
-        fontName="Helvetica",
-        fontSize=10,
-        leading=12,
-        alignment=TA_CENTER,
-        textColor=NAVY,
-    )
-    section_header_style = ParagraphStyle(
-        "section-header",
-        fontName="Helvetica-Bold",
-        fontSize=12,
-        leading=14,
         textColor=WHITE,
+    )
+    hero_sub_style = ParagraphStyle(
+        "hero_sub",
+        fontName="Helvetica",
+        fontSize=9,
+        leading=11,
+        alignment=TA_CENTER,
+        textColor=LIGHT_GREEN,
+    )
+    hero_meta_style = ParagraphStyle(
+        "hero_meta",
+        fontName="Helvetica",
+        fontSize=8.5,
+        leading=10,
+        alignment=TA_CENTER,
+        textColor=colors.HexColor("#E5E7EB"),
+    )
+    label_style = ParagraphStyle(
+        "label",
+        fontName="Helvetica-Bold",
+        fontSize=8,
+        leading=10,
+        textColor=GREEN,
+        spaceAfter=4,
     )
     body_style = ParagraphStyle(
         "body",
         fontName="Helvetica",
-        fontSize=9.5,
-        leading=12,
+        fontSize=9,
+        leading=11.5,
         textColor=NAVY,
     )
-    section_item_style = ParagraphStyle(
-        "section-item",
+    list_style = ParagraphStyle(
+        "list",
         fontName="Helvetica",
         fontSize=8.5,
         leading=10.5,
         textColor=NAVY,
+        leftIndent=0,
     )
-    quote_style = ParagraphStyle(
-        "quote",
-        fontName="Helvetica-BoldOblique",
-        fontSize=14,
-        leading=17,
-        alignment=TA_CENTER,
-        textColor=WHITE,
+    offerings_style = ParagraphStyle(
+        "offerings",
+        fontName="Helvetica",
+        fontSize=8.5,
+        leading=11,
+        textColor=NAVY,
     )
     contact_style = ParagraphStyle(
         "contact",
         fontName="Helvetica",
-        fontSize=9,
-        leading=11.5,
+        fontSize=8,
+        leading=10,
         textColor=WHITE,
+        alignment=TA_CENTER,
     )
 
     story = []
 
-    story.append(get_logo_or_fallback(project_root))
-    coach_photo = get_coach_photo_flowable(project_root)
-    if coach_photo is not None:
-        story.append(Spacer(1, 4))
-        story.append(coach_photo)
-    story.append(Spacer(1, 6))
-    story.append(Paragraph(bio["displayName"], name_style))
-    story.append(Spacer(1, 3))
-    story.append(Paragraph(bio["titleLine"], title_style))
-    story.append(Spacer(1, 2))
-    story.append(Paragraph(bio["location"], location_style))
-    story.append(Spacer(1, 4))
-    slogan = bio["slogan"]
-    story.append(Paragraph(f'"{slogan}"', title_style))
-    story.append(Spacer(1, 5))
-    story.append(HRFlowable(width="100%", thickness=1.1, color=LIGHT_GREEN, lineCap="round"))
-    story.append(Spacer(1, 5))
-
-    about_text = "<br/><br/>".join(esc_html(para) for para in bio["aboutParagraphs"])
-    about_cell = build_section_cell(
-        "About",
-        Paragraph(about_text, body_style),
-        full_width,
-        section_header_style,
-    )
-    story.append(about_cell)
-    story.append(Spacer(1, 5))
-
-    experience_para = Paragraph(_bullets_html(bio["experience"]), section_item_style)
-    accolades_para = Paragraph(_bullets_html(bio["accolades"]), section_item_style)
-    experience_cell = build_section_cell(
-        "Experience",
-        experience_para,
-        two_col_widths[0],
-        section_header_style,
-    )
-    accolades_cell = build_section_cell(
-        "Accolades",
-        accolades_para,
-        two_col_widths[1],
-        section_header_style,
-    )
-    story.append(build_aligned_row(experience_cell, accolades_cell, two_col_widths))
-    story.append(Spacer(1, 5))
-
-    philosophy_cell = build_section_cell(
-        "My Philosophy",
-        Paragraph(esc_html(bio["philosophy"]), body_style),
-        full_width,
-        section_header_style,
-    )
-    story.append(philosophy_cell)
-    story.append(Spacer(1, 5))
-
-    quote_table = Table(
-        [[Paragraph(f'"{slogan}"', quote_style)]],
-        colWidths=[full_width],
-    )
-    quote_table.setStyle(
+    logo = get_logo_or_fallback(project_root, target_w=1.55 * inch, target_h=0.64 * inch)
+    hero_rows = [
+        [logo],
+        [Paragraph(bio["displayName"], hero_name_style)],
+        [Paragraph(bio["titleLine"], hero_sub_style)],
+        [Paragraph(f'"{esc_html(slogan)}"', hero_sub_style)],
+    ]
+    location = (bio.get("location") or "").strip()
+    if location:
+        hero_rows.insert(3, [Paragraph(location, hero_meta_style)])
+    hero_table = Table(hero_rows, colWidths=[full_width])
+    hero_table.setStyle(
         TableStyle(
             [
-                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
                 ("BACKGROUND", (0, 0), (-1, -1), NAVY),
-                ("TOPPADDING", (0, 0), (-1, -1), 9),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 9),
-                ("LEFTPADDING", (0, 0), (-1, -1), 10),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+                ("TOPPADDING", (0, 0), (0, 0), 10),
+                ("BOTTOMPADDING", (0, -1), (0, -1), 12),
+                ("TOPPADDING", (0, 1), (-1, -1), 2),
+                ("BOTTOMPADDING", (0, 1), (-1, -2), 2),
             ]
         )
     )
-    story.append(quote_table)
-    story.append(Spacer(1, 5))
+    story.append(hero_table)
+    story.append(Spacer(1, 10))
 
-    offerings = bio["offerings"]
-    offerings_cell = build_section_cell(
-        "What I Offer Teams and Programs",
-        Paragraph(_offerings_html(offerings, 1), section_item_style),
-        full_width,
-        section_header_style,
-    )
-    story.append(offerings_cell)
-    story.append(Spacer(1, 5))
+    about_summary = esc_html(bio.get("aboutSummary") or " ".join(bio["aboutParagraphs"]))
+    story.append(_modern_section_label("About", label_style))
+    story.append(_modern_panel(Paragraph(about_summary, body_style), full_width))
+    story.append(Spacer(1, 8))
 
-    contact = bio["contact"]
-    left_contact = Paragraph(
-        f"Book a call:<br/>{contact['calendlyUrl']}<br/>Email: {contact['email']}",
-        contact_style,
+    philosophy_summary = esc_html(bio.get("philosophySummary") or bio["philosophy"])
+    story.append(_modern_section_label("My Philosophy", label_style))
+    story.append(_modern_panel(Paragraph(philosophy_summary, body_style), full_width))
+    story.append(Spacer(1, 8))
+
+    exp_label = _modern_section_label("Experience", label_style)
+    acc_label = _modern_section_label("Accolades", label_style)
+    exp_body = Paragraph(
+        "<br/>".join(f"&bull; {esc_html(item)}" for item in bio["experience"]),
+        list_style,
     )
-    right_contact = Paragraph(
-        f"Website: {contact['website']}<br/>Instagram: {contact['instagramHandle']}",
-        contact_style,
+    acc_body = Paragraph(
+        "<br/>".join(f"&bull; {esc_html(item)}" for item in bio["accolades"]),
+        list_style,
     )
-    contact_table = Table([[left_contact, right_contact]], colWidths=two_col_widths)
-    contact_table.setStyle(
+    exp_col = Table([[exp_label], [exp_body]], colWidths=[two_col_widths[0]])
+    acc_col = Table([[acc_label], [acc_body]], colWidths=[two_col_widths[1]])
+    cred_row = Table([[exp_col, acc_col]], colWidths=two_col_widths)
+    cred_row.setStyle(
         TableStyle(
             [
                 ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+            ]
+        )
+    )
+    story.append(cred_row)
+    story.append(Spacer(1, 8))
+
+    story.append(_modern_section_label("What I Offer Teams and Programs", label_style))
+    story.append(
+        _modern_panel(Paragraph(_offerings_html(bio["offerings"]), offerings_style), full_width)
+    )
+    story.append(Spacer(1, 10))
+
+    contact = bio["contact"]
+    contact_line = Paragraph(
+        f"Book a call: {esc_html(contact['calendlyUrl'])}<br/>"
+        f"Email: {esc_html(contact['email'])} | "
+        f"Website: {esc_html(contact['website'])} | "
+        f"Instagram: {esc_html(contact['instagramHandle'])}",
+        contact_style,
+    )
+    contact_table = Table([[contact_line]], colWidths=[full_width])
+    contact_table.setStyle(
+        TableStyle(
+            [
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
                 ("BACKGROUND", (0, 0), (-1, -1), NAVY),
-                ("TOPPADDING", (0, 0), (-1, -1), 8),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
-                ("LEFTPADDING", (0, 0), (-1, -1), 10),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+                ("TOPPADDING", (0, 0), (-1, -1), 10),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
+                ("LEFTPADDING", (0, 0), (-1, -1), 12),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 12),
             ]
         )
     )
