@@ -147,8 +147,55 @@ def stretch_section_cell_to_height(section_table: Table, width: float, target_he
     )
 
 
+def esc_html(text: str) -> str:
+    return (
+        text.replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace('"', "&quot;")
+    )
+
+
+def load_coach_bio_json(project_root: Path) -> dict:
+    import json
+
+    json_path = project_root / "content" / "coach-bio.json"
+    with json_path.open(encoding="utf-8") as handle:
+        return json.load(handle)
+
+
+def get_coach_photo_flowable(project_root: Path, target_h: float = 1.15 * inch):
+    """Optional headshot from public/images/coach-broc.jpg (skipped if missing)."""
+    photo_path = project_root / "public" / "images" / "coach-broc.jpg"
+    if not photo_path.exists():
+        return None
+    try:
+        image = ImageReader(str(photo_path))
+        src_w, src_h = image.getSize()
+        ratio = target_h / float(src_h)
+        flowable = Image(str(photo_path), width=src_w * ratio, height=target_h)
+        flowable.hAlign = "CENTER"
+        return flowable
+    except Exception:
+        return None
+
+
+def _bullets_html(items: list[str]) -> str:
+    return "<br/>".join(f"<b>{esc_html(item)}</b>" for item in items)
+
+
+def _offerings_html(offerings: list[dict], start_index: int = 1) -> str:
+    parts: list[str] = []
+    for idx, item in enumerate(offerings, start=start_index):
+        title = esc_html(item["title"])
+        desc = esc_html(item["description"])
+        parts.append(f"<b>{idx}. {title}</b><br/>{desc}")
+    return "<br/><br/>".join(parts)
+
+
 def main() -> None:
     project_root = Path(__file__).resolve().parent
+    bio = load_coach_bio_json(project_root)
     output_path = project_root / "public" / "LCB_Coach_Bio.pdf"
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -165,24 +212,30 @@ def main() -> None:
 
     full_width = 6.8 * inch
     two_col_widths = [3.4 * inch, 3.4 * inch]
-    about_col_widths = [5.0 * inch, 1.8 * inch]
-    section_body_inset = 20
 
     name_style = ParagraphStyle(
         "name",
         fontName="Helvetica-Bold",
-        fontSize=24,
-        leading=27,
+        fontSize=21,
+        leading=24,
         alignment=TA_CENTER,
         textColor=NAVY,
     )
     title_style = ParagraphStyle(
         "title",
         fontName="Helvetica",
-        fontSize=12,
-        leading=14,
+        fontSize=11,
+        leading=13,
         alignment=TA_CENTER,
         textColor=GREEN,
+    )
+    location_style = ParagraphStyle(
+        "location",
+        fontName="Helvetica",
+        fontSize=10,
+        leading=12,
+        alignment=TA_CENTER,
+        textColor=NAVY,
     )
     section_header_style = ParagraphStyle(
         "section-header",
@@ -194,13 +247,6 @@ def main() -> None:
     body_style = ParagraphStyle(
         "body",
         fontName="Helvetica",
-        fontSize=10.5,
-        leading=13,
-        textColor=NAVY,
-    )
-    list_style = ParagraphStyle(
-        "list",
-        fontName="Helvetica",
         fontSize=9.5,
         leading=12,
         textColor=NAVY,
@@ -208,107 +254,58 @@ def main() -> None:
     section_item_style = ParagraphStyle(
         "section-item",
         fontName="Helvetica",
-        fontSize=9,
-        leading=11,
-        textColor=NAVY,
-    )
-    callout_style = ParagraphStyle(
-        "callout",
-        fontName="Helvetica-BoldOblique",
-        fontSize=12,
-        leading=14,
-        alignment=TA_CENTER,
+        fontSize=8.5,
+        leading=10.5,
         textColor=NAVY,
     )
     quote_style = ParagraphStyle(
         "quote",
         fontName="Helvetica-BoldOblique",
-        fontSize=15,
-        leading=18,
+        fontSize=14,
+        leading=17,
         alignment=TA_CENTER,
         textColor=WHITE,
     )
     contact_style = ParagraphStyle(
         "contact",
         fontName="Helvetica",
-        fontSize=9.5,
-        leading=12,
+        fontSize=9,
+        leading=11.5,
         textColor=WHITE,
     )
 
     story = []
 
-    # 1. Header: centered logo and name
     story.append(get_logo_or_fallback(project_root))
+    coach_photo = get_coach_photo_flowable(project_root)
+    if coach_photo is not None:
+        story.append(Spacer(1, 4))
+        story.append(coach_photo)
     story.append(Spacer(1, 6))
-    story.append(Paragraph("Chris Broccolino", name_style))
+    story.append(Paragraph(bio["displayName"], name_style))
     story.append(Spacer(1, 3))
-    story.append(Paragraph("Player Development Coach | LCB Training", title_style))
-    story.append(Spacer(1, 6))
+    story.append(Paragraph(bio["titleLine"], title_style))
+    story.append(Spacer(1, 2))
+    story.append(Paragraph(bio["location"], location_style))
+    story.append(Spacer(1, 4))
+    slogan = bio["slogan"]
+    story.append(Paragraph(f'"{slogan}"', title_style))
+    story.append(Spacer(1, 5))
     story.append(HRFlowable(width="100%", thickness=1.1, color=LIGHT_GREEN, lineCap="round"))
-    story.append(Spacer(1, 6))
-
-    # 2. About Me (full width)
-    about_text = (
-        "I've spent 12+ years working with baseball players at every level - helping them not "
-        "just become better athletes, but more confident people. As a current High School Varsity "
-        "coach and longtime player development coach, my goal is simple: build confidence on and "
-        "off the field. Every player I work with gets my full attention, honest feedback, and a "
-        "plan built around their individual development."
-    )
-    about_table = build_section_cell(
-        "About Me",
-        Paragraph(about_text, body_style),
-        about_col_widths[0],
-        section_header_style,
-    )
-    program_details_table = build_section_cell(
-        "Program Details",
-        Paragraph(
-            "<b>Hitting</b><br/>"
-            "<b>Fielding</b><br/>"
-            "<b>Speed &amp; agility</b><br/>"
-            "<b>Strength &amp; mobility</b><br/>"
-            "<b>Online training program</b>",
-            section_item_style,
-        ),
-        about_col_widths[1],
-        section_header_style,
-    )
-    story.append(build_aligned_row(about_table, program_details_table, about_col_widths))
     story.append(Spacer(1, 5))
 
-    # 3. Experience & Accolades (two columns)
-    experience_bullets_para = Paragraph(
-        "<b>12+ years as a Player Development Coach</b><br/>"
-        "<b>Current High School Varsity Coach</b>",
-        section_item_style,
+    about_text = "<br/><br/>".join(esc_html(para) for para in bio["aboutParagraphs"])
+    about_cell = build_section_cell(
+        "About",
+        Paragraph(about_text, body_style),
+        full_width,
+        section_header_style,
     )
-    experience_callout_para = Paragraph("Trained 100+ athletes", callout_style)
-    experience_para = Table(
-        [[experience_bullets_para], [experience_callout_para]],
-        colWidths=[two_col_widths[0] - section_body_inset],
-    )
-    experience_para.setStyle(
-        TableStyle(
-            [
-                ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                ("TOPPADDING", (0, 0), (-1, -1), 0),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
-                ("LEFTPADDING", (0, 0), (-1, -1), 0),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-                ("TOPPADDING", (0, 1), (0, 1), 16),
-            ]
-        )
-    )
-    accolades_para = Paragraph(
-        "<b>2x All-Conference College Athlete</b><br/>"
-        "<b>Gold Glove Award</b><br/>"
-        "<b>Academic All-American</b><br/>"
-        "<b>NJCAA National Champion - Oakton CC</b><br/>"
-        "<b>World Series All-Tournament Team</b>",
-        section_item_style,
-    )
+    story.append(about_cell)
+    story.append(Spacer(1, 5))
+
+    experience_para = Paragraph(_bullets_html(bio["experience"]), section_item_style)
+    accolades_para = Paragraph(_bullets_html(bio["accolades"]), section_item_style)
     experience_cell = build_section_cell(
         "Experience",
         experience_para,
@@ -324,72 +321,51 @@ def main() -> None:
     story.append(build_aligned_row(experience_cell, accolades_cell, two_col_widths))
     story.append(Spacer(1, 5))
 
-    # 4. Coaching Philosophy
-    philosophy_table = Table(
-        [[Paragraph('"Work Hard. Be Memorable."', quote_style)]],
+    philosophy_cell = build_section_cell(
+        "My Philosophy",
+        Paragraph(esc_html(bio["philosophy"]), body_style),
+        full_width,
+        section_header_style,
+    )
+    story.append(philosophy_cell)
+    story.append(Spacer(1, 5))
+
+    quote_table = Table(
+        [[Paragraph(f'"{slogan}"', quote_style)]],
         colWidths=[full_width],
     )
-    philosophy_table.setStyle(
+    quote_table.setStyle(
         TableStyle(
             [
                 ("VALIGN", (0, 0), (-1, -1), "TOP"),
                 ("BACKGROUND", (0, 0), (-1, -1), NAVY),
-                ("TOPPADDING", (0, 0), (-1, -1), 11),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 11),
+                ("TOPPADDING", (0, 0), (-1, -1), 9),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 9),
                 ("LEFTPADDING", (0, 0), (-1, -1), 10),
                 ("RIGHTPADDING", (0, 0), (-1, -1), 10),
             ]
         )
     )
-    story.append(philosophy_table)
+    story.append(quote_table)
     story.append(Spacer(1, 5))
 
-    # 5. Training Options (two columns)
-    in_person_para = Paragraph(
-        "<b>Private lesson ($60/hr)</b><br/>"
-        "One-on-one skill development<br/><br/>"
-        "<b>Two players ($75/hr)</b><br/>"
-        "Shared session for two athletes<br/><br/>"
-        "<b>Group (3+, $100/hr)</b><br/>"
-        "Small group training<br/><br/>"
-        "<b>30 or 60 minute sessions</b><br/><br/>"
-        "<b>Training locations</b><br/>"
-        "Palatine facility, local fields and your local facilities (we can train at your place, mine, or meet in the middle)",
-        section_item_style,
-    )
-    online_para = Paragraph(
-        "<b>Free</b><br/>"
-        "1 free coaching submission plus free 20-minute Player Assessment Call with Coach Broc<br/>"
-        "<b>Basic ($59 one-time)</b><br/>"
-        "Lifetime access to the full video drill library plus 8 downloadable workout programs<br/>"
-        "<b>Memorable ($149/mo or $1,490/yr)</b><br/>"
-        "Everything in Basic plus 2 coaching submissions per month with 48-hour feedback, weekly check-ins, and goal setting<br/>"
-        "<b>Elite ($249/mo or $2,490/yr)</b><br/>"
-        "Everything in Memorable plus 4 submissions per month with rollover, priority 24-hour response, monthly group coaching call, and personalized development plan",
-        section_item_style,
-    )
-    in_person_cell = build_section_cell(
-        "In-Person Training",
-        in_person_para,
-        two_col_widths[0],
+    offerings = bio["offerings"]
+    offerings_cell = build_section_cell(
+        "What I Offer Teams and Programs",
+        Paragraph(_offerings_html(offerings, 1), section_item_style),
+        full_width,
         section_header_style,
     )
-    online_cell = build_section_cell(
-        "Online Membership",
-        online_para,
-        two_col_widths[1],
-        section_header_style,
-    )
-    story.append(build_aligned_row(in_person_cell, online_cell, two_col_widths))
+    story.append(offerings_cell)
     story.append(Spacer(1, 5))
 
-    # 6. Contact footer
+    contact = bio["contact"]
     left_contact = Paragraph(
-        "Email: chrisbroc05@gmail.com<br/>Phone: 847-208-9661",
+        f"Book a call:<br/>{contact['calendlyUrl']}<br/>Email: {contact['email']}",
         contact_style,
     )
     right_contact = Paragraph(
-        "Instagram: @lcbtraining | TikTok: @cbroc05<br/>Website: lcbtraining.com",
+        f"Website: {contact['website']}<br/>Instagram: {contact['instagramHandle']}",
         contact_style,
     )
     contact_table = Table([[left_contact, right_contact]], colWidths=two_col_widths)

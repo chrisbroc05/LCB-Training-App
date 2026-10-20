@@ -1,0 +1,54 @@
+{
+  "displayName": "Coach Broc (Chris Broccolino)",
+  "titleLine": "Owner and Player Development Coach, LCB Training LLC",
+  "location": "Palatine, IL (NW Chicago suburbs)",
+  "slogan": "Work Hard. Be Memorable.",
+  "aboutParagraphs": [
+    "I played the game known for my effort and love for the game, not just my stats. I coach with the same standard. Every player I work with gets asked one question: \"What do you want to be known for?\" Everything we do, from swing mechanics to mindset, connects back to that answer.",
+    "I have 12+ years of player development experience and currently coach high school varsity baseball. My goal is to build players who believe in themselves, love the game, and give an effort people notice."
+  ],
+  "accolades": [
+    "NJCAA National Champion, Oakton Community College",
+    "Gold Glove Award",
+    "2x All-Conference College Athlete",
+    "Academic All-American",
+    "World Series All-Tournament Team"
+  ],
+  "experience": [
+    "12+ years as a Player Development Coach",
+    "Current High School Varsity Baseball Coach",
+    "Owner of LCB Training LLC"
+  ],
+  "philosophy": "Lessons and team practices are one or two days a week. What happens the other days is what separates players. I give players and teams a plan for the other days, so the work at the facility carries over at home.",
+  "offerings": [
+    {
+      "title": "Team Training and Clinics",
+      "description": "In-person sessions for teams and groups: hitting, fielding, speed and agility, and strength and mobility."
+    },
+    {
+      "title": "Testing Days",
+      "description": "Combine-style testing stations so players and coaches have a baseline and can track progress."
+    },
+    {
+      "title": "Club Development Partnerships",
+      "description": "Club-wide access to the LCB Training app: a drill library, age-based workouts (gym, home weights, or bodyweight), The Playbook mindset guide, a weekly team focus, and video feedback from me. Teams train with you during the week, and the app covers the other days."
+    },
+    {
+      "title": "12-Week Coaching Program",
+      "description": "My one-on-one program for players who want a personal daily plan, weekly video breakdowns, and direct messaging with me."
+    },
+    {
+      "title": "Private and Small-Group Lessons",
+      "description": "At the Palatine facility or local fields."
+    }
+  ],
+  "contact": {
+    "calendlyUrl": "https://calendly.com/chrisbroc05/talk-with-coach-broc",
+    "email": "chrisbroc05@gmail.com",
+    "website": "lcbtraining.com",
+    "websiteUrl": "https://www.lcbtraining.com",
+    "instagramHandle": "@lcbtraining"
+  },
+  "pdfDownloadPath": "/LCB_Coach_Bio.pdf",
+  "coachPhotoPath": "public/images/coach-broc.jpg"
+}
