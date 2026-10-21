@@ -137,7 +137,7 @@ async function createGuestOrMemberCheckout(params: {
     customer_email: params.email,
     line_items: [{ price: priceId, quantity: 1 }],
     success_url: `${baseUrl}/resources/success?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${baseUrl}/resources?checkout=cancelled`,
+    cancel_url: `${baseUrl}${params.resourceSlug.startsWith("fixit-") ? "/fix-it?checkout=cancelled" : "/resources?checkout=cancelled"}`,
     client_reference_id: params.userId ?? params.leadId,
     metadata: {
       purchaseType: "resource",
@@ -301,6 +301,14 @@ export async function performResourceLeadAction(
     return {
       action: "redirect",
       url: "/quiz",
+      leadId: lead.id,
+    };
+  }
+
+  if (resource.slug === "fix-it-hitting-plans") {
+    return {
+      action: "redirect",
+      url: "/fix-it",
       leadId: lead.id,
     };
   }

@@ -21,6 +21,8 @@
     "test:coaching-submissions": "npx --yes tsx scripts/test-coaching-submissions.ts",
     "test:playbook-entitlements": "npx --yes tsx scripts/test-playbook-entitlements.ts",
     "test:resources": "npx --yes tsx scripts/test-resources.ts",
+    "test:fix-it-plans": "npx --yes tsx scripts/test-fix-it-plans.ts",
+    "build:fix-it-pdfs": "python3 scripts/build-fix-it-pdfs.py",
     "build:starter-pdfs": "npx --yes tsx scripts/export-workout-programs-json.ts && python3 scripts/build-starter-pdfs.py",
     "export:app-highlight": "npx --yes tsx scripts/export-app-highlight-local.ts && python3 marketing/build_app_highlight_pdf.py",
     "build:bio-pdf": "python3 create_bio.py"

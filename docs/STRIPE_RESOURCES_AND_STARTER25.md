@@ -11,6 +11,8 @@ Create these **one-time** Prices in Stripe (Test and Live). Add each Price ID to
 | `STRIPE_PRICE_RES_MENTAL` | Mental Game Workbook | $10 |
 | `STRIPE_PRICE_RES_RECRUITING` | College Baseball Recruiting Guide | $19 |
 | `STRIPE_PRICE_RES_BACK_ARM` | Back and Arm Strength: 4-Week Starter | $10 |
+| `STRIPE_PRICE_RES_FIXIT_SHOULDER` | Fix-It Plan: Stay Closed | $19 |
+| `STRIPE_PRICE_RES_FIXIT_BRAKES` | Fix-It Plan: Hit the Brakes | $19 |
 
 Existing (unchanged):
 

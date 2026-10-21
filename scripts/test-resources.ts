@@ -57,6 +57,11 @@ function testResourceCatalog() {
 
   const paidSlugs = getPaidDownloadResourceSlugs();
   assert.ok(paidSlugs.includes("starter-bundle"));
+  assert.ok(paidSlugs.includes("fixit-stay-closed"));
+  assert.ok(paidSlugs.includes("fixit-hit-the-brakes"));
+  assert.ok(!paidSlugs.includes("fix-it-hitting-plans"));
+  assert.equal(getResourceDefinition("fixit-stay-closed")?.stripePriceEnvVar, "STRIPE_PRICE_RES_FIXIT_SHOULDER");
+  assert.equal(getResourceDefinition("fixit-hit-the-brakes")?.stripePriceEnvVar, "STRIPE_PRICE_RES_FIXIT_BRAKES");
   assert.ok(!paidSlugs.includes("nutrition-guide"));
   assert.equal(getResourceDefinition("starter-bundle")?.stripePriceEnvVar, "STRIPE_PRICE_RES_STARTER_BUNDLE");
 
@@ -86,6 +91,7 @@ function testResourcesHubOrder() {
     "player-iq-quiz",
     "starter-arm-care",
     "starter-strength",
+    "fix-it-hitting-plans",
     "pregame-warmup",
     "starter-bundle",
     "parent-guide",

@@ -16,6 +16,7 @@ const hittingVideoSources: DrillLibraryVideoSource[] = [
   { title: "Med ball & tee combo #2", url: "https://player.vimeo.com/video/1200422512" },
   { title: "Stop casting your hands", url: "https://player.vimeo.com/video/1200422514" },
   { title: "Lead arm drill", url: "https://player.vimeo.com/video/1200422515" },
+  { title: "Lead Arm Flow Progression", url: "https://player.vimeo.com/video/1238102721" },
   { title: "Slot position", url: "https://player.vimeo.com/video/1200422517" },
   { title: "Posture work", url: "https://player.vimeo.com/video/1200422516" },
   { title: "Don't drift in your load", url: "https://player.vimeo.com/video/1200422500" },

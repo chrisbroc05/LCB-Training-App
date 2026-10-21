@@ -10,6 +10,8 @@ import {
   getPublicAppUrl,
 } from "@/lib/email-layout";
 import { buildLeadUnsubscribeUrl } from "@/lib/lead-unsubscribe-token";
+import { createFixItPlanAccessToken } from "@/lib/fix-it-plan-access-token";
+import { buildFixItPlanPath, isFixItResourceSlug } from "@/lib/fix-it-plans-shared";
 import { getResourceDefinition, getResourceDownloadLabel } from "@/lib/resources-shared";
 import { createResourceDownloadToken } from "@/lib/resource-download-token";
 
@@ -111,6 +113,17 @@ export async function sendResourcePurchaseReceiptEmail(params: {
   }
 
   const successUrl = `${getPublicAppUrl()}/resources/success`;
+  const planPageHtml = isFixItResourceSlug(params.resourceSlug)
+    ? (() => {
+        const planToken = createFixItPlanAccessToken({
+          email: params.toEmail,
+          resourceSlug: params.resourceSlug,
+        });
+        const planUrl = `${getPublicAppUrl()}${buildFixItPlanPath(params.resourceSlug)}?token=${encodeURIComponent(planToken)}`;
+        return `<p style="margin:0 0 16px 0; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:1.7; color:#0A1628;">Your private plan page with drill videos: <a href="${escapeHtml(planUrl)}" style="color:#2D6A4F; text-decoration:underline;">Open your Fix-It plan</a></p>`;
+      })()
+    : "";
+
   const linksHtml = resource.downloadFileKeys
     .map((fileKey) => {
       const label = getResourceDownloadLabel(fileKey);
@@ -122,13 +135,23 @@ export async function sendResourcePurchaseReceiptEmail(params: {
   const subject = `Receipt: ${resource.title}`;
   const bodyHtml = `<p style="margin:0 0 16px 0; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:1.7; color:#0A1628;">Hi ${escapeHtml(params.firstName)},</p>
 <p style="margin:0 0 16px 0; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:1.7; color:#0A1628;">Thank you for your purchase of <strong>${escapeHtml(resource.title)}</strong>.</p>
+${planPageHtml}
 <ul style="margin:0 0 16px 20px; padding:0; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:1.7; color:#0A1628;">${linksHtml}</ul>
 <p style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:1.7; color:#6B7280;">You can also open <a href="${escapeHtml(successUrl)}" style="color:#2D6A4F; text-decoration:underline;">your downloads page</a> any time while logged in.</p>`;
 
   const text = `Hi ${params.firstName},
 
 Thank you for your purchase of ${resource.title}.
-
+${
+    isFixItResourceSlug(params.resourceSlug)
+      ? `\nPlan page: ${getPublicAppUrl()}${buildFixItPlanPath(params.resourceSlug)}?token=${encodeURIComponent(
+          createFixItPlanAccessToken({
+            email: params.toEmail,
+            resourceSlug: params.resourceSlug,
+          }),
+        )}\n`
+      : ""
+  }
 ${resource.downloadFileKeys
   .map((fileKey) => `${getResourceDownloadLabel(fileKey)}: ${buildDownloadLink(params.toEmail, params.resourceSlug, fileKey)}`)
   .join("\n")}

@@ -13,7 +13,7 @@ import { canAccessWorkoutPrograms, type DatabaseTier } from "@/lib/membership";
 export async function emailHasResourcePurchase(email: string, resourceSlug: string) {
   const normalized = normalizeLeadEmail(email);
   const purchase = await prisma.resourcePurchase.findFirst({
-    where: { email: normalized, resourceSlug },
+    where: { email: normalized, resourceSlug, refundedAt: null },
     select: { id: true },
   });
   return Boolean(purchase);
@@ -21,7 +21,7 @@ export async function emailHasResourcePurchase(email: string, resourceSlug: stri
 
 export async function userHasResourcePurchase(userId: string, resourceSlug: string) {
   const purchase = await prisma.resourcePurchase.findFirst({
-    where: { userId, resourceSlug },
+    where: { userId, resourceSlug, refundedAt: null },
     select: { id: true },
   });
   return Boolean(purchase);
@@ -81,6 +81,7 @@ export async function listResourcePurchasesForAccount(params: { userId: string; 
   const normalized = normalizeLeadEmail(params.email);
   return prisma.resourcePurchase.findMany({
     where: {
+      refundedAt: null,
       OR: [{ userId: params.userId }, { email: normalized }],
     },
     orderBy: { createdAt: "desc" },

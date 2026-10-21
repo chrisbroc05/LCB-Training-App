@@ -309,6 +309,7 @@ model ResourcePurchase {
   resourceSlug    String
   stripeSessionId String   @unique
   amountCents     Int?
+  refundedAt      DateTime?
   createdAt       DateTime @default(now())
 
   @@index([email])

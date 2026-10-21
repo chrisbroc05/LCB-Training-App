@@ -110,6 +110,37 @@ async function resolvePurchaseFromCustomer(
   return null;
 }
 
+async function tryMarkResourcePurchaseRefunded(charge: Stripe.Charge, refundedAt: Date) {
+  const paymentIntentId =
+    typeof charge.payment_intent === "string" ? charge.payment_intent : charge.payment_intent?.id;
+
+  if (!paymentIntentId) {
+    return { processed: false as const, reason: "no_payment_intent" as const };
+  }
+
+  const sessions = await stripe.checkout.sessions.list({
+    payment_intent: paymentIntentId,
+    limit: 10,
+  });
+
+  for (const session of sessions.data) {
+    if (session.metadata?.purchaseType?.trim() !== "resource" || !session.id) {
+      continue;
+    }
+
+    const result = await prisma.resourcePurchase.updateMany({
+      where: { stripeSessionId: session.id, refundedAt: null },
+      data: { refundedAt },
+    });
+
+    if (result.count > 0) {
+      return { processed: true as const };
+    }
+  }
+
+  return { processed: false as const, reason: "resource_purchase_not_found" as const };
+}
+
 async function resolveChargePurchase(charge: Stripe.Charge): Promise<ResolvedPurchase | null> {
   const paymentIntentId =
     typeof charge.payment_intent === "string" ? charge.payment_intent : charge.payment_intent?.id;
@@ -323,12 +354,17 @@ export async function processStripeChargeRefund(charge: Stripe.Charge) {
     return { processed: false, reason: "no_refund_amount" as const };
   }
 
+  const refundedAt = new Date();
+  const resourceRefund = await tryMarkResourcePurchaseRefunded(charge, refundedAt);
+  if (resourceRefund.processed) {
+    return resourceRefund;
+  }
+
   const purchase = await resolveChargePurchase(charge);
   if (!purchase) {
     return { processed: false, reason: "purchase_not_recognized" as const };
   }
 
-  const refundedAt = new Date();
   const refundParams = {
     userId: purchase.userId,
     chargeId: charge.id,

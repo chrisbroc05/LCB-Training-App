@@ -10,6 +10,7 @@ function ResourcesSuccessContent() {
   const searchParams = useSearchParams();
   const sessionId = searchParams.get("session_id");
   const [downloads, setDownloads] = useState<DownloadItem[]>([]);
+  const [planPages, setPlanPages] = useState<DownloadItem[]>([]);
   const [pending, setPending] = useState(true);
   const [error, setError] = useState("");
 
@@ -29,6 +30,7 @@ function ResourcesSuccessContent() {
       const data = (await response.json()) as {
         pending?: boolean;
         downloads?: DownloadItem[];
+        planPages?: DownloadItem[];
         error?: string;
       };
       if (!response.ok) {
@@ -41,6 +43,7 @@ function ResourcesSuccessContent() {
         return;
       }
       setDownloads(data.downloads ?? []);
+      setPlanPages(data.planPages ?? []);
       setPending(false);
     };
 
@@ -56,19 +59,40 @@ function ResourcesSuccessContent() {
         <p className="mt-4 text-red-400">{error}</p>
       ) : (
         <>
-          <p className="mt-4 text-zinc-300">Save these PDFs to your device. Links expire in 15 minutes.</p>
-          <ul className="mt-6 space-y-3">
-            {downloads.map((item) => (
-              <li key={item.url}>
-                <a
-                  href={item.url}
-                  className="inline-flex min-h-[44px] w-full items-center justify-center rounded-full bg-[#2D6A4F] px-4 py-3 text-sm font-semibold text-white hover:bg-[#52B788]"
-                >
-                  Download {item.label}
-                </a>
-              </li>
-            ))}
-          </ul>
+          {planPages.length > 0 ? (
+            <>
+              <p className="mt-4 text-zinc-300">Open your plan page for drill videos. Save the link from your receipt email.</p>
+              <ul className="mt-6 space-y-3">
+                {planPages.map((item) => (
+                  <li key={item.url}>
+                    <a
+                      href={item.url}
+                      className="inline-flex min-h-[44px] w-full items-center justify-center rounded-full bg-[#2D6A4F] px-4 py-3 text-sm font-semibold text-white hover:bg-[#52B788]"
+                    >
+                      {item.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : null}
+          {downloads.length > 0 ? (
+            <>
+              <p className="mt-6 text-zinc-300">Save these PDFs to your device. Links expire in 15 minutes.</p>
+              <ul className="mt-4 space-y-3">
+                {downloads.map((item) => (
+                  <li key={item.url}>
+                    <a
+                      href={item.url}
+                      className="inline-flex min-h-[44px] w-full items-center justify-center rounded-full border border-[#52B788]/50 px-4 py-3 text-sm font-semibold text-[#52B788] hover:bg-[#52B788]/10"
+                    >
+                      Download {item.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : null}
         </>
       )}
       <p className="mt-8 text-sm text-zinc-400">
