@@ -5,6 +5,7 @@ import {
   getResourceLeadSubmitLabel,
   type ResourceLeadActionResult,
 } from "@/lib/resources-lead-shared";
+import DigitalProductSalesFinalNotice from "@/app/resources/DigitalProductSalesFinalNotice";
 import { LEAD_ROLE_OPTIONS, type LeadRoleValue, type ResourceDefinition } from "@/lib/resources-shared";
 import { followResourceLeadAction, postResourceLeadAction } from "@/lib/resources-lead-client";
 
@@ -122,6 +123,9 @@ export default function ResourceLeadModal({
           >
             {loading ? "One moment..." : submitLabel}
           </button>
+          {resource.type === "PAID_DOWNLOAD" ? (
+            <DigitalProductSalesFinalNotice className="text-center text-xs leading-relaxed text-zinc-500" />
+          ) : null}
           <p className="text-xs leading-relaxed text-zinc-500">
             By continuing, you agree to get training tips and offers from Coach Broc by email.
             Unsubscribe anytime.

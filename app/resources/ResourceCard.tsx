@@ -1,5 +1,6 @@
 "use client";
 
+import DigitalProductSalesFinalNotice from "@/app/resources/DigitalProductSalesFinalNotice";
 import type { ResourceDefinition } from "@/lib/resources-shared";
 
 type ResourceCardProps = {
@@ -48,6 +49,7 @@ export default function ResourceCard({ resource, onAction }: ResourceCardProps) 
       >
         {resource.buttonLabel}
       </button>
+      {resource.type === "PAID_DOWNLOAD" ? <DigitalProductSalesFinalNotice className="mt-2 text-center text-xs leading-relaxed text-zinc-500" /> : null}
     </article>
   );
 }

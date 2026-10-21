@@ -3,6 +3,9 @@ import { TWELVE_WEEK_PROGRAM_CARD_DESCRIPTION } from "@/lib/twelve-week-program-
 
 export type ResourceTag = "FREE" | "PAID";
 export type ResourceType = "FREE_DOWNLOAD" | "PAID_DOWNLOAD" | "LINK";
+
+/** Shown at checkout for instant PDF / digital resource purchases. */
+export const DIGITAL_PRODUCT_SALES_FINAL_NOTICE = "Digital product. All sales are final.";
 export type ResourceSection = "START_HERE" | "COACHING" | "WORKOUT_STARTERS" | "PROGRAMS_AND_GUIDES";
 export type ResourceBadge = "START HERE" | "COACH'S PICK" | "BEST VALUE";
 export type LeadRoleValue = "PLAYER" | "PARENT" | "COACH";

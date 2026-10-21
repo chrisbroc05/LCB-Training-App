@@ -17,6 +17,7 @@ import {
   type ResourceLeadActionResult,
 } from "@/lib/resources-lead-shared";
 import {
+  DIGITAL_PRODUCT_SALES_FINAL_NOTICE,
   getResourceDefinition,
   getStripePriceIdForResourceSlug,
   type LeadRoleValue,
@@ -139,6 +140,11 @@ async function createGuestOrMemberCheckout(params: {
     success_url: `${baseUrl}/resources/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${baseUrl}${params.resourceSlug.startsWith("fixit-") ? "/fix-it?checkout=cancelled" : "/resources?checkout=cancelled"}`,
     client_reference_id: params.userId ?? params.leadId,
+    custom_text: {
+      submit: {
+        message: DIGITAL_PRODUCT_SALES_FINAL_NOTICE,
+      },
+    },
     metadata: {
       purchaseType: "resource",
       resourceSlug: resource.slug,

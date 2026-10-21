@@ -6,6 +6,7 @@ import {
 import { verifyResourceDownloadToken, createResourceDownloadToken } from "../lib/resource-download-token";
 import { formatLeadResourceCheckoutStatus } from "../lib/lead-checkout-status-shared";
 import {
+  DIGITAL_PRODUCT_SALES_FINAL_NOTICE,
   getResourceDefinition,
   getResourcesForHub,
   getPaidDownloadResourceSlugs,
@@ -150,6 +151,11 @@ function testSubmitLabels() {
   assert.equal(getResourceLeadSubmitLabel(paid), "Continue to Checkout");
 }
 
+function testDigitalProductSalesFinalNotice() {
+  assert.match(DIGITAL_PRODUCT_SALES_FINAL_NOTICE, /^[\x20-\x7E]+$/);
+  assert.equal(DIGITAL_PRODUCT_SALES_FINAL_NOTICE, "Digital product. All sales are final.");
+}
+
 function run() {
   testNormalizeLeadEmail();
   testResourceDownloadTokenRoundTrip();
@@ -159,6 +165,7 @@ function run() {
   testCoachingLinkUrls();
   testCheckoutStartedStatus();
   testSubmitLabels();
+  testDigitalProductSalesFinalNotice();
   console.log("test:resources passed");
 }
 

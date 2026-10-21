@@ -1,6 +1,6 @@
 import { isValidEmailFormat } from "@/lib/second-email-shared";
 
-export const LEGAL_DOCS_VERSION = "2026-09-29";
+export const LEGAL_DOCS_VERSION = "2026-10-21";
 
 export const LEGAL_ADULT_AGE = 18;
 

@@ -4,7 +4,7 @@ export const LEGAL_DOCUMENTS: Record<LegalDocumentId, LegalDocumentConfig> = {
   terms: {
     id: "terms",
     title: "Terms of Service",
-    lastUpdatedLabel: "September 29, 2026",
+    lastUpdatedLabel: "October 21, 2026",
     intro:
       'These Terms of Service ("Terms") are an agreement between you and LCB Training LLC ("LCB Training," "we," "us"), operated by Chris Broccolino ("Coach Broc"). They cover lcbtraining.com, the LCB Training app, and all coaching services we offer (together, the "Services"). By creating an account, buying anything, or using the Services, you agree to these Terms, our Privacy Policy, and our Assumption of Risk and Release of Liability ("Waiver").',
     blocks: [
@@ -80,11 +80,19 @@ export const LEGAL_DOCUMENTS: Record<LegalDocumentId, LegalDocumentConfig> = {
       },
       {
         type: "heading",
+        text: "Digital resources (PDF guides, starter programs, and Fix-It plans)",
+      },
+      {
+        type: "paragraph",
+        text: "Digital products (PDF guides, starter programs, and Fix-It plans) are delivered instantly and all sales are final. If something goes wrong with your purchase, contact chrisbroc05@gmail.com and we will make it right.",
+      },
+      {
+        type: "heading",
         text: "The Playbook",
       },
       {
         type: "paragraph",
-        text: "because it is delivered instantly as digital content, all sales are final.",
+        text: "The Playbook is delivered instantly as digital content; the Digital resources policy above applies.",
       },
       {
         type: "heading",

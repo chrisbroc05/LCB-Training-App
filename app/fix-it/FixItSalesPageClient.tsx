@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import DigitalProductSalesFinalNotice from "@/app/resources/DigitalProductSalesFinalNotice";
 import ResourceLeadModal from "@/app/resources/ResourceLeadModal";
 import {
   followResourceLeadAction,
@@ -73,6 +74,7 @@ function PlanCard({
       >
         {plan.buttonLabel}
       </button>
+      <DigitalProductSalesFinalNotice className="mt-2 text-center text-xs leading-relaxed text-zinc-500" />
     </article>
   );
 }
