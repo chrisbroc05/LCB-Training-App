@@ -463,16 +463,28 @@ export async function buildWeeklyRecapData(
 }
 
 export async function buildCoachDailySummaryData(dateKey: string, now = new Date()) {
+  const dayStart = getChicagoDayStart(dateKey);
+  const dayEnd = getChicagoDayEnd(dateKey);
+
+  const { loadCoachDailySummaryBusinessSafe } = await import(
+    "@/lib/coach-daily-summary-business-server"
+  );
+  const { coachDailySummaryBusinessHasContent } = await import(
+    "@/lib/coach-daily-summary-business-shared"
+  );
+  const business = await loadCoachDailySummaryBusinessSafe(dateKey);
+
   const { loadUnconfirmedMinorParentSummaries } = await import("@/lib/legal-server");
   const unconfirmedMinorNames = await loadUnconfirmedMinorParentSummaries(now);
 
   const enrollments = await loadActiveEnrollments(now);
-  if (enrollments.length === 0 && unconfirmedMinorNames.length === 0) {
+  if (
+    enrollments.length === 0 &&
+    unconfirmedMinorNames.length === 0 &&
+    !coachDailySummaryBusinessHasContent(business)
+  ) {
     return null;
   }
-
-  const dayStart = getChicagoDayStart(dateKey);
-  const dayEnd = getChicagoDayEnd(dateKey);
 
   const finishedNames: string[] = [];
   const notFinished: Array<{ name: string; done: number; total: number }> = [];
@@ -663,6 +675,7 @@ export async function buildCoachDailySummaryData(dateKey: string, now = new Date
     unconfirmedMinorNames,
     quizCompletedToday: quizToday.count,
     quizAverageScoreToday: quizToday.averageScore,
+    business,
   };
 }
 

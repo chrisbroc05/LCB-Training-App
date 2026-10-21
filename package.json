@@ -15,6 +15,7 @@
     "test:daily-plan": "npx --yes tsx scripts/test-daily-plan.ts",
     "test:strength-extra-work": "npx --yes tsx scripts/test-strength-extra-work.ts",
     "test:quiz": "npx --yes tsx scripts/test-player-iq-quiz.ts",
+    "test:coach-daily-summary-business": "npx --yes tsx scripts/test-coach-daily-summary-business.ts",
     "test:program-stats": "npx --yes tsx scripts/test-program-stats.ts",
     "test:program-task-completion": "npx --yes tsx scripts/test-program-task-completion.ts",
     "test:coaching-submissions": "npx --yes tsx scripts/test-coaching-submissions.ts",

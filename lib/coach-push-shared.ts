@@ -16,6 +16,21 @@ export function getCoachSubmissionTypeLabel(tab: CoachSubmissionTab) {
   return tab === "swing" ? "Swing analysis" : "Mental game";
 }
 
+import type { CoachDailySummaryBusiness } from "@/lib/coach-daily-summary-business-shared";
+
+function snapshotBusinessHasContent(business: CoachDailySummaryBusiness | null | undefined) {
+  if (!business) {
+    return false;
+  }
+
+  return (
+    business.sales.length > 0 ||
+    business.newLeads.length > 0 ||
+    business.checkoutFollowUps.length > 0 ||
+    business.freeAccounts.length > 0
+  );
+}
+
 export type CoachDailySummarySnapshot = {
   finished: number;
   active: number;
@@ -29,10 +44,12 @@ export type CoachDailySummarySnapshot = {
   unconfirmedMinorNames: string[];
   quizCompletedToday: number;
   quizAverageScoreToday: number;
+  business?: CoachDailySummaryBusiness | null;
 };
 
 export function coachDailySummaryHasContent(data: CoachDailySummarySnapshot) {
   return (
+    snapshotBusinessHasContent(data.business) ||
     data.finished > 0 ||
     data.notFinished.length > 0 ||
     data.goneQuietNames.length > 0 ||

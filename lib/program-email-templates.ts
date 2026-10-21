@@ -1,4 +1,10 @@
 import {
+  buildCoachDailySummarySubject,
+  formatCoachSummaryChicagoTime,
+  formatCoachSummarySaleAmount,
+  type CoachDailySummaryBusiness,
+} from "@/lib/coach-daily-summary-business-shared";
+import {
   buildEmailButton,
   buildEmailInfoBox,
   buildEmailSectionLabel,
@@ -412,6 +418,101 @@ ${buildEmailFooterText()}`;
   };
 }
 
+function buildCoachDailySummaryBusinessHtml(business: CoachDailySummaryBusiness | null | undefined) {
+  if (!business) {
+    return { html: "", text: "" };
+  }
+
+  const sectionsHtml: string[] = [];
+  const sectionsText: string[] = [];
+
+  if (business.sales.length > 0) {
+    const linesHtml = business.sales
+      .map(
+        (sale) =>
+          `<li style="margin:0 0 8px 0; font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:1.5; color:#0A1628;"><strong>${escapeHtml(sale.productLabel)}</strong> ${escapeHtml(formatCoachSummarySaleAmount(sale.amountCents))} &mdash; ${escapeHtml(sale.buyerName)} (${escapeHtml(sale.buyerEmail)}), ${escapeHtml(formatCoachSummaryChicagoTime(sale.occurredAt))} CT</li>`,
+      )
+      .join("");
+    sectionsHtml.push(
+      `${buildEmailSectionLabel("SALES TODAY")}
+      <p style="margin:0 0 8px 0; font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:1.5; color:#0A1628;"><strong>Total: ${escapeHtml(formatCoachSummarySaleAmount(business.salesTotalCents))}</strong></p>
+      <ul style="margin:0 0 16px 0; padding:0 0 0 20px;">${linesHtml}</ul>`,
+    );
+    const linesText = business.sales
+      .map(
+        (sale) =>
+          `- ${sale.productLabel} ${formatCoachSummarySaleAmount(sale.amountCents)} -- ${sale.buyerName} (${sale.buyerEmail}), ${formatCoachSummaryChicagoTime(sale.occurredAt)} CT`,
+      )
+      .join("\n");
+    sectionsText.push(
+      `SALES TODAY\nTotal: ${formatCoachSummarySaleAmount(business.salesTotalCents)}\n${linesText}`,
+    );
+  }
+
+  if (business.newLeads.length > 0) {
+    const linesHtml = business.newLeads
+      .map(
+        (lead) =>
+          `<li style="margin:0 0 8px 0; font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:1.5; color:#0A1628;">${escapeHtml(lead.name)} (${escapeHtml(lead.email)}) &mdash; ${escapeHtml(lead.roleLabel)}, first: ${escapeHtml(lead.firstResourceLabel)}</li>`,
+      )
+      .join("");
+    sectionsHtml.push(
+      `${buildEmailSectionLabel("NEW LEADS TODAY")}
+      <ul style="margin:0 0 16px 0; padding:0 0 0 20px;">${linesHtml}</ul>`,
+    );
+    sectionsText.push(
+      `NEW LEADS TODAY\n${business.newLeads
+        .map(
+          (lead) =>
+            `- ${lead.name} (${lead.email}) -- ${lead.roleLabel}, first: ${lead.firstResourceLabel}`,
+        )
+        .join("\n")}`,
+    );
+  }
+
+  if (business.checkoutFollowUps.length > 0) {
+    const linesHtml = business.checkoutFollowUps
+      .map(
+        (entry) =>
+          `<li style="margin:0 0 8px 0; font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:1.5; color:#0A1628;">${escapeHtml(entry.name)} (${escapeHtml(entry.email)}) &mdash; ${escapeHtml(entry.itemLabel)}</li>`,
+      )
+      .join("");
+    sectionsHtml.push(
+      `${buildEmailSectionLabel("WORTH A FOLLOW-UP")}
+      <p style="margin:0 0 8px 0; font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:1.5; color:#6B7280;">Checkout started but not finished</p>
+      <ul style="margin:0 0 16px 0; padding:0 0 0 20px;">${linesHtml}</ul>`,
+    );
+    sectionsText.push(
+      `WORTH A FOLLOW-UP (checkout started but not finished)\n${business.checkoutFollowUps
+        .map((entry) => `- ${entry.name} (${entry.email}) -- ${entry.itemLabel}`)
+        .join("\n")}`,
+    );
+  }
+
+  if (business.freeAccounts.length > 0) {
+    const linesHtml = business.freeAccounts
+      .map(
+        (entry) =>
+          `<li style="margin:0 0 8px 0; font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:1.5; color:#0A1628;">${escapeHtml(entry.name)} (${escapeHtml(entry.accountKindLabel)}) &mdash; ${escapeHtml(entry.email)}</li>`,
+      )
+      .join("");
+    sectionsHtml.push(
+      `${buildEmailSectionLabel("NEW FREE ACCOUNTS TODAY")}
+      <ul style="margin:0 0 16px 0; padding:0 0 0 20px;">${linesHtml}</ul>`,
+    );
+    sectionsText.push(
+      `NEW FREE ACCOUNTS TODAY\n${business.freeAccounts
+        .map((entry) => `- ${entry.name} (${entry.accountKindLabel}) -- ${entry.email}`)
+        .join("\n")}`,
+    );
+  }
+
+  return {
+    html: sectionsHtml.join(""),
+    text: sectionsText.length > 0 ? `${sectionsText.join("\n\n")}\n\n` : "",
+  };
+}
+
 export function buildCoachDailySummaryEmail(params: {
   finished: number;
   active: number;
@@ -426,9 +527,17 @@ export function buildCoachDailySummaryEmail(params: {
   unconfirmedMinorNames: string[];
   quizCompletedToday: number;
   quizAverageScoreToday: number;
+  business?: CoachDailySummaryBusiness | null;
 }) {
-  const subject = `Program today: ${params.finished} of ${params.active} finished`;
+  const subject = buildCoachDailySummarySubject({
+    finished: params.finished,
+    active: params.active,
+    notFinishedCount: params.notFinished.length,
+    business: params.business,
+  });
   const adminUrl = `${getPublicAppUrl()}/admin/program`;
+  const leadsAdminUrl = `${getPublicAppUrl()}/admin/leads`;
+  const businessBlocks = buildCoachDailySummaryBusinessHtml(params.business);
 
   const finishedHtml =
     params.finishedNames.length > 0
@@ -482,7 +591,7 @@ export function buildCoachDailySummaryEmail(params: {
       <p style="margin:0 0 16px 0; font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:1.5; color:#0A1628;">Quiz: ${params.quizCompletedToday} completed, average score ${params.quizAverageScoreToday}</p>`
       : "";
 
-  const bodyContentHtml = `${buildEmailSectionLabel("FINISHED TODAY")}
+  const bodyContentHtml = `${businessBlocks.html}${buildEmailSectionLabel("FINISHED TODAY")}
       <p style="margin:0 0 16px 0; font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:1.5; color:#0A1628;">${finishedHtml}</p>
       ${buildEmailSectionLabel("NOT FINISHED")}
       ${notFinishedHtml}
@@ -499,7 +608,8 @@ export function buildCoachDailySummaryEmail(params: {
       <p style="margin:0 0 16px 0; font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:1.5; color:#0A1628;">${params.unreadMessagesCount}</p>
       ${parentConsentHtml}
       ${quizHtml}
-      ${buildEmailButton("Open program overview", adminUrl)}`;
+      ${buildEmailButton("Open program overview", adminUrl)}
+      ${params.business && (params.business.newLeads.length > 0 || params.business.checkoutFollowUps.length > 0) ? buildEmailButton("Open leads", leadsAdminUrl) : ""}`;
 
   const notFinishedText =
     params.notFinished.length > 0
@@ -516,9 +626,9 @@ export function buildCoachDailySummaryEmail(params: {
       ? params.gamesLoggedToday.map((entry) => `- ${entry.name}: ${entry.line}`).join("\n")
       : "None";
 
-  const text = `Program today: ${params.finished} of ${params.active} finished
+  const text = `${subject}
 
-FINISHED TODAY
+${businessBlocks.text}FINISHED TODAY
 ${params.finishedNames.length > 0 ? params.finishedNames.join(", ") : "None"}
 
 NOT FINISHED
