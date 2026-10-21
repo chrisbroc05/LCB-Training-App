@@ -1,74 +1,40 @@
 import { readFile } from "fs/promises";
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { buildAppRedirectUrl } from "@/lib/request-base-url-shared";
 import {
-  canDownloadFreeResourceLead,
-  canDownloadPaidResourceFile,
-} from "@/lib/resources-access-server";
+  resolveFreeResourceDownloadGate,
+  resolvePaidResourceDownloadGate,
+} from "@/lib/resource-download-access-server";
+import { peekResourceDownloadToken } from "@/lib/resource-download-token";
+import { canDownloadPaidResourceFile } from "@/lib/resources-access-server";
 import { getResourceDefinition } from "@/lib/resources-shared";
 import { getPrivateResourceAbsolutePath } from "@/lib/resource-files-server";
-import { verifyResourceDownloadToken } from "@/lib/resource-download-token";
 
-export async function GET(request: Request) {
-  const url = new URL(request.url);
-  const token = url.searchParams.get("token")?.trim();
-
-  if (!token) {
-    return NextResponse.json({ error: "Missing download token." }, { status: 400 });
+function redirectDownloadError(
+  request: Request,
+  kind: "refunded" | "invalid" | "not_authorized",
+  resourceSlug?: string,
+) {
+  if (kind === "refunded") {
+    return NextResponse.redirect(
+      buildAppRedirectUrl(request, "/resources/download/refunded", resourceSlug ? { resource: resourceSlug } : undefined),
+    );
   }
+  return NextResponse.redirect(
+    buildAppRedirectUrl(request, "/resources/download/recover", resourceSlug ? { resource: resourceSlug } : undefined),
+  );
+}
 
-  const payload = verifyResourceDownloadToken(token);
-  if (!payload) {
-    return NextResponse.json({ error: "Invalid or expired download link." }, { status: 403 });
-  }
-
-  const resource = getResourceDefinition(payload.resourceSlug);
-  if (!resource) {
-    return NextResponse.json({ error: "Resource not found." }, { status: 404 });
-  }
-
-  const session = await getServerSession(authOptions);
-  const userId = session?.user?.id ?? null;
-  const sessionEmail = session?.user?.email?.toLowerCase() ?? null;
-
-  if (
-    sessionEmail &&
-    sessionEmail !== payload.email.toLowerCase() &&
-    resource.type === "PAID_DOWNLOAD"
-  ) {
-    return NextResponse.json({ error: "Download link does not match signed-in account." }, { status: 403 });
-  }
-
-  let allowed = false;
-  if (resource.type === "FREE_DOWNLOAD") {
-    allowed = await canDownloadFreeResourceLead({
-      email: payload.email,
-      resourceSlug: payload.resourceSlug,
-      fileKey: payload.fileKey,
-    });
-  } else if (resource.type === "PAID_DOWNLOAD") {
-    allowed = await canDownloadPaidResourceFile({
-      email: payload.email,
-      userId,
-      resourceSlug: payload.resourceSlug,
-      fileKey: payload.fileKey,
-    });
-  }
-
-  if (!allowed) {
-    return NextResponse.json({ error: "Download not authorized." }, { status: 403 });
-  }
-
-  const filePath = getPrivateResourceAbsolutePath(payload.fileKey);
+async function serveFile(request: Request, fileKey: string) {
+  const filePath = getPrivateResourceAbsolutePath(fileKey);
   let fileBuffer: Buffer;
   try {
     fileBuffer = await readFile(filePath);
   } catch {
-    return NextResponse.json({ error: "File not found." }, { status: 404 });
+    return redirectDownloadError(request, "invalid");
   }
 
-  const filename = payload.fileKey.split("/").pop() ?? "download.pdf";
+  const filename = fileKey.split("/").pop() ?? "download.pdf";
   return new NextResponse(new Uint8Array(fileBuffer), {
     status: 200,
     headers: {
@@ -77,4 +43,52 @@ export async function GET(request: Request) {
       "Cache-Control": "private, no-store",
     },
   });
+}
+
+export async function GET(request: Request) {
+  const url = new URL(request.url);
+  const token = url.searchParams.get("token")?.trim();
+
+  if (!token) {
+    return redirectDownloadError(request, "invalid");
+  }
+
+  const peek = peekResourceDownloadToken(token);
+  const resourceSlug = peek?.resourceSlug;
+  const resource = resourceSlug ? getResourceDefinition(resourceSlug) : null;
+
+  if (resource?.type === "FREE_DOWNLOAD") {
+    const gate = await resolveFreeResourceDownloadGate(token);
+    if (gate.kind !== "allow") {
+      return redirectDownloadError(request, "invalid", gate.resourceSlug);
+    }
+    return serveFile(request, gate.payload.fileKey);
+  }
+
+  const paidGate = await resolvePaidResourceDownloadGate(token);
+  if (paidGate.kind === "refunded") {
+    return redirectDownloadError(request, "refunded", paidGate.resourceSlug);
+  }
+  if (paidGate.kind !== "allow") {
+    return redirectDownloadError(request, "invalid", paidGate.resourceSlug);
+  }
+
+  const { payload } = paidGate;
+  const paidResource = getResourceDefinition(payload.resourceSlug);
+  if (!paidResource || paidResource.type !== "PAID_DOWNLOAD") {
+    return redirectDownloadError(request, "invalid", payload.resourceSlug);
+  }
+
+  const allowed = await canDownloadPaidResourceFile({
+    email: payload.email,
+    resourceSlug: payload.resourceSlug,
+    fileKey: payload.fileKey,
+    tokenEmailOnly: true,
+  });
+
+  if (!allowed) {
+    return redirectDownloadError(request, "not_authorized", payload.resourceSlug);
+  }
+
+  return serveFile(request, payload.fileKey);
 }

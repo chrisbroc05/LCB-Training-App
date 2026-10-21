@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { emailHasActiveResourcePurchase } from "@/lib/fix-it-plan-access-server";
 import { getFixItPlanByResourceSlug, isFixItResourceSlug } from "@/lib/fix-it-plans-shared";
 import { normalizeLeadEmail } from "@/lib/leads-shared";
+import { PURCHASE_LINK_RECOVERY_CONFIRMATION } from "@/lib/resource-download-access-shared";
 import { sendFixItPlanAccessLinkEmail } from "@/lib/resource-emails-server";
 
 export async function POST(request: Request) {
@@ -34,6 +35,6 @@ export async function POST(request: Request) {
 
   return NextResponse.json({
     ok: true,
-    message: "If that email has this plan, your link is on the way.",
+    message: PURCHASE_LINK_RECOVERY_CONFIRMATION,
   });
 }

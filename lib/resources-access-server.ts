@@ -32,6 +32,8 @@ export async function canDownloadPaidResourceFile(params: {
   userId?: string | null;
   resourceSlug: string;
   fileKey: string;
+  /** When true, only the token email purchase counts (session is ignored). */
+  tokenEmailOnly?: boolean;
 }) {
   const resource = getResourceDefinition(params.resourceSlug);
   if (!resource || resource.type !== "PAID_DOWNLOAD") {
@@ -41,7 +43,7 @@ export async function canDownloadPaidResourceFile(params: {
     return false;
   }
 
-  if (params.userId && (await userHasResourcePurchase(params.userId, params.resourceSlug))) {
+  if (!params.tokenEmailOnly && params.userId && (await userHasResourcePurchase(params.userId, params.resourceSlug))) {
     return true;
   }
 

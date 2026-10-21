@@ -1,7 +1,8 @@
 import { readFile } from "fs/promises";
 import { NextResponse } from "next/server";
-import { assertFixItPlanAccessFromRequest } from "@/lib/fix-it-plan-access-server";
+import { resolveFixItPdfDownloadGate } from "@/lib/fix-it-plan-access-server";
 import { getFixItPdfFileKey, isFixItResourceSlug } from "@/lib/fix-it-plans-shared";
+import { buildAppRedirectUrl } from "@/lib/request-base-url-shared";
 import { getPrivateResourceAbsolutePath } from "@/lib/resource-files-server";
 
 export async function GET(request: Request) {
@@ -10,17 +11,26 @@ export async function GET(request: Request) {
   const token = url.searchParams.get("token")?.trim() ?? null;
 
   if (!isFixItResourceSlug(resourceSlug)) {
-    return NextResponse.json({ error: "Invalid resource." }, { status: 400 });
+    return NextResponse.redirect(buildAppRedirectUrl(request, "/resources/download/recover"));
   }
 
-  const email = await assertFixItPlanAccessFromRequest({ resourceSlug, token });
-  if (!email) {
-    return NextResponse.json({ error: "Not authorized." }, { status: 403 });
+  const gate = await resolveFixItPdfDownloadGate({ resourceSlug, token });
+  if (gate.kind === "refunded") {
+    return NextResponse.redirect(
+      buildAppRedirectUrl(request, "/resources/download/refunded", { resource: resourceSlug }),
+    );
+  }
+  if (gate.kind !== "allow") {
+    return NextResponse.redirect(
+      buildAppRedirectUrl(request, "/resources/download/recover", { resource: resourceSlug }),
+    );
   }
 
   const fileKey = getFixItPdfFileKey(resourceSlug);
   if (!fileKey) {
-    return NextResponse.json({ error: "File not found." }, { status: 404 });
+    return NextResponse.redirect(
+      buildAppRedirectUrl(request, "/resources/download/recover", { resource: resourceSlug }),
+    );
   }
 
   const filePath = getPrivateResourceAbsolutePath(fileKey);
@@ -28,7 +38,9 @@ export async function GET(request: Request) {
   try {
     fileBuffer = await readFile(filePath);
   } catch {
-    return NextResponse.json({ error: "File not found." }, { status: 404 });
+    return NextResponse.redirect(
+      buildAppRedirectUrl(request, "/resources/download/recover", { resource: resourceSlug }),
+    );
   }
 
   const filename = fileKey.split("/").pop() ?? "fix-it-plan.pdf";

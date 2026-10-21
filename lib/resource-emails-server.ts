@@ -102,6 +102,52 @@ ${buildEmailFooterText()}`;
   });
 }
 
+export async function sendResourceDownloadLinksEmail(params: {
+  toEmail: string;
+  resourceSlug: string;
+}) {
+  const resource = getResourceDefinition(params.resourceSlug);
+  if (!resource?.downloadFileKeys?.length) {
+    throw new Error("Resource has no downloadable files.");
+  }
+
+  const linksHtml = resource.downloadFileKeys
+    .map((fileKey) => {
+      const label = getResourceDownloadLabel(fileKey);
+      const href = buildDownloadLink(params.toEmail, params.resourceSlug, fileKey);
+      return `<li style="margin:0 0 8px 0;"><a href="${escapeHtml(href)}" style="color:#2D6A4F; text-decoration:underline;">${escapeHtml(label)}</a></li>`;
+    })
+    .join("");
+
+  const subject = `Your ${resource.title} download links`;
+  const bodyHtml = `<p style="margin:0 0 16px 0; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:1.7; color:#0A1628;">Here are fresh download links for <strong>${escapeHtml(resource.title)}</strong>. Each link expires in 15 minutes, so save the PDFs to your device.</p>
+<ul style="margin:0 0 16px 20px; padding:0; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:1.7; color:#0A1628;">${linksHtml}</ul>`;
+
+  const linksText = resource.downloadFileKeys
+    .map((fileKey) => {
+      const label = getResourceDownloadLabel(fileKey);
+      const href = buildDownloadLink(params.toEmail, params.resourceSlug, fileKey);
+      return `- ${label}: ${href}`;
+    })
+    .join("\n");
+
+  const text = `Download links for ${resource.title} (expire in 15 minutes):\n\n${linksText}\n\n${buildEmailFooterText()}`;
+
+  const fromEmail = process.env.NOTIFICATION_EMAIL;
+  if (!fromEmail) {
+    throw new Error("NOTIFICATION_EMAIL is required.");
+  }
+
+  await createTransporter().sendMail({
+    from: `"Coach Broc | LCB Training" <${fromEmail}>`,
+    to: params.toEmail,
+    replyTo: EMAIL_REPLY_TO,
+    subject,
+    html: buildMemberEmailHtml({ title: subject, bodyContentHtml: bodyHtml }),
+    text,
+  });
+}
+
 export async function sendFixItPlanAccessLinkEmail(params: {
   toEmail: string;
   resourceSlug: string;

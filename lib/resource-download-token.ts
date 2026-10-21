@@ -33,7 +33,10 @@ export function createResourceDownloadToken(params: {
   return `${encoded}.${signature}`;
 }
 
-export function verifyResourceDownloadToken(token: string): ResourceDownloadTokenPayload | null {
+function verifyResourceDownloadTokenCore(
+  token: string,
+  options?: { ignoreExpiration?: boolean },
+): ResourceDownloadTokenPayload | null {
   const separatorIndex = token.lastIndexOf(".");
   if (separatorIndex <= 0) {
     return null;
@@ -54,9 +57,17 @@ export function verifyResourceDownloadToken(token: string): ResourceDownloadToke
     return null;
   }
 
-  if (payload.exp < Math.floor(Date.now() / 1000)) {
+  if (!options?.ignoreExpiration && payload.exp < Math.floor(Date.now() / 1000)) {
     return null;
   }
 
   return payload;
+}
+
+export function verifyResourceDownloadToken(token: string): ResourceDownloadTokenPayload | null {
+  return verifyResourceDownloadTokenCore(token);
+}
+
+export function peekResourceDownloadToken(token: string): ResourceDownloadTokenPayload | null {
+  return verifyResourceDownloadTokenCore(token, { ignoreExpiration: true });
 }
