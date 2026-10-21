@@ -561,8 +561,11 @@ export async function buildProgramTodayPayload(params: {
     viewedDayInfo.programDay === todayInfo.programDay ||
     (yesterdayInfo.programDay > 0 && viewedDayInfo.programDay === yesterdayInfo.programDay);
 
+  const requiredTasks = tasks.filter((task) => !task.optional);
   const allTasksComplete =
-    tasks.length > 0 && tasks.every((task) => task.completed) && viewedProgramDay === todayInfo.programDay;
+    requiredTasks.length > 0 &&
+    requiredTasks.every((task) => task.completed) &&
+    viewedProgramDay === todayInfo.programDay;
 
   const [weeklyVideoSent, unwatchedCoachVideoCount] = await Promise.all([
     hasWeeklyVideoSent(params.userId, params.enrollment.startDate, now),

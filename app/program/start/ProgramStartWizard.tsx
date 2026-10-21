@@ -562,18 +562,26 @@ export default function ProgramStartWizard({
           ) : null}
 
           {step === "equipment" ? (
-            <MultiQuestionScreen
-              title="What can you use most days?"
-              subtitle="Pick all that apply."
-              options={PROGRAM_EQUIPMENT_OPTIONS.map((value) => ({
-                value,
-                label: PROGRAM_EQUIPMENT_LABELS[value],
-              }))}
-              selected={equipment}
-              onToggle={(value) => handleEquipmentToggle(value as ProgramEquipmentOption)}
-              onContinue={() => void handleEquipmentContinue()}
-              saving={saving}
-            />
+            <div className="space-y-4">
+              {ageGroup === "AGE_8_11" ? (
+                <p className="rounded-2xl border border-[#0A1628]/10 bg-[#F4F6F8] px-4 py-3 text-sm leading-relaxed text-[#6B7280]">
+                  Ages 8-11 use one strength program (mostly bodyweight, a sturdy step or box when
+                  listed, optional light band). Pick what you have for hitting and fielding below.
+                </p>
+              ) : null}
+              <MultiQuestionScreen
+                title="What can you use most days?"
+                subtitle="Pick all that apply."
+                options={PROGRAM_EQUIPMENT_OPTIONS.map((value) => ({
+                  value,
+                  label: PROGRAM_EQUIPMENT_LABELS[value],
+                }))}
+                selected={equipment}
+                onToggle={(value) => handleEquipmentToggle(value as ProgramEquipmentOption)}
+                onContinue={() => void handleEquipmentContinue()}
+                saving={saving}
+              />
+            </div>
           ) : null}
 
           {step === "season" ? (

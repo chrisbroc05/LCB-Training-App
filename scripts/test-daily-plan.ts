@@ -123,6 +123,7 @@ function printScenario(
             resolveStrengthVariant({
               strengthVariant: enrollment.strengthVariant,
               equipment: enrollment.equipment,
+              ageGroup: enrollment.ageGroup,
             });
           const workout = getWorkout(
             task.workout.category,

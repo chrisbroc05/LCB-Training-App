@@ -8,14 +8,20 @@ import {
   settingsSuccessMessageClass,
 } from "@/app/settings/settings-styles";
 import {
+  AGE_8_11_STRENGTH_PROGRAM_LABEL,
+  AGE_8_11_STRENGTH_PROGRAM_NOTE,
   resolveStrengthVariant,
   STRENGTH_VARIANT_LABELS,
   STRENGTH_VARIANTS,
   type StrengthVariant,
 } from "@/lib/strength-variant-shared";
-import type { ProgramEquipmentOption } from "@/lib/program-enrollment-shared";
+import type {
+  ProgramAgeGroup,
+  ProgramEquipmentOption,
+} from "@/lib/program-enrollment-shared";
 
 type EnrollmentSettings = {
+  ageGroup: ProgramAgeGroup | null;
   equipment: string[];
   strengthVariant: string | null;
 };
@@ -56,6 +62,7 @@ export default function WorkoutEquipmentSection() {
         resolveStrengthVariant({
           strengthVariant: data.enrollment.strengthVariant as StrengthVariant | null,
           equipment: data.enrollment.equipment as ProgramEquipmentOption[],
+          ageGroup: data.enrollment.ageGroup,
         }),
       );
     };
@@ -88,6 +95,20 @@ export default function WorkoutEquipmentSection() {
 
   if (isLoading || !showSection) {
     return null;
+  }
+
+  if (enrollment?.ageGroup === "AGE_8_11") {
+    return (
+      <SettingsCard
+        id="workout-equipment"
+        title="Strength workouts (ages 8-11)"
+        description={AGE_8_11_STRENGTH_PROGRAM_NOTE}
+      >
+        <p className={`${settingsMutedTextClass} text-sm font-semibold text-zinc-200`}>
+          {AGE_8_11_STRENGTH_PROGRAM_LABEL}
+        </p>
+      </SettingsCard>
+    );
   }
 
   return (

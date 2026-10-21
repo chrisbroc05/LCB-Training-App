@@ -16,6 +16,8 @@ import {
   type ProgramFocusArea,
 } from "@/lib/program-enrollment-shared";
 import {
+  AGE_8_11_STRENGTH_PROGRAM_LABEL,
+  AGE_8_11_STRENGTH_PROGRAM_NOTE,
   STRENGTH_VARIANT_LABELS,
   STRENGTH_VARIANTS,
   type StrengthVariant,
@@ -951,25 +953,32 @@ export default function AdminProgramPlayerPanel({
           ))}
         </div>
         <p className="text-sm font-medium text-zinc-300">Strength workout variant</p>
-        <div className="flex flex-wrap gap-2">
-          {STRENGTH_VARIANTS.map((variant) => {
-            const active = detail.enrollment.strengthVariant === variant;
-            return (
-              <button
-                key={variant}
-                type="button"
-                onClick={() => void patchEnrollment({ strengthVariant: variant })}
-                className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
-                  active
-                    ? "bg-[#22c55e]/20 text-[#9df3bd]"
-                    : "border border-[#2b3650] text-zinc-400"
-                }`}
-              >
-                {STRENGTH_VARIANT_LABELS[variant as StrengthVariant]}
-              </button>
-            );
-          })}
-        </div>
+        {detail.enrollment.ageGroup === "AGE_8_11" ? (
+          <div className="space-y-2">
+            <p className="text-sm font-semibold text-zinc-200">{AGE_8_11_STRENGTH_PROGRAM_LABEL}</p>
+            <p className="text-xs text-zinc-400">{AGE_8_11_STRENGTH_PROGRAM_NOTE}</p>
+          </div>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {STRENGTH_VARIANTS.map((variant) => {
+              const active = detail.enrollment.strengthVariant === variant;
+              return (
+                <button
+                  key={variant}
+                  type="button"
+                  onClick={() => void patchEnrollment({ strengthVariant: variant })}
+                  className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
+                    active
+                      ? "bg-[#22c55e]/20 text-[#9df3bd]"
+                      : "border border-[#2b3650] text-zinc-400"
+                  }`}
+                >
+                  {STRENGTH_VARIANT_LABELS[variant as StrengthVariant]}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </section>
 
       <section

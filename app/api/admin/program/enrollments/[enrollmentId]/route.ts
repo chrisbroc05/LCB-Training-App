@@ -158,6 +158,12 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 
   if (body?.strengthVariant && isStrengthVariant(body.strengthVariant)) {
+    if (existing.ageGroup === "AGE_8_11") {
+      return NextResponse.json(
+        { error: "Ages 8-11 use one strength program; variant cannot be changed." },
+        { status: 400 },
+      );
+    }
     data.strengthVariant = body.strengthVariant;
   }
 

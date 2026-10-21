@@ -15,7 +15,7 @@ import {
 } from "@/lib/program-enrollment-shared";
 import {
   resolveStrengthVariant,
-  STRENGTH_VARIANT_LABELS,
+  strengthVariantLabelForEnrollment,
   type StrengthVariant,
 } from "@/lib/strength-variant-shared";
 import { HITTING_FOCUS_CUES } from "@/lib/program-content";
@@ -233,13 +233,16 @@ export async function buildAdminProgramPlayerDetail(enrollmentId: string, now = 
       strengthVariant: resolveStrengthVariant({
         strengthVariant: enrollment.strengthVariant as StrengthVariant | null,
         equipment: enrollment.equipment as ProgramEquipmentOption[],
+        ageGroup: enrollment.ageGroup,
       }),
-      strengthVariantLabel: STRENGTH_VARIANT_LABELS[
-        resolveStrengthVariant({
+      strengthVariantLabel: strengthVariantLabelForEnrollment({
+        ageGroup: enrollment.ageGroup,
+        strengthVariant: resolveStrengthVariant({
           strengthVariant: enrollment.strengthVariant as StrengthVariant | null,
           equipment: enrollment.equipment as ProgramEquipmentOption[],
-        })
-      ],
+          ageGroup: enrollment.ageGroup,
+        }),
+      }),
       seasonMode: enrollment.seasonMode,
       seasonModeLabel: enrollment.seasonMode
         ? PROGRAM_SEASON_MODE_LABELS[enrollment.seasonMode]

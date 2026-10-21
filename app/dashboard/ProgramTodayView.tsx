@@ -46,6 +46,7 @@ type ProgramTodayTask = {
   key: string;
   type: string;
   title: string;
+  optional?: boolean;
   target: string;
   targetDetail?: string;
   focus?: string;
@@ -188,6 +189,8 @@ function getTaskCategory(type: string): TaskCategory {
       return { label: "COACH", icon: "C" };
     case "track":
       return { label: "ADD-ON", icon: "+" };
+    case "strength_extra":
+      return { label: "STRENGTH", icon: "S" };
     default:
       return { label: "MINDSET", icon: "I" };
   }
@@ -528,7 +531,8 @@ function TaskCard({
 }) {
   const isWorkout = task.type === "speed" || task.type === "strength" || task.type === "mobility";
   const isStrengthWorkout = task.type === "strength";
-  const isTrack = task.type === "track";
+  const isTrack = task.type === "track" || task.type === "strength_extra";
+  const isStrengthExtra = task.type === "strength_extra";
   const [ownLiftOpen, setOwnLiftOpen] = useState(false);
   const loggedOwnLift = task.completed && isOwnLiftCompletion(task.completionType);
   const category = getTaskCategory(task.type);
@@ -570,6 +574,11 @@ function TaskCard({
         {task.countedFromLog === "practice" ? (
           <span className="rounded-full bg-[#52B788]/10 px-2 py-0.5 text-[10px] font-semibold text-[#9df3bd]">
             COUNTED FROM PRACTICE
+          </span>
+        ) : null}
+        {task.optional ? (
+          <span className="rounded-full border border-zinc-500/50 bg-zinc-800/80 px-2 py-0.5 text-[10px] font-semibold text-zinc-300">
+            Optional - Extra Work
           </span>
         ) : null}
       </div>
@@ -672,7 +681,7 @@ function TaskCard({
             href={`/program/track/${programDay}/${encodeURIComponent(task.key)}`}
             className={`${BTN_PRIMARY} mt-4`}
           >
-            Open track workout
+            {isStrengthExtra ? "Open extra work" : "Open track workout"}
           </Link>
         </>
       ) : null}
@@ -684,12 +693,17 @@ function TaskCard({
               <CheckIcon />
             </span>
             <p className="text-sm font-semibold">
-              {loggedOwnLift ? "Own lift" : "Completed"}
+              {loggedOwnLift ? "Own lift" : task.optional ? "Extra work done" : "Completed"}
             </p>
           </div>
           {loggedOwnLift ? (
             <span className="mt-2 inline-block rounded-full bg-[#52B788]/15 px-2.5 py-0.5 text-xs font-semibold text-[#9df3bd]">
               Own lift
+            </span>
+          ) : null}
+          {task.optional && task.completed && !loggedOwnLift ? (
+            <span className="mt-2 inline-block rounded-full bg-[#52B788]/15 px-2.5 py-0.5 text-xs font-semibold text-[#9df3bd]">
+              Bonus
             </span>
           ) : null}
           {task.note ? (

@@ -259,6 +259,17 @@ export async function PATCH(request: Request) {
     data.onboardingCompletedAt = new Date();
     data.strengthVariant = deriveStrengthVariantFromEquipment(
       merged.equipment as ProgramEquipmentOption[],
+      merged.ageGroup,
+    );
+  }
+
+  const effectiveAgeGroup = data.ageGroup ?? existing.ageGroup;
+  if (effectiveAgeGroup === "AGE_8_11") {
+    data.strengthVariant = "gym";
+  } else if (data.equipment && !body.completeOnboarding) {
+    data.strengthVariant = deriveStrengthVariantFromEquipment(
+      data.equipment as ProgramEquipmentOption[],
+      effectiveAgeGroup,
     );
   }
 

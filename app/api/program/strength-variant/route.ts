@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { serializeProgramEnrollment } from "@/lib/program-enrollment";
-import { isStrengthVariant, type StrengthVariant } from "@/lib/strength-variant-shared";
+import {
+  isStrengthVariant,
+  type StrengthVariant,
+} from "@/lib/strength-variant-shared";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
@@ -57,6 +60,13 @@ export async function PATCH(request: Request) {
   const body = (await request.json().catch(() => null)) as { strengthVariant?: string } | null;
   if (!body?.strengthVariant || !isStrengthVariant(body.strengthVariant)) {
     return NextResponse.json({ error: "Invalid workout equipment selection." }, { status: 400 });
+  }
+
+  if (existing.ageGroup === "AGE_8_11") {
+    return NextResponse.json(
+      { error: "Ages 8-11 use one strength program. Workout variant cannot be changed." },
+      { status: 400 },
+    );
   }
 
   const updated = await prisma.programEnrollment.update({

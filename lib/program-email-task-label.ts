@@ -20,6 +20,8 @@ export function getTaskCategoryLabel(type: string) {
       return "COACH";
     case "track":
       return "ADD-ON";
+    case "strength_extra":
+      return "STRENGTH";
     case "playbook":
       return "MINDSET";
     default:

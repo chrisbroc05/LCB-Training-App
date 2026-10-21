@@ -57,7 +57,11 @@ export default async function ProgramTrackPage({ params }: ProgramTrackPageProps
   );
   const decodedKey = decodeURIComponent(taskKey);
   const task = findDailyTask(planInput, dayInfo, decodedKey, overrides);
-  if (!task || task.type !== "track" || !task.trackExercises?.length) {
+  if (
+    !task ||
+    (task.type !== "track" && task.type !== "strength_extra") ||
+    !task.trackExercises?.length
+  ) {
     redirect("/dashboard");
   }
 

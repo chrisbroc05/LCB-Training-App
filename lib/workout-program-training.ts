@@ -227,6 +227,7 @@ export function getWorkout(
 ): WorkoutWithCues | null {
   if (
     category === "strength" &&
+    ageGroup !== "8-11" &&
     strengthVariant &&
     strengthVariant !== "gym" &&
     (ageGroup === "12-15" || ageGroup === "16-18")

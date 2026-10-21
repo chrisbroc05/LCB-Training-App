@@ -39,6 +39,12 @@ import {
 } from "@/lib/program-enrollment-shared";
 import type { ProgramDayInfo } from "@/lib/program-schedule";
 import {
+  getStrengthExtraWorkExercises,
+  STRENGTH_EXTRA_WORK_TARGET,
+  STRENGTH_EXTRA_WORK_TARGET_DETAIL,
+  STRENGTH_EXTRA_WORK_TASK_TITLE,
+} from "@/lib/strength-extra-work-shared";
+import {
   resolveStrengthVariant,
   type StrengthVariant,
 } from "@/lib/strength-variant-shared";
@@ -56,7 +62,8 @@ export type ProgramTaskType =
   | "sprint"
   | "core"
   | "custom"
-  | "track";
+  | "track"
+  | "strength_extra";
 
 export type ProgramWorkoutRef = {
   category: WorkoutCategory;
@@ -70,6 +77,7 @@ export type ProgramDailyTask = {
   key: string;
   type: ProgramTaskType;
   title: string;
+  optional?: boolean;
   target: string;
   targetDetail?: string;
   focus?: string;
@@ -112,6 +120,7 @@ type InternalTask = ProgramDailyTask & {
   isFocusExtra: boolean;
   removable: boolean;
   isMobility: boolean;
+  optional?: boolean;
 };
 
 const DROP_RANK = {
@@ -150,6 +159,7 @@ function getResolvedStrengthVariant(enrollment: ProgramEnrollmentPlanInput): Str
   return resolveStrengthVariant({
     strengthVariant: enrollment.strengthVariant,
     equipment: enrollment.equipment,
+    ageGroup: enrollment.ageGroup,
   });
 }
 
@@ -266,6 +276,65 @@ function buildStrengthTask(
     removable,
     isMobility: false,
   };
+}
+
+function buildStrengthExtraTask(
+  programDay: number,
+  workoutId: WorkoutId,
+  ageGroup: ProgramAgeGroup,
+  strengthVariant: StrengthVariant,
+): InternalTask | null {
+  const trackExercises = getStrengthExtraWorkExercises(ageGroup, strengthVariant, workoutId);
+  if (!trackExercises) {
+    return null;
+  }
+
+  return {
+    key: `p${programDay}-strength-extra-${workoutId.toLowerCase()}`,
+    type: "strength_extra",
+    title: STRENGTH_EXTRA_WORK_TASK_TITLE,
+    optional: true,
+    target: STRENGTH_EXTRA_WORK_TARGET,
+    targetDetail: STRENGTH_EXTRA_WORK_TARGET_DETAIL,
+    trackExercises,
+    needsNote: true,
+    dropRank: DROP_RANK.keep,
+    isFocusExtra: false,
+    removable: false,
+    isMobility: false,
+  };
+}
+
+function pushStrengthTasks(
+  tasks: InternalTask[],
+  programDay: number,
+  workoutId: WorkoutId,
+  enrollment: ProgramEnrollmentPlanInput,
+  weekNumber: number,
+  strengthVariant: StrengthVariant,
+  inSeasonNote?: string,
+  removable = false,
+) {
+  tasks.push(
+    buildStrengthTask(
+      programDay,
+      workoutId,
+      enrollment.ageGroup,
+      weekNumber,
+      strengthVariant,
+      inSeasonNote,
+      removable,
+    ),
+  );
+  const extra = buildStrengthExtraTask(
+    programDay,
+    workoutId,
+    enrollment.ageGroup,
+    strengthVariant,
+  );
+  if (extra) {
+    tasks.push(extra);
+  }
 }
 
 function buildMobilityTask(
@@ -461,7 +530,7 @@ function buildBaseTasks(
       buildFieldingTask(programDay, "", ageGroup, contentPhase, weekNumber, dayOfWeek, equipment, false),
     );
     if (!inSeason) {
-      tasks.push(buildStrengthTask(programDay, "A", ageGroup, weekNumber, strengthVariant));
+      pushStrengthTasks(tasks, programDay, "A", enrollment, weekNumber, strengthVariant);
     }
     if (hasFocus(focusAreas, "hitting")) {
       tasks.push(
@@ -532,8 +601,14 @@ function buildBaseTasks(
     tasks.push(
       buildFieldingTask(programDay, "", ageGroup, contentPhase, weekNumber, dayOfWeek, equipment, false),
     );
-    tasks.push(
-      buildStrengthTask(programDay, "B", ageGroup, weekNumber, strengthVariant, speedStrengthNote),
+    pushStrengthTasks(
+      tasks,
+      programDay,
+      "B",
+      enrollment,
+      weekNumber,
+      strengthVariant,
+      speedStrengthNote,
     );
     if (hasFocus(focusAreas, "hitting")) {
       tasks.push(
@@ -582,27 +657,25 @@ function applyWednesdayStrengthRules(
   const strengthVariant = getResolvedStrengthVariant(enrollment);
 
   if (enrollment.ageGroup === "AGE_16_18" && !hasStrengthA) {
-    tasks.push(
-      buildStrengthTask(
-        programDayInfo.programDay,
-        "A",
-        enrollment.ageGroup,
-        programDayInfo.weekNumber,
-        strengthVariant,
-      ),
+    pushStrengthTasks(
+      tasks,
+      programDayInfo.programDay,
+      "A",
+      enrollment,
+      programDayInfo.weekNumber,
+      strengthVariant,
     );
     return;
   }
 
   if (hasFocus(enrollment.focusAreas, "strength") && enrollment.ageGroup !== "AGE_8_11" && !hasStrengthA) {
-    tasks.push(
-      buildStrengthTask(
-        programDayInfo.programDay,
-        "A",
-        enrollment.ageGroup,
-        programDayInfo.weekNumber,
-        strengthVariant,
-      ),
+    pushStrengthTasks(
+      tasks,
+      programDayInfo.programDay,
+      "A",
+      enrollment,
+      programDayInfo.weekNumber,
+      strengthVariant,
     );
     return;
   }
@@ -717,12 +790,23 @@ export function getDailyPlan(
   return applyEnrollmentTrackTasks(withOverrides, programDayInfo, overrides?.activeTracks);
 }
 
+export function getRequiredTaskKeysForDay(
+  enrollment: ProgramEnrollmentPlanInput,
+  programDayInfo: ProgramDayInfo,
+  overrides?: ProgramDailyPlanOverrides,
+) {
+  return getDailyPlan(enrollment, programDayInfo, overrides)
+    .filter((task) => !task.optional)
+    .map((task) => task.key);
+}
+
+/** Required tasks only (optional add-ons such as Extra Work are excluded). */
 export function getTaskKeysForDay(
   enrollment: ProgramEnrollmentPlanInput,
   programDayInfo: ProgramDayInfo,
   overrides?: ProgramDailyPlanOverrides,
 ) {
-  return getDailyPlan(enrollment, programDayInfo, overrides).map((task) => task.key);
+  return getRequiredTaskKeysForDay(enrollment, programDayInfo, overrides);
 }
 
 export function findDailyTask(
