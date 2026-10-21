@@ -56,34 +56,26 @@ export function buildSwingAnalysisSignupUrl(params: {
   return `/auth?${query.toString()}`;
 }
 
-export function buildProgramLinkUrl(email: string, startCheckout: boolean) {
-  const query = new URLSearchParams();
-  if (startCheckout) {
-    query.set("startCheckout", "1");
-  }
-  query.set("email", email.trim().toLowerCase());
+export function buildProgramLinkUrl(params: { email: string; firstName: string }) {
+  const query = new URLSearchParams({
+    email: params.email.trim().toLowerCase(),
+    firstName: params.firstName.trim(),
+  });
   return `/program?${query.toString()}`;
 }
 
-export function buildPlaybookLinkUrl(email: string) {
+export function buildPlaybookLinkUrl(params: { email: string; firstName: string }) {
   const query = new URLSearchParams({
-    startCheckout: "1",
-    email: email.trim().toLowerCase(),
+    email: params.email.trim().toLowerCase(),
+    firstName: params.firstName.trim(),
   });
   return `/playbook?${query.toString()}`;
 }
 
-export function buildRemoteLinkUrl(email: string) {
+export function buildDetailsLinkUrl(params: { email: string; firstName: string }) {
   const query = new URLSearchParams({
-    startCheckout: "1",
-    email: email.trim().toLowerCase(),
-  });
-  return `/remote?${query.toString()}`;
-}
-
-export function buildDetailsLinkUrl(email: string) {
-  const query = new URLSearchParams({
-    email: email.trim().toLowerCase(),
+    email: params.email.trim().toLowerCase(),
+    firstName: params.firstName.trim(),
   });
   return `/details?${query.toString()}`;
 }

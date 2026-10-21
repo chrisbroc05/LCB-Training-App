@@ -7,10 +7,15 @@ import { verifyResourceDownloadToken, createResourceDownloadToken } from "../lib
 import { formatLeadResourceCheckoutStatus } from "../lib/lead-checkout-status-shared";
 import {
   getResourceDefinition,
-  getResourcesBySection,
+  getResourcesForHub,
   getPaidDownloadResourceSlugs,
+  RESOURCES_HUB_ORDER_SLUGS,
 } from "../lib/resources-shared";
-import { getResourceLeadSubmitLabel } from "../lib/resources-lead-shared";
+import {
+  buildPlaybookLinkUrl,
+  buildProgramLinkUrl,
+  getResourceLeadSubmitLabel,
+} from "../lib/resources-lead-shared";
 import { normalizeLeadEmail } from "../lib/leads-shared";
 
 process.env.NEXTAUTH_SECRET = "test-resource-download-secret";
@@ -50,12 +55,6 @@ function testResourceCatalog() {
   assert.equal(nutrition.tag, "FREE");
   assert.equal(nutrition.type, "FREE_DOWNLOAD");
 
-  const startHere = getResourcesBySection("START_HERE");
-  const slugs = startHere.map((item) => item.slug);
-  assert.ok(slugs.indexOf("parent-guide") < slugs.indexOf("nutrition-guide"));
-  assert.ok(slugs.indexOf("nutrition-guide") < slugs.indexOf("starter-arm-care"));
-  assert.ok(slugs.indexOf("starter-arm-care") < slugs.indexOf("rotational-sample"));
-
   const paidSlugs = getPaidDownloadResourceSlugs();
   assert.ok(paidSlugs.includes("starter-bundle"));
   assert.ok(!paidSlugs.includes("nutrition-guide"));
@@ -63,18 +62,58 @@ function testResourceCatalog() {
 
   const backArm = getResourceDefinition("starter-back-arm");
   assert.ok(backArm);
-  assert.equal(backArm.section, "PROGRAMS_AND_GUIDES");
-  assert.equal(backArm.stripePriceEnvVar, "STRIPE_PRICE_RES_BACK_ARM");
-  assert.deepEqual(backArm.downloadFileKeys, [
-    "resources/starters/LCB_Back_and_Arm_4Week_Starter.pdf",
-  ]);
+  assert.equal(backArm.priceDisplay, "$10");
 
   const armCare = getResourceDefinition("starter-arm-care");
   assert.ok(armCare);
   assert.equal(armCare.tag, "FREE");
   assert.equal(armCare.type, "FREE_DOWNLOAD");
-  assert.equal(armCare.section, "START_HERE");
   assert.ok(!paidSlugs.includes("starter-arm-care"));
+
+  const twelveWeek = getResourceDefinition("twelve-week-program");
+  assert.ok(twelveWeek);
+  assert.equal(twelveWeek.badge, "COACH'S PICK");
+  assert.equal(twelveWeek.priceDisplay, undefined);
+
+  const swing = getResourceDefinition("free-swing-analysis");
+  assert.equal(swing?.badge, "START HERE");
+}
+
+function testResourcesHubOrder() {
+  const expected = [
+    "free-swing-analysis",
+    "twelve-week-program",
+    "starter-arm-care",
+    "starter-strength",
+    "pregame-warmup",
+    "starter-bundle",
+    "parent-guide",
+    "next-level-playbook",
+    "starter-speed",
+    "nutrition-guide",
+    "starter-back-arm",
+    "starter-mobility",
+    "recruiting-guide",
+    "rotational-sample",
+    "mental-game-workbook",
+    "lessons-program-bundle",
+    "remote-session",
+  ];
+  assert.deepEqual(RESOURCES_HUB_ORDER_SLUGS, expected);
+  assert.equal(getResourcesForHub().length, expected.length);
+  assert.ok(!RESOURCES_HUB_ORDER_SLUGS.includes("book-a-call"));
+}
+
+function testCoachingLinkUrls() {
+  const programUrl = buildProgramLinkUrl({ email: "Kid@Example.com", firstName: "Alex" });
+  assert.ok(programUrl.startsWith("/program?"));
+  assert.ok(programUrl.includes("email=kid%40example.com"));
+  assert.ok(programUrl.includes("firstName=Alex"));
+  assert.ok(!programUrl.includes("startCheckout"));
+
+  const playbookUrl = buildPlaybookLinkUrl({ email: "a@b.com", firstName: "Sam" });
+  assert.ok(playbookUrl.startsWith("/playbook?"));
+  assert.ok(!playbookUrl.includes("startCheckout"));
 }
 
 function testCheckoutStartedStatus() {
@@ -109,6 +148,8 @@ function run() {
   testResourceDownloadTokenRoundTrip();
   testResourceDownloadTokenTamper();
   testResourceCatalog();
+  testResourcesHubOrder();
+  testCoachingLinkUrls();
   testCheckoutStartedStatus();
   testSubmitLabels();
   console.log("test:resources passed");

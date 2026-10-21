@@ -7,12 +7,12 @@ import { upsertLeadForResourceDownload, normalizeLeadEmail } from "@/lib/leads-s
 import { prisma } from "@/lib/prisma";
 import { createResourceDownloadToken } from "@/lib/resource-download-token";
 import { sendResourceDeliveryEmail } from "@/lib/resource-emails-server";
+import { getCalendlyBookingUrl } from "@/lib/calendly-booking";
 import {
   buildCalendlyUrlWithLead,
   buildDetailsLinkUrl,
   buildPlaybookLinkUrl,
   buildProgramLinkUrl,
-  buildRemoteLinkUrl,
   buildSwingAnalysisSignupUrl,
   type ResourceLeadActionResult,
 } from "@/lib/resources-lead-shared";
@@ -167,6 +167,48 @@ async function createGuestOrMemberCheckout(params: {
   return checkoutSession.url;
 }
 
+async function createRemoteSessionCheckout(params: {
+  request: Request;
+  email: string;
+  leadId: string;
+  userId: string | null;
+}) {
+  const priceId = process.env.STRIPE_REMOTE_PRICE_ID;
+  if (!priceId) {
+    throw new Error("Remote session pricing is not configured.");
+  }
+
+  if (params.userId) {
+    const termsError = await requireCurrentTermsForCheckout(params.userId);
+    if (termsError) {
+      throw new Error("TERMS_REQUIRED");
+    }
+  }
+
+  const baseUrl = getBaseUrl(params.request);
+
+  const checkoutSession = await stripe.checkout.sessions.create({
+    mode: "payment",
+    customer_email: params.email,
+    line_items: [{ price: priceId, quantity: 1 }],
+    success_url: getCalendlyBookingUrl(),
+    cancel_url: `${baseUrl}/resources?checkout=cancelled`,
+    client_reference_id: params.userId ?? params.leadId,
+    metadata: {
+      purchaseType: "remote_session",
+      email: params.email,
+      leadId: params.leadId,
+      ...(params.userId ? { userId: params.userId } : {}),
+    },
+  });
+
+  if (!checkoutSession.url) {
+    throw new Error("Unable to create checkout session.");
+  }
+
+  return checkoutSession.url;
+}
+
 export async function performResourceLeadAction(
   request: Request,
   body: {
@@ -248,53 +290,37 @@ export async function performResourceLeadAction(
   }
 
   if (resource.slug === "twelve-week-program") {
-    if (userId) {
-      return {
-        action: "redirect",
-        url: buildProgramLinkUrl(email, true),
-        leadId: lead.id,
-      };
-    }
-    const query = new URLSearchParams({
-      mode: "signup",
-      tier: "twelveWeek",
-      redirect: "/program",
-      email,
-      firstName,
-    });
-    return { action: "redirect", url: `/auth?${query.toString()}`, leadId: lead.id };
+    return {
+      action: "redirect",
+      url: buildProgramLinkUrl({ email, firstName }),
+      leadId: lead.id,
+    };
   }
 
   if (resource.slug === "lessons-program-bundle") {
-    return { action: "redirect", url: buildDetailsLinkUrl(email), leadId: lead.id };
+    return {
+      action: "redirect",
+      url: buildDetailsLinkUrl({ email, firstName }),
+      leadId: lead.id,
+    };
   }
 
   if (resource.slug === "next-level-playbook") {
-    if (userId) {
-      return { action: "redirect", url: buildPlaybookLinkUrl(email), leadId: lead.id };
-    }
-    const query = new URLSearchParams({
-      mode: "signup",
-      tier: "basic",
-      redirect: "/playbook",
-      email,
-      firstName,
-    });
-    return { action: "redirect", url: `/auth?${query.toString()}`, leadId: lead.id };
+    return {
+      action: "redirect",
+      url: buildPlaybookLinkUrl({ email, firstName }),
+      leadId: lead.id,
+    };
   }
 
   if (resource.slug === "remote-session") {
-    if (userId) {
-      return { action: "redirect", url: buildRemoteLinkUrl(email), leadId: lead.id };
-    }
-    const query = new URLSearchParams({
-      mode: "signup",
-      redirect: "/remote",
+    const checkoutUrl = await createRemoteSessionCheckout({
+      request,
       email,
-      firstName,
+      leadId: lead.id,
+      userId,
     });
-    query.set("startCheckout", "1");
-    return { action: "redirect", url: `/auth?${query.toString()}`, leadId: lead.id };
+    return { action: "checkout", url: checkoutUrl, leadId: lead.id };
   }
 
   const href = resource.linkHref ?? "/resources";

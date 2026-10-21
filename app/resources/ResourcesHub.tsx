@@ -9,18 +9,10 @@ import {
   readLeadIdFromCookie,
 } from "@/lib/resources-lead-client";
 import {
-  getResourcesBySection,
-  RESOURCE_SECTION_LABELS,
+  getResourceDefinition,
+  getResourcesForHub,
   type ResourceDefinition,
-  type ResourceSection,
 } from "@/lib/resources-shared";
-
-const SECTION_ORDER: ResourceSection[] = [
-  "START_HERE",
-  "COACHING",
-  "WORKOUT_STARTERS",
-  "PROGRAMS_AND_GUIDES",
-];
 
 type ResourcesHubProps = {
   isLoggedIn: boolean;
@@ -29,6 +21,8 @@ type ResourcesHubProps = {
 export default function ResourcesHub({ isLoggedIn }: ResourcesHubProps) {
   const [leadResource, setLeadResource] = useState<ResourceDefinition | null>(null);
   const [busySlug, setBusySlug] = useState<string | null>(null);
+  const cards = getResourcesForHub();
+  const bookCallResource = getResourceDefinition("book-a-call");
 
   const runLeadAction = async (resource: ResourceDefinition, leadId?: string) => {
     setBusySlug(resource.slug);
@@ -62,26 +56,32 @@ export default function ResourcesHub({ isLoggedIn }: ResourcesHubProps) {
 
   return (
     <>
-      {SECTION_ORDER.map((section) => {
-        const cards = getResourcesBySection(section);
-        if (!cards.length) {
-          return null;
-        }
-        return (
-          <section key={section} className="mt-10 first:mt-0">
-            <h2 className="text-sm font-bold uppercase tracking-[0.16em] text-[#52B788]">
-              {RESOURCE_SECTION_LABELS[section]}
-            </h2>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              {cards.map((resource) => (
-                <div key={resource.slug} className={busySlug === resource.slug ? "opacity-70" : ""}>
-                  <ResourceCard resource={resource} onAction={handleAction} />
-                </div>
-              ))}
-            </div>
-          </section>
-        );
-      })}
+      <div className="grid gap-4 sm:grid-cols-2">
+        {cards.map((resource) => (
+          <div key={resource.slug} className={busySlug === resource.slug ? "opacity-70" : ""}>
+            <ResourceCard resource={resource} onAction={handleAction} />
+          </div>
+        ))}
+      </div>
+
+      {bookCallResource ? (
+        <div className="mt-10 rounded-2xl border border-[#1e2d45] bg-[#0A1628] p-6 text-center shadow-lg shadow-black/20 sm:p-8">
+          <p className="text-lg font-semibold text-white sm:text-xl">
+            Not sure where to start? Book a call with Coach Broc
+          </p>
+          <p className="mt-2 text-sm text-zinc-400">
+            A short conversation to figure out what fits your player.
+          </p>
+          <button
+            type="button"
+            onClick={() => void handleAction(bookCallResource)}
+            disabled={busySlug === bookCallResource.slug}
+            className="mt-5 inline-flex min-h-[48px] w-full max-w-md items-center justify-center rounded-full bg-[#2D6A4F] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#52B788] hover:text-[#0A1628] disabled:opacity-70 sm:w-auto"
+          >
+            {bookCallResource.buttonLabel}
+          </button>
+        </div>
+      ) : null}
 
       {leadResource ? (
         <ResourceLeadModal resource={leadResource} onClose={() => setLeadResource(null)} />

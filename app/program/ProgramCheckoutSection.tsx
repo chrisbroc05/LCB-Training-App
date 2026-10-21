@@ -30,6 +30,15 @@ function ProgramCheckoutSectionContent({
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [checkoutError, setCheckoutError] = useState("");
 
+  const prefillEmail = searchParams.get("email")?.trim() ?? "";
+  const prefillFirstName = searchParams.get("firstName")?.trim() ?? "";
+
+  useEffect(() => {
+    if (prefillEmail) {
+      setEmail(prefillEmail);
+    }
+  }, [prefillEmail]);
+
   const startCheckout = async () => {
     setCheckoutLoading(true);
     setCheckoutError("");
@@ -163,6 +172,8 @@ function ProgramCheckoutSectionContent({
             submitLabel="Create Account and Continue"
             loading={authLoading}
             error={authError}
+            prefillEmail={prefillEmail || undefined}
+            prefillFirstName={prefillFirstName || undefined}
             onSubmit={handleSignup}
           />
         </div>
