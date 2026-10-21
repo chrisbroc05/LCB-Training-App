@@ -407,16 +407,61 @@ export default function TopNavigation({
 
   if (!isLoggedIn) {
     return (
-      <nav className="flex items-center justify-end gap-1 md:justify-self-end">
-        <Link href="/resources" onClick={closeMenus} className={linkClass(pathname.startsWith("/resources"))}>
-          Resources
-        </Link>
-        <Link href="/auth?mode=login" onClick={closeMenus} className={linkClass(pathname.startsWith("/auth"))}>
-          Login
-        </Link>
-        <Link href="/auth?mode=signup" onClick={closeMenus} className={linkClass(false)}>
-          Sign Up
-        </Link>
+      <nav className="flex items-center justify-end md:justify-self-end">
+        <div className="hidden items-center gap-1 md:flex">
+          <Link
+            href="/resources"
+            onClick={closeMenus}
+            className={linkClass(pathname.startsWith("/resources"))}
+          >
+            Resources
+          </Link>
+          <Link
+            href="/auth?mode=login"
+            onClick={closeMenus}
+            className={linkClass(pathname.startsWith("/auth"))}
+          >
+            Login
+          </Link>
+          <Link href="/auth?mode=signup" onClick={closeMenus} className={linkClass(false)}>
+            Sign Up
+          </Link>
+        </div>
+
+        <div className="relative md:hidden">
+          <button
+            type="button"
+            onClick={() => setMobileOpen((current) => !current)}
+            className="rounded-lg border border-[#2b3650] bg-[#0b1324] px-3 py-2 text-zinc-100"
+            aria-label="Toggle navigation menu"
+            aria-expanded={mobileOpen}
+          >
+            <HamburgerIcon />
+          </button>
+          {mobileOpen ? (
+            <div className="absolute right-0 top-[calc(100%+8px)] z-30 min-w-[200px] rounded-xl border border-[#2b3650] bg-[#0b1324] p-3 shadow-2xl shadow-black/50">
+              <div className="space-y-1">
+                <Link
+                  href="/resources"
+                  onClick={closeMenus}
+                  className={linkClass(pathname.startsWith("/resources"))}
+                >
+                  Resources
+                </Link>
+                <Link
+                  href="/auth?mode=login"
+                  onClick={closeMenus}
+                  className={linkClass(pathname.startsWith("/auth"))}
+                >
+                  Login
+                </Link>
+                <Link href="/auth?mode=signup" onClick={closeMenus} className={linkClass(false)}>
+                  Sign Up
+                </Link>
+              </div>
+            </div>
+          ) : null}
+        </div>
       </nav>
     );
   }
@@ -526,6 +571,13 @@ export default function TopNavigation({
                     className={linkClass(pathname === "/dashboard")}
                   >
                     Home
+                  </Link>
+                  <Link
+                    href="/resources"
+                    onClick={closeMenus}
+                    className={linkClass(pathname.startsWith("/resources"))}
+                  >
+                    Resources
                   </Link>
                 </div>
               </div>

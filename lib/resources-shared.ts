@@ -85,7 +85,7 @@ export const RESOURCE_DEFINITIONS: ResourceDefinition[] = [
     slug: "starter-strength",
     title: "Strength: 4-Week Starter",
     description:
-      "The first 4 weeks of my Strength program, by age group. The full 12 weeks are in the app.",
+      "The first 4 weeks of my Strength program, by age group.",
     tag: "PAID",
     priceDisplay: "$10",
     section: "WORKOUT_STARTERS",
@@ -109,7 +109,7 @@ export const RESOURCE_DEFINITIONS: ResourceDefinition[] = [
   {
     slug: "starter-bundle",
     title: "4-Week Starter Bundle",
-    description: "Strength, Speed and Agility, and Mobility starters by age group. The full 12 weeks are in the app.",
+    description: "Strength, Speed and Agility, and Mobility starters by age group.",
     tag: "PAID",
     badge: "BEST VALUE",
     priceDisplay: "$25",
@@ -151,7 +151,7 @@ export const RESOURCE_DEFINITIONS: ResourceDefinition[] = [
     slug: "starter-speed",
     title: "Speed and Agility: 4-Week Starter",
     description:
-      "The first 4 weeks of my Speed and Agility program, by age group. The full 12 weeks are in the app.",
+      "The first 4 weeks of my Speed and Agility program, by age group.",
     tag: "PAID",
     priceDisplay: "$10",
     section: "WORKOUT_STARTERS",
@@ -190,7 +190,7 @@ export const RESOURCE_DEFINITIONS: ResourceDefinition[] = [
     slug: "starter-mobility",
     title: "Mobility: 4-Week Starter",
     description:
-      "The first 4 weeks of my Mobility program, by age group. The full 12 weeks are in the app.",
+      "The first 4 weeks of my Mobility program, by age group.",
     tag: "PAID",
     priceDisplay: "$10",
     section: "WORKOUT_STARTERS",
