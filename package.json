@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && next build --webpack",
+    "check:ascii": "npx --yes tsx scripts/check-ascii.ts",
+    "build": "npm run check:ascii && prisma generate && next build --webpack",
     "start": "next start",
     "lint": "eslint",
     "prisma:generate": "prisma generate",

@@ -71,7 +71,7 @@ export default function FixItPlanAccessRecoveryClient({ plan }: FixItPlanAccessR
             disabled={busy}
             className="inline-flex min-h-[48px] w-full items-center justify-center rounded-full bg-[#2D6A4F] px-5 py-3 text-sm font-semibold text-white hover:bg-[#52B788] disabled:opacity-60"
           >
-            {busy ? "Sending…" : "Email my plan link"}
+            {busy ? "Sending..." : "Email my plan link"}
           </button>
         </form>
 

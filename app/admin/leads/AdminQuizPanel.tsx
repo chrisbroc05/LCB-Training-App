@@ -49,7 +49,7 @@ export default function AdminQuizPanel({
         <div>
           <h2 className="text-lg font-semibold text-zinc-100">Player IQ Quiz</h2>
           <p className="mt-1 text-sm text-zinc-400">
-            {totalCompleted} completed · average score {averageScore}
+            {totalCompleted} completed | average score {averageScore}
           </p>
         </div>
         <a
