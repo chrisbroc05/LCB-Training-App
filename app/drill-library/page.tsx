@@ -16,7 +16,14 @@ import {
   getDrillLibraryVideoById,
   getDrillLibraryVideosByIds,
 } from "@/lib/drill-library-videos";
-import { canAccessDrillLibrary, type DatabaseTier } from "@/lib/membership";
+import { loadStarterDrillIdSet } from "@/lib/drill-library-catalog-server";
+import { canViewDrill } from "@/lib/playbook-entitlements-shared";
+import {
+  canAccessDrillLibrary,
+  canAccessFullDrillLibrary,
+  type DatabaseTier,
+} from "@/lib/membership";
+import { getDrillLibraryVideoId } from "@/lib/drill-library-videos";
 import { prisma } from "@/lib/prisma";
 import { fetchVimeoThumbnailMap } from "@/lib/vimeo-oembed";
 
@@ -38,14 +45,16 @@ export default async function DrillLibraryPage({ searchParams }: DrillLibraryPag
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { membershipTier: true },
+    select: { membershipTier: true, playbookLegacyAccess: true },
   });
   const membershipTier = (user?.membershipTier ?? "FREE") as DatabaseTier;
-  const hasFullLibraryAccess = canAccessDrillLibrary(membershipTier);
-  const grantedDrillIds = hasFullLibraryAccess ? [] : await loadUserGrantedDrillIds(session.user.id);
+  const playbookLegacyAccess = user?.playbookLegacyAccess ?? false;
+  const canBrowseLibrary = canAccessDrillLibrary(membershipTier);
+  const hasFullLibraryAccess = canAccessFullDrillLibrary(membershipTier, playbookLegacyAccess);
+  const grantedDrillIds = canBrowseLibrary ? [] : await loadUserGrantedDrillIds(session.user.id);
   const showProgramUpsell = membershipTier === "FREE";
 
-  if (!hasFullLibraryAccess) {
+  if (!canBrowseLibrary) {
     if (initialDrillId && isDrillGrantedToUser(initialDrillId, grantedDrillIds)) {
       const allowedVideos = getDrillLibraryVideosByIds([initialDrillId]);
       const thumbnailMap = await fetchVimeoThumbnailMap(allowedVideos.map((video) => video.url));
@@ -126,6 +135,25 @@ export default async function DrillLibraryPage({ searchParams }: DrillLibraryPag
     allDrillLibraryVideos.map((video) => video.url),
   );
 
+  const starterDrillIds = hasFullLibraryAccess ? new Set<string>() : await loadStarterDrillIdSet();
+  const lockedDrillIds = hasFullLibraryAccess
+    ? []
+    : allDrillLibraryVideos
+        .map((video) => getDrillLibraryVideoId(video))
+        .filter((id): id is string => Boolean(id))
+        .filter(
+          (id) =>
+            !canViewDrill(
+              {
+                membershipTier,
+                playbookLegacyAccess,
+                starterDrillIds,
+                grantedDrillIds,
+              },
+              id,
+            ),
+        );
+
   return (
     <>
       <div className="px-4 pt-4 md:hidden">
@@ -144,15 +172,25 @@ export default async function DrillLibraryPage({ searchParams }: DrillLibraryPag
         </section>
 
         <DrillLibraryErrorBoundary>
-          <VideoLibrary thumbnailMap={thumbnailMap} initialDrillId={initialDrillId} />
+          <VideoLibrary
+            thumbnailMap={thumbnailMap}
+            initialDrillId={initialDrillId}
+            lockedDrillIds={lockedDrillIds}
+          />
         </DrillLibraryErrorBoundary>
       </div>
 
       <div className="md:hidden">
         <DrillLibraryErrorBoundary>
-          <DrillLibraryVideoSection thumbnailMap={thumbnailMap} initialDrillId={initialDrillId} />
+          <DrillLibraryVideoSection
+            thumbnailMap={thumbnailMap}
+            initialDrillId={initialDrillId}
+            lockedDrillIds={lockedDrillIds}
+          />
         </DrillLibraryErrorBoundary>
-        <DrillLibraryMobileResources membershipTier={membershipTier} />
+        <DrillLibraryMobileResources
+          entitlements={{ membershipTier, playbookLegacyAccess }}
+        />
       </div>
     </>
   );

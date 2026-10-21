@@ -170,11 +170,16 @@ def build_online_membership_body(
         ),
         (
             "Basic ($59 one-time)",
-            "Full video drill library + 8 downloadable workout programs",
+            "The Next Level Playbook, starter drills, four guides, 1 coaching submission",
+        ),
+        (
+            "12-Week Program ($599 one-time)",
+            "Unlimited submissions, full library, workout PDFs, "
+            "a kickoff call with Coach Broc and a parent, plus check-ins when you need them",
         ),
         (
             "Memorable ($149/mo or $1,490/yr)",
-            "Everything in Basic + 2 submissions/mo, 48-hour feedback, weekly check-ins, goal setting",
+            "Everything in Basic + 2 submissions/mo, 48-hour feedback, goal setting",
         ),
         (
             "Elite ($249/mo or $2,490/yr)",

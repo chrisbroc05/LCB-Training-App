@@ -21,7 +21,7 @@ export default function DashboardBookCallCard({
     >
       <h2 className="text-lg font-semibold text-zinc-100 sm:text-xl">Book a Call</h2>
       <p className="mt-2 text-sm text-zinc-300">
-        Schedule your weekly check-in call with Coach Broc.
+        Book your kickoff or a check-in call with Coach Broc when you need one.
       </p>
 
       {hasScheduledCall ? (

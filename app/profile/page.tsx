@@ -63,6 +63,7 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
         name: true,
         email: true,
         membershipTier: true,
+        playbookLegacyAccess: true,
         signupDate: true,
         stripeSubscriptionId: true,
         assessmentCallBooked: true,
@@ -177,7 +178,11 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
           membershipTier={membershipTier}
           memberSince={formatOptionalDate(user.signupDate)}
           submissionsRemaining={submissionsRemaining}
+          playbookSubmissionsLimit={
+            membershipTier === "BASIC" ? (availability?.lifetimeLimit ?? null) : null
+          }
           showLifetimeAccess={showLifetimeAccess}
+          playbookLegacyAccess={user.playbookLegacyAccess}
         />
 
         <PlayerProfileCard />

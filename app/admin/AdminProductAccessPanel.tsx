@@ -27,6 +27,7 @@ export default function AdminProductAccessPanel({
   const [action, setAction] = useState<"grant" | "remove">("grant");
   const [stripePaidOn, setStripePaidOn] = useState("");
   const [skipEmail, setSkipEmail] = useState(false);
+  const [playbookLegacyAccess, setPlaybookLegacyAccess] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -49,6 +50,8 @@ export default function AdminProductAccessPanel({
           product,
           stripePaidOn: stripePaidOn.trim() || undefined,
           skipEmail: showEmailOptions ? skipEmail : undefined,
+          playbookLegacyAccess:
+            action === "grant" && product === "playbook" ? playbookLegacyAccess : undefined,
         }),
       });
 
@@ -138,6 +141,18 @@ export default function AdminProductAccessPanel({
               onChange={(event) => setStripePaidOn(event.target.value)}
               className="mt-2 w-full rounded-lg border border-[#2b3650] bg-black/40 px-3 py-2 text-zinc-100"
             />
+          </label>
+        ) : null}
+
+        {action === "grant" && product === "playbook" ? (
+          <label className="flex items-center gap-2 text-sm text-zinc-300">
+            <input
+              type="checkbox"
+              checked={playbookLegacyAccess}
+              onChange={(event) => setPlaybookLegacyAccess(event.target.checked)}
+              className="rounded border-[#2b3650]"
+            />
+            Full Playbook (legacy access)
           </label>
         ) : null}
 

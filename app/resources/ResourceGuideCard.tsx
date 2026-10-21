@@ -1,24 +1,24 @@
 import Link from "next/link";
 import {
-  canAccessWorkoutResource,
+  canAccessWorkoutResourceFile,
   getWorkoutResourceLockMessage,
   getWorkoutResourceUpgradeHref,
   getWorkoutResourceUpgradeLabel,
   getWorkoutResourceUrl,
   type WorkoutResource,
 } from "@/lib/workout-resources";
-import type { DatabaseTier } from "@/lib/membership";
+import type { PlaybookEntitlementFields } from "@/lib/playbook-entitlements-shared";
 
 type ResourceGuideCardProps = {
   resource: WorkoutResource;
-  membershipTier: DatabaseTier;
+  entitlements: PlaybookEntitlementFields;
 };
 
 export default function ResourceGuideCard({
   resource,
-  membershipTier,
+  entitlements,
 }: ResourceGuideCardProps) {
-  const hasAccess = canAccessWorkoutResource(membershipTier, resource.requiredTier);
+  const hasAccess = canAccessWorkoutResourceFile(entitlements, resource.filename);
 
   return (
     <article className="resources-program-card">
@@ -39,7 +39,7 @@ export default function ResourceGuideCard({
       ) : (
         <div className="mt-4 space-y-3 border-t border-[#2b3650] pt-4">
           <div className="rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-100">
-            {getWorkoutResourceLockMessage(resource.requiredTier, resource.title)}
+            {getWorkoutResourceLockMessage(resource, resource.title)}
           </div>
           <Link
             href={getWorkoutResourceUpgradeHref(resource.requiredTier)}

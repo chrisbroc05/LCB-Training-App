@@ -33,6 +33,7 @@ export const adminMemberListSelect = {
   accountHolderName: true,
   email: true,
   membershipTier: true,
+  playbookLegacyAccess: true,
   signupDate: true,
   assessmentCallBooked: true,
   assessmentCallDate: true,
@@ -60,6 +61,7 @@ type AdminMemberListRecord = {
   accountHolderName: string | null;
   email: string;
   membershipTier: MembershipTier;
+  playbookLegacyAccess: boolean;
   signupDate: Date;
   assessmentCallBooked: boolean;
   assessmentCallDate: Date | null;
@@ -121,6 +123,7 @@ export function serializeAdminMemberSummary(user: AdminMemberListRecord) {
     user._count.swingAnalysisSubmissions + user._count.mentalGameSubmissions;
   const availability = getCoachingSubmissionAvailability({
     membershipTier: user.membershipTier,
+    playbookLegacyAccess: user.playbookLegacyAccess,
     freeSubmissionUsed: user.freeSubmissionUsed,
     playbookSubmissionsUsed: user.playbookSubmissionsUsed,
     coachingSubmissionsUsedThisMonth: user.coachingSubmissionsUsedThisMonth,
@@ -139,8 +142,15 @@ export function serializeAdminMemberSummary(user: AdminMemberListRecord) {
     signedUpBy: formatSignedUpBy(user.accountRole, user.accountHolderName),
     email: user.email,
     membershipTier: user.membershipTier,
-    productAccessCompact: formatMemberProductAccessCompact(user.membershipTier),
-    productAccess: buildMemberProductAccessSummary(user.membershipTier, tierLabel),
+    productAccessCompact: formatMemberProductAccessCompact(
+      user.membershipTier,
+      user.playbookLegacyAccess,
+    ),
+    productAccess: buildMemberProductAccessSummary(
+      user.membershipTier,
+      tierLabel,
+      user.playbookLegacyAccess,
+    ),
     signupDate: user.signupDate.toISOString(),
     lastActiveAt: null,
     submissionCount,
@@ -155,7 +165,7 @@ export function serializeAdminMemberSummary(user: AdminMemberListRecord) {
     playbookSubmissionsRemaining:
       user.membershipTier === "BASIC" ? availability.remaining : null,
     playbookSubmissionsLimit:
-      user.membershipTier === "BASIC" ? PLAYBOOK_LIFETIME_SUBMISSION_LIMIT : null,
+      user.membershipTier === "BASIC" ? (availability.lifetimeLimit ?? PLAYBOOK_LIFETIME_SUBMISSION_LIMIT) : null,
   };
 }
 
@@ -192,6 +202,7 @@ export const adminMemberDetailSelect = {
   accountHolderName: true,
   email: true,
   membershipTier: true,
+  playbookLegacyAccess: true,
   signupDate: true,
   assessmentCallBooked: true,
   assessmentCallDate: true,
@@ -286,6 +297,7 @@ type AdminMemberDetailRecord = {
   accountHolderName: string | null;
   email: string;
   membershipTier: MembershipTier;
+  playbookLegacyAccess: boolean;
   signupDate: Date;
   assessmentCallBooked: boolean;
   assessmentCallDate: Date | null;

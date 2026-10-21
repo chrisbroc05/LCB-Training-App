@@ -344,7 +344,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
               Welcome to your 12-Week Coaching Program
             </h1>
             <p className="mt-2 text-zinc-300">
-              Your playbook, coaching submissions, and weekly check-ins are ready whenever you are.
+              Your playbook, coaching submissions, and kickoff or check-in calls are ready whenever you are.
             </p>
           </>
         ) : (

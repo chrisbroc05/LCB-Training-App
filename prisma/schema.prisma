@@ -162,6 +162,7 @@ model User {
   twelveWeekCallBooked             Boolean      @default(false)
   twelveWeekCallScheduledAt        DateTime?
   membershipTier         MembershipTier         @default(FREE)
+  playbookLegacyAccess   Boolean                @default(false)
   membershipTierBeforeProgram MembershipTier?
   marketingEmailsSuppressed Boolean             @default(false)
   isTestAccount             Boolean             @default(false)
@@ -916,5 +917,11 @@ model TestResult {
   @@unique([sessionId, playerId, metricKey])
   @@index([playerId, metricKey])
   @@index([sessionId, metricKey])
+}
+
+model DrillLibraryCatalog {
+  vimeoId        String   @id
+  isStarterDrill Boolean  @default(false)
+  updatedAt      DateTime @updatedAt
 }
 

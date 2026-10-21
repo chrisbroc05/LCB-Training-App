@@ -32,13 +32,12 @@ export const membershipTiers: MembershipTier[] = [
     name: "Basic",
     priceLabel: "$59 one-time",
     summary:
-      "The Next Level Playbook plus 2 personal swing or video breakdowns from Coach Broc, the full drill library, workout programs, and bonus resources.",
+      "The Next Level Playbook plus 1 swing or video breakdown from Coach Broc, a starter drill set, and four bonus guides.",
     features: [
       "The Next Level Playbook -- 4 interactive chapters with reflection questions",
-      "2 personal swing or video breakdowns from Coach Broc (lifetime, not monthly)",
-      "Full hitting, fielding, and mindset video drill library",
-      "8 downloadable workout programs",
-      "Pre-Game Warmup Routine, Nutrition Guide, Mental Game Workbook, and Parent Guide",
+      "1 personal swing or video breakdown from Coach Broc (lifetime, not monthly)",
+      "Starter set of hitting, fielding, and mindset drills from the library",
+      "Mental Game Workbook, Pre-Game Warmup Routine, Parent Guide, and Nutrition Guide",
       "Downloadable PDF of your completed playbook with your personal answers",
       "Lifetime access -- pay once, never pay again",
     ],
@@ -178,6 +177,24 @@ export function canAccessDrillLibrary(userTier: DatabaseTier) {
   return hasDatabaseTierAccess(userTier, "basic");
 }
 
+/** Full library (all drills unlocked). New Basic buyers get starter drills only. */
+export function canAccessFullDrillLibrary(
+  userTier: DatabaseTier,
+  playbookLegacyAccess: boolean,
+) {
+  if (
+    userTier === "TWELVE_WEEK" ||
+    userTier === "MEMORABLE" ||
+    userTier === "ELITE"
+  ) {
+    return true;
+  }
+  if (userTier === "BASIC") {
+    return playbookLegacyAccess;
+  }
+  return false;
+}
+
 export function canAccessPlaybook(userTier: DatabaseTier) {
   return hasDatabaseTierAccess(userTier, "basic");
 }
@@ -185,7 +202,25 @@ export function canAccessPlaybook(userTier: DatabaseTier) {
 export const playbookLockedMessage =
   "Unlock The Next Level Playbook and all four chapters with the 12-Week Coaching Program.";
 
-export function canAccessWorkoutPrograms(userTier: DatabaseTier) {
+export function canAccessWorkoutPrograms(
+  userTier: DatabaseTier,
+  playbookLegacyAccess = false,
+) {
+  if (
+    userTier === "TWELVE_WEEK" ||
+    userTier === "MEMORABLE" ||
+    userTier === "ELITE"
+  ) {
+    return true;
+  }
+  if (userTier === "BASIC") {
+    return playbookLegacyAccess;
+  }
+  return false;
+}
+
+/** Basic+ can open My Downloads (guides for new Basic, full set for legacy). */
+export function canAccessMemberDownloadsPage(userTier: DatabaseTier) {
   return hasDatabaseTierAccess(userTier, "basic");
 }
 

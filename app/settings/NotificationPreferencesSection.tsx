@@ -40,8 +40,8 @@ const notificationOptions: Array<{
   },
   {
     key: "notifyWeeklyCheckin",
-    label: "Weekly accountability check-in emails",
-    description: "Receive your weekly check-in email from Coach Broc",
+    label: "Program recap and check-in emails",
+    description: "Receive recap and check-in emails from Coach Broc during your program",
   },
   {
     key: "notifyAnnouncements",

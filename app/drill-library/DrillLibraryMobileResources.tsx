@@ -1,13 +1,13 @@
 import ResourceGuideCard from "@/app/resources/ResourceGuideCard";
 import { workoutResourceGroups } from "@/lib/workout-resources";
-import type { DatabaseTier } from "@/lib/membership";
+import type { PlaybookEntitlementFields } from "@/lib/playbook-entitlements-shared";
 
 type DrillLibraryMobileResourcesProps = {
-  membershipTier: DatabaseTier;
+  entitlements: PlaybookEntitlementFields;
 };
 
 export default function DrillLibraryMobileResources({
-  membershipTier,
+  entitlements,
 }: DrillLibraryMobileResourcesProps) {
   const resources = workoutResourceGroups.flatMap((group) => group.resources);
 
@@ -22,7 +22,7 @@ export default function DrillLibraryMobileResources({
           <ResourceGuideCard
             key={resource.filename}
             resource={resource}
-            membershipTier={membershipTier}
+            entitlements={entitlements}
           />
         ))}
       </div>

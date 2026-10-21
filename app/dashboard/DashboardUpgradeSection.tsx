@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { COACH_CALENDLY_URL } from "@/lib/coach-calendly-shared";
+import { TWELVE_WEEK_KICKOFF_AND_CHECKINS_SHORT } from "@/lib/twelve-week-program-copy-shared";
 import type { DatabaseTier } from "@/lib/membership";
 
 type DashboardUpgradeSectionProps = {
@@ -22,16 +23,16 @@ export default function DashboardUpgradeSection({
           Ready to Level Up?
         </h2>
         <p className="mt-2 text-zinc-300">
-          Join the 12-Week Coaching Program for unlimited submissions, full Playbook access, and
-          weekly check-in calls with Coach Broc.
+          Join the 12-Week Coaching Program for unlimited submissions, full Playbook access, and{" "}
+          {TWELVE_WEEK_KICKOFF_AND_CHECKINS_SHORT}.
         </p>
       </div>
 
       <article className="mx-auto mt-8 max-w-xl rounded-2xl border border-[#52B788]/40 bg-[#0b1324]/80 p-5 sm:p-6">
         <h3 className="text-xl font-semibold text-zinc-100">12-Week Coaching Program</h3>
         <p className="mt-3 text-sm text-zinc-300">
-          Unlimited submissions, full Playbook access, workout programs, and weekly check-in calls
-          with Coach Broc.
+          Unlimited submissions, full Playbook access, workout programs, and{" "}
+          {TWELVE_WEEK_KICKOFF_AND_CHECKINS_SHORT}.
         </p>
         <Link
           href="/program"

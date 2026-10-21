@@ -1,4 +1,5 @@
 import { COACH_CALENDLY_URL } from "@/lib/coach-calendly-shared";
+import { TWELVE_WEEK_PROGRAM_CARD_DESCRIPTION } from "@/lib/twelve-week-program-copy-shared";
 
 export type ResourceTag = "FREE" | "PAID";
 export type ResourceType = "FREE_DOWNLOAD" | "PAID_DOWNLOAD" | "LINK";
@@ -48,7 +49,8 @@ export const RESOURCE_DEFINITIONS: ResourceDefinition[] = [
   {
     slug: "free-swing-analysis",
     title: "Free Swing Analysis",
-    description: "Send me a swing. I'll send back what I see and what to work on.",
+    description:
+      "Send me your swing. I'll break it down personally and send back the first thing to fix and a drill for it. Free account required.",
     tag: "FREE",
     badge: "START HERE",
     section: "START_HERE",
@@ -60,8 +62,7 @@ export const RESOURCE_DEFINITIONS: ResourceDefinition[] = [
   {
     slug: "twelve-week-program",
     title: "12-Week Coaching Program",
-    description:
-      "Your daily plan, weekly video breakdowns, and direct access to me for 12 weeks. Lessons are one day a week. This is the other six.",
+    description: TWELVE_WEEK_PROGRAM_CARD_DESCRIPTION,
     tag: "PAID",
     badge: "COACH'S PICK",
     section: "COACHING",
@@ -73,7 +74,8 @@ export const RESOURCE_DEFINITIONS: ResourceDefinition[] = [
   {
     slug: "starter-arm-care",
     title: "Arm Care Routine: 4-Week Starter",
-    description: "The band and mobility routine I use to keep arms healthy all season.",
+    description:
+      "The band and mobility routine I use to keep arms healthy all season. 4 days a week, with a checklist. For pitchers, catchers, and position players.",
     tag: "FREE",
     section: "START_HERE",
     buttonLabel: "Get the Free PDF",
@@ -85,7 +87,7 @@ export const RESOURCE_DEFINITIONS: ResourceDefinition[] = [
     slug: "starter-strength",
     title: "Strength: 4-Week Starter",
     description:
-      "The first 4 weeks of my Strength program, by age group.",
+      "The first 4 weeks of my strength program, by age (8-11, 12-15, 16+). Learn the key lifts with good form and build your base.",
     tag: "PAID",
     priceDisplay: "$10",
     section: "WORKOUT_STARTERS",
@@ -98,7 +100,8 @@ export const RESOURCE_DEFINITIONS: ResourceDefinition[] = [
   {
     slug: "pregame-warmup",
     title: "Pregame Warm-Up Routine",
-    description: "The routine I give every team. Show up ready to compete from the first pitch.",
+    description:
+      "The warm-up I give every team. Get loose, get your arm ready, and show up locked in from the first pitch.",
     tag: "FREE",
     section: "START_HERE",
     buttonLabel: "Get the Free PDF",
@@ -109,7 +112,8 @@ export const RESOURCE_DEFINITIONS: ResourceDefinition[] = [
   {
     slug: "starter-bundle",
     title: "4-Week Starter Bundle",
-    description: "Strength, Speed and Agility, and Mobility starters by age group.",
+    description:
+      "Strength, Speed and Agility, and Mobility starters in one download. Every age group included.",
     tag: "PAID",
     badge: "BEST VALUE",
     priceDisplay: "$25",
@@ -127,7 +131,8 @@ export const RESOURCE_DEFINITIONS: ResourceDefinition[] = [
   {
     slug: "parent-guide",
     title: "The Parent Guide",
-    description: "What actually helps your player develop, and what gets in the way.",
+    description:
+      "How to help your player develop without adding pressure, and what gets in the way.",
     tag: "FREE",
     section: "START_HERE",
     buttonLabel: "Get the Free PDF",
@@ -139,7 +144,7 @@ export const RESOURCE_DEFINITIONS: ResourceDefinition[] = [
     slug: "next-level-playbook",
     title: "The Next Level Playbook",
     description:
-      "The full Next Level Playbook, the drill library, every guide, the complete workout programs, and 2 swing reviews from me.",
+      "My mindset system for players who want to be known for more than stats. Plus starter drills, 4 guides, and 1 swing review from me.",
     tag: "PAID",
     section: "PROGRAMS_AND_GUIDES",
     buttonLabel: "Get the Playbook",
@@ -151,7 +156,7 @@ export const RESOURCE_DEFINITIONS: ResourceDefinition[] = [
     slug: "starter-speed",
     title: "Speed and Agility: 4-Week Starter",
     description:
-      "The first 4 weeks of my Speed and Agility program, by age group.",
+      "The first 4 weeks of my speed program, by age. First-step quickness, acceleration, and change of direction.",
     tag: "PAID",
     priceDisplay: "$10",
     section: "WORKOUT_STARTERS",
@@ -164,7 +169,8 @@ export const RESOURCE_DEFINITIONS: ResourceDefinition[] = [
   {
     slug: "nutrition-guide",
     title: "Nutrition and Fueling Guide",
-    description: "What to eat and drink to train, recover, and play your best.",
+    description:
+      "What to eat before and after games to fuel your energy and recover. Simple game-day nutrition for busy baseball families.",
     tag: "FREE",
     section: "START_HERE",
     buttonLabel: "Get the Free PDF",
@@ -176,7 +182,7 @@ export const RESOURCE_DEFINITIONS: ResourceDefinition[] = [
     slug: "starter-back-arm",
     title: "Back and Arm Strength: 4-Week Starter",
     description:
-      "Build a stronger back, shoulders, and arms to throw and swing with more power. Home and gym options.",
+      "Two days a week: back and pulling strength, then arms and grip. Home and school gym options.",
     tag: "PAID",
     priceDisplay: "$10",
     section: "PROGRAMS_AND_GUIDES",
@@ -190,7 +196,7 @@ export const RESOURCE_DEFINITIONS: ResourceDefinition[] = [
     slug: "starter-mobility",
     title: "Mobility: 4-Week Starter",
     description:
-      "The first 4 weeks of my Mobility program, by age group.",
+      "The first 4 weeks of my mobility program, by age. Move better through your hips, upper back, and shoulders.",
     tag: "PAID",
     priceDisplay: "$10",
     section: "WORKOUT_STARTERS",
@@ -203,7 +209,8 @@ export const RESOURCE_DEFINITIONS: ResourceDefinition[] = [
   {
     slug: "recruiting-guide",
     title: "College Baseball Recruiting Guide",
-    description: "How recruiting actually works and what to do each year of high school.",
+    description:
+      "How college recruiting really works and what to do each year of high school to get noticed.",
     tag: "PAID",
     priceDisplay: "$19",
     section: "PROGRAMS_AND_GUIDES",
@@ -216,7 +223,8 @@ export const RESOURCE_DEFINITIONS: ResourceDefinition[] = [
   {
     slug: "rotational-sample",
     title: "Rotational Power Sample",
-    description: "A sample of my rotational power work. Build more power in your swing.",
+    description:
+      "A free sample of my rotational power work. Exercises to help you create more power from the ground up.",
     tag: "FREE",
     section: "START_HERE",
     buttonLabel: "Get the Free PDF",
@@ -227,7 +235,8 @@ export const RESOURCE_DEFINITIONS: ResourceDefinition[] = [
   {
     slug: "mental-game-workbook",
     title: "Mental Game Workbook",
-    description: "Routines, self-talk, and how to bounce back from a bad day.",
+    description:
+      "Worksheets to build your routines, handle pressure, and bounce back from a bad game.",
     tag: "PAID",
     priceDisplay: "$10",
     section: "PROGRAMS_AND_GUIDES",
@@ -240,7 +249,8 @@ export const RESOURCE_DEFINITIONS: ResourceDefinition[] = [
   {
     slug: "lessons-program-bundle",
     title: "Lessons + Program Bundle",
-    description: "12 in-person lessons plus the full 12-Week Program. Chicagoland only.",
+    description:
+      "12 in-person lessons plus the full 12-Week Program. Chicagoland only.",
     tag: "PAID",
     section: "COACHING",
     buttonLabel: "Learn More",
@@ -250,8 +260,8 @@ export const RESOURCE_DEFINITIONS: ResourceDefinition[] = [
   },
   {
     slug: "remote-session",
-    title: "Remote Session",
-    description: "A live one-on-one video session with me.",
+    title: "Online Remote Session",
+    description: "A live one-on-one video session with me. Book your time right after checkout.",
     tag: "PAID",
     section: "COACHING",
     buttonLabel: "Book a Session",

@@ -5,10 +5,15 @@
 import type { DatabaseTier } from "@/lib/membership";
 import {
   canAccessDrillLibrary,
+  canAccessFullDrillLibrary,
   canAccessPlaybook,
   canAccessWorkoutPrograms,
   isTwelveWeekProgramMember,
 } from "@/lib/membership";
+import {
+  getPlaybookLifetimeSubmissionLimit,
+  PLAYBOOK_LIFETIME_SUBMISSION_LIMIT_NEW,
+} from "@/lib/playbook-entitlements-shared";
 
 export const ADMIN_GRANT_PRODUCTS = [
   "playbook",
@@ -41,20 +46,33 @@ export type MemberProductAccessSummary = {
 export function buildMemberProductAccessSummary(
   membershipTier: DatabaseTier,
   tierLabel: string,
+  playbookLegacyAccess = false,
 ): MemberProductAccessSummary {
   const lines: string[] = [];
 
   if (canAccessPlaybook(membershipTier)) {
     lines.push("The Next Level Playbook");
   }
-  if (canAccessDrillLibrary(membershipTier)) {
+  if (canAccessFullDrillLibrary(membershipTier, playbookLegacyAccess)) {
     lines.push("Full drill library");
+  } else if (membershipTier === "BASIC") {
+    lines.push("Starter drill set from the library");
   }
-  if (canAccessWorkoutPrograms(membershipTier)) {
+  if (canAccessWorkoutPrograms(membershipTier, playbookLegacyAccess)) {
     lines.push("Workout PDFs and bonus resources");
+  } else if (membershipTier === "BASIC") {
+    lines.push("Four Playbook guides (Mental, Pregame, Parent, Nutrition)");
   }
   if (membershipTier === "BASIC") {
-    lines.push("2 lifetime coaching submissions (swing or video breakdowns)");
+    const limit =
+      getPlaybookLifetimeSubmissionLimit({ membershipTier, playbookLegacyAccess }) ??
+      PLAYBOOK_LIFETIME_SUBMISSION_LIMIT_NEW;
+    lines.push(
+      `${limit} lifetime coaching submission${limit === 1 ? "" : "s"} (swing or video breakdown)`,
+    );
+    if (playbookLegacyAccess) {
+      lines.push("Full Playbook (legacy access)");
+    }
   }
   if (isTwelveWeekProgramMember(membershipTier)) {
     lines.push("12-Week daily plan and program dashboard");
@@ -79,15 +97,20 @@ export function buildMemberProductAccessSummary(
   };
 }
 
-export function formatMemberProductAccessCompact(membershipTier: DatabaseTier): string {
+export function formatMemberProductAccessCompact(
+  membershipTier: DatabaseTier,
+  playbookLegacyAccess = false,
+): string {
   const parts: string[] = [];
   if (canAccessPlaybook(membershipTier)) {
     parts.push("Playbook");
   }
-  if (canAccessDrillLibrary(membershipTier)) {
+  if (canAccessFullDrillLibrary(membershipTier, playbookLegacyAccess)) {
     parts.push("Drills");
+  } else if (canAccessDrillLibrary(membershipTier)) {
+    parts.push("Starter drills");
   }
-  if (canAccessWorkoutPrograms(membershipTier)) {
+  if (canAccessWorkoutPrograms(membershipTier, playbookLegacyAccess)) {
     parts.push("Workouts");
   }
   if (isTwelveWeekProgramMember(membershipTier)) {

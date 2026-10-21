@@ -6,6 +6,7 @@ import VideoLibrary from "@/app/dashboard/VideoLibrary";
 type DrillLibraryVideoSectionProps = {
   thumbnailMap: Record<string, string | null>;
   initialDrillId?: string;
+  lockedDrillIds?: readonly string[];
 };
 
 function VideoLibrarySkeleton() {
@@ -36,6 +37,7 @@ function VideoLibrarySkeleton() {
 export default function DrillLibraryVideoSection({
   thumbnailMap,
   initialDrillId,
+  lockedDrillIds = [],
 }: DrillLibraryVideoSectionProps) {
   const [isReady, setIsReady] = useState(false);
 
@@ -47,5 +49,11 @@ export default function DrillLibraryVideoSection({
     return <VideoLibrarySkeleton />;
   }
 
-  return <VideoLibrary thumbnailMap={thumbnailMap} initialDrillId={initialDrillId} />;
+  return (
+    <VideoLibrary
+      thumbnailMap={thumbnailMap}
+      initialDrillId={initialDrillId}
+      lockedDrillIds={lockedDrillIds}
+    />
+  );
 }

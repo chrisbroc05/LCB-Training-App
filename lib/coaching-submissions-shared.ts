@@ -4,8 +4,13 @@
 
 import { formatDateWithYear, formatMonthYear } from "@/lib/format-date";
 import type { DatabaseTier } from "@/lib/membership";
+import {
+  getPlaybookLifetimeSubmissionLimit,
+  PLAYBOOK_LIFETIME_SUBMISSION_LIMIT_NEW,
+} from "@/lib/playbook-entitlements-shared";
 
-export const PLAYBOOK_LIFETIME_SUBMISSION_LIMIT = 2;
+/** Default limit for new Playbook (Basic) buyers. */
+export const PLAYBOOK_LIFETIME_SUBMISSION_LIMIT = PLAYBOOK_LIFETIME_SUBMISSION_LIMIT_NEW;
 export const FREE_LIFETIME_SUBMISSION_LIMIT = 1;
 
 export type CoachingSubmissionLockReason =
@@ -16,6 +21,7 @@ export type CoachingSubmissionLockReason =
 
 export type CoachingSubmissionUserFields = {
   membershipTier: DatabaseTier;
+  playbookLegacyAccess: boolean;
   freeSubmissionUsed: boolean;
   playbookSubmissionsUsed: number;
   coachingSubmissionsUsedThisMonth: number;
@@ -56,10 +62,15 @@ export function formatPlaybookSubmissionQuotaLabel(remaining: number, limit: num
 }
 
 export const PLAYBOOK_SUBMISSIONS_EXHAUSTED_MESSAGE =
-  "You have used both. Want weekly breakdowns? Check out the 12-Week Program.";
+  "You have used your included submission. Want weekly breakdowns? Check out the 12-Week Program.";
 
-export const PLAYBOOK_SUBMISSIONS_INCLUDED_COPY =
+export const PLAYBOOK_SUBMISSIONS_INCLUDED_COPY_NEW =
+  "1 personal swing or video breakdown from Coach Broc";
+
+export const PLAYBOOK_SUBMISSIONS_INCLUDED_COPY_LEGACY =
   "2 personal swing or video breakdowns from Coach Broc";
+
+export const PLAYBOOK_SUBMISSIONS_INCLUDED_COPY = PLAYBOOK_SUBMISSIONS_INCLUDED_COPY_NEW;
 
 export const MEMORABLE_MONTHLY_LIMIT = 2;
 export const ELITE_MONTHLY_LIMIT = 4;
@@ -137,12 +148,17 @@ export function getCoachingSubmissionAvailability(
 
   if (syncedUser.membershipTier === "BASIC") {
     const used = Math.max(0, syncedUser.playbookSubmissionsUsed);
-    const remaining = Math.max(0, PLAYBOOK_LIFETIME_SUBMISSION_LIMIT - used);
+    const lifetimeLimit =
+      getPlaybookLifetimeSubmissionLimit({
+        membershipTier: syncedUser.membershipTier,
+        playbookLegacyAccess: syncedUser.playbookLegacyAccess,
+      }) ?? PLAYBOOK_LIFETIME_SUBMISSION_LIMIT_NEW;
+    const remaining = Math.max(0, lifetimeLimit - used);
     return {
       canSubmit: remaining > 0,
       lockReason: remaining > 0 ? null : "playbook-used",
       remaining,
-      lifetimeLimit: PLAYBOOK_LIFETIME_SUBMISSION_LIMIT,
+      lifetimeLimit,
       monthlyRemaining: null,
       rolloverCredits: null,
       monthlyLimit: null,

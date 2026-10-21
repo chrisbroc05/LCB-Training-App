@@ -3,10 +3,12 @@
 import { useEffect, useMemo, useState } from "react";
 import VideoPlayer from "@/app/components/mobile/VideoPlayer";
 import DrillProgramUpsellLine from "@/app/drill-library/DrillProgramUpsellLine";
+import DrillLibraryLockLine from "@/app/drill-library/DrillLibraryLockLine";
 import {
   allDrillLibraryVideos,
   fieldingVideos,
   getDrillLibraryVideoById,
+  getDrillLibraryVideoId,
   hittingVideos,
   mindsetVideos,
   type DrillLibraryVideoItem,
@@ -97,7 +99,13 @@ type VideoSectionProps = {
   videos: DrillLibraryVideoItem[];
   thumbnailMap: Record<string, string | null>;
   onSelectVideo: (video: DrillLibraryVideoItem) => void;
+  lockedDrillIds: ReadonlySet<string>;
 };
+
+function isDrillLocked(video: DrillLibraryVideoItem, lockedDrillIds: ReadonlySet<string>) {
+  const id = getDrillLibraryVideoId(video);
+  return Boolean(id && lockedDrillIds.has(id));
+}
 
 function VideoSection({
   heading,
@@ -105,23 +113,45 @@ function VideoSection({
   videos,
   thumbnailMap,
   onSelectVideo,
+  lockedDrillIds,
 }: VideoSectionProps) {
   return (
     <div>
       <h2 className="text-xl font-semibold text-zinc-100 sm:text-2xl">{heading}</h2>
       <p className="mt-2 text-zinc-300">{description}</p>
       <div className="mt-6 grid gap-5 sm:gap-6 lg:grid-cols-2">
-        {videos.map((video) => (
-          <button
-            key={video.url}
-            type="button"
-            onClick={() => onSelectVideo(video)}
-            className="group rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 text-left transition hover:border-[#2b7c4b] hover:bg-[#11203a] sm:p-6"
-          >
-            <VideoThumbnail thumbnailUrl={thumbnailMap[video.url]} />
-            <p className="mt-4 text-base font-semibold text-zinc-100 sm:text-lg">{video.title}</p>
-          </button>
-        ))}
+        {videos.map((video) => {
+          const locked = isDrillLocked(video, lockedDrillIds);
+          if (locked) {
+            return (
+              <article
+                key={video.url}
+                className="rounded-2xl border border-[#18243a] bg-[#0b1324]/50 p-4 opacity-90 sm:p-6"
+              >
+                <div className="relative">
+                  <VideoThumbnail thumbnailUrl={thumbnailMap[video.url]} />
+                  <span className="absolute right-2 top-2 rounded-full bg-black/70 px-2 py-1 text-xs font-semibold text-zinc-200">
+                    Locked
+                  </span>
+                </div>
+                <p className="mt-4 text-base font-semibold text-zinc-300 sm:text-lg">{video.title}</p>
+                <DrillLibraryLockLine />
+              </article>
+            );
+          }
+
+          return (
+            <button
+              key={video.url}
+              type="button"
+              onClick={() => onSelectVideo(video)}
+              className="group rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 text-left transition hover:border-[#2b7c4b] hover:bg-[#11203a] sm:p-6"
+            >
+              <VideoThumbnail thumbnailUrl={thumbnailMap[video.url]} />
+              <p className="mt-4 text-base font-semibold text-zinc-100 sm:text-lg">{video.title}</p>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
@@ -132,6 +162,7 @@ type VideoLibraryProps = {
   initialDrillId?: string;
   allowedVideos?: DrillLibraryVideoItem[];
   showProgramUpsell?: boolean;
+  lockedDrillIds?: readonly string[];
 };
 
 export default function VideoLibrary({
@@ -139,7 +170,9 @@ export default function VideoLibrary({
   initialDrillId,
   allowedVideos,
   showProgramUpsell = false,
+  lockedDrillIds = [],
 }: VideoLibraryProps) {
+  const lockedDrillIdSet = useMemo(() => new Set(lockedDrillIds), [lockedDrillIds]);
   const isGrantedOnlyMode = Boolean(allowedVideos && allowedVideos.length > 0);
   const visibleVideos = allowedVideos ?? allDrillLibraryVideos;
   const [playerState, setPlayerState] = useState<PlayerState | null>(null);
@@ -159,6 +192,10 @@ export default function VideoLibrary({
   }, [isGrantedOnlyMode, mobileCategory, visibleVideos]);
 
   const openVideo = (video: DrillLibraryVideoItem, index: number) => {
+    if (isDrillLocked(video, lockedDrillIdSet)) {
+      return;
+    }
+
     const categoryVideos = isGrantedOnlyMode
       ? visibleVideos
       : mobileCategory === "all"
@@ -187,7 +224,7 @@ export default function VideoLibrary({
     }
 
     const drill = getDrillLibraryVideoById(initialDrillId);
-    if (!drill) {
+    if (!drill || isDrillLocked(drill, lockedDrillIdSet)) {
       return;
     }
 
@@ -242,17 +279,35 @@ export default function VideoLibrary({
             ))}
           </div>
           <div className="mobile-card-stack">
-            {filteredMobileVideos.map((video, index) => (
-              <button
-                key={video.url}
-                type="button"
-                onClick={() => openVideo(video, index)}
-                className="mobile-card text-left"
-              >
-                <VideoThumbnail thumbnailUrl={thumbnailMap[video.url]} compact />
-                <p className="mt-3 text-base font-semibold text-zinc-100">{video.title}</p>
-              </button>
-            ))}
+            {filteredMobileVideos.map((video, index) => {
+              const locked = isDrillLocked(video, lockedDrillIdSet);
+              if (locked) {
+                return (
+                  <article key={video.url} className="mobile-card text-left opacity-90">
+                    <div className="relative">
+                      <VideoThumbnail thumbnailUrl={thumbnailMap[video.url]} compact />
+                      <span className="absolute right-2 top-2 rounded-full bg-black/70 px-2 py-0.5 text-[10px] font-semibold text-zinc-200">
+                        Locked
+                      </span>
+                    </div>
+                    <p className="mt-3 text-base font-semibold text-zinc-300">{video.title}</p>
+                    <DrillLibraryLockLine />
+                  </article>
+                );
+              }
+
+              return (
+                <button
+                  key={video.url}
+                  type="button"
+                  onClick={() => openVideo(video, index)}
+                  className="mobile-card text-left"
+                >
+                  <VideoThumbnail thumbnailUrl={thumbnailMap[video.url]} compact />
+                  <p className="mt-3 text-base font-semibold text-zinc-100">{video.title}</p>
+                </button>
+              );
+            })}
           </div>
         </section>
       ) : (
@@ -281,6 +336,7 @@ export default function VideoLibrary({
             videos={visibleVideos}
             thumbnailMap={thumbnailMap}
             onSelectVideo={setDesktopVideo}
+            lockedDrillIds={lockedDrillIdSet}
           />
         </section>
       ) : (
@@ -291,6 +347,7 @@ export default function VideoLibrary({
             videos={hittingVideos}
             thumbnailMap={thumbnailMap}
             onSelectVideo={setDesktopVideo}
+            lockedDrillIds={lockedDrillIdSet}
           />
           <VideoSection
             heading="Fielding Library"
@@ -298,6 +355,7 @@ export default function VideoLibrary({
             videos={fieldingVideos}
             thumbnailMap={thumbnailMap}
             onSelectVideo={setDesktopVideo}
+            lockedDrillIds={lockedDrillIdSet}
           />
           <VideoSection
             heading="Mindset Library"
@@ -305,6 +363,7 @@ export default function VideoLibrary({
             videos={mindsetVideos}
             thumbnailMap={thumbnailMap}
             onSelectVideo={setDesktopVideo}
+            lockedDrillIds={lockedDrillIdSet}
           />
         </section>
       )}

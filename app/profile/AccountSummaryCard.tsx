@@ -13,7 +13,9 @@ type AccountSummaryCardProps = {
   membershipTier: DatabaseTier;
   memberSince: string;
   submissionsRemaining: number | null;
+  playbookSubmissionsLimit: number | null;
   showLifetimeAccess: boolean;
+  playbookLegacyAccess?: boolean;
 };
 
 export default function AccountSummaryCard({
@@ -22,7 +24,9 @@ export default function AccountSummaryCard({
   membershipTier,
   memberSince,
   submissionsRemaining,
+  playbookSubmissionsLimit,
   showLifetimeAccess,
+  playbookLegacyAccess = false,
 }: AccountSummaryCardProps) {
   return (
     <ProfileCard title="Account Summary">
@@ -55,7 +59,9 @@ export default function AccountSummaryCard({
                 : "Coaching submissions remaining this month"}
             </p>
             <p className={`${profileValueClass} text-2xl font-bold text-[#9df3bd]`}>
-              {membershipTier === "BASIC" ? `${submissionsRemaining} of 2` : submissionsRemaining}
+              {membershipTier === "BASIC" && playbookSubmissionsLimit
+                ? `${submissionsRemaining} of ${playbookSubmissionsLimit}`
+                : submissionsRemaining}
             </p>
           </div>
         ) : null}
@@ -65,8 +71,9 @@ export default function AccountSummaryCard({
               Lifetime Access
             </span>
             <p className={`mt-2 ${profileBodyTextClass}`}>
-              Your Basic membership includes lifetime access to the full LCB Training library,
-              The Next Level Playbook, and 2 personal swing or video breakdowns from Coach Broc.
+              {playbookLegacyAccess
+                ? "Your Basic membership includes lifetime access to the full drill library, workout PDFs, The Next Level Playbook, and 2 personal swing or video breakdowns from Coach Broc."
+                : "Your Basic membership includes lifetime access to The Next Level Playbook, a starter drill set, four bonus guides, and 1 personal swing or video breakdown from Coach Broc."}
             </p>
           </div>
         ) : null}

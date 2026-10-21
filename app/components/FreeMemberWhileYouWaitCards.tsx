@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { TWELVE_WEEK_PROGRAM_NAME } from "@/lib/twelve-week-program";
+import { TWELVE_WEEK_KICKOFF_AND_CHECKINS_SHORT } from "@/lib/twelve-week-program-copy-shared";
 
 type FreeMemberWhileYouWaitCardsProps = {
   coachingHref?: string;
@@ -17,8 +18,8 @@ export default function FreeMemberWhileYouWaitCards({
       <article className="flex h-full flex-col rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-5 sm:p-6">
         <h3 className="text-lg font-semibold text-zinc-100">{TWELVE_WEEK_PROGRAM_NAME}</h3>
         <p className="mt-3 flex-1 text-sm leading-relaxed text-zinc-300">
-          Get unlimited coaching submissions, full Playbook access, workout programs, and weekly
-          check-in calls with Coach Broc.
+          Get unlimited coaching submissions, full Playbook access, workout programs, and{" "}
+          {TWELVE_WEEK_KICKOFF_AND_CHECKINS_SHORT}.
         </p>
         <Link
           href={programHref}
@@ -32,7 +33,7 @@ export default function FreeMemberWhileYouWaitCards({
         <h3 className="text-lg font-semibold text-zinc-100">Monthly Coaching Memberships</h3>
         <p className="mt-3 flex-1 text-sm leading-relaxed text-zinc-300">
           The 12-Week Coaching Program is the best path if you want ongoing coaching support with
-          unlimited submissions and weekly check-in calls.
+          unlimited submissions and {TWELVE_WEEK_KICKOFF_AND_CHECKINS_SHORT}.
         </p>
         <Link
           href={coachingHref}

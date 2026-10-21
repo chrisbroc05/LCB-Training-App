@@ -2,9 +2,14 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import LockedFeaturePanel from "@/app/LockedFeaturePanel";
+import PlaybookWorkoutsUpgradeCard from "@/app/account/downloads/PlaybookWorkoutsUpgradeCard";
 import ResourceGuideCard from "@/app/resources/ResourceGuideCard";
 import WorkoutProgramsSection from "@/app/resources/WorkoutProgramsSection";
-import { canAccessWorkoutPrograms, type DatabaseTier } from "@/lib/membership";
+import {
+  canAccessMemberDownloadsPage,
+  canAccessWorkoutPrograms,
+  type DatabaseTier,
+} from "@/lib/membership";
 import { workoutResourceGroups } from "@/lib/workout-resources";
 import { prisma } from "@/lib/prisma";
 
@@ -16,7 +21,7 @@ export default async function AccountDownloadsPage() {
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { membershipTier: true },
+    select: { membershipTier: true, playbookLegacyAccess: true },
   });
 
   if (!user) {
@@ -24,18 +29,27 @@ export default async function AccountDownloadsPage() {
   }
 
   const membershipTier = (user.membershipTier ?? "FREE") as DatabaseTier;
-  if (!canAccessWorkoutPrograms(membershipTier)) {
+  const entitlements = {
+    membershipTier,
+    playbookLegacyAccess: user.playbookLegacyAccess,
+  };
+
+  if (!canAccessMemberDownloadsPage(membershipTier)) {
     return (
       <LockedFeaturePanel
         title="My Downloads"
         description="Download workout programs and bonus guides included with your membership."
-        message="Downloads are available on Basic and 12-Week Program memberships. Upgrade to Basic or above to unlock all workout programs and bonus guides."
+        message="Downloads are available on Basic and 12-Week Program memberships. Upgrade to Basic or above to unlock Playbook guides."
         upgradeLabel="Upgrade to Basic or Above"
         upgradeHref="/upgrade?reason=basic-required"
       />
     );
   }
 
+  const showFullWorkoutPdfs = canAccessWorkoutPrograms(
+    membershipTier,
+    user.playbookLegacyAccess,
+  );
   const bonusResources = workoutResourceGroups.flatMap((group) => group.resources);
 
   return (
@@ -51,7 +65,7 @@ export default async function AccountDownloadsPage() {
         </p>
       </section>
 
-      <WorkoutProgramsSection />
+      {showFullWorkoutPdfs ? <WorkoutProgramsSection /> : <PlaybookWorkoutsUpgradeCard />}
 
       <section className="mt-10 border-t border-[#18243a] pt-8">
         <div className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
@@ -62,11 +76,7 @@ export default async function AccountDownloadsPage() {
 
           <div className="mt-6 grid gap-4 md:grid-cols-2">
             {bonusResources.map((resource) => (
-              <ResourceGuideCard
-                key={resource.filename}
-                resource={resource}
-                membershipTier={membershipTier}
-              />
+              <ResourceGuideCard key={resource.filename} resource={resource} entitlements={entitlements} />
             ))}
           </div>
         </div>

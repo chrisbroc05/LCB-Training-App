@@ -23,6 +23,8 @@ export type ApplyAdminProductAccessParams = {
   adminEmail: string;
   stripePaidOn?: string | null;
   skipEmail?: boolean;
+  /** When granting Playbook: comp full legacy bundle (full drills, workouts, 2 submissions). */
+  playbookLegacyAccess?: boolean;
 };
 
 function parseStripePaidOnDate(value: string | null | undefined): Date | null {
@@ -80,7 +82,12 @@ export function appendAdminAccessAuditNote(params: {
   return line;
 }
 
-async function grantPlaybook(userId: string, note: string, skipEmail: boolean) {
+async function grantPlaybook(
+  userId: string,
+  note: string,
+  skipEmail: boolean,
+  playbookLegacyAccess: boolean,
+) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { email: true, name: true, membershipTier: true },
@@ -105,12 +112,15 @@ async function grantPlaybook(userId: string, note: string, skipEmail: boolean) {
       where: { id: userId },
       data: {
         adminNotes: note,
+        playbookLegacyAccess,
         ...getPlaybookSubmissionResetData(),
       },
     });
     return {
       ok: true as const,
-      message: "Playbook access refreshed with 2 coaching submissions. Audit note saved.",
+      message: playbookLegacyAccess
+        ? "Playbook refreshed with full legacy access and 2 coaching submissions. Audit note saved."
+        : "Playbook access refreshed. Audit note saved.",
     };
   }
 
@@ -125,6 +135,7 @@ async function grantPlaybook(userId: string, note: string, skipEmail: boolean) {
       subscriptionCurrentPeriodEnd: null,
       subscriptionCancelAtPeriodEnd: false,
       adminNotes: note,
+      playbookLegacyAccess,
       ...getPlaybookSubmissionResetData(),
     },
   });
@@ -310,7 +321,12 @@ export async function applyAdminProductAccess(params: ApplyAdminProductAccessPar
 
   if (params.action === "grant") {
     if (params.product === "playbook") {
-      return grantPlaybook(params.userId, note, skipEmail);
+      return grantPlaybook(
+        params.userId,
+        note,
+        skipEmail,
+        params.playbookLegacyAccess === true,
+      );
     }
     if (params.product === "twelve_week_program") {
       return grantTwelveWeek(params.userId, note);

@@ -63,6 +63,7 @@ function applyPeriodResetIfNeeded(
 
 const coachingSubmissionUserSelect = {
   membershipTier: true,
+  playbookLegacyAccess: true,
   freeSubmissionUsed: true,
   playbookSubmissionsUsed: true,
   coachingSubmissionsUsedThisMonth: true,
@@ -72,6 +73,7 @@ const coachingSubmissionUserSelect = {
 
 function toCoachingSubmissionUserFields(user: {
   membershipTier: string;
+  playbookLegacyAccess: boolean;
   freeSubmissionUsed: boolean;
   playbookSubmissionsUsed: number;
   coachingSubmissionsUsedThisMonth: number;
@@ -80,6 +82,7 @@ function toCoachingSubmissionUserFields(user: {
 }): CoachingSubmissionUserFields {
   return {
     membershipTier: user.membershipTier as DatabaseTier,
+    playbookLegacyAccess: user.playbookLegacyAccess,
     freeSubmissionUsed: user.freeSubmissionUsed,
     playbookSubmissionsUsed: user.playbookSubmissionsUsed,
     coachingSubmissionsUsedThisMonth: user.coachingSubmissionsUsedThisMonth,

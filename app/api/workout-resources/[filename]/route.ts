@@ -7,10 +7,7 @@ import { isAdminEmail } from "@/lib/admin";
 import type { DatabaseTier } from "@/lib/membership";
 import { prisma } from "@/lib/prisma";
 import { getPrivateResourceAbsolutePath } from "@/lib/resource-files-server";
-import {
-  canAccessWorkoutResource,
-  getWorkoutResource,
-} from "@/lib/workout-resources";
+import { getWorkoutResource, canAccessWorkoutResourceFile } from "@/lib/workout-resources";
 
 type RouteContext = {
   params: Promise<{
@@ -38,11 +35,19 @@ export async function GET(_request: Request, context: RouteContext) {
   if (!isAdminEmail(session.user.email)) {
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { membershipTier: true },
+      select: { membershipTier: true, playbookLegacyAccess: true },
     });
     const membershipTier = (user?.membershipTier ?? "FREE") as DatabaseTier;
 
-    if (!canAccessWorkoutResource(membershipTier, resource.requiredTier)) {
+    if (
+      !canAccessWorkoutResourceFile(
+        {
+          membershipTier,
+          playbookLegacyAccess: user?.playbookLegacyAccess ?? false,
+        },
+        filename,
+      )
+    ) {
       return NextResponse.json({ error: "Membership upgrade required." }, { status: 403 });
     }
   }

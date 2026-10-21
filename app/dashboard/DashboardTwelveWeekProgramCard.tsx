@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { TWELVE_WEEK_PROGRAM_NAME } from "@/lib/twelve-week-program";
+import { TWELVE_WEEK_KICKOFF_AND_CHECKINS_SHORT } from "@/lib/twelve-week-program-copy-shared";
 import { formatScheduledCallDateTime } from "@/lib/assessment-call";
 import { formatOptionalDate } from "@/lib/format-date";
 
@@ -39,7 +40,7 @@ export default function DashboardTwelveWeekProgramCard({
 
       <p className="mt-4 text-sm leading-relaxed text-zinc-300">
         Your program includes full Playbook access, unlimited coaching submissions, workout
-        programs, and weekly check-in calls with Coach Broc.
+        programs, and {TWELVE_WEEK_KICKOFF_AND_CHECKINS_SHORT}.
       </p>
 
       {hasScheduledCall ? (

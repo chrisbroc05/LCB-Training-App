@@ -67,11 +67,11 @@ export async function GET(_request: Request, context: RouteContext) {
   if (!isAdminEmail(session.user.email)) {
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { membershipTier: true },
+      select: { membershipTier: true, playbookLegacyAccess: true },
     });
     const membershipTier = (user?.membershipTier ?? "FREE") as DatabaseTier;
 
-    if (!canAccessWorkoutPrograms(membershipTier)) {
+    if (!canAccessWorkoutPrograms(membershipTier, user?.playbookLegacyAccess ?? false)) {
       return NextResponse.json({ error: "Basic membership required." }, { status: 403 });
     }
   }

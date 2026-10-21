@@ -133,7 +133,7 @@ export default function CoachingSubmissionHistory({
                         </p>
                         <p className="mt-2 text-sm leading-relaxed text-zinc-300">
                           The 12-Week Coaching Program includes unlimited submissions, full
-                          Playbook access, workout programs, and weekly check-in calls.
+                          Playbook access, workout programs, and a kickoff call plus check-ins when you need them.
                         </p>
                         <Link
                           href="/program"

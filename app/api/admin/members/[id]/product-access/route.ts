@@ -23,6 +23,7 @@ type ProductAccessBody = {
   product?: string;
   stripePaidOn?: string;
   skipEmail?: boolean;
+  playbookLegacyAccess?: boolean;
 };
 
 function parseAction(value: string | undefined): "grant" | "remove" | null {
@@ -78,6 +79,7 @@ export async function POST(request: Request, context: RouteContext) {
     adminEmail: adminEmail!,
     stripePaidOn: body.stripePaidOn,
     skipEmail: body.skipEmail,
+    playbookLegacyAccess: body.playbookLegacyAccess,
   });
 
   if (!result.ok) {

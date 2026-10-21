@@ -9,6 +9,7 @@ import {
   settingsSectionTitleClass,
 } from "@/app/settings/settings-styles";
 import { TWELVE_WEEK_PROGRAM_NAME, TWELVE_WEEK_PROGRAM_PRICE_LABEL } from "@/lib/twelve-week-program";
+import { TWELVE_WEEK_KICKOFF_AND_CHECKINS_SHORT } from "@/lib/twelve-week-program-copy-shared";
 import { formatUserFacingMembershipLabel, isTwelveWeekProgramMember, type DatabaseTier } from "@/lib/membership";
 
 type ChangeMembershipSectionProps = {
@@ -30,7 +31,7 @@ export default function ChangeMembershipSection({
         </p>
         <p className="mt-3 text-sm text-zinc-400">
           You are enrolled in the 12-Week Coaching Program with full access to coaching submissions,
-          the Playbook, and weekly check-in calls.
+          the Playbook, and {TWELVE_WEEK_KICKOFF_AND_CHECKINS_SHORT}.
         </p>
       </SettingsCard>
     );
@@ -41,7 +42,7 @@ export default function ChangeMembershipSection({
       title="Upgrade Membership"
       description={
         isLifetimeBasic
-          ? "Join the 12-Week Coaching Program for unlimited coaching submissions and weekly check-in calls with Coach Broc."
+          ? `Join the 12-Week Coaching Program for unlimited coaching submissions and ${TWELVE_WEEK_KICKOFF_AND_CHECKINS_SHORT}.`
           : "Join the 12-Week Coaching Program to unlock full coaching support and training resources."
       }
     >
@@ -51,8 +52,8 @@ export default function ChangeMembershipSection({
           {TWELVE_WEEK_PROGRAM_PRICE_LABEL} one-time
         </p>
         <p className={`mt-3 ${settingsBodyTextClass}`}>
-          Unlimited submissions, full Playbook access, workout programs, and weekly check-in calls
-          with Coach Broc.
+          Unlimited submissions, full Playbook access, workout programs, and{" "}
+          {TWELVE_WEEK_KICKOFF_AND_CHECKINS_SHORT}.
         </p>
         <Link href="/program" className={`mt-4 inline-flex ${settingsPrimaryButtonClass}`}>
           View Program Details

@@ -58,15 +58,15 @@ export default function BillingSection({
           <p className={settingsAccentTextClass}>12-Week Coaching Program</p>
           <p className={settingsMutedTextClass}>
             Your program enrollment is a one-time purchase with access to coaching submissions, the
-            Playbook, and weekly check-in calls for the duration of the program.
+            Playbook, and kickoff or check-in calls for the duration of the program.
           </p>
         </div>
       ) : lifetimeBasic ? (
         <div className="space-y-3">
           <p className={settingsAccentTextClass}>Basic Plan -- Lifetime Access</p>
           <p className={settingsMutedTextClass}>
-            Your Basic membership is a one-time purchase with lifetime access to the full content
-            library and Playbook.
+            Your Basic membership is a one-time purchase with lifetime access to The Next Level
+            Playbook, starter drills, and included guides.
           </p>
         </div>
       ) : manualMembership ? (

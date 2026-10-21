@@ -934,7 +934,7 @@ Start here:
 - Playbook: ${playbookUrl}
 - Drill library: ${drillLibraryUrl}
 
-You also have access to workout programs and bonus PDF resources from your dashboard.
+You also have a starter drill set and four bonus guides from My Downloads on your dashboard.
 
 Work Hard. Be Memorable.
 Coach Broc
@@ -945,7 +945,7 @@ LCB Training`;
     bodyContentHtml: `<p style="margin:0 0 16px 0; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:1.7; color:#0A1628;">Hi ${escapeHtml(
       params.firstName,
     )},</p>
-      <p style="margin:0 0 16px 0; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:1.7; color:#0A1628;">Thank you for your purchase. <strong>The Next Level Playbook</strong> is unlocked on your account, along with the full drill library, workout programs, and bonus resources.</p>
+      <p style="margin:0 0 16px 0; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:1.7; color:#0A1628;">Thank you for your purchase. <strong>The Next Level Playbook</strong> is unlocked on your account, along with a starter drill set and four bonus guides in My Downloads.</p>
       <p style="margin:0 0 16px 0; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:1.7; color:#0A1628;">You also have <strong>${escapeHtml(
         PLAYBOOK_SUBMISSIONS_INCLUDED_COPY,
       )}</strong> (lifetime, not monthly). Send a swing video or mindset question from Coaching Submissions whenever you are ready.</p>

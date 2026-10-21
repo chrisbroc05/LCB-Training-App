@@ -3,76 +3,84 @@ import {
   getCoachingSubmissionAvailability,
   PLAYBOOK_LIFETIME_SUBMISSION_LIMIT,
 } from "../lib/coaching-submissions-shared";
+import { PLAYBOOK_LIFETIME_SUBMISSION_LIMIT_LEGACY } from "../lib/playbook-entitlements-shared";
 
-function testFreeTier() {
-  const available = getCoachingSubmissionAvailability({
-    membershipTier: "FREE",
+function baseFields(
+  overrides: Partial<Parameters<typeof getCoachingSubmissionAvailability>[0]> = {},
+) {
+  return {
+    membershipTier: "FREE" as const,
+    playbookLegacyAccess: false,
     freeSubmissionUsed: false,
     playbookSubmissionsUsed: 0,
     coachingSubmissionsUsedThisMonth: 0,
     coachingSubmissionPeriod: "2026-10",
     eliteRolloverCredits: 0,
-  });
+    ...overrides,
+  };
+}
+
+function testFreeTier() {
+  const available = getCoachingSubmissionAvailability(baseFields());
   assert.equal(available.remaining, 1);
   assert.equal(available.canSubmit, true);
 
-  const used = getCoachingSubmissionAvailability({
-    membershipTier: "FREE",
-    freeSubmissionUsed: true,
-    playbookSubmissionsUsed: 0,
-    coachingSubmissionsUsedThisMonth: 0,
-    coachingSubmissionPeriod: "2026-10",
-    eliteRolloverCredits: 0,
-  });
+  const used = getCoachingSubmissionAvailability(
+    baseFields({ freeSubmissionUsed: true }),
+  );
   assert.equal(used.remaining, 0);
   assert.equal(used.lockReason, "free-used");
 }
 
 function testPlaybookTierIgnoresFreeFlag() {
-  const withFreeUsed = getCoachingSubmissionAvailability({
-    membershipTier: "BASIC",
-    freeSubmissionUsed: true,
-    playbookSubmissionsUsed: 0,
-    coachingSubmissionsUsedThisMonth: 0,
-    coachingSubmissionPeriod: "2026-10",
-    eliteRolloverCredits: 0,
-  });
+  const withFreeUsed = getCoachingSubmissionAvailability(
+    baseFields({
+      membershipTier: "BASIC",
+      freeSubmissionUsed: true,
+    }),
+  );
   assert.equal(withFreeUsed.remaining, PLAYBOOK_LIFETIME_SUBMISSION_LIMIT);
   assert.equal(withFreeUsed.canSubmit, true);
 
-  const oneLeft = getCoachingSubmissionAvailability({
-    membershipTier: "BASIC",
-    freeSubmissionUsed: true,
-    playbookSubmissionsUsed: 1,
-    coachingSubmissionsUsedThisMonth: 0,
-    coachingSubmissionPeriod: "2026-10",
-    eliteRolloverCredits: 0,
-  });
-  assert.equal(oneLeft.remaining, 1);
-  assert.equal(oneLeft.canSubmit, true);
+  const exhaustedNew = getCoachingSubmissionAvailability(
+    baseFields({
+      membershipTier: "BASIC",
+      playbookSubmissionsUsed: 1,
+    }),
+  );
+  assert.equal(exhaustedNew.remaining, 0);
+  assert.equal(exhaustedNew.lockReason, "playbook-used");
 
-  const exhausted = getCoachingSubmissionAvailability({
-    membershipTier: "BASIC",
-    freeSubmissionUsed: false,
-    playbookSubmissionsUsed: 2,
-    coachingSubmissionsUsedThisMonth: 0,
-    coachingSubmissionPeriod: "2026-10",
-    eliteRolloverCredits: 0,
-  });
-  assert.equal(exhausted.remaining, 0);
-  assert.equal(exhausted.lockReason, "playbook-used");
-  assert.equal(exhausted.canSubmit, false);
+  const oneLeftLegacy = getCoachingSubmissionAvailability(
+    baseFields({
+      membershipTier: "BASIC",
+      playbookLegacyAccess: true,
+      playbookSubmissionsUsed: 1,
+    }),
+  );
+  assert.equal(oneLeftLegacy.remaining, 1);
+  assert.equal(oneLeftLegacy.lifetimeLimit, PLAYBOOK_LIFETIME_SUBMISSION_LIMIT_LEGACY);
+
+  const exhaustedLegacy = getCoachingSubmissionAvailability(
+    baseFields({
+      membershipTier: "BASIC",
+      playbookLegacyAccess: true,
+      playbookSubmissionsUsed: 2,
+    }),
+  );
+  assert.equal(exhaustedLegacy.remaining, 0);
+  assert.equal(exhaustedLegacy.canSubmit, false);
 }
 
 function testTwelveWeekUnlimited() {
-  const availability = getCoachingSubmissionAvailability({
-    membershipTier: "TWELVE_WEEK",
-    freeSubmissionUsed: true,
-    playbookSubmissionsUsed: 99,
-    coachingSubmissionsUsedThisMonth: 99,
-    coachingSubmissionPeriod: "2026-10",
-    eliteRolloverCredits: 0,
-  });
+  const availability = getCoachingSubmissionAvailability(
+    baseFields({
+      membershipTier: "TWELVE_WEEK",
+      freeSubmissionUsed: true,
+      playbookSubmissionsUsed: 99,
+      coachingSubmissionsUsedThisMonth: 99,
+    }),
+  );
   assert.equal(availability.canSubmit, true);
   assert.equal(availability.remaining, 999);
 }
