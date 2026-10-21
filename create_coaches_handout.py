@@ -158,42 +158,35 @@ def build_aligned_row(
     return row_table
 
 
-def build_online_membership_body(
+def build_program_offers_body(
     width: float,
-    tier_name_style: ParagraphStyle,
-    tier_desc_style: ParagraphStyle,
+    item_title_style: ParagraphStyle,
+    item_desc_style: ParagraphStyle,
 ) -> Table:
-    tiers = [
+    offers = [
         (
-            "Free",
-            "1 free coaching submission + free 20-minute Player Assessment Call with Coach Broc",
+            "Free Swing Analysis",
+            "Send a swing video at lcbtraining.com. Coach Broc breaks it down with feedback and a drill. "
+            "Free account required.",
         ),
         (
-            "Basic ($59 one-time)",
-            "The Next Level Playbook, starter drills, four guides, 1 coaching submission",
+            "The Next Level Playbook ($59)",
+            "Interactive playbook, starter drill set, four bonus guides, and 1 personal swing or video "
+            "breakdown. Lifetime access.",
         ),
         (
-            "12-Week Program ($599 one-time)",
-            "Unlimited submissions, full library, workout PDFs, "
-            "a kickoff call with Coach Broc and a parent, plus check-ins when you need them",
-        ),
-        (
-            "Memorable ($149/mo or $1,490/yr)",
-            "Everything in Basic + 2 submissions/mo, 48-hour feedback, goal setting",
-        ),
-        (
-            "Elite ($249/mo or $2,490/yr)",
-            "Everything in Memorable + 4 submissions/mo with rollover, priority 24-hour response, "
-            "monthly group coaching call, personalized development plan",
+            "12-Week Coaching Program ($599)",
+            "Daily training plan, unlimited submissions, full drill library, workout PDFs, "
+            "a kickoff call with Coach Broc and a parent, plus check-ins when you need them.",
         ),
     ]
     rows = []
-    for tier_name, tier_desc in tiers:
-        rows.append([Paragraph(f"<b>{tier_name}</b>", tier_name_style)])
-        rows.append([Paragraph(tier_desc, tier_desc_style)])
+    for item_title, item_desc in offers:
+        rows.append([Paragraph(f"<b>{item_title}</b>", item_title_style)])
+        rows.append([Paragraph(item_desc, item_desc_style)])
 
-    tier_table = Table(rows, colWidths=[width])
-    tier_style_commands = [
+    offer_table = Table(rows, colWidths=[width])
+    offer_style_commands = [
         ("VALIGN", (0, 0), (-1, -1), "TOP"),
         ("TOPPADDING", (0, 0), (-1, -1), 0),
         ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
@@ -202,9 +195,9 @@ def build_online_membership_body(
     ]
     for row_index in range(1, len(rows), 2):
         if row_index < len(rows) - 1:
-            tier_style_commands.append(("BOTTOMPADDING", (0, row_index), (0, row_index), 4))
-    tier_table.setStyle(TableStyle(tier_style_commands))
-    return tier_table
+            offer_style_commands.append(("BOTTOMPADDING", (0, row_index), (0, row_index), 4))
+    offer_table.setStyle(TableStyle(offer_style_commands))
+    return offer_table
 
 
 def build_in_person_body(
@@ -217,6 +210,10 @@ def build_in_person_body(
         ("Two players ($75/hr)", "Shared session for two athletes"),
         ("Group (3+, $100/hr)", "Small group training"),
         ("Team Training", "Reach out and we can talk through details for your program"),
+        (
+            "Lessons + Program Bundle ($999)",
+            "12 in-person lessons plus the full 12-Week Coaching Program. Chicagoland area.",
+        ),
         (
             "Training locations",
             "Palatine facility, local fields, and your facilities "
@@ -319,7 +316,7 @@ def build_qr_footer_cell(
         qr_image = Paragraph("QR unavailable", placeholder_style)
 
     caption = Paragraph(
-        "Scan to book a lesson or explore remote training",
+        "Scan to book a lesson or explore programs at lcbtraining.com",
         qr_caption_style,
     )
     qr_table = Table([[qr_image], [caption]], colWidths=[qr_col_width])
@@ -436,15 +433,15 @@ def main() -> None:
         leading=11,
         textColor=NAVY,
     )
-    tier_name_style = ParagraphStyle(
-        "tier-name",
+    offer_title_style = ParagraphStyle(
+        "offer-title",
         fontName="Helvetica-Bold",
         fontSize=9.5,
         leading=11.5,
         textColor=NAVY,
     )
-    tier_desc_style = ParagraphStyle(
-        "tier-desc",
+    offer_desc_style = ParagraphStyle(
+        "offer-desc",
         fontName="Helvetica",
         fontSize=9,
         leading=11,
@@ -576,24 +573,24 @@ def main() -> None:
         in_person_title_style,
         in_person_desc_style,
     )
-    online_body = build_online_membership_body(
+    program_offers_body = build_program_offers_body(
         two_col_widths[1] - section_body_inset,
-        tier_name_style,
-        tier_desc_style,
+        offer_title_style,
+        offer_desc_style,
     )
     in_person_cell = build_section_cell(
-        "In-Person Training",
+        "In-Person Lessons",
         in_person_body,
         two_col_widths[0],
         section_header_style,
     )
-    online_cell = build_section_cell(
-        "Online Membership",
-        online_body,
+    programs_cell = build_section_cell(
+        "Programs & App",
+        program_offers_body,
         two_col_widths[1],
         section_header_style,
     )
-    story.append(build_aligned_row(in_person_cell, online_cell, two_col_widths))
+    story.append(build_aligned_row(in_person_cell, programs_cell, two_col_widths))
     story.append(Spacer(1, 4))
 
     qr_cell = build_qr_footer_cell(project_root, footer_col_widths[0], qr_caption_style, placeholder_style)
