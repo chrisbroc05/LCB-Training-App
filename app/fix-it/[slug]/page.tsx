@@ -1,5 +1,7 @@
 import { redirect } from "next/navigation";
+import FixItPlanAccessRecoveryClient from "@/app/fix-it/FixItPlanAccessRecoveryClient";
 import FixItPlanPageClient from "@/app/fix-it/FixItPlanPageClient";
+import { createFixItPlanAccessToken } from "@/lib/fix-it-plan-access-token";
 import { assertFixItPlanAccessFromRequest } from "@/lib/fix-it-plan-access-server";
 import { getFixItPlanByResourceSlug, isFixItResourceSlug } from "@/lib/fix-it-plans-shared";
 
@@ -27,8 +29,12 @@ export default async function FixItPlanPage({ params, searchParams }: FixItPlanP
   });
 
   if (!accessEmail) {
-    redirect("/fix-it");
+    return <FixItPlanAccessRecoveryClient plan={plan} />;
   }
 
-  return <FixItPlanPageClient plan={plan} accessToken={token?.trim() ?? null} />;
+  const accessToken =
+    token?.trim() ||
+    createFixItPlanAccessToken({ email: accessEmail, resourceSlug: slug });
+
+  return <FixItPlanPageClient plan={plan} accessToken={accessToken} />;
 }

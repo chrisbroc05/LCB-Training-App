@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
+import { execSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
@@ -90,8 +91,17 @@ function testResourcesHubCard() {
   assert.ok(orderIndex > strengthIndex);
 }
 
+function testWeekTextMatchesScheduleRows() {
+  execSync("python3 scripts/fix_it_week_text.py --verify", {
+    cwd: ROOT,
+    stdio: "pipe",
+    encoding: "utf8",
+  });
+}
+
 function run() {
   testGeneratedDataMatchesMarkdown();
+  testWeekTextMatchesScheduleRows();
   testPlanCatalog();
   testDrillVideoMapping();
   testPlanAccessToken();

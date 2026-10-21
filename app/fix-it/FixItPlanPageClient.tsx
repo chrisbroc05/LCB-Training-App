@@ -3,6 +3,7 @@
 import Link from "next/link";
 import FixItVimeoEmbed from "@/app/fix-it/FixItVimeoEmbed";
 import type { FixItPlanGenerated } from "@/lib/fix-it-plans-data.generated";
+import { FIX_IT_PLANS_META } from "@/lib/fix-it-plans-shared";
 
 type FixItPlanPageClientProps = {
   plan: FixItPlanGenerated;
@@ -121,6 +122,10 @@ export default function FixItPlanPageClient({ plan, accessToken }: FixItPlanPage
       ) : null}
 
       <SectionBlock title="What's next" body={plan.whatsNext} />
+
+      <p className="mt-10 border-t border-[#18243a] pt-6 text-sm leading-relaxed text-zinc-500">
+        {FIX_IT_PLANS_META.scheduleNote}
+      </p>
     </div>
   );
 }

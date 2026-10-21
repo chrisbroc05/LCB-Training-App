@@ -113,7 +113,7 @@ export const RESOURCE_DEFINITIONS: ResourceDefinition[] = [
     slug: "fix-it-hitting-plans",
     title: "Fix-It Hitting Plans",
     description:
-      "Front shoulder flying open? Hips drifting? Two 3-week plans with my drill videos to fix the two problems I see most.",
+      "Front shoulder flying open? Hips drifting? Two 3-week plans off a tee or flips with my drill videos.",
     tag: "PAID",
     priceDisplay: "$19 each",
     section: "WORKOUT_STARTERS",

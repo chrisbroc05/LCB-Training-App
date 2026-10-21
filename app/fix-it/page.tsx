@@ -8,7 +8,7 @@ import { getPublicAppUrl } from "@/lib/public-app-url";
 const siteUrl = getPublicAppUrl();
 const title = "Fix-It Hitting Plans | Coach Broc";
 const description =
-  "Two 3-week hitting Fix-It plans with Coach Broc drill videos. Fix a flying front shoulder or drifting hips with a tee and a day-by-day plan.";
+  "Two 3-week hitting Fix-It plans with Coach Broc drill videos. Fix a flying front shoulder or drifting hips off a tee or flips.";
 
 export const metadata: Metadata = {
   title,

@@ -3,9 +3,9 @@
 ## meta
 sales_label: FIX-IT HITTING PLANS
 sales_title: Fix the Two Problems I See Most
-sales_subtitle: Most hitters I work with are fighting one of these. Each plan is 3 weeks, works with just a tee, and comes with my drill videos.
+sales_subtitle: Each plan is 3 weeks, works off a tee or flips, and comes with my drill videos.
 why_these_work: Every drill in these plans is one I use with my own players. You'll feel the fix in week 1, build it in week 2, and take it into live at-bats in week 3. Test yourself on day 1 and day 21 and see the difference.
-schedule_note: 5 hitting days a week, about 20-30 minutes, 1 rest day, 1 optional day. Works with just a tee; flips and BP are upgrades.
+schedule_note: 5 hitting days a week, about 20-30 minutes, 1 rest day, 1 optional day. Works off a tee or flips; BP is an upgrade.
 free_swing_cta: Not sure which one you need? Send me your swing for a free breakdown and I'll tell you.
 price_display: $19 each
 
@@ -16,6 +16,7 @@ title: Stay Closed: Fix Your Front Shoulder
 subtitle: 3-Week Fix-It Plan
 price_label: 3 weeks | $19
 button_label: Get Stay Closed - $19
+cover_fixes: Front shoulder flying open, power leaking toward the foul line, and rollovers on the pull side
 symptom_1: Rolling over to the pull side
 symptom_2: Weak pop-ups and grounders
 symptom_3: Finishing your swing falling toward the foul line
@@ -64,22 +65,104 @@ Don't Worry About Mechanics in the Game
 ### baseline
 Day 1, and again on the last day: 10 swings off a low and away tee. Count how many are hard line drives up the middle or to the opposite field with backspin. Write it down. Film 3 swings from the side.
 
-### week1
-Goal: feel the shoulder stay closed before you add a ball.
-Day 1: Baseline test. Then Drill 1, 3 sets of 10 (slow, medium, game speed).
-Days 2-5: Drill 1, 2 sets of 10. Drill 2, 3 sets of 8 off the tee. Drill 4 (dry, no ball), 2 sets of 8.
-Checkpoint: After each swing, check your finish. Are you falling over the plate? Are your eyes and chest still behind where contact was?
+### week1_goal
+Feel the shoulder stay closed before you add a ball.
 
-### week2
-Goal: hold it with a real swing and drive the ball the other way.
-Days 1-5: Drill 1, 1 set of 10 to warm up. Drill 2, 2 sets of 8. Drill 3, 4 sets of 8. Drill 4 off the tee, 3 sets of 8.
-Upgrade: If you have a partner, do one day of front toss with the recoil finish.
-Checkpoint: Count your backspin line drives to the opposite field each day. The number should climb.
+### week1_checkpoint
+After each swing, check your finish. Are you falling over the plate? Are your eyes and chest still behind where contact was?
 
-### week3
-Goal: take it to flips, BP, and games.
-Days 1-4: Drill 1, 1 set of 10 to warm up. Drill 3, 2 sets of 8. Front toss or BP, mixed locations, 4 sets of 8, finishing every swing with the recoil step. Last round is a "two-strike round": drive everything middle or the other way. No partner? Mix tee heights and locations instead.
-Day 5: Retest. 10 swings off the low and away tee. Compare to Day 1. Film 3 swings from the side and compare to Week 1.
+### week1_row
+days: Day 1
+drill: Baseline test, then Drill 1  -  Lead Arm Direction Progression
+sets_reps: 3 x 10
+focus: Slow, medium, game speed
+
+### week1_row
+days: Days 2-5
+drill: Drill 1  -  Lead Arm Direction Progression
+sets_reps: 2 x 10
+focus: Feel the shoulder stay closed
+
+### week1_row
+days: Days 2-5
+drill: Drill 2  -  Lead Arm Drill
+sets_reps: 3 x 8
+focus: Off the tee
+
+### week1_row
+days: Days 2-5
+drill: Drill 4  -  Recoil Drill (dry, no ball)
+sets_reps: 2 x 8
+focus: Power stays over the plate
+
+### week2_goal
+Hold it with a real swing and drive the ball the other way.
+
+### week2_checkpoint
+Count your backspin line drives to the opposite field each day. The number should climb.
+
+### week2_upgrade
+If you have a partner, do one day of front toss with the recoil finish.
+
+### week2_row
+days: Days 1-5
+drill: Drill 1  -  Lead Arm Direction Progression
+sets_reps: 1 x 10
+focus: Warm-up
+
+### week2_row
+days: Days 1-5
+drill: Drill 2  -  Lead Arm Drill
+sets_reps: 2 x 8
+focus: Off the tee
+
+### week2_row
+days: Days 1-5
+drill: Drill 3  -  Low and Away Tee
+sets_reps: 4 x 8
+focus: Drive the ball the other way
+
+### week2_row
+days: Days 1-5
+drill: Drill 4  -  Recoil Drill
+sets_reps: 3 x 8
+focus: Off the tee, recoil finish
+
+### week3_goal
+Take it to flips, BP, and games.
+
+### week3_checkpoint
+Retest on Day 5: 10 swings off the low and away tee. Compare to Day 1. Film 3 swings from the side and compare to Week 1.
+
+### week3_row
+days: Days 1-4
+drill: Drill 1  -  Lead Arm Direction Progression
+sets_reps: 1 x 10
+focus: Warm-up
+
+### week3_row
+days: Days 1-4
+drill: Drill 3  -  Low and Away Tee
+sets_reps: 2 x 8
+focus: Stay closed on the away pitch
+
+### week3_row
+days: Days 1-4
+drill: Front toss or BP (recoil finish every swing)
+sets_reps: 4 x 8
+focus: Mixed locations; last round is two-strike (middle or other way)
+
+### week3_row
+days: Days 1-4
+drill: No partner? Mixed tee heights and locations instead of toss/BP
+sets_reps: 4 x 8
+focus: Same recoil finish every swing
+
+### week3_row
+days: Day 5
+drill: Retest  -  baseline swings off low and away tee
+sets_reps: 10 swings
+focus: Compare to Day 1; film 3 swings from the side
 
 ### whats_next
 - Use your free swing analysis to have Coach Broc check your Week 3 swing.
@@ -92,6 +175,7 @@ title: Hit the Brakes: Stop Drifting, Stay Stacked
 subtitle: 3-Week Fix-It Plan
 price_label: 3 weeks | $19
 button_label: Get Hit the Brakes - $19
+cover_fixes: Drifting in your load, losing stack at contact, and hitting the ball softer than you should
 symptom_1: Lunging at the ball
 symptom_2: Hitting it soft even when you square it up
 symptom_3: Feeling like your swing has no power
@@ -139,22 +223,104 @@ Don't Worry About Mechanics in the Game
 ### baseline
 Day 1, and again on the last day: Film 5 tee swings from the side. Pause each at contact. Are you stacked? Count how many of 10 tee swings are hard line drives.
 
-### week1
-Goal: feel the brakes and the turn behind the front foot.
-Day 1: Baseline test. Then Drill 1, 3 sets of 8.
-Days 2-5: Drill 1, 2 sets of 8. Drill 2, 3 sets of 8 (dry or off a tee). Drill 3 (dry), 3 sets of 8, holding your finish for 2 seconds to check that you're stacked.
-Checkpoint: Does your front side stop hard? Is your weight still back when you start to turn?
+### week1_goal
+Feel the brakes and the turn behind the front foot.
 
-### week2
-Goal: keep the brakes on with a full swing.
-Days 1-5: Drill 2, 1 set of 8 to warm up. Drill 3 off the tee, 4 sets of 8. Normal stance off the tee, "hit the brakes" every swing, 3 sets of 8. Drill 4, 2 sets of 8.
-Upgrade: If you have a partner, one day of front toss starting from the feet-together setup.
-Checkpoint: Film one swing a day from the side and pause at contact. Stacked?
+### week1_checkpoint
+Does your front side stop hard? Is your weight still back when you start to turn?
 
-### week3
-Goal: take it to flips, BP, and games.
-Days 1-4: Drill 2, 1 set of 8 to warm up. Front toss or BP, first round from the feet-together setup, 1 set of 8. Normal stance, mixed locations, "brakes" every swing, 4 sets of 8. Last round: drive everything middle or the other way. No partner? Mix tee heights and locations instead.
-Day 5: Retest. Film 5 swings and count hard line drives out of 10. Compare to Day 1.
+### week1_row
+days: Day 1
+drill: Baseline test, then Drill 1  -  Flow Progression, Lead Arm Only
+sets_reps: 3 x 8
+focus: Turn behind the front foot
+
+### week1_row
+days: Days 2-5
+drill: Drill 1  -  Flow Progression, Lead Arm Only
+sets_reps: 2 x 8
+focus: Feel the brakes
+
+### week1_row
+days: Days 2-5
+drill: Drill 2  -  Flow Progression, Two Hands
+sets_reps: 3 x 8
+focus: Dry or off a tee
+
+### week1_row
+days: Days 2-5
+drill: Drill 3  -  Stationary Feet-Together Drill (dry)
+sets_reps: 3 x 8
+focus: Hold finish 2 sec; check you're stacked
+
+### week2_goal
+Keep the brakes on with a full swing.
+
+### week2_checkpoint
+Film one swing a day from the side and pause at contact. Stacked?
+
+### week2_upgrade
+If you have a partner, one day of front toss starting from the feet-together setup.
+
+### week2_row
+days: Days 1-5
+drill: Drill 2  -  Flow Progression, Two Hands
+sets_reps: 1 x 8
+focus: Warm-up
+
+### week2_row
+days: Days 1-5
+drill: Drill 3  -  Stationary Feet-Together Drill
+sets_reps: 4 x 8
+focus: Off the tee
+
+### week2_row
+days: Days 1-5
+drill: Normal stance off the tee  -  "hit the brakes" every swing
+sets_reps: 3 x 8
+focus: Stay stacked through contact
+
+### week2_row
+days: Days 1-5
+drill: Drill 4  -  Low and Away Tee
+sets_reps: 2 x 8
+focus: Drive the ball the other way with authority
+
+### week3_goal
+Take it to flips, BP, and games.
+
+### week3_checkpoint
+Retest on Day 5: film 5 swings and count hard line drives out of 10. Compare to Day 1.
+
+### week3_row
+days: Days 1-4
+drill: Drill 2  -  Flow Progression, Two Hands
+sets_reps: 1 x 8
+focus: Warm-up
+
+### week3_row
+days: Days 1-4
+drill: Front toss or BP  -  first round from feet-together setup
+sets_reps: 1 x 8
+focus: Brakes before full stance work
+
+### week3_row
+days: Days 1-4
+drill: Front toss or BP  -  normal stance, mixed locations
+sets_reps: 4 x 8
+focus: "Brakes" every swing; last round middle or other way
+
+### week3_row
+days: Days 1-4
+drill: No partner? Mixed tee heights and locations instead of toss/BP
+sets_reps: 4 x 8
+focus: Same "brakes" focus every swing
+
+### week3_row
+days: Day 5
+drill: Retest  -  baseline tee swings
+sets_reps: 10 swings
+focus: Film 5; count hard line drives; compare to Day 1
 
 ### whats_next
 - Use your free swing analysis to have Coach Broc check your Week 3 swing.

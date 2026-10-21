@@ -102,6 +102,43 @@ ${buildEmailFooterText()}`;
   });
 }
 
+export async function sendFixItPlanAccessLinkEmail(params: {
+  toEmail: string;
+  resourceSlug: string;
+}) {
+  const resource = getResourceDefinition(params.resourceSlug);
+  if (!resource || !isFixItResourceSlug(params.resourceSlug)) {
+    throw new Error("Invalid Fix-It resource slug.");
+  }
+
+  const planToken = createFixItPlanAccessToken({
+    email: params.toEmail,
+    resourceSlug: params.resourceSlug,
+  });
+  const planUrl = `${getPublicAppUrl()}${buildFixItPlanPath(params.resourceSlug)}?token=${encodeURIComponent(planToken)}`;
+
+  const subject = `Your ${resource.title} plan link`;
+  const bodyHtml = `<p style="margin:0 0 16px 0; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:1.7; color:#0A1628;">Here is your private plan page with drill videos:</p>
+${buildEmailButton("Open your Fix-It plan", planUrl)}
+<p style="margin:16px 0 0 0; font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:1.7; color:#6B7280;">Bookmark this link or save the PDF from your plan page.</p>`;
+
+  const text = `Your private Fix-It plan page:\n${planUrl}\n\n${buildEmailFooterText()}`;
+
+  const fromEmail = process.env.NOTIFICATION_EMAIL;
+  if (!fromEmail) {
+    throw new Error("NOTIFICATION_EMAIL is required.");
+  }
+
+  await createTransporter().sendMail({
+    from: `"Coach Broc | LCB Training" <${fromEmail}>`,
+    to: params.toEmail,
+    replyTo: EMAIL_REPLY_TO,
+    subject,
+    html: buildMemberEmailHtml({ title: subject, bodyContentHtml: bodyHtml }),
+    text,
+  });
+}
+
 export async function sendResourcePurchaseReceiptEmail(params: {
   toEmail: string;
   firstName: string;
