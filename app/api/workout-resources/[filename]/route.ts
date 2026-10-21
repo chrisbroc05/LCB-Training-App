@@ -1,12 +1,12 @@
 import { readFile } from "fs/promises";
 import { existsSync } from "fs";
-import path from "path";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin";
 import type { DatabaseTier } from "@/lib/membership";
 import { prisma } from "@/lib/prisma";
+import { getPrivateResourceAbsolutePath } from "@/lib/resource-files-server";
 import {
   canAccessWorkoutResource,
   getWorkoutResource,
@@ -19,7 +19,7 @@ type RouteContext = {
 };
 
 function getWorkoutResourcePdfPath(filename: string) {
-  return path.join(process.cwd(), "public", filename);
+  return getPrivateResourceAbsolutePath(`guides/${filename}`);
 }
 
 export async function GET(_request: Request, context: RouteContext) {

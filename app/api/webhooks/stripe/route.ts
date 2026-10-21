@@ -7,7 +7,14 @@ import { sendCoachNewProgramPlayerPushForUser } from "@/lib/coach-push-instant";
 import { getPlaybookSubmissionResetData } from "@/lib/coaching-submissions";
 import { ensureProgramEnrollmentForUser } from "@/lib/program-enrollment";
 import { getTwelveWeekProgramEndDate } from "@/lib/twelve-week-program";
-import { sendPaymentFailedEmail, sendPlaybookPurchaseConfirmationEmail } from "@/lib/notifications";
+import { markLeadAsBuyer } from "@/lib/leads-server";
+import { sendResourcePurchaseReceiptEmail } from "@/lib/resource-emails-server";
+import { getResourceDefinition } from "@/lib/resources-shared";
+import {
+  sendPaymentFailedEmail,
+  sendPlaybookPurchaseConfirmationEmail,
+  sendRemoteSessionPurchaseConfirmationEmail,
+} from "@/lib/notifications";
 import { processStripeChargeRefund } from "@/lib/stripe-refund-server";
 
 function mapPriceIdToTier(priceId?: string | null) {
@@ -164,6 +171,129 @@ export async function POST(request: Request) {
           },
         });
 
+      }
+    }
+
+    if (checkoutSession.payment_status === "paid") {
+      const purchaseType = checkoutSession.metadata?.purchaseType;
+      const resourceSlug = checkoutSession.metadata?.resourceSlug;
+      const metadataUserId = checkoutSession.metadata?.userId?.trim() || null;
+      const metadataLeadId = checkoutSession.metadata?.leadId?.trim() || null;
+      const buyerEmail =
+        checkoutSession.customer_details?.email?.toLowerCase() ??
+        checkoutSession.customer_email?.toLowerCase() ??
+        checkoutSession.metadata?.email?.toLowerCase() ??
+        null;
+
+      if (purchaseType === "resource" && resourceSlug && checkoutSession.id) {
+        const resource = getResourceDefinition(resourceSlug);
+        if (resource?.type === "PAID_DOWNLOAD") {
+          const existing = await prisma.resourcePurchase.findUnique({
+            where: { stripeSessionId: checkoutSession.id },
+            select: { id: true },
+          });
+          if (!existing) {
+            const amountCents = checkoutSession.amount_total ?? null;
+            let linkedUserId: string | null = null;
+            if (metadataUserId) {
+              const user = await prisma.user.findUnique({
+                where: { id: metadataUserId },
+                select: { id: true },
+              });
+              linkedUserId = user?.id ?? null;
+            }
+            await prisma.resourcePurchase.create({
+              data: {
+                email: buyerEmail ?? "",
+                userId: linkedUserId,
+                resourceSlug,
+                stripeSessionId: checkoutSession.id,
+                amountCents,
+              },
+            });
+
+            if (buyerEmail) {
+              await markLeadAsBuyer(buyerEmail);
+              const user = linkedUserId
+                ? await prisma.user.findUnique({
+                    where: { id: linkedUserId },
+                    select: { name: true },
+                  })
+                : null;
+              const lead = metadataLeadId
+                ? await prisma.lead.findUnique({
+                    where: { id: metadataLeadId },
+                    select: { firstName: true },
+                  })
+                : null;
+              const firstName =
+                lead?.firstName?.trim() ||
+                user?.name?.trim().split(/\s+/)[0] ||
+                "there";
+              try {
+                await sendResourcePurchaseReceiptEmail({
+                  toEmail: buyerEmail,
+                  firstName,
+                  resourceSlug,
+                });
+              } catch (error) {
+                console.error("Failed to send resource purchase receipt email", error);
+              }
+            }
+          }
+        }
+      }
+
+      if (purchaseType === "remote_session" && checkoutSession.id) {
+        const existing = await prisma.remoteSessionPurchase.findUnique({
+          where: { stripeSessionId: checkoutSession.id },
+          select: { id: true },
+        });
+        if (!existing) {
+          let remoteUserId: string | null = null;
+          if (metadataUserId) {
+            const user = await prisma.user.findUnique({
+              where: { id: metadataUserId },
+              select: { id: true },
+            });
+            remoteUserId = user?.id ?? null;
+          }
+          await prisma.remoteSessionPurchase.create({
+            data: {
+              email: buyerEmail ?? "",
+              userId: remoteUserId,
+              stripeSessionId: checkoutSession.id,
+              amountCents: checkoutSession.amount_total ?? null,
+            },
+          });
+
+          if (buyerEmail) {
+            const user = remoteUserId
+              ? await prisma.user.findUnique({
+                  where: { id: remoteUserId },
+                  select: { name: true },
+                })
+              : null;
+            const lead = metadataLeadId
+              ? await prisma.lead.findUnique({
+                  where: { id: metadataLeadId },
+                  select: { firstName: true },
+                })
+              : null;
+            const firstName =
+              lead?.firstName?.trim() ||
+              user?.name?.trim().split(/\s+/)[0] ||
+              "there";
+            try {
+              await sendRemoteSessionPurchaseConfirmationEmail({
+                toEmail: buyerEmail,
+                firstName,
+              });
+            } catch (error) {
+              console.error("Failed to send remote session confirmation email", error);
+            }
+          }
+        }
       }
     }
   }

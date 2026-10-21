@@ -56,9 +56,9 @@ function buildTrainLinks(): NavLink[] {
       isActive: (path) => path.startsWith("/playbook"),
     },
     {
-      label: "Resources",
-      href: "/resources",
-      isActive: (path) => path.startsWith("/resources"),
+      label: "My Downloads",
+      href: "/account/downloads",
+      isActive: (path) => path.startsWith("/account/downloads"),
     },
   ];
 }
@@ -408,6 +408,9 @@ export default function TopNavigation({
   if (!isLoggedIn) {
     return (
       <nav className="flex items-center justify-end gap-1 md:justify-self-end">
+        <Link href="/resources" onClick={closeMenus} className={linkClass(pathname.startsWith("/resources"))}>
+          Resources
+        </Link>
         <Link href="/auth?mode=login" onClick={closeMenus} className={linkClass(pathname.startsWith("/auth"))}>
           Login
         </Link>
@@ -441,6 +444,14 @@ export default function TopNavigation({
           className={linkClass(pathname === "/dashboard")}
         >
           Home
+        </Link>
+
+        <Link
+          href="/resources"
+          onClick={closeMenus}
+          className={linkClass(pathname.startsWith("/resources"))}
+        >
+          Resources
         </Link>
 
         {hasBasicAccess ? (

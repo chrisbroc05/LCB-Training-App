@@ -28,6 +28,7 @@ import { formatOptionalDate } from "@/lib/format-date";
 import { fetchVimeoThumbnailMap } from "@/lib/vimeo-oembed";
 import { getUnwatchedCoachVideoCount } from "@/lib/coach-video-server";
 import VideosFromCoachLink from "@/components/VideosFromCoachLink";
+import MyDownloadsCard from "@/app/profile/MyDownloadsCard";
 
 type ProfilePageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -200,6 +201,8 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
             assessmentCallDate={user.assessmentCallDate}
           />
         ) : null}
+
+        <MyDownloadsCard userId={session.user.id} email={user.email} />
 
         <SignOutButton />
       </div>

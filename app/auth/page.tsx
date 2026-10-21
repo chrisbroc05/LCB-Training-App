@@ -98,6 +98,15 @@ function AuthContent() {
   const [authMode, setAuthMode] = useState<AuthMode>(shouldStartOnSignup ? "signup" : "login");
   const checkoutStatus = searchParams.get("checkout");
   const billingQueryParam = searchParams.get("billing");
+  const prefillEmailParam = searchParams.get("email")?.trim() ?? "";
+  const prefillFirstNameParam = searchParams.get("firstName")?.trim() ?? "";
+  const signupRoleParam = searchParams.get("signupRole")?.toUpperCase();
+  const prefillAccountRole =
+    signupRoleParam === "PARENT"
+      ? ("PARENT" as const)
+      : signupRoleParam === "PLAYER"
+        ? ("PLAYER" as const)
+        : undefined;
   const postAuthPath = getPostAuthRedirectPath(redirectParam, callbackUrlParam);
   const loginHref = buildAuthPageHref({ mode: "login", searchParams });
   const signupHref = buildAuthPageHref({ mode: "signup", searchParams });
@@ -118,6 +127,12 @@ function AuthContent() {
       setAuthMode("signup");
     }
   }, [modeQuery, preselectedTierFromQuery, isProgramFlow, isPlaybookFlow]);
+
+  useEffect(() => {
+    if (prefillEmailParam && !loginEmail) {
+      setLoginEmail(prefillEmailParam);
+    }
+  }, [prefillEmailParam, loginEmail]);
 
   useEffect(() => {
     if (!isFreeSwingFlow && !isPlaybookFlow) {
@@ -447,6 +462,9 @@ function AuthContent() {
                 loading={signupLoading}
                 error={signupError}
                 loginHref={loginHref}
+                prefillEmail={prefillEmailParam}
+                prefillFirstName={prefillFirstNameParam}
+                prefillAccountRole={prefillAccountRole}
                 onSubmit={handleSignup}
               />
             </div>
@@ -489,6 +507,9 @@ function AuthContent() {
             signupError={signupError}
             signupLoading={signupLoading}
             onSignup={handleSignup}
+            prefillEmail={prefillEmailParam}
+            prefillFirstName={prefillFirstNameParam}
+            prefillAccountRole={prefillAccountRole}
           />
         )}
       </section>

@@ -143,6 +143,8 @@ export async function POST(request: Request) {
     const acceptedAt = new Date();
     const legacyName = combinePlayerName(playerFirstName, playerLastName);
 
+    const { linkLeadToUserByEmail } = await import("@/lib/leads-server");
+
     const createdUser = await prisma.user.create({
       data: {
         name: legacyName,
@@ -173,6 +175,12 @@ export async function POST(request: Request) {
         membershipTier: true,
       },
     });
+
+    try {
+      await linkLeadToUserByEmail(createdUser.id, email);
+    } catch (error) {
+      console.error("Failed to link lead record to new user", error);
+    }
 
     try {
       await linkWaiverSignaturesToUser(createdUser.id, email);

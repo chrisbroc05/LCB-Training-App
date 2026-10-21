@@ -56,6 +56,12 @@ export default async function AdminPage() {
               Program overview
             </Link>
             <AdminMessagesNavLink />
+            <Link
+              href="/admin/leads"
+              className="inline-flex items-center justify-center rounded-full border border-[#52B788]/50 px-6 py-3 text-sm font-semibold text-[#52B788]"
+            >
+              Leads
+            </Link>
           </div>
         </div>
       </section>

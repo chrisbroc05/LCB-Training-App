@@ -1,72 +1,62 @@
-import { redirect } from "next/navigation";
+import type { Metadata } from "next";
 import { getServerSession } from "next-auth";
+import ResourcesHub from "@/app/resources/ResourcesHub";
 import { authOptions } from "@/lib/auth";
-import LockedFeaturePanel from "@/app/LockedFeaturePanel";
-import ResourceGuideCard from "@/app/resources/ResourceGuideCard";
-import WorkoutProgramsSection from "@/app/resources/WorkoutProgramsSection";
-import { canAccessWorkoutPrograms, type DatabaseTier } from "@/lib/membership";
-import { workoutResourceGroups } from "@/lib/workout-resources";
-import { prisma } from "@/lib/prisma";
+import {
+  RESOURCES_PAGE_DESCRIPTION,
+  RESOURCES_PAGE_TITLE,
+} from "@/lib/resources-shared";
+import { getPublicAppUrl } from "@/lib/public-app-url";
+
+const siteUrl = getPublicAppUrl();
+const ogImage = `${siteUrl}/apple-touch-icon.png`;
+
+export const metadata: Metadata = {
+  title: RESOURCES_PAGE_TITLE,
+  description: RESOURCES_PAGE_DESCRIPTION,
+  openGraph: {
+    title: RESOURCES_PAGE_TITLE,
+    description: RESOURCES_PAGE_DESCRIPTION,
+    url: `${siteUrl}/resources`,
+    siteName: "LCB Training",
+    type: "website",
+    images: [{ url: ogImage, width: 180, height: 180, alt: "LCB Training" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: RESOURCES_PAGE_TITLE,
+    description: RESOURCES_PAGE_DESCRIPTION,
+  },
+};
 
 export default async function ResourcesPage() {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    redirect("/auth");
-  }
-
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { membershipTier: true },
-  });
-
-  if (!user) {
-    redirect("/auth");
-  }
-
-  const membershipTier = (user.membershipTier ?? "FREE") as DatabaseTier;
-  if (!canAccessWorkoutPrograms(membershipTier)) {
-    return (
-      <LockedFeaturePanel
-        title="Resources"
-        description="Download workout programs and bonus guides tailored to your membership tier."
-        message="Resources are available on Basic and 12-Week Program memberships. Upgrade to Basic or above to unlock all 8 downloadable workout programs."
-        upgradeLabel="Upgrade to Basic or Above"
-        upgradeHref="/upgrade?reason=basic-required"
-      />
-    );
-  }
-
-  const bonusResources = workoutResourceGroups.flatMap((group) => group.resources);
+  const isLoggedIn = Boolean(session?.user?.id);
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 sm:py-14 md:py-20">
-      <section className="rounded-3xl border border-[#18243a] bg-[#0b1324]/80 p-5 sm:p-8">
-        <h1 className="text-2xl font-semibold leading-tight text-zinc-100 sm:text-3xl">Resources</h1>
-        <p className="mt-2 text-zinc-300">
-          Download workout programs and bonus guides included with your membership tier.
+    <div className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 sm:py-14 md:py-16">
+      <header className="rounded-3xl border border-[#18243a] bg-[#0b1324]/90 p-6 sm:p-8">
+        <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#52B788]">
+          Free + paid resources
         </p>
-      </section>
+        <h1 className="mt-3 text-3xl font-semibold leading-tight text-white sm:text-4xl">
+          Everything I Use to Build Better Players
+        </h1>
+        <p className="mt-3 max-w-2xl text-base leading-relaxed text-zinc-300">
+          Free tools and paid programs for players, parents, and coaches.
+        </p>
+        <p className="mt-4 text-sm text-zinc-400">
+          12+ years of player development. NJCAA National Champion. Current high school varsity coach.
+        </p>
+      </header>
 
-      <WorkoutProgramsSection />
+      <div className="mt-10">
+        <ResourcesHub isLoggedIn={isLoggedIn} />
+      </div>
 
-      <section className="mt-10 border-t border-[#18243a] pt-8">
-        <div className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
-          <h2 className="text-xl font-semibold text-zinc-100 sm:text-2xl">Bonus Resources</h2>
-          <p className="mt-2 text-sm text-zinc-400">
-            Guides and workbooks that apply to every athlete regardless of age group.
-          </p>
-
-          <div className="mt-6 grid gap-4 md:grid-cols-2">
-            {bonusResources.map((resource) => (
-              <ResourceGuideCard
-                key={resource.filename}
-                resource={resource}
-                membershipTier={membershipTier}
-              />
-            ))}
-          </div>
-        </div>
-      </section>
+      <footer className="mt-14 border-t border-[#18243a] pt-8 text-center text-sm text-zinc-400">
+        <p>Instagram @lcbtraining | TikTok @cbroc05 | lcbtraining.com</p>
+      </footer>
     </div>
   );
 }

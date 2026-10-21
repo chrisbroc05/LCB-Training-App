@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { runLeadEmailScheduler } from "@/lib/lead-email-scheduler";
 import { runMarketingEmailScheduler } from "@/lib/marketing-email-scheduler";
 
 function isAuthorized(request: Request) {
@@ -18,12 +19,19 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await runMarketingEmailScheduler({ dryRun: false });
+    const [result, leadResult] = await Promise.all([
+      runMarketingEmailScheduler({ dryRun: false }),
+      runLeadEmailScheduler(),
+    ]);
     return NextResponse.json({
       success: true,
       sent: result.sent,
       skipped: result.skipped,
       errors: result.errors,
+      leadSent: leadResult.sent,
+      leadSkipped: leadResult.skipped,
+      leadErrors: leadResult.errors,
+      leadFollowUpBlockedMissingAddress: leadResult.blockedMissingAddress,
     });
   } catch (error) {
     console.error("Failed to run marketing email scheduler", error);

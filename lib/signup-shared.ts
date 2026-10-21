@@ -42,16 +42,24 @@ export type SignupRequestPayload = {
   };
 };
 
+export type SignupWizardPrefill = {
+  email?: string;
+  firstName?: string;
+  accountRole?: AccountRole;
+};
+
 export function createInitialSignupWizardState(
   legalAgreement: LegalAgreementValues,
+  prefill?: SignupWizardPrefill,
 ): SignupWizardState {
+  const accountRole = prefill?.accountRole ?? null;
   return {
-    step: 1,
-    accountRole: null,
-    email: "",
+    step: accountRole ? 2 : 1,
+    accountRole,
+    email: prefill?.email?.trim() ?? "",
     password: "",
-    accountHolderName: "",
-    playerFirstName: "",
+    accountHolderName: accountRole === "PARENT" ? prefill?.firstName?.trim() ?? "" : "",
+    playerFirstName: accountRole === "PLAYER" ? prefill?.firstName?.trim() ?? "" : "",
     playerLastName: "",
     playerAge: "",
     legalAgreement,

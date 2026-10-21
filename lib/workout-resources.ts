@@ -54,6 +54,13 @@ export const workoutResourceGroups: WorkoutResourceGroup[] = [
         requiredTier: "basic",
         actionLabel: "View Guide",
       },
+      {
+        filename: "LCB_Rotational_Sample.pdf",
+        title: "Rotational Power Sample",
+        description: "Sample rotational power work from Coach Broc.",
+        requiredTier: "basic",
+        actionLabel: "View Sample",
+      },
     ],
   },
   {

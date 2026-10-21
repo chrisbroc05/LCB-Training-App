@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import SignupWizard from "@/components/SignupWizard";
+import type { AccountRole } from "@/lib/account-shared";
 import type { SignupRequestPayload } from "@/lib/signup-shared";
 
 type GeneralAuthFlowProps = {
@@ -18,6 +19,9 @@ type GeneralAuthFlowProps = {
   signupError: string;
   signupLoading: boolean;
   onSignup: (payload: SignupRequestPayload) => void | Promise<void>;
+  prefillEmail?: string;
+  prefillFirstName?: string;
+  prefillAccountRole?: AccountRole;
 };
 
 export default function GeneralAuthFlow({
@@ -34,6 +38,9 @@ export default function GeneralAuthFlow({
   signupError,
   signupLoading,
   onSignup,
+  prefillEmail,
+  prefillFirstName,
+  prefillAccountRole,
 }: GeneralAuthFlowProps) {
   if (authMode === "login") {
     return (
@@ -102,6 +109,9 @@ export default function GeneralAuthFlow({
         loading={signupLoading}
         error={signupError}
         loginHref={loginHref}
+        prefillEmail={prefillEmail}
+        prefillFirstName={prefillFirstName}
+        prefillAccountRole={prefillAccountRole}
         onSubmit={onSignup}
       />
     </article>

@@ -30,6 +30,9 @@ type SignupWizardProps = {
   loading?: boolean;
   error?: string;
   loginHref?: string;
+  prefillEmail?: string;
+  prefillFirstName?: string;
+  prefillAccountRole?: AccountRole;
   onSubmit: (payload: SignupRequestPayload) => void | Promise<void>;
 };
 
@@ -65,10 +68,17 @@ export default function SignupWizard({
   loading = false,
   error,
   loginHref,
+  prefillEmail,
+  prefillFirstName,
+  prefillAccountRole,
   onSubmit,
 }: SignupWizardProps) {
   const [state, setState] = useState(() =>
-    createInitialSignupWizardState(createEmptyLegalAgreementValues()),
+    createInitialSignupWizardState(createEmptyLegalAgreementValues(), {
+      email: prefillEmail,
+      firstName: prefillFirstName,
+      accountRole: prefillAccountRole,
+    }),
   );
   const [stepError, setStepError] = useState("");
 

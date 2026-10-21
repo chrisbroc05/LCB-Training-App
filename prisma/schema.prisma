@@ -224,6 +224,86 @@ model User {
   waiverSignatures       WaiverSignature[]
   coachVideos            CoachVideo[]
   testPlayers            TestPlayer[]
+  linkedLeads            Lead[]
+  resourcePurchases      ResourcePurchase[]
+  remoteSessionPurchases RemoteSessionPurchase[]
+}
+
+enum LeadRole {
+  PLAYER
+  PARENT
+  COACH
+}
+
+model Lead {
+  id                String         @id @default(cuid())
+  email             String         @unique
+  firstName         String
+  role              LeadRole
+  source            String
+  firstResourceSlug String?
+  isBuyer           Boolean        @default(false)
+  userId            String?
+  user              User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  unsubscribedAt    DateTime?
+  createdAt         DateTime       @default(now())
+  resources         LeadResource[]
+  emailLogs         LeadEmailLog[]
+
+  @@index([source])
+  @@index([role])
+  @@index([createdAt(sort: Desc)])
+}
+
+model LeadResource {
+  id                String    @id @default(cuid())
+  leadId            String
+  lead              Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  resourceSlug      String
+  checkoutStartedAt DateTime?
+  createdAt         DateTime  @default(now())
+
+  @@index([leadId])
+  @@index([resourceSlug])
+}
+
+model LeadEmailLog {
+  id        String   @id @default(cuid())
+  leadId    String
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  type      String
+  dedupeKey String   @unique
+  sentAt    DateTime @default(now())
+
+  @@index([leadId, type])
+}
+
+model ResourcePurchase {
+  id              String   @id @default(cuid())
+  email           String
+  userId          String?
+  user            User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  resourceSlug    String
+  stripeSessionId String   @unique
+  amountCents     Int?
+  createdAt       DateTime @default(now())
+
+  @@index([email])
+  @@index([userId])
+  @@index([resourceSlug])
+}
+
+model RemoteSessionPurchase {
+  id              String   @id @default(cuid())
+  email           String
+  userId          String?
+  user            User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  stripeSessionId String   @unique
+  amountCents     Int?
+  createdAt       DateTime @default(now())
+
+  @@index([email])
+  @@index([userId])
 }
 
 model WaiverSignature {

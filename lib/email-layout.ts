@@ -21,6 +21,26 @@ export function getPublicAppUrl() {
   return appUrl && !appUrl.includes("localhost") ? appUrl : "https://lcbtraining.com";
 }
 
+export function getCompanyMailingAddress() {
+  return process.env.COMPANY_MAILING_ADDRESS?.trim() ?? "";
+}
+
+export function buildMailingAddressFooterHtml() {
+  const address = getCompanyMailingAddress();
+  if (!address) {
+    return "";
+  }
+  return `<p style="margin:16px 0 0 0; font-family:Arial, Helvetica, sans-serif; font-size:12px; line-height:1.6; color:#6B7280;">${escapeHtml(address)}</p>`;
+}
+
+export function buildMailingAddressFooterText() {
+  const address = getCompanyMailingAddress();
+  if (!address) {
+    return "";
+  }
+  return `\n${address}`;
+}
+
 export function buildEmailSectionLabel(label: string) {
   return `<p style="margin:28px 0 12px 0; font-family:Arial, Helvetica, sans-serif; font-size:12px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:#2D6A4F;">${escapeHtml(label)}</p>`;
 }
@@ -153,7 +173,8 @@ export function buildEmailFooterHtml() {
               <p style="margin:0 0 8px 0; font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:1.6; color:#6B7280;">LCB Training | lcbtraining.com</p>
               <p style="margin:0 0 8px 0; font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:1.6; color:#6B7280;">Instagram @lcbtraining | TikTok @cbroc05</p>
               <p style="margin:0 0 8px 0; font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:1.6; color:#6B7280;"><a href="${escapeHtml(`${appUrl}/terms`)}" style="color:#2D6A4F; text-decoration:underline;">Terms of Service</a> | <a href="${escapeHtml(`${appUrl}/privacy`)}" style="color:#2D6A4F; text-decoration:underline;">Privacy Policy</a> | <a href="${escapeHtml(`${appUrl}/waiver`)}" style="color:#2D6A4F; text-decoration:underline;">Waiver</a></p>
-              <p style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:1.6; color:#6B7280;">Questions? Just reply to this email.</p>`;
+              <p style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:1.6; color:#6B7280;">Questions? Just reply to this email.</p>
+              ${buildMailingAddressFooterHtml()}`;
 }
 
 export function buildEmailFooterText() {
@@ -164,7 +185,7 @@ Instagram @lcbtraining | TikTok @cbroc05
 Terms of Service: ${appUrl}/terms
 Privacy Policy: ${appUrl}/privacy
 Waiver: ${appUrl}/waiver
-Questions? Just reply to this email.`;
+Questions? Just reply to this email.${buildMailingAddressFooterText()}`;
 }
 
 export function buildMemberEmailHtml(params: { title: string; bodyContentHtml: string }) {

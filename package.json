@@ -16,6 +16,8 @@
     "test:program-stats": "npx --yes tsx scripts/test-program-stats.ts",
     "test:program-task-completion": "npx --yes tsx scripts/test-program-task-completion.ts",
     "test:coaching-submissions": "npx --yes tsx scripts/test-coaching-submissions.ts",
+    "test:resources": "npx --yes tsx scripts/test-resources.ts",
+    "build:starter-pdfs": "npx --yes tsx scripts/export-workout-programs-json.ts && python3 scripts/build-starter-pdfs.py",
     "export:app-highlight": "npx --yes tsx scripts/export-app-highlight-local.ts && python3 marketing/build_app_highlight_pdf.py",
     "build:bio-pdf": "python3 create_bio.py"
   },

@@ -205,8 +205,8 @@ export default function MobileBottomNav({
       key: "resources",
       label: "Resources",
       href: "/resources",
-      locked: !hasBasicAccess,
-      isActive: (path) => path.startsWith("/resources"),
+      locked: false,
+      isActive: (path) => path.startsWith("/resources") && !path.startsWith("/resources/success"),
       icon: (active) => <ResourcesIcon active={active} />,
     },
   ];

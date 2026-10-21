@@ -71,8 +71,8 @@ function getQuickLinks(membershipTier: DatabaseTier, hasFreeSubmissionRemaining:
 
   if (canAccessWorkoutPrograms(membershipTier)) {
     links.push({
-      href: "/resources",
-      label: "Resources",
+      href: "/account/downloads",
+      label: "My Downloads",
       description: "Download strength, speed, and mobility programs.",
     });
   }

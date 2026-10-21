@@ -63,7 +63,7 @@ const rotationalPowerProgram: WorkoutProgramCard = {
   downloads: [
     {
       label: "Download",
-      href: "/LCB_Rotational_Sample.pdf",
+      href: "/api/workout-resources/LCB_Rotational_Sample.pdf",
     },
   ],
 };
