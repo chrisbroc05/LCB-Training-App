@@ -646,6 +646,9 @@ export async function buildCoachDailySummaryData(dateKey: string, now = new Date
     _sum: { coachUnreadCount: true },
   });
 
+  const { countQuizCompletionsForDay } = await import("@/lib/player-iq-quiz-admin-server");
+  const quizToday = await countQuizCompletionsForDay(dayStart, dayEnd);
+
   return {
     finished: finishedNames.length,
     active: workDayCount,
@@ -658,6 +661,8 @@ export async function buildCoachDailySummaryData(dateKey: string, now = new Date
     videosWaiting: swingWaiting + mentalWaiting,
     unreadMessagesCount: unreadMessagesCount._sum.coachUnreadCount ?? 0,
     unconfirmedMinorNames,
+    quizCompletedToday: quizToday.count,
+    quizAverageScoreToday: quizToday.averageScore,
   };
 }
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import AdminQuizPanel from "@/app/admin/leads/AdminQuizPanel";
 import { formatLeadResourceCheckoutStatus } from "@/lib/lead-checkout-status-shared";
 import { getResourceDefinition } from "@/lib/resources-shared";
 
@@ -28,9 +29,35 @@ type PurchaseRow = {
   stripeSessionId: string;
 };
 
+type QuizDashboard = {
+  rows: Array<{
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+    score: number | null;
+    level: string | null;
+    mindset: number | null;
+    gameIq: number | null;
+    training: number | null;
+    completedAt: string | null;
+  }>;
+  totalCompleted: number;
+  averageScore: number;
+  levelCounts: Record<string, number>;
+  questionStats: Array<{
+    order: number;
+    prompt: string;
+    difficulty: string;
+    percentCorrect: number;
+    answered: number;
+  }>;
+};
+
 type AdminLeadsPanelProps = {
   leads: LeadRow[];
   purchases: PurchaseRow[];
+  quizDashboard: QuizDashboard;
 };
 
 function buildPurchasedSlugsByEmail(purchases: PurchaseRow[]) {
@@ -66,7 +93,8 @@ function formatResourceFunnel(lead: LeadRow, purchasedSlugs: Set<string>) {
   return labels.length ? labels.join("; ") : "-";
 }
 
-export default function AdminLeadsPanel({ leads, purchases }: AdminLeadsPanelProps) {
+export default function AdminLeadsPanel({ leads, purchases, quizDashboard }: AdminLeadsPanelProps) {
+  const [activeTab, setActiveTab] = useState<"leads" | "quiz">("leads");
   const [roleFilter, setRoleFilter] = useState<string>("ALL");
   const purchasedByEmail = useMemo(() => buildPurchasedSlugsByEmail(purchases), [purchases]);
 
@@ -106,6 +134,39 @@ export default function AdminLeadsPanel({ leads, purchases }: AdminLeadsPanelPro
 
   return (
     <div className="space-y-10">
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => setActiveTab("leads")}
+          className={`rounded-full px-4 py-2 text-sm font-semibold ${
+            activeTab === "leads"
+              ? "bg-[#22c55e]/20 text-[#9df3bd]"
+              : "border border-[#2b3650] text-zinc-400"
+          }`}
+        >
+          Leads
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("quiz")}
+          className={`rounded-full px-4 py-2 text-sm font-semibold ${
+            activeTab === "quiz"
+              ? "bg-[#22c55e]/20 text-[#9df3bd]"
+              : "border border-[#2b3650] text-zinc-400"
+          }`}
+        >
+          Player IQ Quiz
+        </button>
+      </div>
+
+      {activeTab === "quiz" ? (
+        <section className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
+          <AdminQuizPanel {...quizDashboard} />
+        </section>
+      ) : null}
+
+      {activeTab === "leads" ? (
+      <>
       <section className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-lg font-semibold text-zinc-100">Leads</h2>
@@ -203,6 +264,8 @@ export default function AdminLeadsPanel({ leads, purchases }: AdminLeadsPanelPro
           </table>
         </div>
       </section>
+      </>
+      ) : null}
     </div>
   );
 }

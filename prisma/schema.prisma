@@ -226,6 +226,7 @@ model User {
   coachVideos            CoachVideo[]
   testPlayers            TestPlayer[]
   linkedLeads            Lead[]
+  quizAttempts           QuizAttempt[]
   resourcePurchases      ResourcePurchase[]
   remoteSessionPurchases RemoteSessionPurchase[]
 }
@@ -250,6 +251,7 @@ model Lead {
   createdAt         DateTime       @default(now())
   resources         LeadResource[]
   emailLogs         LeadEmailLog[]
+  quizAttempts      QuizAttempt[]
 
   @@index([source])
   @@index([role])
@@ -266,6 +268,26 @@ model LeadResource {
 
   @@index([leadId])
   @@index([resourceSlug])
+}
+
+model QuizAttempt {
+  id             String    @id @default(cuid())
+  leadId         String?
+  lead           Lead?     @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  userId         String?
+  user           User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  role           LeadRole
+  answers        Json      @default("{}")
+  optionOrder    Json
+  score          Int?
+  categoryScores Json?
+  level          String?
+  createdAt      DateTime  @default(now())
+  completedAt    DateTime?
+
+  @@index([completedAt(sort: Desc)])
+  @@index([leadId])
+  @@index([userId])
 }
 
 model LeadEmailLog {

@@ -83,6 +83,7 @@ function testResourcesHubOrder() {
   const expected = [
     "free-swing-analysis",
     "twelve-week-program",
+    "player-iq-quiz",
     "starter-arm-care",
     "starter-strength",
     "pregame-warmup",

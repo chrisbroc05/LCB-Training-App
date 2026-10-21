@@ -22,6 +22,9 @@ export function getResourceLeadSubmitLabel(resource: ResourceDefinition) {
   if (resource.slug === "free-swing-analysis") {
     return "Continue to Sign Up";
   }
+  if (resource.slug === "player-iq-quiz") {
+    return "Take the Quiz";
+  }
   return resource.buttonLabel;
 }
 

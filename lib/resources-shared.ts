@@ -72,6 +72,18 @@ export const RESOURCE_DEFINITIONS: ResourceDefinition[] = [
     sortOrder: 20,
   },
   {
+    slug: "player-iq-quiz",
+    title: "The Player IQ Quiz",
+    description:
+      "15 questions on mindset, game situations, and training. Most players don't score as high as they think. See where you stand.",
+    tag: "FREE",
+    section: "START_HERE",
+    buttonLabel: "Take the Quiz",
+    type: "LINK",
+    linkHref: "/quiz",
+    sortOrder: 25,
+  },
+  {
     slug: "starter-arm-care",
     title: "Arm Care Routine: 4-Week Starter",
     description:

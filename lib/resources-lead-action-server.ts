@@ -297,6 +297,14 @@ export async function performResourceLeadAction(
     };
   }
 
+  if (resource.slug === "player-iq-quiz") {
+    return {
+      action: "redirect",
+      url: "/quiz",
+      leadId: lead.id,
+    };
+  }
+
   if (resource.slug === "lessons-program-bundle") {
     return {
       action: "redirect",

@@ -424,6 +424,8 @@ export function buildCoachDailySummaryEmail(params: {
   videosWaiting: number;
   unreadMessagesCount: number;
   unconfirmedMinorNames: string[];
+  quizCompletedToday: number;
+  quizAverageScoreToday: number;
 }) {
   const subject = `Program today: ${params.finished} of ${params.active} finished`;
   const adminUrl = `${getPublicAppUrl()}/admin/program`;
@@ -474,6 +476,12 @@ export function buildCoachDailySummaryEmail(params: {
       <p style="margin:0 0 16px 0; font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:1.5; color:#DC2626;">${params.unconfirmedMinorNames.length} parent(s) haven&apos;t confirmed the agreement: ${params.unconfirmedMinorNames.map((name) => escapeHtml(name)).join(", ")}</p>`
       : "";
 
+  const quizHtml =
+    params.quizCompletedToday > 0
+      ? `${buildEmailSectionLabel("PLAYER IQ QUIZ")}
+      <p style="margin:0 0 16px 0; font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:1.5; color:#0A1628;">Quiz: ${params.quizCompletedToday} completed, average score ${params.quizAverageScoreToday}</p>`
+      : "";
+
   const bodyContentHtml = `${buildEmailSectionLabel("FINISHED TODAY")}
       <p style="margin:0 0 16px 0; font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:1.5; color:#0A1628;">${finishedHtml}</p>
       ${buildEmailSectionLabel("NOT FINISHED")}
@@ -490,6 +498,7 @@ export function buildCoachDailySummaryEmail(params: {
       ${buildEmailSectionLabel("UNREAD MESSAGES")}
       <p style="margin:0 0 16px 0; font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:1.5; color:#0A1628;">${params.unreadMessagesCount}</p>
       ${parentConsentHtml}
+      ${quizHtml}
       ${buildEmailButton("Open program overview", adminUrl)}`;
 
   const notFinishedText =
@@ -534,7 +543,11 @@ ${
   params.unconfirmedMinorNames.length > 0
     ? `\nPARENT CONFIRMATIONS\n${params.unconfirmedMinorNames.length} parent(s) haven't confirmed the agreement: ${params.unconfirmedMinorNames.join(", ")}\n`
     : ""
-}
+}${
+    params.quizCompletedToday > 0
+      ? `\nPLAYER IQ QUIZ\nQuiz: ${params.quizCompletedToday} completed, average score ${params.quizAverageScoreToday}\n`
+      : ""
+  }
 Open program overview: ${adminUrl}
 
 ${buildEmailFooterText()}`;

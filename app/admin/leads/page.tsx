@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin";
 import AdminLeadsPanel from "@/app/admin/leads/AdminLeadsPanel";
+import { loadQuizAdminDashboard } from "@/lib/player-iq-quiz-admin-server";
 import { prisma } from "@/lib/prisma";
 
 export default async function AdminLeadsPage() {
@@ -55,6 +56,8 @@ export default async function AdminLeadsPage() {
     createdAt: purchase.createdAt.toISOString(),
   }));
 
+  const quizDashboard = await loadQuizAdminDashboard();
+
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
@@ -63,7 +66,7 @@ export default async function AdminLeadsPage() {
           Back to admin
         </Link>
       </div>
-      <AdminLeadsPanel leads={leads} purchases={purchases} />
+      <AdminLeadsPanel leads={leads} purchases={purchases} quizDashboard={quizDashboard} />
     </div>
   );
 }

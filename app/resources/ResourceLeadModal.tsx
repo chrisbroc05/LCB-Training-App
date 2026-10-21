@@ -11,9 +11,14 @@ import { followResourceLeadAction, postResourceLeadAction } from "@/lib/resource
 type ResourceLeadModalProps = {
   resource: ResourceDefinition;
   onClose: () => void;
+  onSuccess?: (result: ResourceLeadActionResult) => void;
 };
 
-export default function ResourceLeadModal({ resource, onClose }: ResourceLeadModalProps) {
+export default function ResourceLeadModal({
+  resource,
+  onClose,
+  onSuccess,
+}: ResourceLeadModalProps) {
   const [firstName, setFirstName] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<LeadRoleValue>("PLAYER");
@@ -32,7 +37,11 @@ export default function ResourceLeadModal({ resource, onClose }: ResourceLeadMod
         email,
         role,
       });
-      followResourceLeadAction(result as ResourceLeadActionResult);
+      if (onSuccess) {
+        onSuccess(result as ResourceLeadActionResult);
+      } else {
+        followResourceLeadAction(result as ResourceLeadActionResult);
+      }
       onClose();
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Unable to continue.");

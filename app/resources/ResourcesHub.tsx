@@ -22,6 +22,9 @@ export default function ResourcesHub({ isLoggedIn }: ResourcesHubProps) {
   const [leadResource, setLeadResource] = useState<ResourceDefinition | null>(null);
   const [busySlug, setBusySlug] = useState<string | null>(null);
   const cards = getResourcesForHub();
+  const workoutStartersIndex = cards.findIndex(
+    (resource) => resource.section === "WORKOUT_STARTERS",
+  );
   const bookCallResource = getResourceDefinition("book-a-call");
 
   const runLeadAction = async (resource: ResourceDefinition, leadId?: string) => {
@@ -57,8 +60,12 @@ export default function ResourcesHub({ isLoggedIn }: ResourcesHubProps) {
   return (
     <>
       <div className="grid gap-4 sm:grid-cols-2">
-        {cards.map((resource) => (
-          <div key={resource.slug} className={busySlug === resource.slug ? "opacity-70" : ""}>
+        {cards.map((resource, index) => (
+          <div
+            key={resource.slug}
+            id={index === workoutStartersIndex ? "workout-starters" : undefined}
+            className={`scroll-mt-24 ${busySlug === resource.slug ? "opacity-70" : ""}`}
+          >
             <ResourceCard resource={resource} onAction={handleAction} />
           </div>
         ))}
