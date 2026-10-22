@@ -51,6 +51,14 @@ const hittingVideoSources: DrillLibraryVideoSource[] = [
   { title: "Two Strike Approach", url: "https://player.vimeo.com/video/1233464583" },
   { title: "Situational Hitting", url: "https://player.vimeo.com/video/1233464969" },
   { title: "Approach by count", url: "https://player.vimeo.com/video/1233465905" },
+  {
+    title: "Hinge and Coil into the Back Hip",
+    url: "https://player.vimeo.com/video/1238396050",
+  },
+  {
+    title: "The Ground Provides the Power",
+    url: "https://player.vimeo.com/video/1238395520",
+  },
 ];
 
 const fieldingVideoSources: DrillLibraryVideoSource[] = [
