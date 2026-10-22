@@ -51,6 +51,22 @@ function testDrillVideoMapping() {
   assert.equal(resolveFixItDrillVimeoId("Lead Arm Flow Progression"), "1238102721");
   assert.equal(resolveFixItDrillVimeoId("Lead arm drill"), "1200422515");
   assert.equal(resolveFixItDrillVimeoId(""), null);
+  assert.equal(resolveFixItDrillVimeoId("Hinge and Coil into the Back Hip"), "1238396050");
+  assert.equal(resolveFixItDrillVimeoId("The Ground Provides the Power"), "1238395520");
+}
+
+function testHitTheBrakesBonusVideos() {
+  const brakes = FIX_IT_PLANS.find((plan) => plan.resourceSlug === "fixit-hit-the-brakes");
+  assert.ok(brakes);
+  assert.equal(brakes.bonusVideos.length, 2);
+  assert.equal(brakes.bonusVideos[0]?.title, "Hinge and Coil into the Back Hip");
+  assert.match(brakes.bonusVideos[0]?.description ?? "", /back hip/i);
+  assert.equal(brakes.bonusVideos[1]?.title, "The Ground Provides the Power");
+
+  const stayClosed = FIX_IT_PLANS.find((plan) => plan.resourceSlug === "fixit-stay-closed");
+  assert.ok(stayClosed);
+  assert.equal(stayClosed.bonusVideos.length, 1);
+  assert.equal(stayClosed.bonusVideos[0]?.title, "45 Degree Drill - Angled Out");
 }
 
 function testPlanAccessToken() {
@@ -104,6 +120,7 @@ function run() {
   testWeekTextMatchesScheduleRows();
   testPlanCatalog();
   testDrillVideoMapping();
+  testHitTheBrakesBonusVideos();
   testPlanAccessToken();
   testResourcesHubCard();
   console.log("test-fix-it-plans: ok");

@@ -217,6 +217,14 @@ name: Low and Away Tee
 video_title: Low Tee - Outside Pitch
 description: Drive the ball the other way with authority.
 
+### bonus_video
+title: Hinge and Coil into the Back Hip
+description: How to load into your back hip so the power is there when you hit the brakes.
+
+### bonus_video
+title: The Ground Provides the Power
+description: Where your power really comes from, and why you cannot let it leak toward the ball.
+
 ### mindset_week3
 Don't Worry About Mechanics in the Game
 

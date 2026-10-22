@@ -96,13 +96,25 @@ export default function FixItPlanPageClient({ plan, accessToken }: FixItPlanPage
 
       {plan.bonusVideos.length > 0 ? (
         <section className="mt-10">
-          <h2 className="text-lg font-semibold text-white">Bonus video</h2>
-          {plan.bonusVideos.map((title) => (
-              <div key={title} className="mt-4">
-                <p className="mb-2 text-sm text-zinc-400">{title}</p>
-                <FixItVimeoEmbed videoTitle={title} />
+          <h2 className="text-lg font-semibold text-white">
+            {plan.bonusVideos.length === 1 ? "Bonus video" : "Bonus videos"}
+          </h2>
+          <div className="mt-4 space-y-8">
+            {plan.bonusVideos.map((bonus) => (
+              <div
+                key={bonus.title}
+                className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-5"
+              >
+                <h3 className="text-base font-semibold text-white">{bonus.title}</h3>
+                {bonus.description ? (
+                  <p className="mt-2 text-sm leading-relaxed text-zinc-300">{bonus.description}</p>
+                ) : null}
+                <div className="mt-4">
+                  <FixItVimeoEmbed videoTitle={bonus.title} />
+                </div>
               </div>
             ))}
+          </div>
         </section>
       ) : null}
 

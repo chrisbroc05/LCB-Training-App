@@ -111,7 +111,18 @@ def parse_markdown(text: str) -> dict:
                 drill["order"] = int(str(drill["order"]))
             current_plan.setdefault("drills", []).append(drill)
         elif section_key == "bonus_video":
-            current_plan.setdefault("bonusVideos", []).append(body)
+            kv = _parse_key_value_block(section_lines)
+            if kv.get("title"):
+                current_plan.setdefault("bonusVideos", []).append(
+                    {
+                        "title": kv.get("title", ""),
+                        "description": kv.get("description", ""),
+                    }
+                )
+            elif body.strip():
+                current_plan.setdefault("bonusVideos", []).append(
+                    {"title": body.strip(), "description": ""}
+                )
         elif section_key == "intro_video":
             current_plan["introVideoTitle"] = body
         elif section_key == "mindset_week3":
@@ -216,7 +227,13 @@ def write_generated_ts(content_hash: str, data: dict) -> None:
                     }
                     for d in plan.get("drills", [])
                 ],
-                "bonusVideos": plan.get("bonusVideos", []),
+                "bonusVideos": [
+                    {
+                        "title": (b.get("title") if isinstance(b, dict) else str(b)),
+                        "description": (b.get("description", "") if isinstance(b, dict) else ""),
+                    }
+                    for b in plan.get("bonusVideos", [])
+                ],
                 "mindsetWeek3Title": plan.get("mindsetWeek3Title"),
                 "baselineTest": plan.get("baselineTest", ""),
                 "week1": plan.get("week1", ""),
@@ -237,6 +254,11 @@ export type FixItPlanDrillGenerated = {{
   description: string;
 }};
 
+export type FixItPlanBonusVideoGenerated = {{
+  title: string;
+  description: string;
+}};
+
 export type FixItPlanGenerated = {{
   slug: string;
   resourceSlug: string;
@@ -251,7 +273,7 @@ export type FixItPlanGenerated = {{
   fixedLooksLike: string[];
   introVideoTitle: string | null;
   drills: FixItPlanDrillGenerated[];
-  bonusVideos: string[];
+  bonusVideos: FixItPlanBonusVideoGenerated[];
   mindsetWeek3Title: string | null;
   baselineTest: string;
   week1: string;
@@ -448,6 +470,45 @@ def plan_page_cta(plan_url: str, st: dict[str, ParagraphStyle], width: float) ->
                 ("BOTTOMPADDING", (0, 0), (-1, -1), 12),
                 ("LEFTPADDING", (0, 0), (-1, -1), 12),
                 ("RIGHTPADDING", (0, 0), (-1, -1), 12),
+            ]
+        )
+    )
+    return outer
+
+
+def bonus_video_card(
+    bonus: dict[str, str],
+    st: dict[str, ParagraphStyle],
+    width: float,
+) -> Table:
+    title = str(bonus.get("title", ""))
+    desc = str(bonus.get("description", ""))
+    rows = [
+        [Paragraph(esc(title), st["drill_name"])],
+    ]
+    if desc.strip():
+        rows.append([Paragraph(esc(desc), st["table_cell"])])
+    rows.append([Paragraph(esc("Video on your plan page"), st["drill_meta"])])
+    inner = Table(rows, colWidths=[width - 16])
+    inner.setStyle(
+        TableStyle(
+            [
+                ("TOPPADDING", (0, 0), (-1, -1), 4),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+                ("LEFTPADDING", (0, 0), (-1, -1), 0),
+            ]
+        )
+    )
+    outer = Table([[inner]], colWidths=[width])
+    outer.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, -1), WHITE),
+                ("BOX", (0, 0), (-1, -1), 0.6, LIGHT_GREEN),
+                ("TOPPADDING", (0, 0), (-1, -1), 8),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+                ("LEFTPADDING", (0, 0), (-1, -1), 8),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 8),
             ]
         )
     )
@@ -724,6 +785,16 @@ def build_plan_pdf(plan: dict, meta: dict[str, str], st: dict[str, ParagraphStyl
     for drill in sorted(plan.get("drills", []), key=lambda d: int(d.get("order", 0))):
         story.append(drill_card(drill, st, width))
         story.append(Spacer(1, 0.08 * inch))
+
+    bonus_videos = plan.get("bonusVideos") or []
+    if bonus_videos:
+        story.append(Spacer(1, 0.1 * inch))
+        add_section(story, "Bonus Videos", st, width)
+        for bonus in bonus_videos:
+            if isinstance(bonus, str):
+                bonus = {"title": bonus, "description": ""}
+            story.append(bonus_video_card(bonus, st, width))
+            story.append(Spacer(1, 0.08 * inch))
 
     story.append(PageBreak())
 
