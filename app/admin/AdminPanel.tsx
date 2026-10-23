@@ -23,6 +23,7 @@ import {
   SUBMISSION_VIDEO_UPLOAD_FAILED_MESSAGE,
 } from "@/lib/submission-video-limits";
 import { formatDateTime, formatOptionalDateTime } from "@/lib/format-date";
+import { uploadVideoPosterForR2Key } from "@/lib/video-poster-capture-client";
 import {
   uploadVideoToPresignedUrl,
   type PresignedSwingUploadResponse,
@@ -65,6 +66,8 @@ type SubmissionDetail = SubmissionListItem & {
   responsePreference?: "VIDEO_RESPONSE" | "WRITTEN_RESPONSE";
   responseText?: string | null;
   responseVideoUrl?: string | null;
+  submittedVideoPosterR2Key?: string | null;
+  responseVideoPosterR2Key?: string | null;
   recommendedDrills?: string[];
   respondedAt?: string | null;
   memberVimeoLink?: string | null;
@@ -375,6 +378,13 @@ export default function AdminPanel() {
         throw new Error(SUBMISSION_VIDEO_UPLOAD_FAILED_MESSAGE);
       }
 
+      const responseVideoPosterR2Key =
+        (await uploadVideoPosterForR2Key({
+          videoR2Key: presignedUpload.r2Key,
+          source: file,
+          uploadUrlPath: "/api/admin/video-poster/upload-url",
+        })) ?? undefined;
+
       const saveResponse = await fetch("/api/admin/upload-response", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -382,6 +392,7 @@ export default function AdminPanel() {
           submissionId: detail.id,
           submissionType: tab,
           r2Key: presignedUpload.r2Key,
+          responseVideoPosterR2Key,
         }),
       });
 
@@ -694,8 +705,8 @@ export default function AdminPanel() {
                       {storedSubmissionVideo && isR2VideoReference(storedSubmissionVideo) ? (
                         <R2PresignedVideoPlayer
                           storedVideo={storedSubmissionVideo}
+                          posterR2Key={detail.submittedVideoPosterR2Key}
                           title="Member submission video"
-                          className="h-full w-full"
                         />
                       ) : canInlineFallbackVideo ? (
                         <video src={fallbackVideoUrl} controls className="h-full w-full" />
@@ -750,8 +761,8 @@ export default function AdminPanel() {
                       <div className="aspect-video w-full">
                         <R2PresignedVideoPlayer
                           storedVideo={detail.responseVideoUrl}
-                          title="Coach response video"
-                          className="h-full w-full"
+                          posterR2Key={detail.responseVideoPosterR2Key}
+                          title="Coach Broc response video"
                         />
                       </div>
                     ) : (() => {

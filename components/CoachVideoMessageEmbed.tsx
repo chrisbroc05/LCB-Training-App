@@ -37,8 +37,8 @@ export default function CoachVideoMessageEmbed({ videoId }: { videoId: string })
     <div className="mt-2 overflow-hidden rounded-xl border border-[#2b3650] bg-black">
       <R2PresignedVideoPlayer
         storedVideo={video.videoKey}
+        posterR2Key={video.posterR2Key}
         title={video.title}
-        className="aspect-video w-full"
       />
     </div>
   );

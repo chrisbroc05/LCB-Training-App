@@ -2,6 +2,8 @@
  * Parse admin paste for quick written player evaluation reports (client-safe).
  */
 
+import { normalizeWrittenReportLines, stripWrittenReportLinePrefix } from "@/lib/written-report-line-shared";
+
 export const WRITTEN_REPORT_HEADINGS = [
   "STRENGTHS:",
   "AREAS TO IMPROVE:",
@@ -25,10 +27,12 @@ function normalizeNewlines(text: string) {
 }
 
 function splitSectionLines(block: string): string[] {
-  return block
-    .split("\n")
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0);
+  return normalizeWrittenReportLines(
+    block
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0),
+  );
 }
 
 type ExtractedBlocks = { ok: true; blocks: string[] } | { ok: false; error: string };
@@ -82,7 +86,7 @@ export function parseWrittenReportPaste(raw: string): WrittenReportParseResult {
   const strengths = splitSectionLines(strengthsBlock ?? "");
   const areasToImprove = splitSectionLines(areasBlock ?? "");
   const recommendedDrills = splitSectionLines(drillsBlock ?? "");
-  const noteFromCoach = (noteBlock ?? "").trim();
+  const noteFromCoach = stripWrittenReportLinePrefix((noteBlock ?? "").trim());
 
   if (strengths.length === 0) {
     return { ok: false, error: "Add at least one line under STRENGTHS:" };

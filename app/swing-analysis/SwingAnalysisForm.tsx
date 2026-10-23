@@ -25,6 +25,7 @@ import {
   SUBMISSION_VIDEO_TOO_LARGE_MESSAGE,
   SUBMISSION_VIDEO_UPLOAD_FAILED_MESSAGE,
 } from "@/lib/submission-video-limits";
+import { uploadVideoPosterForR2Key } from "@/lib/video-poster-capture-client";
 import {
   uploadVideoToPresignedUrl,
   type PresignedSwingUploadResponse,
@@ -125,6 +126,7 @@ export default function SwingAnalysisForm({
 
     try {
       let r2Key: string | undefined;
+      let submittedVideoPosterR2Key: string | undefined;
 
       if (videoFile) {
         setUploadProgress(0);
@@ -160,6 +162,8 @@ export default function SwingAnalysisForm({
         }
 
         r2Key = presignedUpload.r2Key;
+        submittedVideoPosterR2Key =
+          (await uploadVideoPosterForR2Key({ videoR2Key: r2Key, source: videoFile })) ?? undefined;
       }
 
       const effectiveResponsePreference = showResponsePreference
@@ -179,6 +183,7 @@ export default function SwingAnalysisForm({
           responsePreference: effectiveResponsePreference,
           videoUrl: videoUrl.trim() || undefined,
           r2Key,
+          submittedVideoPosterR2Key,
         }),
       });
 

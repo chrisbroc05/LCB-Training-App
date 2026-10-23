@@ -544,6 +544,7 @@ model CoachVideo {
   title            String
   note             String?
   videoKey         String
+  posterR2Key      String?
   videoContentType String
   videoSizeBytes   Int
   drillCategory    CoachVideoDrillCategory?
@@ -847,11 +848,13 @@ model MentalGameSubmission {
   message            String
   whereWasThis       String?
   lookAtFocus        String?
-  videoPath          String?
+  videoPath                  String?
+  submittedVideoPosterR2Key  String?
   responsePreference MentalGameResponsePreference
   status             MentalGameSubmissionStatus   @default(PENDING)
   responseText       String?
   responseVideoUrl   String?
+  responseVideoPosterR2Key   String?
   recommendedDrills  String[]                     @default([])
   memberVimeoLink    String?
   respondedAt        DateTime?
@@ -873,11 +876,13 @@ model SwingAnalysisSubmission {
   lookAtFocus        String?
   videoCategory      String?
   notes              String
-  submittedVideo     String
+  submittedVideo             String
+  submittedVideoPosterR2Key  String?
   responsePreference MentalGameResponsePreference
   status             MentalGameSubmissionStatus   @default(PENDING)
   responseText       String?
   responseVideoUrl   String?
+  responseVideoPosterR2Key   String?
   recommendedDrills            String[]                     @default([])
   memberVimeoLink              String?
   reviewTrack                  CoachingReviewTrack?

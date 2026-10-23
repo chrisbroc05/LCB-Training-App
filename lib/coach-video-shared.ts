@@ -22,6 +22,7 @@ export type CoachVideoListItem = {
   createdAt: string;
   viewedAt: string | null;
   videoKey: string;
+  posterR2Key?: string | null;
   drillCategory: CoachVideoDrillCategoryValue | null;
   submissionType: "SWING" | "MENTAL" | null;
   submissionId: string | null;

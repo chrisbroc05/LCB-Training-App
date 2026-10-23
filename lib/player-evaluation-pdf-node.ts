@@ -5,6 +5,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import PDFDocument from "pdfkit";
+import { formatWrittenReportLineForDisplay } from "@/lib/written-report-line-shared";
 import type { PlayerEvaluationCtaContent } from "@/lib/player-evaluation-cta-shared";
 import {
   PLAYER_EVAL_LOGO_RELATIVE_PATH,
@@ -191,7 +192,7 @@ function measureBulletList(
   const textWidth = bulletTextWidth(cellWidth);
   let total = 0;
   for (const item of items) {
-    const bullet = `\u2022 ${item}`;
+    const bullet = `\u2022 ${formatWrittenReportLineForDisplay(item)}`;
     total += doc.heightOfString(bullet, { width: textWidth, lineGap }) + 2;
   }
   return total + 4;
@@ -211,7 +212,7 @@ function drawBulletList(
   const textWidth = bulletTextWidth(cellWidth);
   let cursorY = y;
   for (const item of items) {
-    const bullet = `\u2022 ${item}`;
+    const bullet = `\u2022 ${formatWrittenReportLineForDisplay(item)}`;
     doc.text(bullet, x + CTA_SECTION_BODY_TEXT_PAD, cursorY, { width: textWidth, lineGap });
     cursorY += doc.heightOfString(bullet, { width: textWidth, lineGap }) + 2;
   }

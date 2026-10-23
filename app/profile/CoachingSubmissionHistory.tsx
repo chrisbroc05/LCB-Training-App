@@ -1,11 +1,8 @@
 import Link from "next/link";
 import ProfileCard from "@/app/profile/ProfileCard";
-import MemberSubmissionVideo, { CoachResponseVideo } from "@/app/profile/MemberSubmissionVideo";
-import RecommendedDrillsSection from "@/app/profile/RecommendedDrillsSection";
-import WrittenPlayerReportSection from "@/app/profile/WrittenPlayerReportSection";
-import { submissionHasWrittenPlayerReport } from "@/lib/quick-written-report-shared";
+import ProfileSubmissionDetailPanel from "@/app/profile/ProfileSubmissionDetailPanel";
 import { formatDateTime } from "@/lib/format-date";
-import type { DatabaseTier } from "@/lib/membership";
+import type { EffectiveAccessLevel } from "@/lib/access-shared";
 
 type SubmissionStatus = "PENDING" | "REVIEWING" | "COMPLETED";
 type SubmissionType = "SWING" | "MENTAL";
@@ -14,13 +11,16 @@ export type ProfileSubmission = {
   id: string;
   type: SubmissionType;
   createdAt: Date;
+  respondedAt: Date | null;
   status: SubmissionStatus;
   playerName: string;
   originalMessage: string;
   originalVideoUrl: string | null;
+  submittedVideoPosterR2Key: string | null;
   memberVimeoLink: string | null;
   responseText: string | null;
   responseVideoUrl: string | null;
+  responseVideoPosterR2Key: string | null;
   recommendedDrillIds: string[];
   extraLines: string[];
   writtenReport?: {
@@ -37,14 +37,14 @@ type CoachingSubmissionHistoryProps = {
   submissions: ProfileSubmission[];
   selectedSubmission: ProfileSubmission | null;
   recommendedDrillThumbnailMap: Record<string, string | null>;
-  viewerMembershipTier: DatabaseTier;
+  viewerEffectiveLevel: EffectiveAccessLevel;
 };
 
 export default function CoachingSubmissionHistory({
   submissions,
   selectedSubmission,
   recommendedDrillThumbnailMap,
-  viewerMembershipTier,
+  viewerEffectiveLevel,
 }: CoachingSubmissionHistoryProps) {
   return (
     <ProfileCard title="Coaching Submission History">
@@ -95,91 +95,11 @@ export default function CoachingSubmissionHistory({
           {!selectedSubmission ? (
             <p className="text-sm text-zinc-400">Select a submission to view details.</p>
           ) : (
-            <div className="space-y-5">
-              <div className="rounded-xl border border-[#2b3650] bg-black/30 p-4">
-                <p className="text-sm font-semibold text-zinc-100">Original Submission</p>
-                <p className="mt-2 text-sm text-zinc-300">Player: {selectedSubmission.playerName}</p>
-                {selectedSubmission.extraLines.map((line) => (
-                  <p key={line} className="mt-1 text-sm text-zinc-300">
-                    {line}
-                  </p>
-                ))}
-                <p className="mt-3 whitespace-pre-wrap text-sm text-zinc-300">
-                  {selectedSubmission.originalMessage}
-                </p>
-                <div className="mt-4 space-y-2">
-                  <MemberSubmissionVideo
-                    memberVimeoLink={selectedSubmission.memberVimeoLink}
-                    originalVideoUrl={selectedSubmission.originalVideoUrl}
-                  />
-                </div>
-              </div>
-
-              <div className="rounded-xl border border-[#2b3650] bg-black/30 p-4">
-                <p className="text-sm font-semibold text-zinc-100">Coach Chris Response</p>
-                {selectedSubmission.status === "COMPLETED" ? (
-                  <div className="mt-3 space-y-3">
-                    {selectedSubmission.writtenReport &&
-                    submissionHasWrittenPlayerReport({
-                      reportStrengths: selectedSubmission.writtenReport.strengths,
-                      evaluationPdfR2Key: selectedSubmission.writtenReport.hasEvaluationPdf
-                        ? "set"
-                        : null,
-                    }) ? (
-                      <WrittenPlayerReportSection
-                        strengths={selectedSubmission.writtenReport.strengths}
-                        areasToImprove={selectedSubmission.writtenReport.areasToImprove}
-                        recommendedDrillLines={selectedSubmission.writtenReport.recommendedDrillLines}
-                        noteFromCoach={selectedSubmission.writtenReport.noteFromCoach}
-                        libraryDrillIds={selectedSubmission.writtenReport.libraryDrillIds}
-                        submissionId={selectedSubmission.id}
-                        hasEvaluationPdf={selectedSubmission.writtenReport.hasEvaluationPdf}
-                        drillThumbnailMap={recommendedDrillThumbnailMap}
-                      />
-                    ) : null}
-                    {selectedSubmission.responseText &&
-                    !selectedSubmission.writtenReport?.strengths.length ? (
-                      <p className="whitespace-pre-wrap text-sm text-zinc-300">
-                        {selectedSubmission.responseText}
-                      </p>
-                    ) : null}
-                    {selectedSubmission.responseVideoUrl ? (
-                      <CoachResponseVideo responseVideoUrl={selectedSubmission.responseVideoUrl} />
-                    ) : null}
-                    {!selectedSubmission.responseText && !selectedSubmission.responseVideoUrl ? (
-                      <p className="text-sm text-zinc-400">
-                        A response was marked complete with no message attached.
-                      </p>
-                    ) : null}
-                    <RecommendedDrillsSection
-                      recommendedDrillIds={selectedSubmission.recommendedDrillIds}
-                      thumbnailMap={recommendedDrillThumbnailMap}
-                    />
-                    {viewerMembershipTier === "FREE" ? (
-                      <div className="rounded-xl border border-[#52B788]/30 bg-[#22c55e]/5 p-4">
-                        <p className="text-sm font-semibold text-zinc-100">
-                          Ready to keep building with Coach Broc?
-                        </p>
-                        <p className="mt-2 text-sm leading-relaxed text-zinc-300">
-                          The 12-Week Coaching Program includes unlimited submissions, full
-                          Playbook access, workout programs, and a kickoff call plus check-ins when you need them.
-                        </p>
-                        <Link
-                          href="/program"
-                          className="mt-4 inline-flex items-center justify-center rounded-full bg-[#22c55e] px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-[#35db72]"
-                        >
-                          Explore the 12-Week Program
-                        </Link>
-                      </div>
-                    ) : null}
-                  </div>
-                ) : (
-                  <p className="mt-3 text-sm text-zinc-300">
-                    Coach Broc typically responds within a few days.
-                  </p>
-                )}
-              </div>
-            </div>
+            <ProfileSubmissionDetailPanel
+              submission={selectedSubmission}
+              recommendedDrillThumbnailMap={recommendedDrillThumbnailMap}
+              viewerEffectiveLevel={viewerEffectiveLevel}
+            />
           )}
         </div>
       </div>

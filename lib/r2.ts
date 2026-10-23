@@ -85,6 +85,70 @@ export function isValidR2ObjectKey(key: string) {
   );
 }
 
+export function buildVideoPosterR2Key(videoKey: string): string {
+  const trimmed = videoKey.trim();
+  const dotIndex = trimmed.lastIndexOf(".");
+  if (dotIndex > trimmed.lastIndexOf("/")) {
+    return `${trimmed.slice(0, dotIndex)}.poster.jpg`;
+  }
+  return `${trimmed}.poster.jpg`;
+}
+
+export function isVideoPosterR2Key(key: string, videoKey: string) {
+  return key === buildVideoPosterR2Key(videoKey) && isValidR2ObjectKey(key);
+}
+
+export async function createPresignedVideoPosterUploadUrl(params: {
+  videoKey: string;
+  fileSize: number;
+}) {
+  const { bucketName } = getR2Config();
+  const key = buildVideoPosterR2Key(params.videoKey);
+  if (!isValidR2ObjectKey(key)) {
+    throw new Error("Invalid poster key.");
+  }
+
+  const command = new PutObjectCommand({
+    Bucket: bucketName,
+    Key: key,
+    ContentType: "image/jpeg",
+    ContentLength: params.fileSize,
+  });
+
+  const uploadUrl = await getSignedUrl(getR2Client(), command, {
+    expiresIn: SUBMISSION_VIDEO_PRESIGNED_UPLOAD_EXPIRY_SECONDS,
+  });
+
+  return {
+    uploadUrl,
+    posterR2Key: key,
+    contentType: "image/jpeg",
+    expiresInSeconds: SUBMISSION_VIDEO_PRESIGNED_UPLOAD_EXPIRY_SECONDS,
+  };
+}
+
+export async function createPresignedR2ImageUrl(key: string) {
+  const { bucketName } = getR2Config();
+  if (!isValidR2ObjectKey(key)) {
+    throw new Error("Invalid image key.");
+  }
+
+  const command = new GetObjectCommand({
+    Bucket: bucketName,
+    Key: key,
+    ResponseContentType: "image/jpeg",
+  });
+
+  const imageUrl = await getSignedUrl(getR2Client(), command, {
+    expiresIn: VIDEO_PLAYBACK_PRESIGNED_EXPIRY_SECONDS,
+  });
+
+  return {
+    imageUrl,
+    expiresInSeconds: VIDEO_PLAYBACK_PRESIGNED_EXPIRY_SECONDS,
+  };
+}
+
 export function buildEvaluationPdfKey(submissionId: string) {
   return `evaluations/${submissionId}/${Date.now()}-${randomUUID()}-player-evaluation.pdf`;
 }

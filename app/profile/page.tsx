@@ -12,12 +12,13 @@ import SignOutButton from "@/app/components/SignOutButton";
 import { profilePageStackClass, profilePageTitleClass } from "@/app/profile/profile-styles";
 import { authOptions } from "@/lib/auth";
 import { getCoachingSubmissionAvailabilityForUser } from "@/lib/coaching-submissions";
+import { resolveEffectiveLevel } from "@/lib/access-shared";
 import {
-  canAccessCoachingNav,
   canAccessPlaybook,
   isLifetimeBasicMember,
   type DatabaseTier,
 } from "@/lib/membership";
+import { shouldShowProfileGoalCheckinHistory } from "@/lib/profile-coaching-upsell-shared";
 import { getDrillLibraryVideosByIds } from "@/lib/drill-library-videos";
 import { ensurePlaybookProgress, serializePlaybookProgress } from "@/lib/playbook";
 import { toAccessUserFields, userAccessSelect } from "@/lib/access-server";
@@ -84,19 +85,23 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
   }
 
   const membershipTier = user.membershipTier as DatabaseTier;
+  const viewerEffectiveLevel = resolveEffectiveLevel(toAccessUserFields(user));
   const planLabel = formatMemberPlanLabel(toAccessUserFields(user));
   const merged: ProfileSubmission[] = [
     ...swingSubmissions.map((item) => ({
       id: item.id,
       type: "SWING" as const,
       createdAt: item.createdAt,
+      respondedAt: item.respondedAt,
       status: item.status,
       playerName: item.playerName,
       originalMessage: item.notes,
       originalVideoUrl: item.submittedVideo,
+      submittedVideoPosterR2Key: item.submittedVideoPosterR2Key,
       memberVimeoLink: item.memberVimeoLink,
       responseText: item.responseText,
       responseVideoUrl: item.responseVideoUrl,
+      responseVideoPosterR2Key: item.responseVideoPosterR2Key,
       recommendedDrillIds: item.recommendedDrills,
       writtenReport:
         item.reportStrengths.length > 0 || item.evaluationPdfR2Key
@@ -123,14 +128,18 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
       id: item.id,
       type: "MENTAL" as const,
       createdAt: item.createdAt,
+      respondedAt: item.respondedAt,
       status: item.status,
       playerName: item.playerName,
       originalMessage: item.message,
       originalVideoUrl: item.videoPath,
+      submittedVideoPosterR2Key: item.submittedVideoPosterR2Key,
       memberVimeoLink: item.memberVimeoLink,
       responseText: item.responseText,
       responseVideoUrl: item.responseVideoUrl,
+      responseVideoPosterR2Key: item.responseVideoPosterR2Key,
       recommendedDrillIds: item.recommendedDrills,
+      writtenReport: null,
       extraLines: [`Topic: ${item.topic}`, `Age: ${item.playerAge}`],
     })),
   ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
@@ -138,10 +147,10 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
   const recommendedDrillUrls = [
     ...new Set(
       merged.flatMap((submission) => {
-        const ids = [
-          ...submission.recommendedDrillIds,
-          ...(submission.writtenReport?.libraryDrillIds ?? []),
-        ];
+        const ids =
+          submission.writtenReport && submission.writtenReport.libraryDrillIds.length > 0
+            ? submission.writtenReport.libraryDrillIds
+            : submission.recommendedDrillIds;
         return getDrillLibraryVideosByIds(ids).map((video) => video.url);
       }),
     ),
@@ -207,10 +216,12 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
           submissions={merged}
           selectedSubmission={selectedSubmission ?? null}
           recommendedDrillThumbnailMap={recommendedDrillThumbnailMap}
-          viewerMembershipTier={membershipTier}
+          viewerEffectiveLevel={viewerEffectiveLevel}
         />
 
-        <ProfileGoalCheckinHistory hasAccess={canAccessCoachingNav(membershipTier)} />
+        {shouldShowProfileGoalCheckinHistory(viewerEffectiveLevel) ? (
+          <ProfileGoalCheckinHistory hasAccess />
+        ) : null}
 
         {membershipTier === "FREE" ? (
           <AssessmentCallCard

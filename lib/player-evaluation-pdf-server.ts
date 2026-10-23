@@ -11,6 +11,10 @@ import {
 } from "@/lib/player-evaluation-cta-shared";
 import { renderPlayerEvaluationPdfToBuffer } from "@/lib/player-evaluation-pdf-node";
 import type { WrittenReportSections } from "@/lib/written-report-parse-shared";
+import {
+  normalizeWrittenReportLines,
+  stripWrittenReportLinePrefix,
+} from "@/lib/written-report-line-shared";
 import { getDrillLibraryVideosByIds } from "@/lib/drill-library-videos";
 
 function splitPlayerName(playerName: string) {
@@ -33,7 +37,7 @@ export function buildPlayerEvaluationRecommendedDrillLines(
   const lines: string[] = [];
 
   for (const line of [...sections.recommendedDrills, ...libraryTitles]) {
-    const trimmed = line.trim();
+    const trimmed = stripWrittenReportLinePrefix(line.trim());
     if (!trimmed) {
       continue;
     }
@@ -50,6 +54,15 @@ export function buildPlayerEvaluationRecommendedDrillLines(
 
 type PdfUserContext = Parameters<typeof mergeOrgIntoAccessFields>[0];
 
+function normalizeWrittenReportSections(sections: WrittenReportSections): WrittenReportSections {
+  return {
+    strengths: normalizeWrittenReportLines(sections.strengths),
+    areasToImprove: normalizeWrittenReportLines(sections.areasToImprove),
+    recommendedDrills: normalizeWrittenReportLines(sections.recommendedDrills),
+    noteFromCoach: stripWrittenReportLinePrefix(sections.noteFromCoach),
+  };
+}
+
 export async function generatePlayerEvaluationPdfBuffer(params: {
   playerName: string;
   teamLabel: string;
@@ -61,8 +74,9 @@ export async function generatePlayerEvaluationPdfBuffer(params: {
   user?: PdfUserContext | null;
 }) {
   const { firstName, lastName } = splitPlayerName(params.playerName);
+  const sections = normalizeWrittenReportSections(params.sections);
   const recommendedDrills = buildPlayerEvaluationRecommendedDrillLines(
-    params.sections,
+    sections,
     params.libraryDrillIds,
   );
 
@@ -91,10 +105,10 @@ export async function generatePlayerEvaluationPdfBuffer(params: {
     lastName,
     teamLabel: params.teamLabel.trim() || "LCB Training",
     evalDateLabel: formatDateWithYear(params.evalDate),
-    strengths: params.sections.strengths,
-    areasToImprove: params.sections.areasToImprove,
+    strengths: sections.strengths,
+    areasToImprove: sections.areasToImprove,
     recommendedDrills,
-    noteFromCoach: params.sections.noteFromCoach,
+    noteFromCoach: sections.noteFromCoach,
     cta,
   });
 }

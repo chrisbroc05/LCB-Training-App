@@ -1,4 +1,5 @@
 import R2PresignedVideoPlayer from "@/app/components/R2PresignedVideoPlayer";
+import { appendVideoPreviewTimeFragment } from "@/lib/video-playback-shared";
 import { toVimeoEmbedUrl } from "@/lib/vimeo";
 import {
   getStreamableR2VideoUrl,
@@ -26,9 +27,11 @@ function resolveInlineVideoUrl(url: string) {
 export default function MemberSubmissionVideo({
   memberVimeoLink,
   originalVideoUrl,
+  posterR2Key,
 }: {
   memberVimeoLink: string | null;
   originalVideoUrl: string | null;
+  posterR2Key?: string | null;
 }) {
   if (memberVimeoLink) {
     const embedUrl = toVimeoEmbedUrl(memberVimeoLink);
@@ -68,8 +71,8 @@ export default function MemberSubmissionVideo({
         <div className="overflow-hidden rounded-xl border border-[#2b3650]">
           <R2PresignedVideoPlayer
             storedVideo={originalVideoUrl}
+            posterR2Key={posterR2Key}
             title="Original submission video"
-            className="w-full rounded-lg"
           />
         </div>
       );
@@ -79,9 +82,13 @@ export default function MemberSubmissionVideo({
     if (inlineVideoUrl && canInlineSubmissionVideo(inlineVideoUrl)) {
       return (
         <div className="overflow-hidden rounded-xl border border-[#2b3650]">
-          <video src={inlineVideoUrl} controls className="w-full rounded-lg">
-            <source src={inlineVideoUrl} type="video/mp4" />
-          </video>
+          <video
+            src={appendVideoPreviewTimeFragment(inlineVideoUrl)}
+            controls
+            playsInline
+            preload="metadata"
+            className="mx-auto w-full max-w-full object-contain"
+          />
         </div>
       );
     }
@@ -103,14 +110,20 @@ export default function MemberSubmissionVideo({
   );
 }
 
-export function CoachResponseVideo({ responseVideoUrl }: { responseVideoUrl: string }) {
+export function CoachResponseVideo({
+  responseVideoUrl,
+  posterR2Key,
+}: {
+  responseVideoUrl: string;
+  posterR2Key?: string | null;
+}) {
   const vimeoEmbedUrl = toVimeoEmbedUrl(responseVideoUrl);
   if (vimeoEmbedUrl) {
     return (
       <div className="relative w-full overflow-hidden rounded-xl border border-[#2b3650] pt-[56.25%]">
         <iframe
           src={vimeoEmbedUrl}
-          title="Coach response video"
+          title="Coach Broc response video"
           className="absolute inset-0 h-full w-full"
           allow="autoplay; fullscreen; picture-in-picture"
           allowFullScreen
@@ -124,8 +137,8 @@ export function CoachResponseVideo({ responseVideoUrl }: { responseVideoUrl: str
       <div className="overflow-hidden rounded-xl border border-[#2b3650]">
         <R2PresignedVideoPlayer
           storedVideo={responseVideoUrl}
-          title="Coach response video"
-          className="w-full rounded-lg"
+          posterR2Key={posterR2Key}
+          title="Coach Broc response video"
         />
       </div>
     );
@@ -135,9 +148,13 @@ export function CoachResponseVideo({ responseVideoUrl }: { responseVideoUrl: str
   if (inlineVideoUrl && canInlineSubmissionVideo(inlineVideoUrl)) {
     return (
       <div className="overflow-hidden rounded-xl border border-[#2b3650]">
-        <video src={inlineVideoUrl} controls className="w-full rounded-lg">
-          <source src={inlineVideoUrl} type="video/mp4" />
-        </video>
+        <video
+          src={appendVideoPreviewTimeFragment(inlineVideoUrl)}
+          controls
+          playsInline
+          preload="metadata"
+          className="mx-auto w-full max-w-full object-contain"
+        />
       </div>
     );
   }
@@ -149,7 +166,7 @@ export function CoachResponseVideo({ responseVideoUrl }: { responseVideoUrl: str
       rel="noopener noreferrer"
       className="text-sm text-[#8fd7ff] underline"
     >
-      View Coach Video Response
+      View Coach Broc video response
     </a>
   );
 }

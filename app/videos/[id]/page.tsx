@@ -81,6 +81,7 @@ export default function VideoDetailPage() {
           <div className="overflow-hidden rounded-2xl border border-[#2b3650] bg-black">
             <R2PresignedVideoPlayer
               storedVideo={video.videoKey}
+              posterR2Key={video.posterR2Key}
               title={video.title}
               onFirstPlay={handleFirstPlay}
             />

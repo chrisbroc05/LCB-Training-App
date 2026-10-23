@@ -15,6 +15,7 @@ import {
   uploadVideoToPresignedUrlWithAbort,
   type PresignedSwingUploadResponse,
 } from "@/lib/swing-submission-upload-client";
+import { uploadVideoPosterForR2Key } from "@/lib/video-poster-capture-client";
 
 type SendCoachVideoPanelProps = {
   userId: string;
@@ -106,6 +107,13 @@ export default function SendCoachVideoPanel({
       await upload.promise;
       abortUploadRef.current = null;
 
+      const posterR2Key =
+        (await uploadVideoPosterForR2Key({
+          videoR2Key: uploadUrlPayload.r2Key,
+          source: file,
+          uploadUrlPath: "/api/admin/video-poster/upload-url",
+        })) ?? null;
+
       const createResponse = await fetch("/api/admin/coach-videos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -116,6 +124,7 @@ export default function SendCoachVideoPanel({
           note,
           drillCategory: drillCategory || null,
           videoKey: uploadUrlPayload.r2Key,
+          posterR2Key,
           videoContentType: uploadUrlPayload.contentType,
           videoSizeBytes: file.size,
         }),

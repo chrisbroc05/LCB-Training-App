@@ -543,32 +543,16 @@ export async function sendPlayerEvaluationReportEmail(params: {
   const firstName = params.playerName.trim().split(/\s+/)[0] ?? "";
   const profileUrl = buildSubmissionResponseUrl("SWING_ANALYSIS", params.submissionId);
   const subject = firstName
-    ? `${firstName}, your player evaluation report is ready`
-    : "Your player evaluation report is ready";
+    ? `${firstName}, your swing report is ready`
+    : "Your swing report is ready";
 
-  const recommendedDrills = getDrillLibraryVideosByIds(params.recommendedDrillIds ?? []);
-  const drillsHtml =
-    recommendedDrills.length > 0
-      ? `${buildEmailSectionLabel("DRILLS TO WORK ON")}
-      <ul style="margin:0; padding-left:20px; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:1.7; color:#0A1628;">
-        ${recommendedDrills
-          .map((drill) => {
-            const drillId = getDrillLibraryVideoId(drill) ?? "";
-            const drillUrl = buildDrillLibraryUrl(drillId || undefined);
-            return `<li style="margin:0 0 8px 0; color:#0A1628;"><a href="${escapeHtml(drillUrl)}" target="_blank" rel="noopener noreferrer" style="color:#2D6A4F; font-weight:700; text-decoration:underline;">${escapeHtml(drill.title)}</a></li>`;
-          })
-          .join("")}
-      </ul>`
-      : "";
-
-  const bodyContentHtml = `<h1 style="margin:0 0 20px 0; font-family:Arial, Helvetica, sans-serif; font-size:28px; line-height:1.3; font-weight:700; color:#0A1628;">Your evaluation report is ready.</h1>
-              <p style="margin:0 0 24px 0; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:1.7; color:#0A1628;">Coach Broc finished your written player evaluation. Read it in the app or download the PDF.</p>
+  const bodyContentHtml = `<h1 style="margin:0 0 20px 0; font-family:Arial, Helvetica, sans-serif; font-size:28px; line-height:1.3; font-weight:700; color:#0A1628;">Your Swing Report is ready.</h1>
+              <p style="margin:0 0 24px 0; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:1.7; color:#0A1628;">Coach Broc finished your written swing report. Read it in the app or download the PDF.</p>
               ${buildEmailButton("View in the app", profileUrl)}
-              ${buildEmailButton("Download PDF", params.pdfDownloadUrl)}
-              ${drillsHtml}`;
+              ${buildEmailButton("Download PDF", params.pdfDownloadUrl)}`;
 
   const html = buildMemberEmailHtml({ title: subject, bodyContentHtml });
-  const text = `Your evaluation report is ready.
+  const text = `Your Swing Report is ready.
 
 View in the app: ${profileUrl}
 Download PDF: ${params.pdfDownloadUrl}`;

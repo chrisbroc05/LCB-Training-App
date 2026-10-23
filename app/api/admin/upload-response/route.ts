@@ -8,11 +8,13 @@ import {
   headR2Object,
   isAdminResponseVideoKey,
 } from "@/lib/r2";
+import { validateVideoPosterR2Key } from "@/lib/video-poster-server";
 
 type UploadResponseRequestBody = {
   submissionId?: string;
   submissionType?: string;
   r2Key?: string;
+  responseVideoPosterR2Key?: string;
 };
 
 function parseRequestBody(body: unknown): UploadResponseRequestBody | null {
@@ -25,6 +27,10 @@ function parseRequestBody(body: unknown): UploadResponseRequestBody | null {
     submissionId: typeof record.submissionId === "string" ? record.submissionId : undefined,
     submissionType: typeof record.submissionType === "string" ? record.submissionType : undefined,
     r2Key: typeof record.r2Key === "string" ? record.r2Key : undefined,
+    responseVideoPosterR2Key:
+      typeof record.responseVideoPosterR2Key === "string"
+        ? record.responseVideoPosterR2Key
+        : undefined,
   };
 }
 
@@ -44,6 +50,7 @@ export async function POST(request: Request) {
   const submissionId = body?.submissionId?.trim() ?? "";
   const submissionType = (body?.submissionType ?? "swing").trim().toLowerCase();
   const r2Key = body?.r2Key?.trim() ?? "";
+  const responseVideoPosterR2Key = body?.responseVideoPosterR2Key?.trim() ?? "";
 
   if (!submissionId || !r2Key) {
     return NextResponse.json({ error: "Missing submissionId or r2Key." }, { status: 400 });
@@ -68,6 +75,13 @@ export async function POST(request: Request) {
 
   const responseVideoUrl = formatR2VideoReference(r2Key);
 
+  if (responseVideoPosterR2Key) {
+    const posterError = await validateVideoPosterR2Key(r2Key, responseVideoPosterR2Key);
+    if (posterError) {
+      return NextResponse.json({ error: posterError }, { status: 400 });
+    }
+  }
+
   try {
     if (submissionType === "mental") {
       const existing = await prisma.mentalGameSubmission.findUnique({
@@ -81,7 +95,10 @@ export async function POST(request: Request) {
 
       await prisma.mentalGameSubmission.update({
         where: { id: submissionId },
-        data: { responseVideoUrl },
+        data: {
+          responseVideoUrl,
+          responseVideoPosterR2Key: responseVideoPosterR2Key || null,
+        },
       });
     } else {
       const existing = await prisma.swingAnalysisSubmission.findUnique({
@@ -95,7 +112,10 @@ export async function POST(request: Request) {
 
       await prisma.swingAnalysisSubmission.update({
         where: { id: submissionId },
-        data: { responseVideoUrl },
+        data: {
+          responseVideoUrl,
+          responseVideoPosterR2Key: responseVideoPosterR2Key || null,
+        },
       });
     }
 

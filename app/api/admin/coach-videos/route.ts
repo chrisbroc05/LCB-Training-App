@@ -34,6 +34,7 @@ export async function POST(request: Request) {
     title?: string;
     note?: string;
     videoKey?: string;
+    posterR2Key?: string | null;
     videoContentType?: string;
     videoSizeBytes?: number;
     drillCategory?: string | null;
@@ -64,6 +65,7 @@ export async function POST(request: Request) {
         title: body.title,
         note: body.note ?? "",
         videoKey: body.videoKey.trim(),
+        posterR2Key: body.posterR2Key?.trim() || null,
         videoContentType: body.videoContentType?.trim() || "video/mp4",
         videoSizeBytes: body.videoSizeBytes,
         drillCategory: body.drillCategory ?? null,

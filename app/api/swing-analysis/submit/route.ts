@@ -20,6 +20,7 @@ import {
   headR2Object,
   isUserSubmissionVideoKey,
 } from "@/lib/r2";
+import { validateVideoPosterR2Key } from "@/lib/video-poster-server";
 import { requireUnder13ParentUnlockResponse } from "@/lib/legal-under13-guard-server";
 import {
   validateSubmissionLookAt,
@@ -41,6 +42,7 @@ type SwingSubmitRequestBody = {
   responsePreference?: string;
   videoUrl?: string;
   r2Key?: string;
+  submittedVideoPosterR2Key?: string;
 };
 
 async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
@@ -69,6 +71,10 @@ function parseSubmitRequestBody(body: unknown): SwingSubmitRequestBody | null {
       typeof record.responsePreference === "string" ? record.responsePreference : undefined,
     videoUrl: typeof record.videoUrl === "string" ? record.videoUrl : undefined,
     r2Key: typeof record.r2Key === "string" ? record.r2Key : undefined,
+    submittedVideoPosterR2Key:
+      typeof record.submittedVideoPosterR2Key === "string"
+        ? record.submittedVideoPosterR2Key
+        : undefined,
   };
 }
 
@@ -104,6 +110,7 @@ export async function POST(request: Request) {
     const responsePreference = body?.responsePreference?.trim().toUpperCase() ?? "";
     const videoUrl = body?.videoUrl?.trim() ?? "";
     const r2Key = body?.r2Key?.trim() ?? "";
+    const submittedVideoPosterR2Key = body?.submittedVideoPosterR2Key?.trim() ?? "";
 
     const whereValidation = validateSubmissionWhere(body?.whereWasThis ?? "");
     if (!whereValidation.ok) {
@@ -150,6 +157,13 @@ export async function POST(request: Request) {
 
       submittedVideo = formatR2VideoReference(r2Key);
       console.log(`[swing-submit:${requestId}] Using presigned R2 upload (${r2Key})`);
+
+      if (submittedVideoPosterR2Key) {
+        const posterError = await validateVideoPosterR2Key(r2Key, submittedVideoPosterR2Key);
+        if (posterError) {
+          return NextResponse.json({ error: posterError }, { status: 400 });
+        }
+      }
     } else if (videoUrl) {
       console.log(`[swing-submit:${requestId}] Using provided video URL`);
     }
@@ -215,6 +229,7 @@ export async function POST(request: Request) {
             videoCategory: categoryValidation.value,
             notes,
             submittedVideo,
+            submittedVideoPosterR2Key: submittedVideoPosterR2Key || null,
             responsePreference: normalizedResponsePreference as "VIDEO_RESPONSE" | "WRITTEN_RESPONSE",
             status: "PENDING",
             reviewTrack: consumed.reviewTrack,

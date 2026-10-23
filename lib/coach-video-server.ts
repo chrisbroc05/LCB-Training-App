@@ -27,6 +27,7 @@ export type CreateCoachVideoInput = {
   title: string;
   note?: string;
   videoKey: string;
+  posterR2Key?: string | null;
   videoContentType: string;
   videoSizeBytes: number;
   drillCategory?: string | null;
@@ -151,6 +152,7 @@ export async function createCoachVideoRecord(input: CreateCoachVideoInput) {
       title: input.title.trim(),
       note: input.note?.trim() || null,
       videoKey: input.videoKey,
+      posterR2Key: input.posterR2Key?.trim() || null,
       videoContentType: input.videoContentType.trim() || "video/mp4",
       videoSizeBytes: input.videoSizeBytes,
       drillCategory: parseCoachVideoDrillCategory(input.drillCategory) as CoachVideoDrillCategory | null,
@@ -206,6 +208,7 @@ export async function listPlayerVideos(userId: string): Promise<CoachVideoListIt
         createdAt: true,
         viewedAt: true,
         videoKey: true,
+        posterR2Key: true,
         drillCategory: true,
       },
     }),
@@ -222,6 +225,7 @@ export async function listPlayerVideos(userId: string): Promise<CoachVideoListIt
         playerName: true,
         respondedAt: true,
         responseVideoUrl: true,
+        responseVideoPosterR2Key: true,
       },
     }),
     prisma.mentalGameSubmission.findMany({
@@ -238,6 +242,7 @@ export async function listPlayerVideos(userId: string): Promise<CoachVideoListIt
         topic: true,
         respondedAt: true,
         responseVideoUrl: true,
+        responseVideoPosterR2Key: true,
       },
     }),
   ]);
@@ -250,6 +255,7 @@ export async function listPlayerVideos(userId: string): Promise<CoachVideoListIt
     createdAt: video.createdAt.toISOString(),
     viewedAt: video.viewedAt?.toISOString() ?? null,
     videoKey: video.videoKey,
+    posterR2Key: video.posterR2Key,
     drillCategory: video.drillCategory as CoachVideoDrillCategoryValue | null,
     submissionType: null,
     submissionId: null,
@@ -269,6 +275,7 @@ export async function listPlayerVideos(userId: string): Promise<CoachVideoListIt
       createdAt: submission.respondedAt.toISOString(),
       viewedAt: submission.respondedAt.toISOString(),
       videoKey,
+      posterR2Key: submission.responseVideoPosterR2Key,
       drillCategory: null,
       submissionType: "SWING",
       submissionId: submission.id,
@@ -289,6 +296,7 @@ export async function listPlayerVideos(userId: string): Promise<CoachVideoListIt
       createdAt: submission.respondedAt.toISOString(),
       viewedAt: submission.respondedAt.toISOString(),
       videoKey,
+      posterR2Key: submission.responseVideoPosterR2Key,
       drillCategory: "MINDSET",
       submissionType: "MENTAL",
       submissionId: submission.id,
@@ -318,6 +326,7 @@ export async function getCoachVideoListItemForViewer(params: {
         createdAt: true,
         viewedAt: true,
         videoKey: true,
+        posterR2Key: true,
         drillCategory: true,
       },
     });
@@ -331,6 +340,7 @@ export async function getCoachVideoListItemForViewer(params: {
         createdAt: coachVideo.createdAt.toISOString(),
         viewedAt: coachVideo.viewedAt?.toISOString() ?? null,
         videoKey: coachVideo.videoKey,
+        posterR2Key: coachVideo.posterR2Key,
         drillCategory: coachVideo.drillCategory as CoachVideoDrillCategoryValue | null,
         submissionType: null,
         submissionId: null,

@@ -2,9 +2,14 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { isR2VideoReference, parseR2VideoReference } from "@/lib/r2";
+import {
+  appendVideoPreviewTimeFragment,
+  R2_VIDEO_MAX_HEIGHT_PX,
+} from "@/lib/video-playback-shared";
 
 type R2PresignedVideoPlayerProps = {
   storedVideo: string;
+  posterR2Key?: string | null;
   title?: string;
   className?: string;
   onFirstPlay?: () => void;
@@ -26,8 +31,9 @@ function resolveR2Key(storedVideo: string) {
 
 export default function R2PresignedVideoPlayer({
   storedVideo,
+  posterR2Key,
   title = "Video",
-  className = "h-full w-full",
+  className = "",
   onFirstPlay,
 }: R2PresignedVideoPlayerProps) {
   const r2Key = resolveR2Key(storedVideo);
@@ -35,6 +41,8 @@ export default function R2PresignedVideoPlayer({
   const retriedRef = useRef(false);
   const playedRef = useRef(false);
   const [playbackUrl, setPlaybackUrl] = useState<string | null>(null);
+  const [posterUrl, setPosterUrl] = useState<string | null>(null);
+  const [aspectRatio, setAspectRatio] = useState<string>("16 / 9");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -56,6 +64,41 @@ export default function R2PresignedVideoPlayer({
     const payload = (await response.json()) as PresignedPlaybackResponse;
     return payload.playbackUrl;
   }, [r2Key]);
+
+  useEffect(() => {
+    if (!r2Key || !posterR2Key) {
+      setPosterUrl(null);
+      return;
+    }
+
+    let cancelled = false;
+    void fetch("/api/r2-image-url", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ posterR2Key, videoR2Key: r2Key }),
+    })
+      .then(async (response) => {
+        if (!response.ok) {
+          return null;
+        }
+        const payload = (await response.json()) as { imageUrl?: string };
+        return payload.imageUrl ?? null;
+      })
+      .then((url) => {
+        if (!cancelled) {
+          setPosterUrl(url);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setPosterUrl(null);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [posterR2Key, r2Key]);
 
   useEffect(() => {
     if (!r2Key) {
@@ -102,13 +145,21 @@ export default function R2PresignedVideoPlayer({
         setPlaybackUrl(url);
         setError(null);
         if (videoRef.current) {
-          videoRef.current.src = url;
+          videoRef.current.src = appendVideoPreviewTimeFragment(url);
           void videoRef.current.load();
         }
       })
       .catch(() => {
         setError("Unable to play video.");
       });
+  };
+
+  const handleLoadedMetadata = () => {
+    const video = videoRef.current;
+    if (!video?.videoWidth || !video.videoHeight) {
+      return;
+    }
+    setAspectRatio(`${video.videoWidth} / ${video.videoHeight}`);
   };
 
   if (loading) {
@@ -119,15 +170,23 @@ export default function R2PresignedVideoPlayer({
     return <p className="px-4 py-3 text-sm text-red-300">{error ?? "Unable to load video."}</p>;
   }
 
+  const videoSrc = appendVideoPreviewTimeFragment(playbackUrl);
+
   return (
     <video
       ref={videoRef}
-      src={playbackUrl}
+      src={videoSrc}
+      poster={posterUrl ?? undefined}
       controls
       playsInline
       preload="metadata"
       title={title}
-      className={className}
+      className={`mx-auto w-full max-w-full object-contain ${className}`.trim()}
+      style={{
+        aspectRatio,
+        maxHeight: `${R2_VIDEO_MAX_HEIGHT_PX}px`,
+      }}
+      onLoadedMetadata={handleLoadedMetadata}
       onError={handleVideoError}
       onPlay={() => {
         if (playedRef.current) {
