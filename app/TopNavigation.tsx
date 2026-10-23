@@ -311,6 +311,7 @@ function DesktopAccountDropdown({
   openDropdown,
   scheduleCloseDropdown,
   onLogout,
+  isAdmin,
 }: {
   dropdownId: DesktopDropdownId;
   pathname: string;
@@ -318,9 +319,11 @@ function DesktopAccountDropdown({
   openDropdown: (dropdownId: DesktopDropdownId) => void;
   scheduleCloseDropdown: (dropdownId: DesktopDropdownId) => void;
   onLogout: () => void;
+  isAdmin: boolean;
 }) {
   const accountLinks = buildAccountLinks();
-  const isActive = isAnyLinkActive(accountLinks, pathname);
+  const isActive =
+    isAnyLinkActive(accountLinks, pathname) || (isAdmin && pathname.startsWith("/admin"));
 
   return (
     <DesktopHoverDropdown
@@ -341,6 +344,14 @@ function DesktopAccountDropdown({
           {link.label}
         </Link>
       ))}
+      {isAdmin ? (
+        <Link
+          href="/admin"
+          className={dropdownItemClass(pathname.startsWith("/admin"))}
+        >
+          Admin portal
+        </Link>
+      ) : null}
       <button
         type="button"
         onClick={onLogout}
@@ -552,6 +563,7 @@ export default function TopNavigation({
           openDropdown={openDropdown}
           scheduleCloseDropdown={scheduleCloseDropdown}
           onLogout={handleLogout}
+          isAdmin={isAdmin}
         />
       </div>
 

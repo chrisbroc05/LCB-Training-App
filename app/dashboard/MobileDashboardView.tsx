@@ -5,6 +5,7 @@ import DashboardUpgradeSection from "@/app/dashboard/DashboardUpgradeSection";
 import MobileCoachingStatusCard from "@/app/dashboard/MobileCoachingStatusCard";
 import MonthlyGoalProgressCard from "@/app/dashboard/MonthlyGoalProgressCard";
 import type { CoachingSubmissionUserFields } from "@/lib/coaching-submissions-shared";
+import type { KeepBuildingCoachingContext } from "@/lib/coaching-keep-building-shared";
 import { canAccessCoachingNav, isTwelveWeekProgramMember, type DatabaseTier } from "@/lib/membership";
 import InPersonEmergencyReminderCard from "@/components/InPersonEmergencyReminderCard";
 import OrgTrialDashboardCard from "@/app/dashboard/OrgTrialDashboardCard";
@@ -40,6 +41,7 @@ type MobileDashboardViewProps = {
   showProgramSetupBanner: boolean;
   hasProgramEnrollmentRow: boolean;
   showInPersonEmergencyReminder: boolean;
+  keepBuildingCoaching: KeepBuildingCoachingContext | null;
 };
 
 export default function MobileDashboardView({
@@ -57,6 +59,7 @@ export default function MobileDashboardView({
   showProgramSetupBanner,
   hasProgramEnrollmentRow,
   showInPersonEmergencyReminder,
+  keepBuildingCoaching,
 }: MobileDashboardViewProps) {
   const isEnrolled = isTwelveWeekProgramMember(membershipTier);
 
@@ -124,7 +127,11 @@ export default function MobileDashboardView({
       ) : (
         <>
           {coachingUser ? (
-            <MobileCoachingStatusCard coachingUser={coachingUser} unreadResponse={unreadResponse} />
+            <MobileCoachingStatusCard
+              coachingUser={coachingUser}
+              unreadResponse={unreadResponse}
+              keepBuilding={keepBuildingCoaching}
+            />
           ) : null}
 
           <DashboardPlaybookProgressCard userId={userId} />

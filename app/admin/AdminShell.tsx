@@ -9,6 +9,7 @@ import {
   adminMobileTabActive,
 } from "@/lib/admin-nav-shared";
 import { ADMIN_ROUTES } from "@/lib/admin-routes-shared";
+import AdminViewToggleInline from "@/app/AdminViewToggleInline";
 
 type NavCounts = {
   coachingBadge: number;
@@ -86,6 +87,14 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
               </nav>
             </div>
           ))}
+          <div className="border-t border-[#18243a] pt-4">
+            <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+              View
+            </p>
+            <div className="px-3">
+              <AdminViewToggleInline />
+            </div>
+          </div>
         </div>
       </aside>
 
@@ -94,7 +103,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
       </div>
 
       <nav
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-[#18243a] bg-[#0A1628]/95 backdrop-blur md:hidden"
+        className="fixed inset-x-0 bottom-0 z-50 border-t border-[#18243a] bg-[#0A1628]/95 backdrop-blur md:hidden"
         aria-label="Admin sections"
       >
         <ul className="mx-auto flex max-w-lg justify-around px-1 py-2">

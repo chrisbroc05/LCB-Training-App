@@ -1,6 +1,8 @@
 import Link from "next/link";
 import FreeMemberWhileYouWaitCards from "@/app/components/FreeMemberWhileYouWaitCards";
+import KeepBuildingSwingCard from "@/app/components/KeepBuildingSwingCard";
 import CoachingSubmissionQuota from "@/app/CoachingSubmissionQuota";
+import type { KeepBuildingCoachingContext } from "@/lib/coaching-keep-building-shared";
 import type { CoachingSubmissionAvailability, CoachingSubmissionUserFields } from "@/lib/coaching-submissions";
 import { resolveEffectiveLevel } from "@/lib/access-shared";
 import { formatAssessmentCallDateTime } from "@/lib/assessment-call";
@@ -14,6 +16,7 @@ type DashboardCoachingCardProps = {
   freeSubmissionUsed: boolean;
   assessmentCallBooked: boolean;
   assessmentCallDate: Date | null;
+  keepBuildingCoaching?: KeepBuildingCoachingContext | null;
 };
 
 export default function DashboardCoachingCard({
@@ -23,7 +26,12 @@ export default function DashboardCoachingCard({
   freeSubmissionUsed,
   assessmentCallBooked,
   assessmentCallDate,
+  keepBuildingCoaching = null,
 }: DashboardCoachingCardProps) {
+  if (keepBuildingCoaching) {
+    return <KeepBuildingSwingCard context={keepBuildingCoaching} />;
+  }
+
   if (membershipTier === "BASIC") {
     const canSubmit = coachingAvailability?.canSubmit ?? false;
     return (

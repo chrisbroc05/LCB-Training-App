@@ -52,6 +52,7 @@ export default function SiteShell({
   const isCompactPublic = isCompactPublicPage(pathname);
   const isHomePage = pathname === "/";
   const useMobileChrome = shouldUseMobileAppChrome(isLoggedIn, pathname);
+  const onAdminRoute = pathname.startsWith("/admin");
 
   if (isStandaloneLanding || isCompactPublic) {
     if (isCompactPublic) {
@@ -82,14 +83,14 @@ export default function SiteShell({
       <main className={useMobileChrome ? "mobile-app-main flex-1 md:pb-0 md:pt-0" : "flex-1"}>
         {useMobileChrome ? <MobilePageTransition>{children}</MobilePageTransition> : children}
       </main>
-      {useMobileChrome ? (
+      {useMobileChrome && !onAdminRoute ? (
         <MobileBottomNav
           hasDrillLibraryAccess={hasDrillLibraryAccess}
           hasPlaybookAccess={hasPlaybookAccess}
           hasProgramEnrollment={hasProgramEnrollment}
         />
       ) : null}
-      {adminToggle}
+      {!onAdminRoute ? adminToggle : null}
       <MessageChatBubble isLoggedIn={isLoggedIn} />
       <div className={useMobileChrome ? "hidden md:block" : undefined}>{footer}</div>
     </>

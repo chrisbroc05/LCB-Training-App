@@ -12,7 +12,6 @@ import {
 import BrandLogo from "@/app/BrandLogo";
 import LoggedInSiteHeader from "@/app/components/LoggedInSiteHeader";
 import TopNavigation from "@/app/TopNavigation";
-import AdminViewToggle from "@/app/AdminViewToggle";
 import SiteShell from "@/app/SiteShell";
 import AppSplashScreen from "@/components/AppSplashScreen";
 import PWAInstallHint from "@/components/PWAInstallHint";
@@ -155,7 +154,7 @@ export default async function RootLayout({
               </header>
             )
           }
-          adminToggle={<AdminViewToggle isAdmin={hasAdminAccess} />}
+          adminToggle={null}
           footer={
             <footer className="border-t border-[#18243a] py-6 text-center text-sm text-zinc-400">
               <div className="mx-auto flex w-full max-w-6xl flex-col items-center justify-center gap-2 px-4 sm:px-6 md:flex-row md:gap-4">

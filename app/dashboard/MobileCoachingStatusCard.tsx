@@ -1,6 +1,8 @@
 import Link from "next/link";
+import KeepBuildingSwingCard from "@/app/components/KeepBuildingSwingCard";
 import { resolveEffectiveLevel } from "@/lib/access-shared";
 import { getCoachingQuotaDisplayCopy } from "@/lib/coaching-quota-display-shared";
+import type { KeepBuildingCoachingContext } from "@/lib/coaching-keep-building-shared";
 import type { CoachingSubmissionUserFields } from "@/lib/coaching-submissions-shared";
 import { getCoachingSubmissionAvailability } from "@/lib/coaching-submissions-shared";
 
@@ -13,11 +15,13 @@ type UnreadResponseNotification = {
 type MobileCoachingStatusCardProps = {
   coachingUser: CoachingSubmissionUserFields;
   unreadResponse: UnreadResponseNotification | null;
+  keepBuilding: KeepBuildingCoachingContext | null;
 };
 
 export default function MobileCoachingStatusCard({
   coachingUser,
   unreadResponse,
+  keepBuilding,
 }: MobileCoachingStatusCardProps) {
   if (unreadResponse) {
     return (
@@ -43,6 +47,10 @@ export default function MobileCoachingStatusCard({
   const copy = getCoachingQuotaDisplayCopy(coachingUser);
   const availability = getCoachingSubmissionAvailability(coachingUser);
   const canSubmit = availability.canSubmit;
+
+  if (keepBuilding) {
+    return <KeepBuildingSwingCard context={keepBuilding} className="mobile-card border-[#18243a]" />;
+  }
 
   if (effective === "FREE" && !canSubmit) {
     return (

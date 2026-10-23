@@ -47,6 +47,8 @@ export const adminMemberListSelect = {
   coreQuickReportNextEligibleAt: true,
   organization: {
     select: {
+      id: true,
+      name: true,
       active: true,
       billingMode: true,
       coveredLevel: true,
@@ -88,6 +90,8 @@ type AdminMemberListRecord = {
   orgTrialQuickReportUsed: boolean;
   coreQuickReportNextEligibleAt: Date | null;
   organization: {
+    id?: string;
+    name?: string;
     active: boolean;
     billingMode: "FAMILY_PAY" | "CLUB_PAY";
     coveredLevel: "CORE" | "PLUS" | "ALL_ACCESS" | null;
@@ -212,6 +216,20 @@ export function serializeAdminMemberSummary(user: AdminMemberListRecord) {
       user.membershipTier === "BASIC" ? availability.remaining : null,
     playbookSubmissionsLimit:
       user.membershipTier === "BASIC" ? (availability.lifetimeLimit ?? PLAYBOOK_LIFETIME_SUBMISSION_LIMIT) : null,
+    organizationId: user.organizationId,
+    organizationName: user.organization?.name ?? null,
+    orgTrialQuickReportUsed: user.orgTrialQuickReportUsed,
+    coreQuickReportNextEligibleAt: user.coreQuickReportNextEligibleAt?.toISOString() ?? null,
+    playbookLegacyAccess: user.playbookLegacyAccess,
+    organization: user.organization
+      ? {
+          active: user.organization.active,
+          billingMode: user.organization.billingMode,
+          coveredLevel: user.organization.coveredLevel,
+          trialStartsAt: user.organization.trialStartsAt?.toISOString() ?? null,
+          trialEndsAt: user.organization.trialEndsAt?.toISOString() ?? null,
+        }
+      : null,
   };
 }
 
@@ -256,6 +274,8 @@ export const adminMemberDetailSelect = {
   coreQuickReportNextEligibleAt: true,
   organization: {
     select: {
+      id: true,
+      name: true,
       active: true,
       billingMode: true,
       coveredLevel: true,

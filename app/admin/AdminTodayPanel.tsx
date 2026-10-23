@@ -81,7 +81,7 @@ export default function AdminTodayPanel() {
         <p className="mt-2 text-sm text-zinc-400">What needs your attention right now.</p>
       </header>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
         <TodayCard
           title="Video reviews waiting"
           count={data.videoReviewsWaiting}
@@ -100,11 +100,6 @@ export default function AdminTodayPanel() {
         <TodayCard
           title="Leads today"
           count={data.leadsTodayCount}
-          href={ADMIN_ROUTES.business.leads}
-        />
-        <TodayCard
-          title="Checkouts started, not finished"
-          count={data.checkoutsStartedOpenCount}
           href={ADMIN_ROUTES.business.leads}
         />
         <TodayCard

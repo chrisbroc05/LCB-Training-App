@@ -18,6 +18,8 @@ import {
   ensureCoachingSubmissionPeriod,
   getCoachingSubmissionAvailabilityForUser,
 } from "@/lib/coaching-submissions";
+import { loadKeepBuildingCoachingContextForUser } from "@/lib/coaching-keep-building-server";
+import type { KeepBuildingCoachingContext } from "@/lib/coaching-keep-building-shared";
 import { getCurrentMonthGoalCheckin } from "@/lib/goal-check-in";
 import { getCalendlyBookingUrl } from "@/lib/calendly-booking";
 import {
@@ -286,6 +288,11 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const showProgramSetupBanner = shouldShowProgramSetupBanner(programEnrollment);
   const showInPersonEmergencyReminder = needsInPersonEmergencyContactReminder(userRecord);
 
+  let keepBuildingCoaching: KeepBuildingCoachingContext | null = null;
+  if (effectiveLevel === "CORE" || effectiveLevel === "PLUS") {
+    keepBuildingCoaching = await loadKeepBuildingCoachingContextForUser(session.user.id);
+  }
+
   const recentResponses = canAccessCoachingNav(membershipTier)
     ? await Promise.all([
         prisma.swingAnalysisSubmission.findMany({
@@ -344,6 +351,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         showProgramSetupBanner={showProgramSetupBanner}
         hasProgramEnrollmentRow={hasProgramEnrollmentRow}
         showInPersonEmergencyReminder={showInPersonEmergencyReminder}
+        keepBuildingCoaching={keepBuildingCoaching}
       />
 
       <div className="mx-auto hidden w-full max-w-6xl px-4 py-10 sm:px-6 sm:py-14 md:block md:py-20">
@@ -456,6 +464,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
               freeSubmissionUsed={freeSubmissionUsed}
               assessmentCallBooked={userRecord.assessmentCallBooked}
               assessmentCallDate={userRecord.assessmentCallDate}
+              keepBuildingCoaching={keepBuildingCoaching}
             />
           </div>
 

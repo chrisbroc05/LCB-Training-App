@@ -701,3 +701,20 @@ textarea,
 select {
   @apply outline-none;
 }
+
+.admin-page-section {
+  @apply rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6;
+}
+
+@media (max-width: 767px) {
+  .admin-portal input,
+  .admin-portal select,
+  .admin-portal textarea {
+    max-width: 100%;
+  }
+
+  .admin-portal .admin-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}

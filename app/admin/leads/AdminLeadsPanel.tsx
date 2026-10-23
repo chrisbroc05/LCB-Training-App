@@ -201,7 +201,7 @@ export default function AdminLeadsPanel({
             </button>
           </div>
         </div>
-        <div className="mt-4 overflow-x-auto">
+        <div className="admin-table-wrap mt-4">
           <table className="min-w-full text-left text-sm text-zinc-300">
             <thead className="text-xs uppercase text-zinc-500">
               <tr>
@@ -245,7 +245,7 @@ export default function AdminLeadsPanel({
       {showSales ? (
       <section className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
         <h2 className="text-lg font-semibold text-zinc-100">Resource purchases</h2>
-        <div className="mt-4 overflow-x-auto">
+        <div className="admin-table-wrap mt-4">
           <table className="min-w-full text-left text-sm text-zinc-300">
             <thead className="text-xs uppercase text-zinc-500">
               <tr>
@@ -283,7 +283,7 @@ export default function AdminLeadsPanel({
       {showSales && view === "sales" ? (
       <section className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
         <h2 className="text-lg font-semibold text-zinc-100">Resource purchases</h2>
-        <div className="mt-4 overflow-x-auto">
+        <div className="admin-table-wrap mt-4">
           <table className="min-w-full text-left text-sm text-zinc-300">
             <thead className="text-xs uppercase text-zinc-500">
               <tr>

@@ -77,7 +77,7 @@ export const ADMIN_MOBILE_TABS = [
   { id: "coaching", href: ADMIN_ROUTES.coaching.reviews, label: "Coaching", matchPrefix: "/admin/coaching" },
   { id: "players", href: ADMIN_ROUTES.players.members, label: "Players", matchPrefix: "/admin/players" },
   { id: "content", href: ADMIN_ROUTES.content.drillLibrary, label: "Content", matchPrefix: "/admin/content" },
-  { id: "more", href: ADMIN_ROUTES.business.leads, label: "More", matchPrefix: "/admin/business" },
+  { id: "more", href: "/admin/more", label: "More", matchPrefix: "/admin/more" },
 ] as const;
 
 export function isAdminTodayPath(pathname: string) {
@@ -114,6 +114,7 @@ export function adminMobileTabActive(pathname: string, tab: (typeof ADMIN_MOBILE
   }
   if (tab.id === "more") {
     return (
+      pathname.startsWith("/admin/more") ||
       pathname.startsWith("/admin/business") ||
       pathname.startsWith("/admin/settings")
     );

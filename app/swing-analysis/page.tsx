@@ -18,6 +18,8 @@ import { freeSubmissionUsedUpgradeMessage } from "@/lib/membership";
 import { mergeOrgIntoAccessFields, userOrgAccessSelect } from "@/lib/org-server";
 import { loadCurrentOrgWeeklyFocusForUser } from "@/lib/org-weekly-focus-server";
 import { prisma } from "@/lib/prisma";
+import { loadKeepBuildingCoachingContextForUser } from "@/lib/coaching-keep-building-server";
+import KeepBuildingSwingCard from "@/app/components/KeepBuildingSwingCard";
 
 export default async function SwingAnalysisPage() {
   const session = await getServerSession(authOptions);
@@ -82,6 +84,21 @@ export default async function SwingAnalysisPage() {
   }
 
   if (!availability?.canSubmit) {
+    const keepBuilding = await loadKeepBuildingCoachingContextForUser(session.user.id);
+    if (keepBuilding) {
+      return (
+        <div className="mx-auto w-full max-w-4xl px-4 py-10 sm:px-6 sm:py-14 md:py-20">
+          <section className="rounded-3xl border border-[#18243a] bg-[#0b1324]/80 p-5 sm:p-8">
+            <h1 className="text-2xl font-semibold leading-tight text-zinc-100 sm:text-3xl">
+              Coaching Submissions
+            </h1>
+            <div className="mt-6">
+              <KeepBuildingSwingCard context={keepBuilding} />
+            </div>
+          </section>
+        </div>
+      );
+    }
     redirect("/upgrade");
   }
 
