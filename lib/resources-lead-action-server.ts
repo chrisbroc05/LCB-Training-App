@@ -22,7 +22,7 @@ import {
   getStripePriceIdForResourceSlug,
   type LeadRoleValue,
 } from "@/lib/resources-shared";
-import { stripe } from "@/lib/stripe";
+import { getStripe } from "@/lib/stripe";
 
 function getBaseUrl(request: Request) {
   const configuredBaseUrl = process.env.NEXTAUTH_URL;
@@ -133,7 +133,7 @@ async function createGuestOrMemberCheckout(params: {
 
   const baseUrl = getBaseUrl(params.request);
 
-  const checkoutSession = await stripe.checkout.sessions.create({
+  const checkoutSession = await getStripe().checkout.sessions.create({
     mode: "payment",
     customer_email: params.email,
     line_items: [{ price: priceId, quantity: 1 }],
@@ -193,7 +193,7 @@ async function createRemoteSessionCheckout(params: {
 
   const baseUrl = getBaseUrl(params.request);
 
-  const checkoutSession = await stripe.checkout.sessions.create({
+  const checkoutSession = await getStripe().checkout.sessions.create({
     mode: "payment",
     customer_email: params.email,
     line_items: [{ price: priceId, quantity: 1 }],

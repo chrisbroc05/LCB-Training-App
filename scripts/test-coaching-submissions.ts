@@ -11,6 +11,8 @@ function baseFields(
   return {
     membershipTier: "FREE" as const,
     playbookLegacyAccess: false,
+    membershipLevel: null,
+    membershipLevelExpiresAt: null,
     freeSubmissionUsed: false,
     playbookSubmissionsUsed: 0,
     coachingSubmissionsUsedThisMonth: 0,

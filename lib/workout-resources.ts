@@ -113,7 +113,8 @@ export function getWorkoutResourceUrl(filename: string) {
 }
 
 export function canAccessWorkoutResourceFile(
-  user: PlaybookEntitlementFields | AccessUserFields,
+  user: Pick<AccessUserFields, "membershipTier" | "playbookLegacyAccess"> &
+    Partial<Pick<AccessUserFields, "membershipLevel" | "membershipLevelExpiresAt">>,
   filename: string,
 ): boolean {
   const resource = getWorkoutResource(filename);
@@ -121,10 +122,12 @@ export function canAccessWorkoutResourceFile(
     return false;
   }
 
-  const access: AccessUserFields =
-    "membershipLevel" in user
-      ? user
-      : toPlaybookEntitlementFields(user.membershipTier, user.playbookLegacyAccess);
+  const access = toPlaybookEntitlementFields(
+    user.membershipTier,
+    user.playbookLegacyAccess,
+    user.membershipLevel ?? null,
+    user.membershipLevelExpiresAt ?? null,
+  );
 
   return canDownloadGuideFilename(access, filename);
 }

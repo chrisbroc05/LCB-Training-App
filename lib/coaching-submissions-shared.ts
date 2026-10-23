@@ -182,6 +182,8 @@ export function getCoachingSubmissionAvailability(
       getPlaybookLifetimeSubmissionLimit({
         membershipTier: syncedUser.membershipTier,
         playbookLegacyAccess: syncedUser.playbookLegacyAccess,
+        membershipLevel: syncedUser.membershipLevel,
+        membershipLevelExpiresAt: syncedUser.membershipLevelExpiresAt,
       }) ?? PLAYBOOK_LIFETIME_SUBMISSION_LIMIT_NEW;
     const remaining = Math.max(0, lifetimeLimit - used);
     return {

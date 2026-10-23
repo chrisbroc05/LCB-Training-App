@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 import { isDatabaseTier } from "@/lib/membership";
-import { stripe } from "@/lib/stripe";
+import { getStripe } from "@/lib/stripe";
 import { sendCoachNewProgramPlayerPushForUser } from "@/lib/coach-push-instant";
 import { getPlaybookSubmissionResetData } from "@/lib/coaching-submissions";
 import { ensureProgramEnrollmentForUser } from "@/lib/program-enrollment";
@@ -76,7 +76,7 @@ export async function POST(request: Request) {
   let event: Stripe.Event;
 
   try {
-    event = stripe.webhooks.constructEvent(payload, stripeSignature, webhookSecret);
+    event = getStripe().webhooks.constructEvent(payload, stripeSignature, webhookSecret);
   } catch {
     return NextResponse.json({ error: "Invalid Stripe signature." }, { status: 400 });
   }

@@ -24,6 +24,7 @@ import {
   type DatabaseTier,
 } from "@/lib/membership";
 import { getDrillLibraryVideoId } from "@/lib/drill-library-videos";
+import { userAccessSelect } from "@/lib/access-server";
 import { prisma } from "@/lib/prisma";
 import { fetchVimeoThumbnailMap } from "@/lib/vimeo-oembed";
 
@@ -45,12 +46,7 @@ export default async function DrillLibraryPage({ searchParams }: DrillLibraryPag
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: {
-      membershipTier: true,
-      playbookLegacyAccess: true,
-      membershipLevel: true,
-      membershipLevelExpiresAt: true,
-    },
+    select: userAccessSelect,
   });
   const membershipTier = (user?.membershipTier ?? "FREE") as DatabaseTier;
   const playbookLegacyAccess = user?.playbookLegacyAccess ?? false;
@@ -208,7 +204,12 @@ export default async function DrillLibraryPage({ searchParams }: DrillLibraryPag
           />
         </DrillLibraryErrorBoundary>
         <DrillLibraryMobileResources
-          entitlements={{ membershipTier, playbookLegacyAccess }}
+          entitlements={{
+            membershipTier,
+            playbookLegacyAccess,
+            membershipLevel,
+            membershipLevelExpiresAt,
+          }}
         />
       </div>
     </>

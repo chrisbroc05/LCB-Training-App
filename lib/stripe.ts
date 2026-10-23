@@ -2,13 +2,21 @@ import Stripe from "stripe";
 import type { BillingFrequency } from "@/lib/billing";
 import type { DatabaseTier } from "@/lib/membership";
 
-const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+let stripeClient: Stripe | null = null;
 
-if (!stripeSecretKey) {
-  throw new Error("STRIPE_SECRET_KEY is required to initialize Stripe.");
+export function getStripe(): Stripe {
+  if (stripeClient) {
+    return stripeClient;
+  }
+
+  const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+  if (!stripeSecretKey) {
+    throw new Error("STRIPE_SECRET_KEY is required to initialize Stripe.");
+  }
+
+  stripeClient = new Stripe(stripeSecretKey);
+  return stripeClient;
 }
-
-export const stripe = new Stripe(stripeSecretKey);
 
 type SubscriptionDatabaseTier = Exclude<DatabaseTier, "FREE" | "BASIC" | "TWELVE_WEEK">;
 

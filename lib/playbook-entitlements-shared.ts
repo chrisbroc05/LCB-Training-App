@@ -3,7 +3,7 @@
  */
 
 import {
-  canAccessDrillLibraryBrowse,
+  canAccessDrillLibraryBrowse as accessCanAccessDrillLibraryBrowse,
   canViewDrill as accessCanViewDrill,
   canViewPlaybook as accessCanViewPlaybook,
   canDownloadWorkoutPdfs,
@@ -63,5 +63,5 @@ export function canViewDrill(context: DrillViewEntitlementContext, drillId: stri
 }
 
 export function canAccessDrillLibraryBrowse(user: PlaybookEntitlementFields): boolean {
-  return canAccessDrillLibraryBrowse(user);
+  return accessCanAccessDrillLibraryBrowse(user);
 }

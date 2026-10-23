@@ -25,8 +25,12 @@ export default async function ProgramTodayPage() {
     },
   });
 
-  const access = user ? toAccessUserFields(user) : null;
-  if (!access || !canAccessProgramDashboard(access)) {
+  if (!user) {
+    redirect("/dashboard");
+  }
+
+  const access = toAccessUserFields(user);
+  if (!canAccessProgramDashboard(access)) {
     redirect("/dashboard");
   }
 

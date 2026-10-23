@@ -1,6 +1,5 @@
 import Link from "next/link";
 
-import CoachOptionalPhoto from "@/components/CoachOptionalPhoto";
 import { BRAND_PRIMARY_SLOGAN } from "@/lib/brand-copy";
 
 const accolades = [
@@ -24,8 +23,6 @@ export default function CoachBioSection() {
           <h2 className="text-2xl font-bold text-white sm:text-3xl">Meet Coach Broc</h2>
           <div className="mx-auto mt-5 h-[2px] w-24 rounded-full bg-[#52B788]" />
         </div>
-
-        <CoachOptionalPhoto className="mt-8" size={176} roundedClass="rounded-2xl" />
 
         <div className="mt-8 text-center">
           <h3 className="text-3xl font-bold text-white sm:text-4xl">Chris Broccolino</h3>

@@ -13,6 +13,7 @@ import {
 import {
   getPlaybookLifetimeSubmissionLimit,
   PLAYBOOK_LIFETIME_SUBMISSION_LIMIT_NEW,
+  toPlaybookEntitlementFields,
 } from "@/lib/playbook-entitlements-shared";
 
 export const ADMIN_GRANT_PRODUCTS = [
@@ -65,7 +66,9 @@ export function buildMemberProductAccessSummary(
   }
   if (membershipTier === "BASIC") {
     const limit =
-      getPlaybookLifetimeSubmissionLimit({ membershipTier, playbookLegacyAccess }) ??
+      getPlaybookLifetimeSubmissionLimit(
+        toPlaybookEntitlementFields(membershipTier, playbookLegacyAccess),
+      ) ??
       PLAYBOOK_LIFETIME_SUBMISSION_LIMIT_NEW;
     lines.push(
       `${limit} lifetime coaching submission${limit === 1 ? "" : "s"} (swing or video breakdown)`,

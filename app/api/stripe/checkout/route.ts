@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { parseBillingFrequency } from "@/lib/billing";
-import { getSubscriptionPriceId, stripe } from "@/lib/stripe";
+import { getStripe, getSubscriptionPriceId } from "@/lib/stripe";
 import { requireCurrentTermsForCheckout } from "@/lib/legal-checkout-server";
 import { isDatabaseTier } from "@/lib/membership";
 
@@ -67,7 +67,7 @@ export async function POST(request: Request) {
     const billingFrequency = parseBillingFrequency(body.billingFrequency);
     const priceId = getSubscriptionPriceId(membershipTier, billingFrequency);
 
-    const checkoutSession = await stripe.checkout.sessions.create({
+    const checkoutSession = await getStripe().checkout.sessions.create({
       mode: "subscription",
       customer_email: session.user.email,
       line_items: [{ price: priceId, quantity: 1 }],

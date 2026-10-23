@@ -11,6 +11,7 @@ import {
   type DatabaseTier,
 } from "@/lib/membership";
 import { workoutResourceGroups } from "@/lib/workout-resources";
+import { toAccessUserFields, userAccessSelect } from "@/lib/access-server";
 import { prisma } from "@/lib/prisma";
 
 export default async function AccountDownloadsPage() {
@@ -21,7 +22,7 @@ export default async function AccountDownloadsPage() {
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { membershipTier: true, playbookLegacyAccess: true },
+    select: userAccessSelect,
   });
 
   if (!user) {
@@ -29,10 +30,7 @@ export default async function AccountDownloadsPage() {
   }
 
   const membershipTier = (user.membershipTier ?? "FREE") as DatabaseTier;
-  const entitlements = {
-    membershipTier,
-    playbookLegacyAccess: user.playbookLegacyAccess,
-  };
+  const entitlements = toAccessUserFields(user);
 
   if (!canAccessMemberDownloadsPage(membershipTier)) {
     return (

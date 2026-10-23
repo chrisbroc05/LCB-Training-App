@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin";
-import type { DatabaseTier } from "@/lib/membership";
+import { toAccessUserFields, userAccessSelect } from "@/lib/access-server";
 import { prisma } from "@/lib/prisma";
 import { getPrivateResourceAbsolutePath } from "@/lib/resource-files-server";
 import { getWorkoutResource, canAccessWorkoutResourceFile } from "@/lib/workout-resources";
@@ -35,19 +35,18 @@ export async function GET(_request: Request, context: RouteContext) {
   if (!isAdminEmail(session.user.email)) {
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { membershipTier: true, playbookLegacyAccess: true },
+      select: userAccessSelect,
     });
-    const membershipTier = (user?.membershipTier ?? "FREE") as DatabaseTier;
+    const access = user
+      ? toAccessUserFields(user)
+      : toAccessUserFields({
+          membershipTier: "FREE",
+          playbookLegacyAccess: false,
+          membershipLevel: null,
+          membershipLevelExpiresAt: null,
+        });
 
-    if (
-      !canAccessWorkoutResourceFile(
-        {
-          membershipTier,
-          playbookLegacyAccess: user?.playbookLegacyAccess ?? false,
-        },
-        filename,
-      )
-    ) {
+    if (!canAccessWorkoutResourceFile(access, filename)) {
       return NextResponse.json({ error: "Membership upgrade required." }, { status: 403 });
     }
   }

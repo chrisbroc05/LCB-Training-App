@@ -211,6 +211,7 @@ export async function buildProgramTodayPayload(params: {
   enrollment: {
     id: string;
     startDate: Date | null;
+    planMode?: import("@/lib/program-plan-mode-shared").ProgramPlanMode | null;
     ageGroup: string | null;
     focusAreas: string[];
     equipment: string[];

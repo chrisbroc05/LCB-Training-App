@@ -75,6 +75,9 @@ export async function PATCH(request: Request) {
     where: { id: session.user.id },
     select: { name: true, email: true },
   });
+  if (!user) {
+    return NextResponse.json({ error: "User not found." }, { status: 404 });
+  }
 
   const existing = await prisma.programEnrollment.findUnique({
     where: { userId: session.user.id },

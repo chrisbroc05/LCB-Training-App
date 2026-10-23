@@ -6,7 +6,7 @@ import { parseBillingFrequency } from "@/lib/billing";
 import { isDatabaseTier, type DatabaseTier } from "@/lib/membership";
 import { requireCurrentTermsForCheckout } from "@/lib/legal-checkout-server";
 import { sendMembershipTierChangeEmail } from "@/lib/notifications";
-import { getSubscriptionPriceId, stripe } from "@/lib/stripe";
+import { getStripe, getSubscriptionPriceId } from "@/lib/stripe";
 
 type ChangeTierBody = {
   membershipTier?: string;
@@ -91,7 +91,7 @@ export async function POST(request: Request) {
 
     const billingFrequency = parseBillingFrequency(body.billingFrequency);
     const newPriceId = getSubscriptionPriceId(requestedTier as DatabaseTier, billingFrequency);
-    const existingSubscription = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
+    const existingSubscription = await getStripe().subscriptions.retrieve(user.stripeSubscriptionId);
 
     if (
       user.stripeCustomerId &&
@@ -110,7 +110,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Subscription is already set to this price." }, { status: 400 });
     }
 
-    const updatedSubscription = await stripe.subscriptions.update(user.stripeSubscriptionId, {
+    const updatedSubscription = await getStripe().subscriptions.update(user.stripeSubscriptionId, {
       cancel_at_period_end: false,
       proration_behavior: "create_prorations",
       items: [

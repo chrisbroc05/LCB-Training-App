@@ -194,7 +194,19 @@ export async function processQueuedPlayerCoachReplyNotifications(now = new Date(
         continue;
       }
 
-      const userId = conversation.enrollment.user.id;
+      const enrollment = conversation.enrollment;
+      if (!enrollment) {
+        await prisma.conversation.update({
+          where: { id: conversation.id },
+          data: {
+            playerReplyNotifyPending: false,
+            playerReplyNotifyMessageId: null,
+          },
+        });
+        continue;
+      }
+
+      const userId = enrollment.user.id;
       const hasPush = await userHasPushSubscriptions(userId);
 
       if (hasPush) {
@@ -207,7 +219,7 @@ export async function processQueuedPlayerCoachReplyNotifications(now = new Date(
         const hourKey = `${dateKey}-morning`;
         await sendPlayerCoachReplyEmail({
           userId,
-          toEmail: conversation.enrollment.user.email,
+          toEmail: enrollment.user.email,
           body: message.body,
           dateKey,
           hourKey,

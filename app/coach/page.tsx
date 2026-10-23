@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import Link from "next/link";
 
-import CoachOptionalPhoto from "@/components/CoachOptionalPhoto";
 import {
   COACH_BIO_PDF_HREF,
   coachBioCalendlyUrl,
@@ -96,20 +95,17 @@ export default function CoachBioPage() {
   return (
     <div className="min-h-screen bg-[#050b16] text-zinc-100">
       <section className="border-b border-[#18243a] bg-[#0A1628]">
-        <div className="mx-auto flex w-full max-w-4xl flex-col items-center gap-6 px-4 py-10 sm:flex-row sm:items-start sm:justify-between sm:px-6 sm:py-12">
-          <div className="flex-1 text-center sm:text-left">
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#52B788]">LCB Training</p>
-            <h1 className="mt-2 text-3xl font-bold text-white sm:text-4xl">{coachBioContent.displayName}</h1>
-            <p className="mt-2 text-sm font-medium text-[#52B788] sm:text-base">{coachBioContent.titleLine}</p>
-            {coachBioContent.location ? (
-              <p className="mt-1 text-sm text-zinc-400">{coachBioContent.location}</p>
-            ) : null}
-            <p className="mt-3 text-sm italic text-zinc-300 sm:text-base">
-              &quot;{coachBioContent.slogan}&quot;
-            </p>
-          </div>
-          <div className="flex flex-col items-center gap-3">
-            <CoachOptionalPhoto size={152} roundedClass="rounded-2xl ring-2 ring-[#52B788]/30" priority />
+        <div className="mx-auto w-full max-w-4xl px-4 py-10 text-center sm:px-6 sm:py-12">
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#52B788]">LCB Training</p>
+          <h1 className="mt-2 text-3xl font-bold text-white sm:text-4xl">{coachBioContent.displayName}</h1>
+          <p className="mt-2 text-sm font-medium text-[#52B788] sm:text-base">{coachBioContent.titleLine}</p>
+          {coachBioContent.location ? (
+            <p className="mt-1 text-sm text-zinc-400">{coachBioContent.location}</p>
+          ) : null}
+          <p className="mt-3 text-sm italic text-zinc-300 sm:text-base">
+            &quot;{coachBioContent.slogan}&quot;
+          </p>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
             <a
               href={COACH_BIO_PDF_HREF}
               className="inline-flex items-center justify-center rounded-full border border-[#52B788]/50 px-4 py-2 text-sm font-semibold text-[#52B788] transition hover:border-[#52B788] hover:bg-[#0f1d34]"

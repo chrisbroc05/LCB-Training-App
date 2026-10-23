@@ -20,7 +20,7 @@ import { type DatabaseTier } from "@/lib/membership";
 import { prisma } from "@/lib/prisma";
 import { formatOptionalDate } from "@/lib/format-date";
 import { serializeInPersonTrainingInfo } from "@/lib/in-person-training-shared";
-import { stripe } from "@/lib/stripe";
+import { getStripe } from "@/lib/stripe";
 
 async function getStripeBillingDate(params: {
   stripeSubscriptionId: string | null;
@@ -31,7 +31,7 @@ async function getStripeBillingDate(params: {
   }
 
   try {
-    const subscription = await stripe.subscriptions.retrieve(params.stripeSubscriptionId);
+    const subscription = await getStripe().subscriptions.retrieve(params.stripeSubscriptionId);
 
     if (
       params.stripeCustomerId &&

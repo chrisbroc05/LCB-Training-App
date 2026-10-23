@@ -76,6 +76,8 @@ const coachingSubmissionUserSelect = {
 function toCoachingSubmissionUserFields(user: {
   membershipTier: string;
   playbookLegacyAccess: boolean;
+  membershipLevel: string | null;
+  membershipLevelExpiresAt: Date | null;
   freeSubmissionUsed: boolean;
   playbookSubmissionsUsed: number;
   coachingSubmissionsUsedThisMonth: number;
@@ -85,6 +87,8 @@ function toCoachingSubmissionUserFields(user: {
   return {
     membershipTier: user.membershipTier as DatabaseTier,
     playbookLegacyAccess: user.playbookLegacyAccess,
+    membershipLevel: (user.membershipLevel as CoachingSubmissionUserFields["membershipLevel"]) ?? null,
+    membershipLevelExpiresAt: user.membershipLevelExpiresAt,
     freeSubmissionUsed: user.freeSubmissionUsed,
     playbookSubmissionsUsed: user.playbookSubmissionsUsed,
     coachingSubmissionsUsedThisMonth: user.coachingSubmissionsUsedThisMonth,

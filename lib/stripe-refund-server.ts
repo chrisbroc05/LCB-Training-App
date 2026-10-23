@@ -7,7 +7,7 @@ import type { DatabaseTier } from "@/lib/membership";
 import { sendCoachRefundProcessedNotification } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import type { StripeRefundProduct } from "@/lib/stripe-refund-shared";
-import { stripe } from "@/lib/stripe";
+import { getStripe } from "@/lib/stripe";
 
 type ResolvedPurchase = {
   userId: string;
@@ -51,13 +51,13 @@ function resolveProductFromMetadata(metadata: Stripe.Metadata | null | undefined
 }
 
 async function resolvePurchaseFromPaymentIntent(paymentIntentId: string) {
-  const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+  const paymentIntent = await getStripe().paymentIntents.retrieve(paymentIntentId);
   const fromMetadata = resolveProductFromMetadata(paymentIntent.metadata);
   if (fromMetadata) {
     return fromMetadata;
   }
 
-  const sessions = await stripe.checkout.sessions.list({
+  const sessions = await getStripe().checkout.sessions.list({
     payment_intent: paymentIntentId,
     limit: 1,
   });
@@ -118,7 +118,7 @@ async function tryMarkResourcePurchaseRefunded(charge: Stripe.Charge, refundedAt
     return { processed: false as const, reason: "no_payment_intent" as const };
   }
 
-  const sessions = await stripe.checkout.sessions.list({
+  const sessions = await getStripe().checkout.sessions.list({
     payment_intent: paymentIntentId,
     limit: 10,
   });

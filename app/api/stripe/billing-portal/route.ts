@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { stripe } from "@/lib/stripe";
+import { getStripe } from "@/lib/stripe";
 
 function getAppUrl() {
   return process.env.NEXTAUTH_URL?.replace(/\/$/, "") ?? "http://localhost:3000";
@@ -41,7 +41,7 @@ export async function POST() {
     );
   }
 
-  const portalSession = await stripe.billingPortal.sessions.create({
+  const portalSession = await getStripe().billingPortal.sessions.create({
     customer: user.stripeCustomerId,
     return_url: `${getAppUrl()}/settings`,
   });

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { requireCurrentTermsForCheckout } from "@/lib/legal-checkout-server";
-import { getBasicOneTimePriceId, stripe } from "@/lib/stripe";
+import { getBasicOneTimePriceId, getStripe } from "@/lib/stripe";
 
 function getBaseUrl(request: Request) {
   const configuredBaseUrl = process.env.NEXTAUTH_URL;
@@ -33,7 +33,7 @@ export async function POST(request: Request) {
     const baseUrl = getBaseUrl(request);
     const priceId = getBasicOneTimePriceId();
 
-    const checkoutSession = await stripe.checkout.sessions.create({
+    const checkoutSession = await getStripe().checkout.sessions.create({
       mode: "payment",
       customer_email: session.user.email,
       line_items: [{ price: priceId, quantity: 1 }],
