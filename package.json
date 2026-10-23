@@ -24,6 +24,8 @@
     "test:player-evaluation-pdf": "npx --yes tsx scripts/test-player-evaluation-pdf.ts",
     "test:player-evaluation-cta": "npx --yes tsx scripts/test-player-evaluation-cta.ts",
     "test:reports-queue": "npx --yes tsx scripts/test-reports-queue-shared.ts",
+    "test:admin-sent-reports": "npx --yes tsx scripts/test-admin-sent-reports-shared.ts",
+    "test:coaching-submission-confirmation": "npx --yes tsx scripts/test-coaching-submission-confirmation.ts",
     "generate:player-eval-comparison": "npx --yes tsx scripts/generate-player-eval-comparison.ts",
     "test:playbook-entitlements": "npx --yes tsx scripts/test-playbook-entitlements.ts",
     "test:access": "npx --yes tsx scripts/test-access.ts",

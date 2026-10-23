@@ -31,6 +31,7 @@ import {
 } from "@/lib/written-report-drill-grants-shared";
 import { mergeOrgIntoAccessFields, userOrgAccessSelect } from "@/lib/org-server";
 import { formatEffectiveAccessLabel } from "@/lib/access-shared";
+import type { DatabaseTier } from "@/lib/membership";
 import type { ReportRecommendedFixItSlug } from "@/lib/player-evaluation-cta-shared";
 
 function toCtaTrack(reviewTrack: CoachingReviewTrack): PlayerEvaluationCtaTrack {
@@ -38,6 +39,45 @@ function toCtaTrack(reviewTrack: CoachingReviewTrack): PlayerEvaluationCtaTrack 
     return reviewTrack;
   }
   return "PLAYBOOK";
+}
+
+async function deliverQuickWrittenReportEmails(params: {
+  userId: string;
+  userEmail: string;
+  playerName: string;
+  submissionId: string;
+  membershipTier: DatabaseTier | null;
+  responseText: string;
+  recommendedDrills: string[];
+  evaluationPdfR2Key: string;
+}) {
+  const { downloadUrl } = await createPresignedEvaluationPdfDownloadUrl(params.evaluationPdfR2Key);
+
+  const shouldSendEmail = await shouldSendNotificationEmail(
+    params.userId,
+    "notifySubmissionResponse",
+  );
+
+  if (shouldSendEmail) {
+    await sendPlayerEvaluationReportEmail({
+      toEmail: params.userEmail,
+      playerName: params.playerName,
+      submissionId: params.submissionId,
+      pdfDownloadUrl: downloadUrl,
+      recommendedDrillIds: params.recommendedDrills,
+    });
+  }
+
+  void sendSecondEmailCoachResponseCopy({
+    userId: params.userId,
+    playerName: params.playerName,
+    submissionId: params.submissionId,
+    submissionType: "SWING_ANALYSIS",
+    responseMode: "WRITTEN",
+    membershipTier: params.membershipTier,
+    writtenResponse: params.responseText,
+    recommendedDrillIds: params.recommendedDrills,
+  });
 }
 
 function buildTeamLabel(user: {
@@ -135,32 +175,15 @@ export async function sendQuickWrittenReportForSubmission(params: {
     return row;
   });
 
-  const { downloadUrl } = await createPresignedEvaluationPdfDownloadUrl(evaluationPdfR2Key);
-
-  const shouldSendEmail = await shouldSendNotificationEmail(
-    updated.userId,
-    "notifySubmissionResponse",
-  );
-
-  if (shouldSendEmail) {
-    await sendPlayerEvaluationReportEmail({
-      toEmail: updated.userEmail,
-      playerName: updated.playerName,
-      submissionId: updated.id,
-      pdfDownloadUrl: downloadUrl,
-      recommendedDrillIds: recommendedDrills,
-    });
-  }
-
-  void sendSecondEmailCoachResponseCopy({
+  await deliverQuickWrittenReportEmails({
     userId: updated.userId,
+    userEmail: updated.userEmail,
     playerName: updated.playerName,
     submissionId: updated.id,
-    submissionType: "SWING_ANALYSIS",
-    responseMode: "WRITTEN",
     membershipTier: existing.user.membershipTier,
-    writtenResponse: responseText,
-    recommendedDrillIds: recommendedDrills,
+    responseText,
+    recommendedDrills,
+    evaluationPdfR2Key,
   });
 
   void sendCoachResponsePush({
@@ -178,6 +201,125 @@ export async function sendQuickWrittenReportForSubmission(params: {
   });
 
   return { ok: true as const, submissionId: updated.id };
+}
+
+async function loadCompletedQuickWrittenReport(submissionId: string) {
+  const existing = await prisma.swingAnalysisSubmission.findUnique({
+    where: { id: submissionId },
+    include: {
+      user: {
+        select: {
+          id: true,
+          email: true,
+          membershipTier: true,
+          membershipLevel: true,
+          membershipLevelExpiresAt: true,
+          playbookLegacyAccess: true,
+          currentTeam: true,
+          ...userOrgAccessSelect,
+        },
+      },
+    },
+  });
+
+  if (!existing) {
+    return { ok: false as const, status: 404, error: "Submission not found." };
+  }
+
+  if (existing.status !== "COMPLETED" || !existing.evaluationPdfR2Key || !existing.respondedAt) {
+    return { ok: false as const, status: 400, error: "This submission has no sent written report." };
+  }
+
+  if (!existing.reviewTrack || !isQuickWrittenReportTrack(existing.reviewTrack)) {
+    return { ok: false as const, status: 400, error: "This submission is not a quick written report." };
+  }
+
+  return { ok: true as const, existing };
+}
+
+export async function resendQuickWrittenReportForSubmission(submissionId: string) {
+  const loaded = await loadCompletedQuickWrittenReport(submissionId);
+  if (!loaded.ok) {
+    return loaded;
+  }
+
+  const { existing } = loaded;
+  const recommendedDrills = existing.recommendedDrills ?? [];
+
+  await deliverQuickWrittenReportEmails({
+    userId: existing.userId,
+    userEmail: existing.userEmail,
+    playerName: existing.playerName,
+    submissionId: existing.id,
+    membershipTier: existing.user.membershipTier,
+    responseText: existing.responseText ?? "",
+    recommendedDrills,
+    evaluationPdfR2Key: existing.evaluationPdfR2Key!,
+  });
+
+  return { ok: true as const, submissionId: existing.id };
+}
+
+export async function regenerateQuickWrittenReportForSubmission(params: {
+  submissionId: string;
+  sections: WrittenReportSections;
+  libraryDrillIds: string[];
+  recommendedFixItSlug?: ReportRecommendedFixItSlug | null;
+  editedByAdminEmail: string;
+}) {
+  const loaded = await loadCompletedQuickWrittenReport(params.submissionId);
+  if (!loaded.ok) {
+    return loaded;
+  }
+
+  const { existing } = loaded;
+  const parsedDrillIds = resolveDrillIdsFromReportLines(params.sections.recommendedDrills);
+  const reportLibraryDrillIds = mergeReportLibraryDrillIds(
+    params.libraryDrillIds,
+    parsedDrillIds,
+  );
+  const recommendedDrills = mergeReportLibraryDrillIds(reportLibraryDrillIds, parsedDrillIds);
+  const responseText = buildWrittenReportResponseText(params.sections);
+  const respondedAt = existing.respondedAt!;
+  const evaluationPdfR2Key = existing.evaluationPdfR2Key!;
+
+  const pdfBuffer = await generatePlayerEvaluationPdfBuffer({
+    playerName: existing.playerName,
+    teamLabel: buildTeamLabel(existing.user),
+    evalDate: respondedAt,
+    sections: params.sections,
+    libraryDrillIds: reportLibraryDrillIds,
+    reviewTrack: toCtaTrack(existing.reviewTrack!),
+    recommendedFixItSlug: params.recommendedFixItSlug ?? null,
+    user: existing.user,
+  });
+
+  await uploadEvaluationPdfBuffer({ key: evaluationPdfR2Key, pdfBuffer });
+
+  await prisma.$transaction(async (tx) => {
+    await tx.swingAnalysisSubmission.update({
+      where: { id: existing.id },
+      data: {
+        responseText,
+        reportStrengths: params.sections.strengths,
+        reportAreasToImprove: params.sections.areasToImprove,
+        reportRecommendedDrillLines: params.sections.recommendedDrills,
+        reportNoteFromCoach: params.sections.noteFromCoach,
+        reportLibraryDrillIds,
+        reportRecommendedFixItSlug: params.recommendedFixItSlug ?? null,
+        recommendedDrills,
+      },
+    });
+
+    await tx.swingAnalysisReportEditLog.create({
+      data: {
+        submissionId: existing.id,
+        editedByAdminEmail: params.editedByAdminEmail,
+      },
+    });
+  });
+
+  return { ok: true as const, submissionId: existing.id };
 }
 
 export function serializeAdminQuickReportRow(submission: {
@@ -203,6 +345,55 @@ export function serializeAdminQuickReportRow(submission: {
     levelLabel: formatEffectiveAccessLabel(accessFields),
     organizationName: submission.user.organization?.name ?? null,
     teamName: submission.user.orgTeam?.name ?? submission.user.currentTeam ?? null,
+  };
+}
+
+export function serializeAdminSentReportRow(submission: {
+  id: string;
+  playerName: string;
+  createdAt: Date;
+  respondedAt: Date | null;
+  userEmail: string;
+  reviewTrack: CoachingReviewTrack | null;
+  reportStrengths: string[];
+  reportAreasToImprove: string[];
+  reportRecommendedDrillLines: string[];
+  reportNoteFromCoach: string | null;
+  reportLibraryDrillIds: string[];
+  reportRecommendedFixItSlug: string | null;
+  evaluationPdfR2Key: string | null;
+  _count?: { reportEditLogs: number };
+  user: Parameters<typeof mergeOrgIntoAccessFields>[0] & {
+    currentTeam?: string | null;
+    level?: string | null;
+    organization?: { id: string; name: string } | null;
+    orgTeam?: { name: string } | null;
+  };
+  drillTitles: string[];
+}) {
+  const base = serializeAdminQuickReportRow(submission);
+  const respondedAt = submission.respondedAt;
+  const turnaroundMs =
+    respondedAt != null ? respondedAt.getTime() - submission.createdAt.getTime() : null;
+
+  return {
+    ...base,
+    submittedAt: submission.createdAt.toISOString(),
+    sentAt: respondedAt?.toISOString() ?? null,
+    turnaroundMs,
+    drillCount: submission.reportLibraryDrillIds.length,
+    drillTitles: submission.drillTitles,
+    recommendedFixItSlug: submission.reportRecommendedFixItSlug,
+    hasPdf: Boolean(submission.evaluationPdfR2Key),
+    editCount: submission._count?.reportEditLogs ?? 0,
+    organizationId: submission.user.organization?.id ?? null,
+    sections: {
+      strengths: submission.reportStrengths,
+      areasToImprove: submission.reportAreasToImprove,
+      recommendedDrills: submission.reportRecommendedDrillLines,
+      noteFromCoach: submission.reportNoteFromCoach ?? "",
+    },
+    libraryDrillIds: submission.reportLibraryDrillIds,
   };
 }
 
