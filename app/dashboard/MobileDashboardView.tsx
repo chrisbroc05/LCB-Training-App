@@ -4,9 +4,10 @@ import DashboardPlaybookProgressCard from "@/app/dashboard/DashboardPlaybookProg
 import DashboardUpgradeSection from "@/app/dashboard/DashboardUpgradeSection";
 import MobileCoachingStatusCard from "@/app/dashboard/MobileCoachingStatusCard";
 import MonthlyGoalProgressCard from "@/app/dashboard/MonthlyGoalProgressCard";
-import type { CoachingSubmissionAvailability } from "@/lib/coaching-submissions";
+import type { CoachingSubmissionUserFields } from "@/lib/coaching-submissions-shared";
 import { canAccessCoachingNav, isTwelveWeekProgramMember, type DatabaseTier } from "@/lib/membership";
 import InPersonEmergencyReminderCard from "@/components/InPersonEmergencyReminderCard";
+import OrgTrialDashboardCard from "@/app/dashboard/OrgTrialDashboardCard";
 
 type UnreadResponseNotification = {
   id: number;
@@ -17,8 +18,7 @@ type UnreadResponseNotification = {
 type MobileDashboardViewProps = {
   userId: string;
   membershipTier: DatabaseTier;
-  coachingAvailability: CoachingSubmissionAvailability | null;
-  freeSubmissionUsed: boolean;
+  coachingUser: CoachingSubmissionUserFields | null;
   currentMonthGoalCheckin: {
     goals: Array<{
       id: number;
@@ -44,8 +44,7 @@ type MobileDashboardViewProps = {
 export default function MobileDashboardView({
   userId,
   membershipTier,
-  coachingAvailability,
-  freeSubmissionUsed,
+  coachingUser,
   currentMonthGoalCheckin,
   checkoutStatus,
   checkoutProduct,
@@ -101,6 +100,8 @@ export default function MobileDashboardView({
 
       {showInPersonEmergencyReminder ? <InPersonEmergencyReminderCard /> : null}
 
+      <OrgTrialDashboardCard userId={userId} />
+
       {hasProgramEnrollmentRow ? (
         <>
           {showProgramSetupBanner ? (
@@ -120,12 +121,9 @@ export default function MobileDashboardView({
         </>
       ) : (
         <>
-          <MobileCoachingStatusCard
-            membershipTier={membershipTier}
-            coachingAvailability={coachingAvailability}
-            freeSubmissionUsed={freeSubmissionUsed}
-            unreadResponse={unreadResponse}
-          />
+          {coachingUser ? (
+            <MobileCoachingStatusCard coachingUser={coachingUser} unreadResponse={unreadResponse} />
+          ) : null}
 
           <DashboardPlaybookProgressCard userId={userId} />
 

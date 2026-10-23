@@ -9,12 +9,20 @@ import {
   canMessageCoach,
   canViewDrill,
   canViewPlaybook,
+  getDrillLockedSurfaceMessage,
   getReviewAllowance,
   getWorkoutAccessMode,
   hasFullDrillLibraryAccess,
   resolveEffectiveLevel,
 } from "../lib/access-shared";
+import { getCoachingQuotaDisplayCopy } from "../lib/coaching-quota-display-shared";
 import { formatAdminMemberPlanLabel } from "../lib/member-plan-labels-shared";
+import { userHasInactiveOrgTeamAssignment } from "../lib/org-team-shared";
+import {
+  isOrgTrialWindowActive,
+  trialEndInstantFromDateInput,
+  trialStartInstantFromDateInput,
+} from "../lib/org-trial-dates-shared";
 import { getProgramDay, getCycleProgramDay, PROGRAM_DAY_COUNT } from "../lib/program-schedule";
 import { parseProgramDateKey } from "../lib/program-schedule";
 import { toPlaybookEntitlementFields } from "../lib/playbook-entitlements-shared";
@@ -145,5 +153,74 @@ assert.equal(fixed85.isComplete, true);
 console.log("test-access: public marketing gate");
 assert.equal(PUBLIC_MEMBERSHIP_LEVELS_ENABLED, false);
 assert.match(getUpgradeLabelForLevel("PLUS"), /Upgrade for more access/);
+
+console.log("test-access: org trial");
+const trialStart = trialStartInstantFromDateInput("2026-10-23");
+const trialEnd = trialEndInstantFromDateInput("2026-11-30");
+assert.ok(trialStart && trialEnd);
+assert.equal(
+  isOrgTrialWindowActive(trialStart, trialEnd, trialStart),
+  true,
+);
+
+const orgTrialUser = {
+  ...fields("FREE"),
+  organizationId: "org-1",
+  orgName: "Central Baseball",
+  orgTrialActive: true,
+  orgTrialLockedCopy: "Full library unlocks with your club membership.",
+  orgTrialQuickReportUsed: false,
+  coreQuickReportNextEligibleAt: null,
+  freeSubmissionUsed: false,
+  playbookSubmissionsUsed: 0,
+  coachingSubmissionsUsedThisMonth: 0,
+  coachingSubmissionPeriod: "2026-10",
+  eliteRolloverCredits: 0,
+};
+
+assert.equal(resolveEffectiveLevel(orgTrialUser), "ORG_TRIAL");
+assert.equal(formatAdminMemberPlanLabel(orgTrialUser), "Central Baseball Trial");
+assert.equal(canAccessDrillLibraryBrowse(orgTrialUser), true);
+assert.equal(
+  getDrillLockedSurfaceMessage(orgTrialUser),
+  "Full library unlocks with your club membership.",
+);
+
+assert.equal(
+  canViewDrill(
+    { ...orgTrialUser, starterDrillIds: starter, grantedDrillIds: [] },
+    "starter-1",
+  ),
+  true,
+);
+assert.equal(
+  canViewDrill(
+    { ...orgTrialUser, starterDrillIds: starter, grantedDrillIds: [] },
+    "locked-drill",
+  ),
+  false,
+);
+
+const orgTrialQuota = getCoachingQuotaDisplayCopy(orgTrialUser);
+assert.match(orgTrialQuota.headline, /1 swing report during your trial/);
+assert.doesNotMatch(orgTrialQuota.headline, /free submission/i);
+
+console.log("test-access: inactive org team prompt");
+assert.equal(
+  userHasInactiveOrgTeamAssignment({
+    organizationId: "org-1",
+    orgTeamId: "team-1",
+    orgTeamActive: false,
+  }),
+  true,
+);
+assert.equal(
+  userHasInactiveOrgTeamAssignment({
+    organizationId: "org-1",
+    orgTeamId: "team-1",
+    orgTeamActive: true,
+  }),
+  false,
+);
 
 console.log("test-access: all passed");

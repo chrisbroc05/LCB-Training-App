@@ -3,8 +3,9 @@ import type { EffectiveAccessLevel } from "@/lib/access-shared";
 
 type DrillLibraryLockLineProps = {
   effective: EffectiveAccessLevel;
+  customMessage?: string | null;
 };
 
-export default function DrillLibraryLockLine({ effective }: DrillLibraryLockLineProps) {
-  return <LockedContentUpsell effective={effective} />;
+export default function DrillLibraryLockLine({ effective, customMessage }: DrillLibraryLockLineProps) {
+  return <LockedContentUpsell effective={effective} customMessage={customMessage} />;
 }

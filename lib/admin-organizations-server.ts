@@ -6,6 +6,10 @@ import {
   slugifyOrganizationName,
 } from "@/lib/admin-organizations-shared";
 import { normalizeOrgJoinCode } from "@/lib/org-shared";
+import {
+  trialEndInstantFromDateInput,
+  trialStartInstantFromDateInput,
+} from "@/lib/org-trial-dates-shared";
 import { prisma } from "@/lib/prisma";
 
 function parseMembershipLevel(value: unknown): MembershipLevel | null {
@@ -66,6 +70,7 @@ export async function listAdminOrganizations(): Promise<AdminOrganizationRecord[
         id: team.id,
         name: team.name,
         sortOrder: team.sortOrder,
+        active: team.active,
         memberCount: team._count.members,
       })),
     });
@@ -88,8 +93,12 @@ export async function createAdminOrganization(body: Record<string, unknown>) {
 
   const billingMode = body.billingMode === "CLUB_PAY" ? "CLUB_PAY" : "FAMILY_PAY";
   const coveredLevel = parseMembershipLevel(body.coveredLevel);
-  const trialStartsAt = body.trialStartsAt ? new Date(String(body.trialStartsAt)) : null;
-  const trialEndsAt = body.trialEndsAt ? new Date(String(body.trialEndsAt)) : null;
+  const trialStartsAt = body.trialStartsAt
+    ? trialStartInstantFromDateInput(String(body.trialStartsAt))
+    : null;
+  const trialEndsAt = body.trialEndsAt
+    ? trialEndInstantFromDateInput(String(body.trialEndsAt))
+    : null;
   const commissionRate = Number(body.commissionRate ?? 0);
   const commissionMonths = Number(body.commissionMonths ?? 0);
 
@@ -137,13 +146,13 @@ export async function updateAdminOrganization(orgId: string, body: Record<string
       trialStartsAt:
         body.trialStartsAt !== undefined
           ? body.trialStartsAt
-            ? new Date(String(body.trialStartsAt))
+            ? trialStartInstantFromDateInput(String(body.trialStartsAt))
             : null
           : undefined,
       trialEndsAt:
         body.trialEndsAt !== undefined
           ? body.trialEndsAt
-            ? new Date(String(body.trialEndsAt))
+            ? trialEndInstantFromDateInput(String(body.trialEndsAt))
             : null
           : undefined,
       trialLockedCopy:
@@ -194,9 +203,17 @@ export async function upsertOrgTeam(orgId: string, body: Record<string, unknown>
   const sortOrder = Number(body.sortOrder ?? 0);
 
   if (body.id) {
+    const existingTeam = await prisma.orgTeam.findUnique({ where: { id: String(body.id) } });
+    if (!existingTeam || existingTeam.organizationId !== orgId) {
+      return { ok: false as const, error: "Team not found." };
+    }
     await prisma.orgTeam.update({
       where: { id: String(body.id) },
-      data: { name, sortOrder: Number.isFinite(sortOrder) ? sortOrder : 0 },
+      data: {
+        name: name || existingTeam.name,
+        sortOrder: Number.isFinite(sortOrder) ? sortOrder : existingTeam.sortOrder,
+        active: body.active !== undefined ? Boolean(body.active) : undefined,
+      },
     });
     return { ok: true as const };
   }
@@ -209,6 +226,70 @@ export async function upsertOrgTeam(orgId: string, body: Record<string, unknown>
     },
   });
   return { ok: true as const };
+}
+
+export async function moveOrganizationMembers(params: {
+  organizationId: string;
+  userIds: string[];
+  orgTeamId: string | null;
+}) {
+  if (!params.userIds.length) {
+    return { ok: false as const, error: "Select at least one member." };
+  }
+
+  if (params.orgTeamId) {
+    const team = await prisma.orgTeam.findFirst({
+      where: {
+        id: params.orgTeamId,
+        organizationId: params.organizationId,
+        active: true,
+      },
+    });
+    if (!team) {
+      return { ok: false as const, error: "Invalid team selection." };
+    }
+  }
+
+  const changedAt = new Date();
+  await prisma.user.updateMany({
+    where: {
+      id: { in: params.userIds },
+      organizationId: params.organizationId,
+    },
+    data: {
+      orgTeamId: params.orgTeamId,
+      orgTeamChangedAt: params.orgTeamId ? changedAt : null,
+    },
+  });
+
+  return { ok: true as const };
+}
+
+export async function listOrganizationMembers(orgId: string) {
+  const members = await prisma.user.findMany({
+    where: { organizationId: orgId },
+    orderBy: { signupDate: "desc" },
+    select: {
+      id: true,
+      email: true,
+      playerFirstName: true,
+      playerLastName: true,
+      name: true,
+      orgTeamId: true,
+      orgTeam: { select: { name: true } },
+    },
+  });
+
+  return members.map((member) => ({
+    id: member.id,
+    email: member.email,
+    name:
+      [member.playerFirstName, member.playerLastName].filter(Boolean).join(" ").trim() ||
+      member.name?.trim() ||
+      member.email,
+    orgTeamId: member.orgTeamId,
+    orgTeamName: member.orgTeam?.name ?? null,
+  }));
 }
 
 export async function buildOrganizationRosterCsv(orgId: string): Promise<string> {

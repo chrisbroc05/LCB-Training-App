@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { AdminOrganizationRecord } from "@/lib/admin-organizations-shared";
+import OrgRosterMovePanel from "@/app/admin/organizations/OrgRosterMovePanel";
 import {
+  formatChicagoDateInputValue,
   formatOrgBillingModeLabel,
   formatOrgCoveredLevelLabel,
 } from "@/lib/org-shared";
@@ -15,6 +17,7 @@ export default function AdminOrganizationsPanel() {
   const [focusDrafts, setFocusDrafts] = useState<Record<string, { title: string; notes: string }>>(
     {},
   );
+  const [saveNotes, setSaveNotes] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -61,6 +64,7 @@ export default function AdminOrganizationsPanel() {
   }
 
   async function patchOrganization(id: string, body: Record<string, unknown>) {
+    setSaveNotes((current) => ({ ...current, [id]: "Saving..." }));
     const response = await fetch(`/api/admin/organizations/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -68,7 +72,24 @@ export default function AdminOrganizationsPanel() {
     });
     if (!response.ok) {
       const data = (await response.json()) as { error?: string };
-      setError(data.error ?? "Could not save organization.");
+      const message = data.error ?? "Could not save organization.";
+      setSaveNotes((current) => ({ ...current, [id]: message }));
+      setError(message);
+      return;
+    }
+    setSaveNotes((current) => ({ ...current, [id]: "Saved" }));
+    await load();
+  }
+
+  async function deactivateTeam(orgId: string, teamId: string, teamName: string) {
+    const response = await fetch(`/api/admin/organizations/${orgId}/teams`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: teamId, name: teamName, active: false }),
+    });
+    if (!response.ok) {
+      const data = (await response.json()) as { error?: string };
+      setError(data.error ?? "Could not deactivate team.");
       return;
     }
     await load();
@@ -196,10 +217,10 @@ export default function AdminOrganizationsPanel() {
               </select>
             </label>
             <label className="text-xs text-zinc-400">
-              Trial starts (ISO date)
+              Trial starts (Chicago date)
               <input
                 type="date"
-                defaultValue={org.trialStartsAt?.slice(0, 10) ?? ""}
+                defaultValue={formatChicagoDateInputValue(org.trialStartsAt)}
                 onBlur={(event) =>
                   void patchOrganization(org.id, {
                     trialStartsAt: event.target.value || null,
@@ -209,13 +230,26 @@ export default function AdminOrganizationsPanel() {
               />
             </label>
             <label className="text-xs text-zinc-400">
-              Trial ends (ISO date)
+              Trial ends (Chicago date)
               <input
                 type="date"
-                defaultValue={org.trialEndsAt?.slice(0, 10) ?? ""}
+                defaultValue={formatChicagoDateInputValue(org.trialEndsAt)}
                 onBlur={(event) =>
                   void patchOrganization(org.id, {
                     trialEndsAt: event.target.value || null,
+                  })
+                }
+                className="mt-1 w-full rounded-lg border border-[#2b3650] bg-black px-3 py-2 text-sm text-zinc-100"
+              />
+            </label>
+            <label className="text-xs text-zinc-400 sm:col-span-2">
+              Trial locked drill copy
+              <textarea
+                rows={2}
+                defaultValue={org.trialLockedCopy ?? ""}
+                onBlur={(event) =>
+                  void patchOrganization(org.id, {
+                    trialLockedCopy: event.target.value.trim() || null,
                   })
                 }
                 className="mt-1 w-full rounded-lg border border-[#2b3650] bg-black px-3 py-2 text-sm text-zinc-100"
@@ -252,6 +286,21 @@ export default function AdminOrganizationsPanel() {
               />
             </label>
           </div>
+
+          {(org.trialStartsAt && !org.trialEndsAt) || (!org.trialStartsAt && org.trialEndsAt) ? (
+            <p className="mt-2 text-xs text-amber-200">
+              Set both trial start and end dates (Chicago) for the trial window to apply.
+            </p>
+          ) : null}
+          {saveNotes[org.id] ? (
+            <p
+              className={`mt-2 text-xs ${
+                saveNotes[org.id] === "Saved" ? "text-[#9df3bd]" : "text-zinc-400"
+              }`}
+            >
+              {saveNotes[org.id]}
+            </p>
+          ) : null}
 
           <p className="mt-3 text-xs text-zinc-500">
             {formatOrgBillingModeLabel(org.billingMode)}
@@ -293,9 +342,19 @@ export default function AdminOrganizationsPanel() {
             {org.teams.map((team) => (
               <span
                 key={team.id}
-                className="rounded-full bg-[#24314a] px-2.5 py-1 text-xs text-zinc-200"
+                className="inline-flex items-center gap-2 rounded-full bg-[#24314a] px-2.5 py-1 text-xs text-zinc-200"
               >
                 {team.name} ({team.memberCount})
+                {!team.active ? " - inactive" : null}
+                {team.active ? (
+                  <button
+                    type="button"
+                    onClick={() => void deactivateTeam(org.id, team.id, team.name)}
+                    className="text-[10px] uppercase tracking-wide text-amber-200"
+                  >
+                    Deactivate
+                  </button>
+                ) : null}
               </span>
             ))}
             <button
@@ -311,6 +370,8 @@ export default function AdminOrganizationsPanel() {
               Add team
             </button>
           </div>
+
+          <OrgRosterMovePanel organizationId={org.id} teams={org.teams} onMoved={() => void load()} />
 
           <div className="mt-5 border-t border-[#2b3650] pt-4">
             <p className="text-sm font-semibold text-zinc-200">Weekly org focus</p>

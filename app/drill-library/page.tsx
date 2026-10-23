@@ -10,23 +10,16 @@ import DrillLibraryVideoSection from "@/app/drill-library/DrillLibraryVideoSecti
 import DrillProgramUpsellLine from "@/app/drill-library/DrillProgramUpsellLine";
 import GrantedDrillsPanel from "@/app/drill-library/GrantedDrillsPanel";
 import { isDrillGrantedToUser } from "@/lib/drill-library-access";
-import { loadUserGrantedDrillIds } from "@/lib/drill-library-access-server";
 import {
-  allDrillLibraryVideos,
   getDrillLibraryVideoById,
   getDrillLibraryVideosByIds,
+  allDrillLibraryVideos,
 } from "@/lib/drill-library-videos";
-import { loadStarterDrillIdSet } from "@/lib/drill-library-catalog-server";
-import { canViewDrill } from "@/lib/playbook-entitlements-shared";
 import {
-  canAccessDrillLibrary,
-  canAccessFullDrillLibrary,
-  type DatabaseTier,
-} from "@/lib/membership";
-import { getDrillLibraryVideoId } from "@/lib/drill-library-videos";
+  accessFieldsForDrillEntitlements,
+  loadDrillLibraryAccessForUser,
+} from "@/lib/drill-library-access-context-server";
 import { resolveEffectiveLevel } from "@/lib/access-shared";
-import { toAccessUserFields, userAccessSelect } from "@/lib/access-server";
-import { emptyAccessUserRow } from "@/lib/empty-access-user-shared";
 import { prisma } from "@/lib/prisma";
 import { fetchVimeoThumbnailMap } from "@/lib/vimeo-oembed";
 
@@ -46,31 +39,16 @@ export default async function DrillLibraryPage({ searchParams }: DrillLibraryPag
     redirect(`/auth?redirect=${encodeURIComponent(redirectTarget)}`);
   }
 
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: userAccessSelect,
-  });
-  const access = toAccessUserFields(user ?? emptyAccessUserRow);
-  const lockedContentEffective = resolveEffectiveLevel(access);
-  const membershipTier = access.membershipTier as DatabaseTier;
-  const playbookLegacyAccess = access.playbookLegacyAccess;
-  const membershipLevel = access.membershipLevel ?? null;
-  const membershipLevelExpiresAt = access.membershipLevelExpiresAt ?? null;
-  const canBrowseLibrary = canAccessDrillLibrary(
-    membershipTier,
-    playbookLegacyAccess,
-    membershipLevel,
-    membershipLevelExpiresAt,
-  );
-  const hasFullLibraryAccess = canAccessFullDrillLibrary(
-    membershipTier,
-    playbookLegacyAccess,
-    membershipLevel,
-    membershipLevelExpiresAt,
-  );
-  const grantedDrillIds = canBrowseLibrary ? [] : await loadUserGrantedDrillIds(session.user.id);
-  const showProgramUpsell =
-    lockedContentEffective === "FREE" || lockedContentEffective === "PLAYBOOK";
+  const libraryAccess = await loadDrillLibraryAccessForUser(session.user.id);
+  const {
+    access,
+    canBrowseLibrary,
+    effectiveLevel,
+    lockedDrillMessage,
+    showProgramUpsell,
+    grantedDrillIds,
+    lockedDrillIds,
+  } = libraryAccess;
 
   if (!canBrowseLibrary) {
     if (initialDrillId && isDrillGrantedToUser(initialDrillId, grantedDrillIds)) {
@@ -83,8 +61,7 @@ export default async function DrillLibraryPage({ searchParams }: DrillLibraryPag
             <section className="rounded-3xl border border-[#18243a] bg-[#0b1324]/80 p-5 sm:p-8">
               <h1 className="text-2xl font-semibold text-zinc-100">Your Coach-Picked Drill</h1>
               <p className="mt-2 text-sm text-zinc-300">
-                This drill came from your coaching breakdown. The full library stays locked until you
-                upgrade.
+                This drill came from your coaching breakdown.
               </p>
               <DrillLibraryErrorBoundary>
                 <VideoLibrary
@@ -92,12 +69,13 @@ export default async function DrillLibraryPage({ searchParams }: DrillLibraryPag
                   initialDrillId={initialDrillId}
                   allowedVideos={allowedVideos}
                   showProgramUpsell={showProgramUpsell}
-                  lockedContentEffective={lockedContentEffective}
+                  lockedContentEffective={effectiveLevel}
+                  lockedDrillMessage={lockedDrillMessage}
                 />
               </DrillLibraryErrorBoundary>
               {showProgramUpsell ? (
                 <div className="hidden md:block">
-                  <DrillProgramUpsellLine effective={lockedContentEffective} />
+                  <DrillProgramUpsellLine effective={effectiveLevel} />
                 </div>
               ) : null}
               <p className="mt-6 text-sm text-zinc-400">
@@ -116,9 +94,9 @@ export default async function DrillLibraryPage({ searchParams }: DrillLibraryPag
         <LockedFeaturePanel
           title="Drill Not Found"
           description="That drill link is invalid or no longer available."
-          message="Open the drills from your latest coaching breakdown email, or upgrade for full library access."
-          upgradeLabel="See Upgrade Options"
-          upgradeHref="/upgrade"
+          message="Open the drills from your latest coaching breakdown email, or ask Coach Broc for help."
+          upgradeLabel="Back to dashboard"
+          upgradeHref="/dashboard"
         />
       );
     }
@@ -128,8 +106,8 @@ export default async function DrillLibraryPage({ searchParams }: DrillLibraryPag
         <LockedFeaturePanel
           title="Drill Library"
           description="This drill is not attached to one of your coaching breakdowns."
-          message="You can open drills Coach Broc picked for your submissions. The full drill library is available with The Playbook or the 12-Week Coaching Program."
-          upgradeLabel="See Upgrade Options"
+          message="You can open drills Coach Broc picked for your submissions. Upgrade your membership for full library access."
+          upgradeLabel="See options"
           upgradeHref="/upgrade"
         />
       );
@@ -143,7 +121,7 @@ export default async function DrillLibraryPage({ searchParams }: DrillLibraryPag
       <LockedFeaturePanel
         title="Drill Library"
         description="Hitting, fielding, and mindset drill videos to support your training routine."
-        message="The drill library is available with The Playbook ($59) or the 12-Week Coaching Program. After Coach Broc responds to a submission, any drills he picks for you will open here."
+        message="The drill library opens with a Playbook or membership plan. After Coach Broc responds to a submission, any drills he picks for you will open here."
         upgradeLabel="See Upgrade Options"
         upgradeHref="/upgrade?reason=basic-required"
       />
@@ -154,26 +132,7 @@ export default async function DrillLibraryPage({ searchParams }: DrillLibraryPag
     allDrillLibraryVideos.map((video) => video.url),
   );
 
-  const starterDrillIds = hasFullLibraryAccess ? new Set<string>() : await loadStarterDrillIdSet();
-  const lockedDrillIds = hasFullLibraryAccess
-    ? []
-    : allDrillLibraryVideos
-        .map((video) => getDrillLibraryVideoId(video))
-        .filter((id): id is string => Boolean(id))
-        .filter(
-          (id) =>
-            !canViewDrill(
-              {
-                membershipTier,
-                playbookLegacyAccess,
-                membershipLevel,
-                membershipLevelExpiresAt,
-                starterDrillIds,
-                grantedDrillIds,
-              },
-              id,
-            ),
-        );
+  const entitlements = accessFieldsForDrillEntitlements(access);
 
   return (
     <>
@@ -197,7 +156,8 @@ export default async function DrillLibraryPage({ searchParams }: DrillLibraryPag
             thumbnailMap={thumbnailMap}
             initialDrillId={initialDrillId}
             lockedDrillIds={lockedDrillIds}
-            lockedContentEffective={lockedContentEffective}
+            lockedContentEffective={effectiveLevel}
+            lockedDrillMessage={lockedDrillMessage}
           />
         </DrillLibraryErrorBoundary>
       </div>
@@ -208,17 +168,11 @@ export default async function DrillLibraryPage({ searchParams }: DrillLibraryPag
             thumbnailMap={thumbnailMap}
             initialDrillId={initialDrillId}
             lockedDrillIds={lockedDrillIds}
-            lockedContentEffective={lockedContentEffective}
+            lockedContentEffective={effectiveLevel}
+            lockedDrillMessage={lockedDrillMessage}
           />
         </DrillLibraryErrorBoundary>
-        <DrillLibraryMobileResources
-          entitlements={{
-            membershipTier,
-            playbookLegacyAccess,
-            membershipLevel,
-            membershipLevelExpiresAt,
-          }}
-        />
+        <DrillLibraryMobileResources entitlements={entitlements} />
       </div>
     </>
   );

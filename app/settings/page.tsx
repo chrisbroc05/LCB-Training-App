@@ -8,6 +8,7 @@ import ProgramEmailSettingsSection from "@/app/settings/ProgramEmailSettingsSect
 import WorkoutEquipmentSection from "@/app/settings/WorkoutEquipmentSection";
 import PushNotificationsSection from "@/app/settings/PushNotificationsSection";
 import InPersonTrainingSection from "@/app/settings/InPersonTrainingSection";
+import OrgTeamSection from "@/app/settings/OrgTeamSection";
 import LegalSettingsSection from "@/app/settings/LegalSettingsSection";
 import SecuritySection from "@/app/settings/SecuritySection";
 import {
@@ -127,6 +128,7 @@ export default async function SettingsPage() {
           mediaConsent={user.mediaConsent}
         />
         <InPersonTrainingSection initialInfo={serializeInPersonTrainingInfo(user)} />
+        <OrgTeamSection />
         <SecuritySection />
         <BillingSection
           currentPlanLabel={currentPlanLabel}

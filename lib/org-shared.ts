@@ -34,19 +34,11 @@ export function formatOrgCoveredLevelLabel(level: MembershipLevelKey | null | un
   return "All-Access";
 }
 
-export function isOrgTrialWindowActive(
-  trialStartsAt: Date | string | null | undefined,
-  trialEndsAt: Date | string | null | undefined,
-  now = new Date(),
-): boolean {
-  const start = trialStartsAt ? new Date(trialStartsAt) : null;
-  const end = trialEndsAt ? new Date(trialEndsAt) : null;
-  if (!start || !end) {
-    return false;
-  }
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
-    return false;
-  }
-  const t = now.getTime();
-  return t >= start.getTime() && t <= end.getTime();
-}
+export {
+  formatChicagoDateInputValue,
+  formatChicagoTrialEndLabel,
+  isOrgTrialWindowActive,
+  parseChicagoDateInput,
+  trialEndInstantFromDateInput,
+  trialStartInstantFromDateInput,
+} from "@/lib/org-trial-dates-shared";

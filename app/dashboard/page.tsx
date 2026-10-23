@@ -6,6 +6,7 @@ import { formatDateTime } from "@/lib/format-date";
 import { prisma } from "@/lib/prisma";
 import DashboardCoachingCard from "@/app/dashboard/DashboardCoachingCard";
 import OrgWeeklyFocusCard from "@/app/dashboard/OrgWeeklyFocusCard";
+import OrgTrialDashboardCard from "@/app/dashboard/OrgTrialDashboardCard";
 import DashboardEnrolledHomeSection from "@/app/dashboard/DashboardEnrolledHomeSection";
 import DashboardMembershipCard from "@/app/dashboard/DashboardMembershipCard";
 import DashboardPlaybookWelcomeCard from "@/app/dashboard/DashboardPlaybookWelcomeCard";
@@ -333,8 +334,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       <MobileDashboardView
         userId={session.user.id}
         membershipTier={membershipTier}
-        coachingAvailability={coachingAvailability}
-        freeSubmissionUsed={freeSubmissionUsed}
+        coachingUser={coachingFields}
         currentMonthGoalCheckin={currentMonthGoalCheckin}
         checkoutStatus={checkoutStatus}
         checkoutProduct={checkoutProduct}
@@ -441,6 +441,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         <>
           <div className="mt-8 space-y-4 sm:space-y-5">
             <OrgWeeklyFocusCard userId={session.user.id} />
+            <OrgTrialDashboardCard userId={session.user.id} />
             <DashboardMembershipCard
               planLabel={membershipLabel}
               isPaidMember={isPaidMember}

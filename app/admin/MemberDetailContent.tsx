@@ -191,9 +191,6 @@ export default function MemberDetailContent({
             />
             <p className="text-xs text-zinc-500">Base tier: {detail.baseTierLabel}</p>
           </div>
-          <span className="rounded-full border border-[#2b3650] px-2.5 py-0.5 text-[11px] font-medium text-zinc-300">
-            {detail.productAccessCompact}
-          </span>
           <button
             type="button"
             onClick={() => setShowSendVideo((current) => !current)}

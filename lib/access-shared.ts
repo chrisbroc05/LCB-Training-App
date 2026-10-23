@@ -40,11 +40,18 @@ export type EffectiveAccessLevel =
 
 export type OrgContextFields = {
   organizationId?: string | null;
+  orgName?: string | null;
+  orgLogoUrl?: string | null;
+  orgTrialLockedCopy?: string | null;
+  orgTrialEndsAt?: Date | string | null;
   orgBillingMode?: "FAMILY_PAY" | "CLUB_PAY" | null;
   orgCoveredLevel?: MembershipLevelKey | null;
   orgTrialActive?: boolean;
   orgTrialQuickReportUsed?: boolean;
   coreQuickReportNextEligibleAt?: Date | string | null;
+  orgTeamId?: string | null;
+  orgTeamName?: string | null;
+  orgTeamActive?: boolean | null;
 };
 
 export type AccessUserFields = {
@@ -375,7 +382,7 @@ export function getReviewAllowance(
       canSubmit,
       remaining: canSubmit ? 1 : 0,
       limit: 1,
-      periodLabel: "org trial",
+      periodLabel: "trial",
     };
   }
 
@@ -444,15 +451,25 @@ export type LockedContentHint = {
   message: string;
 };
 
+export function getDrillLockedSurfaceMessage(user: AccessUserFields, now = new Date()): string {
+  const effective = resolveEffectiveLevel(user, now);
+  if (effective === "ORG_TRIAL") {
+    const custom = user.orgTrialLockedCopy?.trim();
+    if (custom) {
+      return custom;
+    }
+  }
+  return getLockedContentMessage(effective, "drill");
+}
+
 export function getDrillLockHint(user: AccessUserFields, drillId: string, context: DrillViewAccessContext): LockedContentHint {
   if (canViewDrill(context, drillId)) {
     return { locked: false, upgradeLevel: null, message: "" };
   }
-  const effective = resolveEffectiveLevel(user);
   return {
     locked: true,
     upgradeLevel: null,
-    message: getLockedContentMessage(effective, "drill"),
+    message: getDrillLockedSurfaceMessage(user),
   };
 }
 
@@ -484,7 +501,8 @@ export function formatEffectiveAccessLabel(user: AccessUserFields, now = new Dat
     return MEMBERSHIP_LEVELS.CORE.displayName;
   }
   if (effective === "ORG_TRIAL") {
-    return "Org trial";
+    const name = user.orgName?.trim();
+    return name ? `${name} Trial` : "Org Trial";
   }
   if (effective === "PLAYBOOK") {
     return user.playbookLegacyAccess ? "Playbook (legacy)" : "Playbook";

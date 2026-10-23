@@ -5,7 +5,9 @@ export const emptyAccessUserRow = {
   membershipLevelExpiresAt: null,
   playbookLegacyAccess: false,
   organizationId: null,
+  orgTeamId: null,
   orgTrialQuickReportUsed: false,
   coreQuickReportNextEligibleAt: null,
   organization: null,
+  orgTeam: null,
 };

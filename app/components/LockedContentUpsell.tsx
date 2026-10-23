@@ -10,13 +10,18 @@ type LockedContentUpsellProps = {
   effective: EffectiveAccessLevel;
   surface?: "drill" | "workout" | "playbook" | "guide";
   className?: string;
+  customMessage?: string | null;
 };
 
 export default function LockedContentUpsell({
   effective,
   surface = "drill",
   className = "mt-2 text-center text-sm leading-relaxed text-zinc-400",
+  customMessage,
 }: LockedContentUpsellProps) {
+  if (customMessage?.trim()) {
+    return <p className={className}>{customMessage.trim()}</p>;
+  }
   if (shouldShowPlaybookStarterPromo(effective)) {
     return (
       <p className={className}>

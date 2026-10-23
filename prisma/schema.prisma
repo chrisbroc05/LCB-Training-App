@@ -260,6 +260,7 @@ model User {
   organizationId         String?
   orgTeamId              String?
   orgJoinedAt            DateTime?
+  orgTeamChangedAt       DateTime?
   orgTrialQuickReportUsed Boolean               @default(false)
   coreQuickReportNextEligibleAt DateTime?
   organization           Organization?          @relation(fields: [organizationId], references: [id], onDelete: SetNull)
@@ -307,6 +308,7 @@ model OrgTeam {
   organizationId String
   name           String
   sortOrder      Int          @default(0)
+  active         Boolean      @default(true)
   createdAt      DateTime     @default(now())
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   members        User[]

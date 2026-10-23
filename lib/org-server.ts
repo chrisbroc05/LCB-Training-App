@@ -13,14 +13,24 @@ export const userOrgAccessSelect = {
   orgJoinedAt: true,
   orgTrialQuickReportUsed: true,
   coreQuickReportNextEligibleAt: true,
+  orgTeam: {
+    select: {
+      id: true,
+      name: true,
+      active: true,
+    },
+  },
   organization: {
     select: {
       id: true,
+      name: true,
+      logoUrl: true,
       active: true,
       billingMode: true,
       coveredLevel: true,
       trialStartsAt: true,
       trialEndsAt: true,
+      trialLockedCopy: true,
     },
   },
 } as const;
@@ -32,14 +42,19 @@ export function mergeOrgIntoAccessFields(
     membershipLevelExpiresAt: Date | null;
     playbookLegacyAccess: boolean;
     organizationId: string | null;
+    orgTeamId?: string | null;
     orgTrialQuickReportUsed: boolean;
     coreQuickReportNextEligibleAt: Date | null;
+    orgTeam?: { id: string; name: string; active: boolean } | null;
     organization: {
+      name?: string;
+      logoUrl?: string | null;
       active: boolean;
       billingMode: "FAMILY_PAY" | "CLUB_PAY";
       coveredLevel: "CORE" | "PLUS" | "ALL_ACCESS" | null;
       trialStartsAt: Date | null;
       trialEndsAt: Date | null;
+      trialLockedCopy?: string | null;
     } | null;
   },
 ): AccessUserFields {
@@ -54,11 +69,18 @@ export function mergeOrgIntoAccessFields(
     membershipLevelExpiresAt: user.membershipLevelExpiresAt,
     playbookLegacyAccess: user.playbookLegacyAccess,
     organizationId: user.organizationId,
+    orgName: org?.name ?? null,
+    orgLogoUrl: org?.logoUrl ?? null,
+    orgTrialLockedCopy: org?.trialLockedCopy ?? null,
+    orgTrialEndsAt: org?.trialEndsAt ?? null,
     orgBillingMode: org?.billingMode ?? null,
     orgCoveredLevel: (org?.coveredLevel as MembershipLevelKey | null) ?? null,
     orgTrialActive: trialActive,
     orgTrialQuickReportUsed: user.orgTrialQuickReportUsed,
     coreQuickReportNextEligibleAt: user.coreQuickReportNextEligibleAt,
+    orgTeamId: user.orgTeamId ?? null,
+    orgTeamName: user.orgTeam?.name ?? null,
+    orgTeamActive: user.orgTeam?.active ?? null,
   };
 }
 
@@ -73,7 +95,10 @@ export async function findOrganizationByJoinCode(codeRaw: string) {
     include: {
       organization: {
         include: {
-          teams: { orderBy: { sortOrder: "asc" } },
+          teams: {
+            where: { active: true },
+            orderBy: { sortOrder: "asc" },
+          },
         },
       },
     },
@@ -94,18 +119,22 @@ export async function joinOrganizationForUser(params: {
   const org = match.organization;
   let teamId: string | null = params.orgTeamId ?? null;
   if (teamId) {
-    const team = org.teams.find((entry) => entry.id === teamId);
+    const team = await prisma.orgTeam.findFirst({
+      where: { id: teamId, organizationId: org.id, active: true },
+    });
     if (!team) {
       return { ok: false as const, error: "Invalid team selection." };
     }
   }
 
+  const joinedAt = new Date();
   await prisma.user.update({
     where: { id: params.userId },
     data: {
       organizationId: org.id,
       orgTeamId: teamId,
-      orgJoinedAt: new Date(),
+      orgJoinedAt: joinedAt,
+      orgTeamChangedAt: teamId ? joinedAt : null,
     },
   });
 
@@ -117,3 +146,18 @@ export type OrganizationAdminRecord = Organization & {
   teams: OrgTeam[];
   _count: { members: number };
 };
+
+export async function userNeedsInactiveOrgTeamReselection(userId: string): Promise<boolean> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      organizationId: true,
+      orgTeamId: true,
+      orgTeam: { select: { active: true } },
+    },
+  });
+  if (!user?.organizationId || !user.orgTeamId) {
+    return false;
+  }
+  return user.orgTeam?.active === false;
+}

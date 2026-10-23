@@ -102,6 +102,7 @@ type VideoSectionProps = {
   onSelectVideo: (video: DrillLibraryVideoItem) => void;
   lockedDrillIds: ReadonlySet<string>;
   lockedContentEffective: EffectiveAccessLevel;
+  lockedDrillMessage?: string | null;
 };
 
 function isDrillLocked(video: DrillLibraryVideoItem, lockedDrillIds: ReadonlySet<string>) {
@@ -117,6 +118,7 @@ function VideoSection({
   onSelectVideo,
   lockedDrillIds,
   lockedContentEffective,
+  lockedDrillMessage = null,
 }: VideoSectionProps) {
   return (
     <div>
@@ -138,7 +140,10 @@ function VideoSection({
                   </span>
                 </div>
                 <p className="mt-4 text-base font-semibold text-zinc-300 sm:text-lg">{video.title}</p>
-                <DrillLibraryLockLine effective={lockedContentEffective} />
+                <DrillLibraryLockLine
+                  effective={lockedContentEffective}
+                  customMessage={lockedDrillMessage}
+                />
               </article>
             );
           }
@@ -167,6 +172,7 @@ type VideoLibraryProps = {
   showProgramUpsell?: boolean;
   lockedDrillIds?: readonly string[];
   lockedContentEffective?: EffectiveAccessLevel;
+  lockedDrillMessage?: string | null;
 };
 
 export default function VideoLibrary({
@@ -176,6 +182,7 @@ export default function VideoLibrary({
   showProgramUpsell = false,
   lockedDrillIds = [],
   lockedContentEffective = "FREE",
+  lockedDrillMessage = null,
 }: VideoLibraryProps) {
   const lockedDrillIdSet = useMemo(() => new Set(lockedDrillIds), [lockedDrillIds]);
   const isGrantedOnlyMode = Boolean(allowedVideos && allowedVideos.length > 0);
@@ -296,7 +303,10 @@ export default function VideoLibrary({
                       </span>
                     </div>
                     <p className="mt-3 text-base font-semibold text-zinc-300">{video.title}</p>
-                    <DrillLibraryLockLine effective={lockedContentEffective} />
+                    <DrillLibraryLockLine
+                  effective={lockedContentEffective}
+                  customMessage={lockedDrillMessage}
+                />
                   </article>
                 );
               }
@@ -343,6 +353,7 @@ export default function VideoLibrary({
             onSelectVideo={setDesktopVideo}
             lockedDrillIds={lockedDrillIdSet}
             lockedContentEffective={lockedContentEffective}
+            lockedDrillMessage={lockedDrillMessage}
           />
         </section>
       ) : (
@@ -355,6 +366,7 @@ export default function VideoLibrary({
             onSelectVideo={setDesktopVideo}
             lockedDrillIds={lockedDrillIdSet}
             lockedContentEffective={lockedContentEffective}
+            lockedDrillMessage={lockedDrillMessage}
           />
           <VideoSection
             heading="Fielding Library"
@@ -364,6 +376,7 @@ export default function VideoLibrary({
             onSelectVideo={setDesktopVideo}
             lockedDrillIds={lockedDrillIdSet}
             lockedContentEffective={lockedContentEffective}
+            lockedDrillMessage={lockedDrillMessage}
           />
           <VideoSection
             heading="Mindset Library"
@@ -373,6 +386,7 @@ export default function VideoLibrary({
             onSelectVideo={setDesktopVideo}
             lockedDrillIds={lockedDrillIdSet}
             lockedContentEffective={lockedContentEffective}
+            lockedDrillMessage={lockedDrillMessage}
           />
         </section>
       )}

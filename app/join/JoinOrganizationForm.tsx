@@ -45,7 +45,7 @@ export default function JoinOrganizationForm({
         setError(data.error ?? "Could not join organization.");
         return;
       }
-      router.push("/dashboard");
+      router.push(`/join/${encodeURIComponent(code)}/welcome`);
       router.refresh();
     } catch {
       setError("Could not join organization.");

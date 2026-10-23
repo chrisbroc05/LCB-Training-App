@@ -9,6 +9,7 @@ type DrillLibraryVideoSectionProps = {
   initialDrillId?: string;
   lockedDrillIds?: readonly string[];
   lockedContentEffective?: EffectiveAccessLevel;
+  lockedDrillMessage?: string | null;
 };
 
 function VideoLibrarySkeleton() {
@@ -41,6 +42,7 @@ export default function DrillLibraryVideoSection({
   initialDrillId,
   lockedDrillIds = [],
   lockedContentEffective = "FREE",
+  lockedDrillMessage = null,
 }: DrillLibraryVideoSectionProps) {
   const [isReady, setIsReady] = useState(false);
 
@@ -58,6 +60,7 @@ export default function DrillLibraryVideoSection({
       initialDrillId={initialDrillId}
       lockedDrillIds={lockedDrillIds}
       lockedContentEffective={lockedContentEffective}
+      lockedDrillMessage={lockedDrillMessage}
     />
   );
 }

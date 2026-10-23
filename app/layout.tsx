@@ -15,6 +15,7 @@ import AppSplashScreen from "@/components/AppSplashScreen";
 import PWAInstallHint from "@/components/PWAInstallHint";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 import LegalAgreementGate from "@/components/LegalAgreementGate";
+import OrgTeamReselectBanner from "@/app/components/OrgTeamReselectBanner";
 import Under13ParentConsentGate from "@/components/Under13ParentConsentGate";
 import "./globals.css";
 
@@ -96,6 +97,7 @@ export default async function RootLayout({
         ) : null}
       </head>
       <body className="min-h-full flex flex-col bg-black text-zinc-100">
+        {session?.user?.id ? <OrgTeamReselectBanner userId={session.user.id} /> : null}
         <AppSplashScreen />
         <SiteShell
           isLoggedIn={Boolean(session?.user)}

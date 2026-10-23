@@ -12,6 +12,7 @@ export type AdminOrganizationTeamRecord = {
   id: string;
   name: string;
   sortOrder: number;
+  active: boolean;
   memberCount: number;
 };
 

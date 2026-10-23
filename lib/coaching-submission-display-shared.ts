@@ -40,11 +40,11 @@ export function formatReviewAllowanceDisplay(
       ? new Date(options.coreQuickReportNextEligibleAt)
       : null;
     const eligibleNow = allowance.canSubmit;
-    if (allowance.periodLabel === "org trial") {
+    if (allowance.periodLabel === "trial") {
       return {
         headline: eligibleNow
-          ? "Your swing report: 1 during org trial"
-          : "You have used your org trial swing report.",
+          ? "1 swing report during your trial"
+          : "You have used your trial swing report.",
         detail: null,
       };
     }
