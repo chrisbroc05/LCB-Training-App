@@ -2,25 +2,25 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin";
-import { getWeekStartMondayUtc } from "@/lib/org-weekly-focus-shared";
-import { prisma } from "@/lib/prisma";
+import {
+  buildAdminWeeklyFocusPayload,
+  saveAdminOrgWeeklyFocus,
+} from "@/lib/org-weekly-focus-admin-server";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-export async function GET(_request: Request, context: RouteContext) {
+export async function GET(request: Request, context: RouteContext) {
   const session = await getServerSession(authOptions);
   if (!isAdminEmail(session?.user?.email)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const { id } = await context.params;
-  const weekStart = getWeekStartMondayUtc();
-  const focuses = await prisma.orgWeeklyFocus.findMany({
-    where: { organizationId: id, weekStartDate: weekStart },
-    orderBy: { createdAt: "asc" },
-  });
+  const url = new URL(request.url);
+  const week = url.searchParams.get("week") ?? undefined;
 
-  return NextResponse.json({ focuses });
+  const payload = await buildAdminWeeklyFocusPayload(id, week ?? undefined);
+  return NextResponse.json(payload);
 }
 
 export async function POST(request: Request, context: RouteContext) {
@@ -31,48 +31,28 @@ export async function POST(request: Request, context: RouteContext) {
 
   const { id } = await context.params;
   const body = (await request.json()) as Record<string, unknown>;
-  const title = String(body.title ?? "").trim();
-  if (!title) {
-    return NextResponse.json({ error: "Title is required." }, { status: 400 });
+  const weekStartInput = String(body.weekStartDate ?? body.weekStart ?? "").trim();
+  if (!weekStartInput) {
+    return NextResponse.json(
+      { error: "Week is required (Monday date, Chicago time)." },
+      { status: 400 },
+    );
   }
 
-  const weekStart = getWeekStartMondayUtc();
-  const orgTeamId = body.orgTeamId ? String(body.orgTeamId) : null;
-  const notes = body.notes ? String(body.notes).trim() : null;
-  const drillIds = Array.isArray(body.drillIds)
-    ? body.drillIds.map((entry) => String(entry).trim()).filter(Boolean)
-    : [];
-
-  const existing = await prisma.orgWeeklyFocus.findFirst({
-    where: {
-      organizationId: id,
-      orgTeamId,
-      weekStartDate: weekStart,
-    },
+  const result = await saveAdminOrgWeeklyFocus({
+    organizationId: id,
+    focusId: body.focusId ? String(body.focusId) : null,
+    weekStartInput,
+    orgTeamId: body.orgTeamId ? String(body.orgTeamId) : null,
+    title: String(body.title ?? ""),
+    notes: body.notes != null ? String(body.notes) : null,
+    drillIds: body.drillIds,
   });
 
-  if (existing) {
-    await prisma.orgWeeklyFocus.update({
-      where: { id: existing.id },
-      data: { title, notes, drillIds },
-    });
-  } else {
-    await prisma.orgWeeklyFocus.create({
-      data: {
-        organizationId: id,
-        orgTeamId,
-        weekStartDate: weekStart,
-        title,
-        notes,
-        drillIds,
-      },
-    });
+  if (!result.ok) {
+    return NextResponse.json({ error: result.error }, { status: 400 });
   }
 
-  const focuses = await prisma.orgWeeklyFocus.findMany({
-    where: { organizationId: id, weekStartDate: weekStart },
-    orderBy: { createdAt: "asc" },
-  });
-
-  return NextResponse.json({ success: true, focuses });
+  const payload = await buildAdminWeeklyFocusPayload(id, weekStartInput);
+  return NextResponse.json({ success: true, message: "Saved", ...payload });
 }

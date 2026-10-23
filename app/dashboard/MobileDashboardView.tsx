@@ -8,6 +8,7 @@ import type { CoachingSubmissionUserFields } from "@/lib/coaching-submissions-sh
 import { canAccessCoachingNav, isTwelveWeekProgramMember, type DatabaseTier } from "@/lib/membership";
 import InPersonEmergencyReminderCard from "@/components/InPersonEmergencyReminderCard";
 import OrgTrialDashboardCard from "@/app/dashboard/OrgTrialDashboardCard";
+import OrgWeeklyFocusCard from "@/app/dashboard/OrgWeeklyFocusCard";
 
 type UnreadResponseNotification = {
   id: number;
@@ -100,6 +101,7 @@ export default function MobileDashboardView({
 
       {showInPersonEmergencyReminder ? <InPersonEmergencyReminderCard /> : null}
 
+      <OrgWeeklyFocusCard userId={userId} />
       <OrgTrialDashboardCard userId={userId} />
 
       {hasProgramEnrollmentRow ? (

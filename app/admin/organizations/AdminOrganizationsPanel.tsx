@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { AdminOrganizationRecord } from "@/lib/admin-organizations-shared";
 import OrgRosterMovePanel from "@/app/admin/organizations/OrgRosterMovePanel";
+import OrgWeeklyFocusAdminPanel from "@/app/admin/organizations/OrgWeeklyFocusAdminPanel";
 import {
   formatChicagoDateInputValue,
   formatOrgBillingModeLabel,
@@ -14,9 +15,6 @@ export default function AdminOrganizationsPanel() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [newName, setNewName] = useState("");
-  const [focusDrafts, setFocusDrafts] = useState<Record<string, { title: string; notes: string }>>(
-    {},
-  );
   const [saveNotes, setSaveNotes] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
@@ -121,23 +119,6 @@ export default function AdminOrganizationsPanel() {
       return;
     }
     await load();
-  }
-
-  async function saveWeeklyFocus(orgId: string) {
-    const draft = focusDrafts[orgId] ?? { title: "", notes: "" };
-    if (!draft.title.trim()) {
-      return;
-    }
-    const response = await fetch(`/api/admin/organizations/${orgId}/weekly-focus`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: draft.title.trim(), notes: draft.notes.trim() || null }),
-    });
-    if (!response.ok) {
-      const data = (await response.json()) as { error?: string };
-      setError(data.error ?? "Could not save weekly focus.");
-      return;
-    }
   }
 
   if (loading) {
@@ -373,46 +354,7 @@ export default function AdminOrganizationsPanel() {
 
           <OrgRosterMovePanel organizationId={org.id} teams={org.teams} onMoved={() => void load()} />
 
-          <div className="mt-5 border-t border-[#2b3650] pt-4">
-            <p className="text-sm font-semibold text-zinc-200">Weekly org focus</p>
-            <input
-              type="text"
-              value={focusDrafts[org.id]?.title ?? ""}
-              onChange={(event) =>
-                setFocusDrafts((current) => ({
-                  ...current,
-                  [org.id]: {
-                    title: event.target.value,
-                    notes: current[org.id]?.notes ?? "",
-                  },
-                }))
-              }
-              placeholder="Focus title"
-              className="mt-2 w-full rounded-lg border border-[#2b3650] bg-black px-3 py-2 text-sm text-zinc-100"
-            />
-            <textarea
-              rows={2}
-              value={focusDrafts[org.id]?.notes ?? ""}
-              onChange={(event) =>
-                setFocusDrafts((current) => ({
-                  ...current,
-                  [org.id]: {
-                    title: current[org.id]?.title ?? "",
-                    notes: event.target.value,
-                  },
-                }))
-              }
-              placeholder="Notes for players (optional)"
-              className="mt-2 w-full rounded-lg border border-[#2b3650] bg-black px-3 py-2 text-sm text-zinc-100"
-            />
-            <button
-              type="button"
-              onClick={() => void saveWeeklyFocus(org.id)}
-              className="mt-2 rounded-full bg-[#22c55e] px-4 py-2 text-xs font-semibold text-black"
-            >
-              Save weekly focus
-            </button>
-          </div>
+          <OrgWeeklyFocusAdminPanel organizationId={org.id} teams={org.teams} />
         </article>
       ))}
     </div>
