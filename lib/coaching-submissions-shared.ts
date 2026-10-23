@@ -28,6 +28,16 @@ export type CoachingSubmissionUserFields = AccessUserFields & {
   eliteRolloverCredits: number;
 };
 
+const SIX_WEEKS_MS = 6 * 7 * 24 * 60 * 60 * 1000;
+
+function parseWhen(value: Date | string | null | undefined): Date | null {
+  if (!value) {
+    return null;
+  }
+  const parsed = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
 export type CoachingSubmissionAvailability = {
   canSubmit: boolean;
   lockReason: CoachingSubmissionLockReason;
@@ -149,16 +159,33 @@ export function getCoachingSubmissionAvailability(
   }
 
   if (effective === "CORE") {
+    const nextEligible = parseWhen(syncedUser.coreQuickReportNextEligibleAt);
+    const canSubmit = !nextEligible || nextEligible.getTime() <= now.getTime();
     return {
-      canSubmit: true,
-      lockReason: null,
-      remaining: 1,
+      canSubmit,
+      lockReason: canSubmit ? null : "monthly-limit",
+      remaining: canSubmit ? 1 : 0,
       lifetimeLimit: null,
       monthlyRemaining: null,
       rolloverCredits: null,
       monthlyLimit: null,
       periodKey,
-      resetsOnLabel: "every 6 weeks",
+      resetsOnLabel: nextEligible ? formatDateWithYear(nextEligible) : "every 6 weeks",
+    };
+  }
+
+  if (effective === "ORG_TRIAL") {
+    const canSubmit = !syncedUser.orgTrialQuickReportUsed;
+    return {
+      canSubmit,
+      lockReason: canSubmit ? null : "playbook-used",
+      remaining: canSubmit ? 1 : 0,
+      lifetimeLimit: null,
+      monthlyRemaining: null,
+      rolloverCredits: null,
+      monthlyLimit: null,
+      periodKey,
+      resetsOnLabel: "org trial",
     };
   }
 
@@ -199,7 +226,7 @@ export function getCoachingSubmissionAvailability(
     };
   }
 
-  if (syncedUser.membershipTier === "FREE") {
+  if (effective === "FREE" && syncedUser.membershipTier === "FREE") {
     const remaining = syncedUser.freeSubmissionUsed ? 0 : FREE_LIFETIME_SUBMISSION_LIMIT;
     return {
       canSubmit: remaining > 0,

@@ -1,9 +1,14 @@
-import DrillLibraryLockLine from "@/app/drill-library/DrillLibraryLockLine";
+import LockedContentUpsell from "@/app/components/LockedContentUpsell";
+import type { EffectiveAccessLevel } from "@/lib/access-shared";
 
-export default function DrillProgramUpsellLine() {
+type DrillProgramUpsellLineProps = {
+  effective: EffectiveAccessLevel;
+};
+
+export default function DrillProgramUpsellLine({ effective }: DrillProgramUpsellLineProps) {
   return (
     <div className="mt-4">
-      <DrillLibraryLockLine />
+      <LockedContentUpsell effective={effective} />
     </div>
   );
 }

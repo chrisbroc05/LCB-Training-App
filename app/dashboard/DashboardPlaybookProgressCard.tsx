@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { canAccessPlaybook } from "@/lib/membership";
 import { toAccessUserFields, userAccessSelect } from "@/lib/access-server";
+import { emptyAccessUserRow } from "@/lib/empty-access-user-shared";
 import { PUBLIC_MEMBERSHIP_UPGRADE_GENERIC_LABEL } from "@/lib/membership-levels-shared";
 import { ensurePlaybookProgress, serializePlaybookProgress } from "@/lib/playbook";
 import { prisma } from "@/lib/prisma";
@@ -22,12 +23,7 @@ export default async function DashboardPlaybookProgressCard({
   });
   const access = user
     ? toAccessUserFields(user)
-    : toAccessUserFields({
-        membershipTier: "FREE",
-        playbookLegacyAccess: false,
-        membershipLevel: null,
-        membershipLevelExpiresAt: null,
-      });
+    : toAccessUserFields(emptyAccessUserRow);
   const visibilityClass = showForEnrolled ? "" : "md:hidden";
   const articleClassName = ["rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-5 sm:p-6", visibilityClass, className]
     .filter(Boolean)

@@ -145,6 +145,11 @@ export async function POST(request: Request, context: RouteContext) {
     );
   }
 
+  const coachFocusPreset = String(formData.get("coachFocusPreset") ?? "").trim();
+  const coachFocusEndsAt = coachFocusPreset
+    ? new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)
+    : null;
+
   const updated = await prisma.swingAnalysisSubmission.update({
     where: { id: params.id },
     data: {
@@ -153,6 +158,8 @@ export async function POST(request: Request, context: RouteContext) {
       responseVideoUrl: finalVideoUrl,
       recommendedDrills,
       respondedAt: new Date(),
+      coachFocusPreset: coachFocusPreset || null,
+      coachFocusEndsAt,
     },
   });
 

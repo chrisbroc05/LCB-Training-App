@@ -25,7 +25,7 @@ import { defaultProgramPlanMode } from "@/lib/program-plan-mode-shared";
 import { prisma } from "@/lib/prisma";
 
 type EnrollmentWithUser = ProgramEnrollment & {
-  user: Pick<User, "id" | "name" | "email" | "membershipTier" | "membershipLevel" | "membershipLevelExpiresAt" | "playbookLegacyAccess">;
+  user: Pick<User, "id" | "name" | "email"> & Parameters<typeof toAccessUserFields>[0];
 };
 
 export type MessagingAccessState =

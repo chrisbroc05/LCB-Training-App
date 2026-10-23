@@ -1,4 +1,7 @@
+import type { CoachingReviewTrack } from "@prisma/client";
+import { resolveEffectiveLevel } from "@/lib/access-shared";
 import type { DatabaseTier } from "@/lib/membership";
+import { mergeOrgIntoAccessFields } from "@/lib/org-server";
 import { prisma } from "@/lib/prisma";
 import {
   ELITE_MONTHLY_LIMIT,
@@ -71,24 +74,31 @@ const coachingSubmissionUserSelect = {
   coachingSubmissionsUsedThisMonth: true,
   coachingSubmissionPeriod: true,
   eliteRolloverCredits: true,
+  organizationId: true,
+  orgTrialQuickReportUsed: true,
+  coreQuickReportNextEligibleAt: true,
+  organization: {
+    select: {
+      active: true,
+      billingMode: true,
+      coveredLevel: true,
+      trialStartsAt: true,
+      trialEndsAt: true,
+    },
+  },
 } as const;
 
-function toCoachingSubmissionUserFields(user: {
-  membershipTier: string;
-  playbookLegacyAccess: boolean;
-  membershipLevel: string | null;
-  membershipLevelExpiresAt: Date | null;
-  freeSubmissionUsed: boolean;
-  playbookSubmissionsUsed: number;
-  coachingSubmissionsUsedThisMonth: number;
-  coachingSubmissionPeriod: string | null;
-  eliteRolloverCredits: number;
-}): CoachingSubmissionUserFields {
+function toCoachingSubmissionUserFields(
+  user: Parameters<typeof mergeOrgIntoAccessFields>[0] & {
+    freeSubmissionUsed: boolean;
+    playbookSubmissionsUsed: number;
+    coachingSubmissionsUsedThisMonth: number;
+    coachingSubmissionPeriod: string | null;
+    eliteRolloverCredits: number;
+  },
+): CoachingSubmissionUserFields {
   return {
-    membershipTier: user.membershipTier as DatabaseTier,
-    playbookLegacyAccess: user.playbookLegacyAccess,
-    membershipLevel: (user.membershipLevel as CoachingSubmissionUserFields["membershipLevel"]) ?? null,
-    membershipLevelExpiresAt: user.membershipLevelExpiresAt,
+    ...mergeOrgIntoAccessFields(user),
     freeSubmissionUsed: user.freeSubmissionUsed,
     playbookSubmissionsUsed: user.playbookSubmissionsUsed,
     coachingSubmissionsUsedThisMonth: user.coachingSubmissionsUsedThisMonth,
@@ -96,6 +106,8 @@ function toCoachingSubmissionUserFields(user: {
     eliteRolloverCredits: user.eliteRolloverCredits,
   };
 }
+
+const SIX_WEEKS_MS = 6 * 7 * 24 * 60 * 60 * 1000;
 
 export async function ensureCoachingSubmissionPeriod(userId: string) {
   const user = await prisma.user.findUnique({
@@ -156,42 +168,103 @@ export async function consumeCoachingSubmission(
     return { ok: false as const, availability, membershipTier: syncedUser.membershipTier };
   }
 
-  if (syncedUser.membershipTier === "TWELVE_WEEK") {
-    await tx.user.update({
-      where: { id: userId },
-      data: {
-        coachingSubmissionPeriod: syncedUser.coachingSubmissionPeriod,
-        coachingSubmissionsUsedThisMonth: syncedUser.coachingSubmissionsUsedThisMonth,
-        eliteRolloverCredits: syncedUser.eliteRolloverCredits,
-      },
-    });
-    return { ok: true as const, availability, membershipTier: syncedUser.membershipTier };
+  const effective = resolveEffectiveLevel(syncedUser);
+  const periodSync = {
+    coachingSubmissionPeriod: syncedUser.coachingSubmissionPeriod,
+    coachingSubmissionsUsedThisMonth: syncedUser.coachingSubmissionsUsedThisMonth,
+    eliteRolloverCredits: syncedUser.eliteRolloverCredits,
+  };
+
+  if (effective === "TWELVE_WEEK" || effective === "ALL_ACCESS") {
+    await tx.user.update({ where: { id: userId }, data: periodSync });
+    return {
+      ok: true as const,
+      availability,
+      membershipTier: syncedUser.membershipTier,
+      reviewTrack: "PROGRAM" as CoachingReviewTrack,
+    };
   }
 
-  if (syncedUser.membershipTier === "BASIC") {
+  if (effective === "PLUS") {
     await tx.user.update({
       where: { id: userId },
       data: {
+        ...periodSync,
+        coachingSubmissionsUsedThisMonth: syncedUser.coachingSubmissionsUsedThisMonth + 1,
+        eliteRolloverCredits: 0,
+      },
+    });
+    return {
+      ok: true as const,
+      availability,
+      membershipTier: syncedUser.membershipTier,
+      reviewTrack: "IN_DEPTH_MONTHLY" as CoachingReviewTrack,
+    };
+  }
+
+  if (effective === "CORE") {
+    const nextEligible = new Date(Date.now() + SIX_WEEKS_MS);
+    await tx.user.update({
+      where: { id: userId },
+      data: {
+        ...periodSync,
+        coreQuickReportNextEligibleAt: nextEligible,
+      },
+    });
+    return {
+      ok: true as const,
+      availability,
+      membershipTier: syncedUser.membershipTier,
+      reviewTrack: "QUICK_SIX_WEEK" as CoachingReviewTrack,
+    };
+  }
+
+  if (effective === "ORG_TRIAL") {
+    await tx.user.update({
+      where: { id: userId },
+      data: {
+        ...periodSync,
+        orgTrialQuickReportUsed: true,
+      },
+    });
+    return {
+      ok: true as const,
+      availability,
+      membershipTier: syncedUser.membershipTier,
+      reviewTrack: "ORG_TRIAL_QUICK" as CoachingReviewTrack,
+    };
+  }
+
+  if (effective === "PLAYBOOK") {
+    await tx.user.update({
+      where: { id: userId },
+      data: {
+        ...periodSync,
         playbookSubmissionsUsed: syncedUser.playbookSubmissionsUsed + 1,
-        coachingSubmissionPeriod: syncedUser.coachingSubmissionPeriod,
-        coachingSubmissionsUsedThisMonth: syncedUser.coachingSubmissionsUsedThisMonth,
-        eliteRolloverCredits: syncedUser.eliteRolloverCredits,
       },
     });
-    return { ok: true as const, availability, membershipTier: syncedUser.membershipTier };
+    return {
+      ok: true as const,
+      availability,
+      membershipTier: syncedUser.membershipTier,
+      reviewTrack: "PLAYBOOK" as CoachingReviewTrack,
+    };
   }
 
-  if (syncedUser.membershipTier === "FREE") {
+  if (effective === "FREE") {
     await tx.user.update({
       where: { id: userId },
       data: {
+        ...periodSync,
         freeSubmissionUsed: true,
-        coachingSubmissionPeriod: syncedUser.coachingSubmissionPeriod,
-        coachingSubmissionsUsedThisMonth: syncedUser.coachingSubmissionsUsedThisMonth,
-        eliteRolloverCredits: syncedUser.eliteRolloverCredits,
       },
     });
-    return { ok: true as const, availability, membershipTier: syncedUser.membershipTier };
+    return {
+      ok: true as const,
+      availability,
+      membershipTier: syncedUser.membershipTier,
+      reviewTrack: "FREE_ONCE" as CoachingReviewTrack,
+    };
   }
 
   if (syncedUser.membershipTier === "MEMORABLE") {
@@ -203,7 +276,12 @@ export async function consumeCoachingSubmission(
         eliteRolloverCredits: 0,
       },
     });
-    return { ok: true as const, availability, membershipTier: syncedUser.membershipTier };
+    return {
+      ok: true as const,
+      availability,
+      membershipTier: syncedUser.membershipTier,
+      reviewTrack: "IN_DEPTH_MONTHLY" as CoachingReviewTrack,
+    };
   }
 
   if (syncedUser.membershipTier === "ELITE") {
@@ -222,7 +300,12 @@ export async function consumeCoachingSubmission(
           : syncedUser.eliteRolloverCredits - 1,
       },
     });
-    return { ok: true as const, availability, membershipTier: syncedUser.membershipTier };
+    return {
+      ok: true as const,
+      availability,
+      membershipTier: syncedUser.membershipTier,
+      reviewTrack: "IN_DEPTH_MONTHLY" as CoachingReviewTrack,
+    };
   }
 
   return {

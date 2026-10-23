@@ -4,6 +4,7 @@ export async function submitSignupRequest(
   payload: SignupRequestPayload & {
     selectedMembershipTier?: string;
     signupSource?: string;
+    orgJoinCode?: string;
   },
 ) {
   const response = await fetch("/api/auth/signup", {

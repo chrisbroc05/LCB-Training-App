@@ -20,6 +20,20 @@ enum MembershipLevel {
   ALL_ACCESS
 }
 
+enum OrgBillingMode {
+  FAMILY_PAY
+  CLUB_PAY
+}
+
+enum CoachingReviewTrack {
+  FREE_ONCE
+  PLAYBOOK
+  QUICK_SIX_WEEK
+  ORG_TRIAL_QUICK
+  IN_DEPTH_MONTHLY
+  PROGRAM
+}
+
 enum ProgramPlanMode {
   FIXED_12_WEEK
   OPEN_ENDED
@@ -243,6 +257,79 @@ model User {
   quizAttempts           QuizAttempt[]
   resourcePurchases      ResourcePurchase[]
   remoteSessionPurchases RemoteSessionPurchase[]
+  organizationId         String?
+  orgTeamId              String?
+  orgJoinedAt            DateTime?
+  orgTrialQuickReportUsed Boolean               @default(false)
+  coreQuickReportNextEligibleAt DateTime?
+  organization           Organization?          @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  orgTeam                OrgTeam?               @relation(fields: [orgTeamId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([orgTeamId])
+}
+
+model Organization {
+  id                 String          @id @default(cuid())
+  name               String
+  slug               String          @unique
+  logoUrl            String?
+  active             Boolean         @default(true)
+  billingMode        OrgBillingMode  @default(FAMILY_PAY)
+  coveredLevel       MembershipLevel?
+  trialStartsAt      DateTime?
+  trialEndsAt        DateTime?
+  trialLockedCopy    String?
+  commissionRate     Float           @default(0)
+  commissionMonths   Int             @default(0)
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  codes              OrgCode[]
+  teams              OrgTeam[]
+  weeklyFocuses      OrgWeeklyFocus[]
+  members            User[]
+}
+
+model OrgCode {
+  id             String       @id @default(cuid())
+  organizationId String
+  code           String       @unique
+  label          String?
+  active         Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
+
+model OrgTeam {
+  id             String       @id @default(cuid())
+  organizationId String
+  name           String
+  sortOrder      Int          @default(0)
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  members        User[]
+  weeklyFocuses  OrgWeeklyFocus[]
+
+  @@index([organizationId])
+}
+
+model OrgWeeklyFocus {
+  id             String       @id @default(cuid())
+  organizationId String
+  orgTeamId      String?
+  weekStartDate  DateTime
+  title          String
+  notes          String?
+  drillIds       String[]     @default([])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  orgTeam        OrgTeam?     @relation(fields: [orgTeamId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, weekStartDate])
+  @@index([orgTeamId, weekStartDate])
 }
 
 enum LeadRole {
@@ -767,12 +854,16 @@ model SwingAnalysisSubmission {
   responseVideoUrl   String?
   recommendedDrills  String[]                     @default([])
   memberVimeoLink    String?
+  reviewTrack        CoachingReviewTrack?
+  coachFocusPreset   String?
+  coachFocusEndsAt   DateTime?
   respondedAt        DateTime?
   createdAt          DateTime                     @default(now())
   updatedAt          DateTime                     @updatedAt
   user               User                         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([reviewTrack, status, createdAt])
 }
 
 model GoalCheckin {

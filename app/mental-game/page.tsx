@@ -78,7 +78,7 @@ export default async function MentalGamePage() {
           Submit what you are dealing with mentally so your coach can send support and adjustments.
         </p>
 
-        <CoachingSubmissionQuota availability={availability} membershipTier={membershipTier} />
+        <CoachingSubmissionQuota user={userFields} />
         <MentalGameForm isFreeMember={membershipTier === "FREE"} />
       </section>
     </div>

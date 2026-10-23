@@ -3,9 +3,9 @@
  */
 
 import type { MembershipLevelKey } from "@/lib/membership-levels-shared";
+import { getLockedContentMessage } from "@/lib/locked-content-copy-shared";
 import {
   formatMembershipLevelLabel,
-  getUpgradeLabelForLevel,
   MEMBERSHIP_LEVELS,
 } from "@/lib/membership-levels-shared";
 import type { DatabaseTier } from "@/lib/membership";
@@ -32,17 +32,27 @@ export type EffectiveAccessLevel =
   | "ALL_ACCESS"
   | "PLUS"
   | "CORE"
+  | "ORG_TRIAL"
   | "LEGACY_ELITE"
   | "LEGACY_MEMORABLE"
   | "PLAYBOOK"
   | "FREE";
+
+export type OrgContextFields = {
+  organizationId?: string | null;
+  orgBillingMode?: "FAMILY_PAY" | "CLUB_PAY" | null;
+  orgCoveredLevel?: MembershipLevelKey | null;
+  orgTrialActive?: boolean;
+  orgTrialQuickReportUsed?: boolean;
+  coreQuickReportNextEligibleAt?: Date | string | null;
+};
 
 export type AccessUserFields = {
   membershipTier: DatabaseTier;
   membershipLevel: MembershipLevelKey | null;
   membershipLevelExpiresAt: Date | string | null;
   playbookLegacyAccess: boolean;
-};
+} & OrgContextFields;
 
 export type DrillViewAccessContext = AccessUserFields & {
   starterDrillIds: ReadonlySet<string>;
@@ -54,11 +64,34 @@ const LEVEL_RANK: Record<EffectiveAccessLevel, number> = {
   ALL_ACCESS: 100,
   PLUS: 80,
   CORE: 60,
+  ORG_TRIAL: 58,
   LEGACY_ELITE: 55,
   LEGACY_MEMORABLE: 50,
   PLAYBOOK: 30,
   FREE: 0,
 };
+
+export function isCoreBandEffective(effective: EffectiveAccessLevel): boolean {
+  return effective === "CORE" || effective === "ORG_TRIAL";
+}
+
+export function isMembershipLevelBandEffective(effective: EffectiveAccessLevel): boolean {
+  return effective === "PLUS" || effective === "ALL_ACCESS";
+}
+
+function maxEffectiveLevel(a: EffectiveAccessLevel, b: EffectiveAccessLevel): EffectiveAccessLevel {
+  return LEVEL_RANK[a] >= LEVEL_RANK[b] ? a : b;
+}
+
+function coveredLevelToEffective(level: MembershipLevelKey): EffectiveAccessLevel {
+  if (level === "ALL_ACCESS") {
+    return "ALL_ACCESS";
+  }
+  if (level === "PLUS") {
+    return "PLUS";
+  }
+  return "CORE";
+}
 
 function parseExpiry(value: Date | string | null | undefined): Date | null {
   if (!value) {
@@ -87,28 +120,38 @@ export function resolveEffectiveLevel(user: AccessUserFields, now = new Date()):
     return "TWELVE_WEEK";
   }
 
+  let effective: EffectiveAccessLevel = "FREE";
+
   const level = activeMembershipLevel(user, now);
   if (level === "ALL_ACCESS") {
-    return "ALL_ACCESS";
-  }
-  if (level === "PLUS") {
-    return "PLUS";
-  }
-  if (level === "CORE") {
-    return "CORE";
-  }
-
-  if (user.membershipTier === "ELITE") {
-    return "LEGACY_ELITE";
-  }
-  if (user.membershipTier === "MEMORABLE") {
-    return "LEGACY_MEMORABLE";
-  }
-  if (user.membershipTier === "BASIC") {
-    return "PLAYBOOK";
+    effective = "ALL_ACCESS";
+  } else if (level === "PLUS") {
+    effective = "PLUS";
+  } else if (level === "CORE") {
+    effective = "CORE";
+  } else if (user.membershipTier === "ELITE") {
+    effective = "LEGACY_ELITE";
+  } else if (user.membershipTier === "MEMORABLE") {
+    effective = "LEGACY_MEMORABLE";
+  } else if (user.membershipTier === "BASIC") {
+    effective = "PLAYBOOK";
   }
 
-  return "FREE";
+  if (
+    user.orgBillingMode === "CLUB_PAY" &&
+    user.orgCoveredLevel &&
+    user.organizationId
+  ) {
+    effective = maxEffectiveLevel(effective, coveredLevelToEffective(user.orgCoveredLevel));
+  }
+
+  if (user.orgTrialActive && user.organizationId) {
+    if (LEVEL_RANK[effective] < LEVEL_RANK.CORE) {
+      effective = "ORG_TRIAL";
+    }
+  }
+
+  return effective;
 }
 
 export function hasEffectiveRankAtLeast(
@@ -153,7 +196,7 @@ export function canViewDrill(context: DrillViewAccessContext, drillId: string, n
     return false;
   }
   const effective = resolveEffectiveLevel(context, now);
-  return effective === "CORE" || effective === "PLAYBOOK";
+  return isCoreBandEffective(effective) || effective === "PLAYBOOK";
 }
 
 export function canViewPlaybook(user: AccessUserFields, now = new Date()): boolean {
@@ -184,7 +227,7 @@ export function getWorkoutAccessMode(user: AccessUserFields, now = new Date()): 
   if (effective === "PLAYBOOK" && user.playbookLegacyAccess) {
     return "full_programs";
   }
-  if (effective === "CORE") {
+  if (isCoreBandEffective(effective)) {
     return "starter_in_app";
   }
   return "none";
@@ -230,7 +273,7 @@ export function canDownloadGuideFilename(user: AccessUserFields, filename: strin
     return PLUS_EXTRA_GUIDE_FILENAMES.has(filename) || CORE_GUIDE_FILENAMES.has(filename);
   }
 
-  if (effective === "CORE") {
+  if (isCoreBandEffective(effective)) {
     return CORE_GUIDE_FILENAMES.has(filename);
   }
 
@@ -314,12 +357,25 @@ export function getReviewAllowance(
   }
 
   if (effective === "CORE") {
+    const nextEligible = parseExpiry(user.coreQuickReportNextEligibleAt);
+    const canSubmit = !nextEligible || nextEligible.getTime() <= now.getTime();
     return {
       kind: "quick_six_weeks",
-      canSubmit: true,
-      remaining: 1,
+      canSubmit,
+      remaining: canSubmit ? 1 : 0,
       limit: 1,
       periodLabel: "every 6 weeks",
+    };
+  }
+
+  if (effective === "ORG_TRIAL") {
+    const canSubmit = !user.orgTrialQuickReportUsed;
+    return {
+      kind: "quick_six_weeks",
+      canSubmit,
+      remaining: canSubmit ? 1 : 0,
+      limit: 1,
+      periodLabel: "org trial",
     };
   }
 
@@ -393,10 +449,11 @@ export function getDrillLockHint(user: AccessUserFields, drillId: string, contex
     return { locked: false, upgradeLevel: null, message: "" };
   }
   const effective = resolveEffectiveLevel(user);
-  if (effective === "FREE") {
-    return { locked: true, upgradeLevel: "CORE", message: getUpgradeLabelForLevel("CORE") };
-  }
-  return { locked: true, upgradeLevel: "PLUS", message: getUpgradeLabelForLevel("PLUS") };
+  return {
+    locked: true,
+    upgradeLevel: null,
+    message: getLockedContentMessage(effective, "drill"),
+  };
 }
 
 export function getWorkoutLockHint(user: AccessUserFields): LockedContentHint {
@@ -405,27 +462,34 @@ export function getWorkoutLockHint(user: AccessUserFields): LockedContentHint {
     return { locked: false, upgradeLevel: null, message: "" };
   }
   const effective = resolveEffectiveLevel(user);
-  if (effective === "PLAYBOOK") {
-    return { locked: true, upgradeLevel: "PLUS", message: getUpgradeLabelForLevel("PLUS") };
-  }
-  return { locked: true, upgradeLevel: "CORE", message: getUpgradeLabelForLevel("CORE") };
+  return {
+    locked: true,
+    upgradeLevel: null,
+    message: getLockedContentMessage(effective, "workout"),
+  };
 }
 
 export function formatEffectiveAccessLabel(user: AccessUserFields, now = new Date()): string {
   const effective = resolveEffectiveLevel(user, now);
+  if (effective === "ALL_ACCESS") {
+    return MEMBERSHIP_LEVELS.ALL_ACCESS.displayName;
+  }
   if (effective === "TWELVE_WEEK") {
     return "12-Week Program";
   }
-  if (effective === "ALL_ACCESS" || effective === "PLUS" || effective === "CORE") {
-    return MEMBERSHIP_LEVELS[effective].displayName;
+  if (effective === "PLUS") {
+    return MEMBERSHIP_LEVELS.PLUS.displayName;
+  }
+  if (effective === "CORE") {
+    return MEMBERSHIP_LEVELS.CORE.displayName;
+  }
+  if (effective === "ORG_TRIAL") {
+    return "Org trial";
   }
   if (effective === "PLAYBOOK") {
     return user.playbookLegacyAccess ? "Playbook (legacy)" : "Playbook";
   }
-  if (effective === "LEGACY_MEMORABLE") {
-    return "Member";
-  }
-  if (effective === "LEGACY_ELITE") {
+  if (effective === "LEGACY_MEMORABLE" || effective === "LEGACY_ELITE") {
     return "Member";
   }
   return "Free";
@@ -441,4 +505,4 @@ export function legacyMonthlyLimitsForTests() {
   };
 }
 
-export { formatMembershipLevelLabel, getUpgradeLabelForLevel };
+export { formatMembershipLevelLabel };

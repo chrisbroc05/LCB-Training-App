@@ -296,10 +296,13 @@ function AuthContent() {
     const membershipTierForSignup = isPlaybookFlow ? selectedDatabaseTier : "FREE";
     const signupSource = isProgramFlow ? "program" : isPlaybookFlow ? "playbook" : "standard";
 
+    const orgJoinCode = searchParams.get("orgCode")?.trim() || undefined;
+
     const response = await submitSignupRequest({
       ...payload,
       selectedMembershipTier: membershipTierForSignup,
       signupSource,
+      orgJoinCode,
     });
 
     if (!response.ok) {

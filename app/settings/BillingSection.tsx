@@ -10,7 +10,6 @@ import {
   settingsWarningTextClass,
 } from "@/app/settings/settings-styles";
 import {
-  formatUserFacingMembershipLabel,
   isLifetimeBasicMember,
   isManualMembershipMember,
   isTwelveWeekProgramMember,
@@ -18,6 +17,7 @@ import {
 } from "@/lib/membership";
 
 type BillingSectionProps = {
+  currentPlanLabel: string;
   membershipTier: DatabaseTier;
   subscriptionStatus: string;
   nextBillingDate: string;
@@ -28,6 +28,7 @@ type BillingSectionProps = {
 };
 
 export default function BillingSection({
+  currentPlanLabel,
   membershipTier,
   subscriptionStatus,
   nextBillingDate,
@@ -47,7 +48,7 @@ export default function BillingSection({
       {isFreeMember ? (
         <div className="space-y-4">
           <p className={settingsBodyTextClass}>
-            Current plan: <span className={settingsAccentTextClass}>Free Plan</span>
+            Current plan: <span className={settingsAccentTextClass}>{currentPlanLabel}</span>
           </p>
           <Link href="/upgrade" className={`inline-flex ${settingsPrimaryButtonClass}`}>
             Upgrade
@@ -74,7 +75,7 @@ export default function BillingSection({
           <p className={settingsBodyTextClass}>
             Current plan:{" "}
             <span className={settingsAccentTextClass}>
-              {formatUserFacingMembershipLabel(membershipTier)}
+              {currentPlanLabel}
             </span>
           </p>
           <p className={settingsMutedTextClass}>Billing: Manual</p>
@@ -84,7 +85,7 @@ export default function BillingSection({
           <p className={settingsBodyTextClass}>
             Current plan:{" "}
             <span className={settingsAccentTextClass}>
-              {formatUserFacingMembershipLabel(membershipTier)}
+              {currentPlanLabel}
             </span>
           </p>
           <p className={settingsMutedTextClass}>

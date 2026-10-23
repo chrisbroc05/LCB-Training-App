@@ -2,47 +2,22 @@
  * User-facing and admin plan labels (client-safe).
  */
 
-import {
-  formatEffectiveAccessLabel,
-  resolveEffectiveLevel,
-  type AccessUserFields,
-} from "@/lib/access-shared";
+import { formatEffectiveAccessLabel, type AccessUserFields } from "@/lib/access-shared";
 import { formatDatabaseTierLabel, type DatabaseTier } from "@/lib/membership";
-import {
-  formatMembershipLevelLabel,
-  type MembershipLevelKey,
-} from "@/lib/membership-levels-shared";
 
-function isActiveMembershipLevelKey(
-  user: AccessUserFields,
-  now = new Date(),
-): MembershipLevelKey | null {
-  const effective = resolveEffectiveLevel(user, now);
-  if (effective === "CORE" || effective === "PLUS" || effective === "ALL_ACCESS") {
-    return effective;
-  }
-  return null;
-}
-
-/** Label shown in the app (upgrade sheet, profile, etc.). */
+/** Single effective plan label everywhere in the app. */
 export function formatMemberPlanLabel(user: AccessUserFields, now = new Date()): string {
   return formatEffectiveAccessLabel(user, now);
 }
 
-/** Admin list/detail, e.g. "Free + Core" with optional expiry line. */
+/** Admin list/detail primary pill (effective plan only). */
 export function formatAdminMemberPlanLabel(user: AccessUserFields, now = new Date()): string {
-  const tierLabel = formatDatabaseTierLabel(user.membershipTier);
-  const activeLevel = isActiveMembershipLevelKey(user, now);
-
-  if (activeLevel && user.membershipTier === "FREE") {
-    return `${tierLabel} + ${formatMembershipLevelLabel(activeLevel)}`;
-  }
-
-  if (activeLevel && user.membershipTier !== "FREE") {
-    return `${tierLabel} + ${formatMembershipLevelLabel(activeLevel)}`;
-  }
-
   return formatEffectiveAccessLabel(user, now);
+}
+
+/** Admin member detail: Stripe/legacy tier row under the plan pill. */
+export function formatAdminBaseTierLabel(tier: DatabaseTier): string {
+  return formatDatabaseTierLabel(tier);
 }
 
 export function formatAdminMembershipLevelExpiry(

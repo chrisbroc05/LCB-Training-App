@@ -189,6 +189,7 @@ export async function POST(request: Request) {
             submittedVideo,
             responsePreference: responsePreference as "VIDEO_RESPONSE" | "WRITTEN_RESPONSE",
             status: "PENDING",
+            reviewTrack: consumed.reviewTrack ?? undefined,
           },
         });
 

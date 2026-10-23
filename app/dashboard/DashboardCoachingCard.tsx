@@ -1,13 +1,15 @@
 import Link from "next/link";
 import FreeMemberWhileYouWaitCards from "@/app/components/FreeMemberWhileYouWaitCards";
 import CoachingSubmissionQuota from "@/app/CoachingSubmissionQuota";
-import type { CoachingSubmissionAvailability } from "@/lib/coaching-submissions";
+import type { CoachingSubmissionAvailability, CoachingSubmissionUserFields } from "@/lib/coaching-submissions";
+import { resolveEffectiveLevel } from "@/lib/access-shared";
 import { formatAssessmentCallDateTime } from "@/lib/assessment-call";
 import { COACH_CALENDLY_URL } from "@/lib/coach-calendly-shared";
 import { canAccessCoachingNav, type DatabaseTier } from "@/lib/membership";
 
 type DashboardCoachingCardProps = {
   membershipTier: DatabaseTier;
+  coachingUser: CoachingSubmissionUserFields | null;
   coachingAvailability: CoachingSubmissionAvailability | null;
   freeSubmissionUsed: boolean;
   assessmentCallBooked: boolean;
@@ -16,6 +18,7 @@ type DashboardCoachingCardProps = {
 
 export default function DashboardCoachingCard({
   membershipTier,
+  coachingUser,
   coachingAvailability,
   freeSubmissionUsed,
   assessmentCallBooked,
@@ -28,10 +31,7 @@ export default function DashboardCoachingCard({
         <h2 className="text-lg font-semibold text-zinc-100">Coaching Submissions</h2>
         {coachingAvailability ? (
           <div className="mt-3">
-            <CoachingSubmissionQuota
-              availability={coachingAvailability}
-              membershipTier={membershipTier}
-            />
+            {coachingUser ? <CoachingSubmissionQuota user={coachingUser} /> : null}
           </div>
         ) : null}
         {canSubmit ? (
@@ -59,10 +59,7 @@ export default function DashboardCoachingCard({
         <h2 className="text-lg font-semibold text-zinc-100">Coaching Submissions</h2>
         {coachingAvailability ? (
           <div className="mt-3">
-            <CoachingSubmissionQuota
-              availability={coachingAvailability}
-              membershipTier={membershipTier}
-            />
+            {coachingUser ? <CoachingSubmissionQuota user={coachingUser} /> : null}
           </div>
         ) : null}
         {coachingAvailability && coachingAvailability.canSubmit ? (
@@ -84,7 +81,9 @@ export default function DashboardCoachingCard({
     );
   }
 
-  if (membershipTier === "FREE") {
+  const effective = coachingUser ? resolveEffectiveLevel(coachingUser) : "FREE";
+
+  if (effective === "FREE" && membershipTier === "FREE") {
     return (
       <div className="space-y-4 sm:space-y-5">
         <article
@@ -108,10 +107,7 @@ export default function DashboardCoachingCard({
           </div>
           {coachingAvailability && !freeSubmissionUsed ? (
             <div className="mt-3">
-              <CoachingSubmissionQuota
-                availability={coachingAvailability}
-                membershipTier={membershipTier}
-              />
+              {coachingUser ? <CoachingSubmissionQuota user={coachingUser} /> : null}
             </div>
           ) : !freeSubmissionUsed ? (
             <p className="mt-3 text-sm text-zinc-300">

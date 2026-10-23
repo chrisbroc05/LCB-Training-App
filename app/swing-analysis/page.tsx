@@ -79,7 +79,7 @@ export default async function SwingAnalysisPage() {
           feedback.
         </p>
 
-        <CoachingSubmissionQuota availability={availability} membershipTier={membershipTier} />
+        <CoachingSubmissionQuota user={userFields} />
         <SwingAnalysisForm isFreeMember={membershipTier === "FREE"} />
       </section>
     </div>

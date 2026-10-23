@@ -16,6 +16,7 @@ import {
 import { sendNewMemberNotification } from "@/lib/notifications";
 import { isTestAccountEmail } from "@/lib/test-account-shared";
 import type { SignupRequestPayload } from "@/lib/signup-shared";
+import { joinOrganizationForUser } from "@/lib/org-server";
 import {
   applyMatchingWaiverAcceptanceToUser,
   linkWaiverSignaturesToUser,
@@ -25,6 +26,7 @@ type SignupBody = SignupRequestPayload & {
   name?: string;
   selectedMembershipTier?: string;
   signupSource?: string;
+  orgJoinCode?: string;
 };
 
 export async function POST(request: Request) {
@@ -187,6 +189,15 @@ export async function POST(request: Request) {
       await applyMatchingWaiverAcceptanceToUser(createdUser.id);
     } catch (error) {
       console.error("Failed to link waiver signatures to new user", error);
+    }
+
+    const orgJoinCode = body.orgJoinCode?.trim();
+    if (orgJoinCode) {
+      try {
+        await joinOrganizationForUser({ userId: createdUser.id, codeRaw: orgJoinCode });
+      } catch (error) {
+        console.error("Failed to join organization during signup", error);
+      }
     }
 
     const shouldSendParentConsentEmail =

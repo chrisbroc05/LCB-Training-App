@@ -25,6 +25,7 @@ export type MemberDetail = {
   membershipLevelExpiresAt: string | null;
   planDisplayLabel: string;
   planExpiryLabel: string | null;
+  baseTierLabel: string;
   productAccessCompact: string;
   productAccess: MemberProductAccessSummary;
   signupDate: string;
@@ -183,10 +184,13 @@ export default function MemberDetailContent({
         </h3>
         <p className="mt-1 text-sm text-zinc-300">{detail.email}</p>
         <div className="mt-3 flex flex-wrap items-center gap-3">
-          <AdminMemberPlanBadge
-            planDisplayLabel={detail.planDisplayLabel}
-            planExpiryLabel={detail.planExpiryLabel}
-          />
+          <div className="flex flex-col gap-1">
+            <AdminMemberPlanBadge
+              planDisplayLabel={detail.planDisplayLabel}
+              planExpiryLabel={detail.planExpiryLabel}
+            />
+            <p className="text-xs text-zinc-500">Base tier: {detail.baseTierLabel}</p>
+          </div>
           <span className="rounded-full border border-[#2b3650] px-2.5 py-0.5 text-[11px] font-medium text-zinc-300">
             {detail.productAccessCompact}
           </span>

@@ -5,6 +5,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin";
 import { toAccessUserFields, userAccessSelect } from "@/lib/access-server";
+import { emptyAccessUserRow } from "@/lib/empty-access-user-shared";
 import { prisma } from "@/lib/prisma";
 import { getPrivateResourceAbsolutePath } from "@/lib/resource-files-server";
 import { getWorkoutResource, canAccessWorkoutResourceFile } from "@/lib/workout-resources";
@@ -39,12 +40,7 @@ export async function GET(_request: Request, context: RouteContext) {
     });
     const access = user
       ? toAccessUserFields(user)
-      : toAccessUserFields({
-          membershipTier: "FREE",
-          playbookLegacyAccess: false,
-          membershipLevel: null,
-          membershipLevelExpiresAt: null,
-        });
+      : toAccessUserFields(emptyAccessUserRow);
 
     if (!canAccessWorkoutResourceFile(access, filename)) {
       return NextResponse.json({ error: "Membership upgrade required." }, { status: 403 });

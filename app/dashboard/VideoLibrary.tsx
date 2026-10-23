@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import VideoPlayer from "@/app/components/mobile/VideoPlayer";
 import DrillProgramUpsellLine from "@/app/drill-library/DrillProgramUpsellLine";
 import DrillLibraryLockLine from "@/app/drill-library/DrillLibraryLockLine";
+import type { EffectiveAccessLevel } from "@/lib/access-shared";
 import {
   allDrillLibraryVideos,
   fieldingVideos,
@@ -100,6 +101,7 @@ type VideoSectionProps = {
   thumbnailMap: Record<string, string | null>;
   onSelectVideo: (video: DrillLibraryVideoItem) => void;
   lockedDrillIds: ReadonlySet<string>;
+  lockedContentEffective: EffectiveAccessLevel;
 };
 
 function isDrillLocked(video: DrillLibraryVideoItem, lockedDrillIds: ReadonlySet<string>) {
@@ -114,6 +116,7 @@ function VideoSection({
   thumbnailMap,
   onSelectVideo,
   lockedDrillIds,
+  lockedContentEffective,
 }: VideoSectionProps) {
   return (
     <div>
@@ -135,7 +138,7 @@ function VideoSection({
                   </span>
                 </div>
                 <p className="mt-4 text-base font-semibold text-zinc-300 sm:text-lg">{video.title}</p>
-                <DrillLibraryLockLine />
+                <DrillLibraryLockLine effective={lockedContentEffective} />
               </article>
             );
           }
@@ -163,6 +166,7 @@ type VideoLibraryProps = {
   allowedVideos?: DrillLibraryVideoItem[];
   showProgramUpsell?: boolean;
   lockedDrillIds?: readonly string[];
+  lockedContentEffective?: EffectiveAccessLevel;
 };
 
 export default function VideoLibrary({
@@ -171,6 +175,7 @@ export default function VideoLibrary({
   allowedVideos,
   showProgramUpsell = false,
   lockedDrillIds = [],
+  lockedContentEffective = "FREE",
 }: VideoLibraryProps) {
   const lockedDrillIdSet = useMemo(() => new Set(lockedDrillIds), [lockedDrillIds]);
   const isGrantedOnlyMode = Boolean(allowedVideos && allowedVideos.length > 0);
@@ -291,7 +296,7 @@ export default function VideoLibrary({
                       </span>
                     </div>
                     <p className="mt-3 text-base font-semibold text-zinc-300">{video.title}</p>
-                    <DrillLibraryLockLine />
+                    <DrillLibraryLockLine effective={lockedContentEffective} />
                   </article>
                 );
               }
@@ -337,6 +342,7 @@ export default function VideoLibrary({
             thumbnailMap={thumbnailMap}
             onSelectVideo={setDesktopVideo}
             lockedDrillIds={lockedDrillIdSet}
+            lockedContentEffective={lockedContentEffective}
           />
         </section>
       ) : (
@@ -348,6 +354,7 @@ export default function VideoLibrary({
             thumbnailMap={thumbnailMap}
             onSelectVideo={setDesktopVideo}
             lockedDrillIds={lockedDrillIdSet}
+            lockedContentEffective={lockedContentEffective}
           />
           <VideoSection
             heading="Fielding Library"
@@ -356,6 +363,7 @@ export default function VideoLibrary({
             thumbnailMap={thumbnailMap}
             onSelectVideo={setDesktopVideo}
             lockedDrillIds={lockedDrillIdSet}
+            lockedContentEffective={lockedContentEffective}
           />
           <VideoSection
             heading="Mindset Library"
@@ -364,6 +372,7 @@ export default function VideoLibrary({
             thumbnailMap={thumbnailMap}
             onSelectVideo={setDesktopVideo}
             lockedDrillIds={lockedDrillIdSet}
+            lockedContentEffective={lockedContentEffective}
           />
         </section>
       )}
@@ -374,7 +383,11 @@ export default function VideoLibrary({
           videos={playerState.videos}
           startIndex={playerState.startIndex}
           onClose={closeVideo}
-          footerSlot={showProgramUpsell ? <DrillProgramUpsellLine /> : undefined}
+          footerSlot={
+            showProgramUpsell ? (
+              <DrillProgramUpsellLine effective={lockedContentEffective} />
+            ) : undefined
+          }
         />
       ) : null}
 
@@ -408,7 +421,7 @@ export default function VideoLibrary({
             </div>
             {showProgramUpsell ? (
               <div className="border-t border-[#2b3650] bg-[#0b1324] px-4 py-4">
-                <DrillProgramUpsellLine />
+                <DrillProgramUpsellLine effective={lockedContentEffective} />
               </div>
             ) : null}
           </div>

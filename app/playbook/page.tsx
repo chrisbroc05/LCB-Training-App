@@ -4,6 +4,7 @@ import PlaybookApp from "@/app/playbook/PlaybookApp";
 import PlaybookPurchasePage from "@/app/playbook/PlaybookPurchasePage";
 import { canAccessPlaybook } from "@/lib/membership";
 import { toAccessUserFields, userAccessSelect } from "@/lib/access-server";
+import { emptyAccessUserRow } from "@/lib/empty-access-user-shared";
 import { prisma } from "@/lib/prisma";
 
 type PlaybookPageProps = {
@@ -22,12 +23,7 @@ export default async function PlaybookPage({ searchParams }: PlaybookPageProps) 
     });
     const access = user
       ? toAccessUserFields(user)
-      : toAccessUserFields({
-          membershipTier: "FREE",
-          playbookLegacyAccess: false,
-          membershipLevel: null,
-          membershipLevelExpiresAt: null,
-        });
+      : toAccessUserFields(emptyAccessUserRow);
 
     if (canAccessPlaybook(access.membershipTier, access.playbookLegacyAccess, access.membershipLevel, access.membershipLevelExpiresAt)) {
       return <PlaybookApp />;

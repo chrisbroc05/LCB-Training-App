@@ -4,7 +4,7 @@ import {
   canAccessDrillLibraryBrowse,
   canViewPlaybook,
 } from "@/lib/access-shared";
-import { toAccessUserFields, userAccessSelect } from "@/lib/access-server";
+import { mergeOrgIntoAccessFields } from "@/lib/org-server";
 import { canAccessMemberDownloadsPage, type DatabaseTier } from "@/lib/membership";
 import { formatMemberPlanLabel } from "@/lib/member-plan-labels-shared";
 import { prisma } from "@/lib/prisma";
@@ -22,16 +22,37 @@ export type LoggedInLayoutAccess = {
 export async function loadLoggedInLayoutAccess(userId: string): Promise<LoggedInLayoutAccess> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: userAccessSelect,
+    select: {
+      membershipTier: true,
+      membershipLevel: true,
+      membershipLevelExpiresAt: true,
+      playbookLegacyAccess: true,
+      organizationId: true,
+      orgTrialQuickReportUsed: true,
+      coreQuickReportNextEligibleAt: true,
+      organization: {
+        select: {
+          active: true,
+          billingMode: true,
+          coveredLevel: true,
+          trialStartsAt: true,
+          trialEndsAt: true,
+        },
+      },
+    },
   });
 
   const access = user
-    ? toAccessUserFields(user)
-    : toAccessUserFields({
+    ? mergeOrgIntoAccessFields(user)
+    : mergeOrgIntoAccessFields({
         membershipTier: "FREE",
-        playbookLegacyAccess: false,
         membershipLevel: null,
         membershipLevelExpiresAt: null,
+        playbookLegacyAccess: false,
+        organizationId: null,
+        orgTrialQuickReportUsed: false,
+        coreQuickReportNextEligibleAt: null,
+        organization: null,
       });
 
   let hasProgramEnrollment = false;

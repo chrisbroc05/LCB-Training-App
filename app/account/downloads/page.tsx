@@ -11,6 +11,7 @@ import {
   type DatabaseTier,
 } from "@/lib/membership";
 import { workoutResourceGroups } from "@/lib/workout-resources";
+import { resolveEffectiveLevel } from "@/lib/access-shared";
 import { toAccessUserFields, userAccessSelect } from "@/lib/access-server";
 import { prisma } from "@/lib/prisma";
 
@@ -31,6 +32,7 @@ export default async function AccountDownloadsPage() {
 
   const membershipTier = (user.membershipTier ?? "FREE") as DatabaseTier;
   const entitlements = toAccessUserFields(user);
+  const effective = resolveEffectiveLevel(entitlements);
 
   if (!canAccessMemberDownloadsPage(membershipTier)) {
     return (
@@ -63,7 +65,11 @@ export default async function AccountDownloadsPage() {
         </p>
       </section>
 
-      {showFullWorkoutPdfs ? <WorkoutProgramsSection /> : <PlaybookWorkoutsUpgradeCard />}
+      {showFullWorkoutPdfs ? (
+        <WorkoutProgramsSection />
+      ) : (
+        <PlaybookWorkoutsUpgradeCard effective={effective} />
+      )}
 
       <section className="mt-10 border-t border-[#18243a] pt-8">
         <div className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">

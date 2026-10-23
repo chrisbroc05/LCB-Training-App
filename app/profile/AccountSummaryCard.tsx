@@ -5,11 +5,12 @@ import {
   profileValueClass,
   tierBadgeStyles,
 } from "@/app/profile/profile-styles";
-import { formatUserFacingMembershipLabel, type DatabaseTier } from "@/lib/membership";
+import type { DatabaseTier } from "@/lib/membership";
 
 type AccountSummaryCardProps = {
   name: string | null;
   email: string;
+  planLabel: string;
   membershipTier: DatabaseTier;
   memberSince: string;
   submissionsRemaining: number | null;
@@ -21,6 +22,7 @@ type AccountSummaryCardProps = {
 export default function AccountSummaryCard({
   name,
   email,
+  planLabel,
   membershipTier,
   memberSince,
   submissionsRemaining,
@@ -44,7 +46,7 @@ export default function AccountSummaryCard({
           <span
             className={`mt-2 inline-flex rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wide ${tierBadgeStyles[membershipTier]}`}
           >
-            {formatUserFacingMembershipLabel(membershipTier)}
+            {planLabel}
           </span>
         </div>
         <div>

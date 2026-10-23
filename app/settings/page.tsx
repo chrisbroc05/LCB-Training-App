@@ -17,6 +17,8 @@ import {
   settingsSectionDescriptionClass,
 } from "@/app/settings/settings-styles";
 import { type DatabaseTier } from "@/lib/membership";
+import { toAccessUserFields, userAccessSelect } from "@/lib/access-server";
+import { formatMemberPlanLabel } from "@/lib/member-plan-labels-shared";
 import { prisma } from "@/lib/prisma";
 import { formatOptionalDate } from "@/lib/format-date";
 import { serializeInPersonTrainingInfo } from "@/lib/in-person-training-shared";
@@ -72,7 +74,7 @@ export default async function SettingsPage() {
     select: {
       name: true,
       email: true,
-      membershipTier: true,
+      ...userAccessSelect,
       subscriptionStatus: true,
       subscriptionCurrentPeriodEnd: true,
       stripeCustomerId: true,
@@ -96,6 +98,7 @@ export default async function SettingsPage() {
   }
 
   const membershipTier = user.membershipTier as DatabaseTier;
+  const currentPlanLabel = formatMemberPlanLabel(toAccessUserFields(user));
   const stripeBillingDate = await getStripeBillingDate({
     stripeSubscriptionId: user.stripeSubscriptionId,
     stripeCustomerId: user.stripeCustomerId,
@@ -126,6 +129,7 @@ export default async function SettingsPage() {
         <InPersonTrainingSection initialInfo={serializeInPersonTrainingInfo(user)} />
         <SecuritySection />
         <BillingSection
+          currentPlanLabel={currentPlanLabel}
           membershipTier={membershipTier}
           subscriptionStatus={user.subscriptionStatus}
           nextBillingDate={formatOptionalDate(nextBillingDate)}

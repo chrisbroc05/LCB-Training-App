@@ -23,6 +23,8 @@ import {
 } from "@/lib/membership";
 import { getDrillLibraryVideosByIds } from "@/lib/drill-library-videos";
 import { ensurePlaybookProgress, serializePlaybookProgress } from "@/lib/playbook";
+import { toAccessUserFields, userAccessSelect } from "@/lib/access-server";
+import { formatMemberPlanLabel } from "@/lib/member-plan-labels-shared";
 import { prisma } from "@/lib/prisma";
 import { formatOptionalDate } from "@/lib/format-date";
 import { fetchVimeoThumbnailMap } from "@/lib/vimeo-oembed";
@@ -62,12 +64,11 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
       select: {
         name: true,
         email: true,
-        membershipTier: true,
-        playbookLegacyAccess: true,
         signupDate: true,
         stripeSubscriptionId: true,
         assessmentCallBooked: true,
         assessmentCallDate: true,
+        ...userAccessSelect,
       },
     }),
     prisma.swingAnalysisSubmission.findMany({
@@ -86,6 +87,7 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
   }
 
   const membershipTier = user.membershipTier as DatabaseTier;
+  const planLabel = formatMemberPlanLabel(toAccessUserFields(user));
   const merged: ProfileSubmission[] = [
     ...swingSubmissions.map((item) => ({
       id: item.id,
@@ -175,6 +177,7 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
         <AccountSummaryCard
           name={user.name}
           email={user.email}
+          planLabel={planLabel}
           membershipTier={membershipTier}
           memberSince={formatOptionalDate(user.signupDate)}
           submissionsRemaining={submissionsRemaining}

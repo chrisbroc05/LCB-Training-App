@@ -1,13 +1,12 @@
 import "server-only";
 
-import type { User } from "@prisma/client";
 import {
   type AccessUserFields,
   type DrillViewAccessContext,
   resolveEffectiveLevel,
 } from "@/lib/access-shared";
-import type { MembershipLevelKey } from "@/lib/membership-levels-shared";
 import type { DatabaseTier } from "@/lib/membership";
+import { mergeOrgIntoAccessFields, userOrgAccessSelect } from "@/lib/org-server";
 import { prisma } from "@/lib/prisma";
 
 export type UserAccessSelect = {
@@ -15,24 +14,20 @@ export type UserAccessSelect = {
   membershipLevel: true;
   membershipLevelExpiresAt: true;
   playbookLegacyAccess: true;
-};
+} & typeof userOrgAccessSelect;
 
 export const userAccessSelect = {
   membershipTier: true,
   membershipLevel: true,
   membershipLevelExpiresAt: true,
   playbookLegacyAccess: true,
+  ...userOrgAccessSelect,
 } as const satisfies UserAccessSelect;
 
 export function toAccessUserFields(
-  user: Pick<User, keyof typeof userAccessSelect>,
+  user: Parameters<typeof mergeOrgIntoAccessFields>[0],
 ): AccessUserFields {
-  return {
-    membershipTier: user.membershipTier as DatabaseTier,
-    membershipLevel: (user.membershipLevel as MembershipLevelKey | null) ?? null,
-    membershipLevelExpiresAt: user.membershipLevelExpiresAt,
-    playbookLegacyAccess: user.playbookLegacyAccess,
-  };
+  return mergeOrgIntoAccessFields(user);
 }
 
 export async function loadAccessUserFields(userId: string): Promise<AccessUserFields | null> {

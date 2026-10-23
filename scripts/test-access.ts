@@ -57,7 +57,7 @@ assert.equal(getWorkoutAccessMode(fields("BASIC", { legacy: true })), "full_prog
 assert.equal(getWorkoutAccessMode(fields("BASIC", { legacy: false })), "none");
 
 console.log("test-access: admin plan labels and Train tab gates");
-assert.equal(formatAdminMemberPlanLabel(fields("FREE", { level: "CORE" })), "Free + Core");
+assert.equal(formatAdminMemberPlanLabel(fields("FREE", { level: "CORE" })), "Core");
 assert.equal(canAccessDrillLibraryBrowse(fields("FREE", { level: "CORE" })), true);
 assert.equal(canViewPlaybook(fields("FREE", { level: "CORE" })), false);
 assert.equal(canAccessDrillLibraryBrowse(fields("FREE", { level: "PLUS" })), true);

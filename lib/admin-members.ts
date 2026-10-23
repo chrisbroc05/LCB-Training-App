@@ -27,7 +27,8 @@ import {
   formatAdminMemberPlanLabel,
   formatAdminMembershipLevelExpiry,
 } from "@/lib/member-plan-labels-shared";
-import { toPlaybookEntitlementFields } from "@/lib/playbook-entitlements-shared";
+import { mergeOrgIntoAccessFields } from "@/lib/org-server";
+import { formatAdminBaseTierLabel } from "@/lib/member-plan-labels-shared";
 
 export const adminMemberListSelect = {
   id: true,
@@ -41,6 +42,18 @@ export const adminMemberListSelect = {
   membershipLevel: true,
   membershipLevelExpiresAt: true,
   playbookLegacyAccess: true,
+  organizationId: true,
+  orgTrialQuickReportUsed: true,
+  coreQuickReportNextEligibleAt: true,
+  organization: {
+    select: {
+      active: true,
+      billingMode: true,
+      coveredLevel: true,
+      trialStartsAt: true,
+      trialEndsAt: true,
+    },
+  },
   signupDate: true,
   assessmentCallBooked: true,
   assessmentCallDate: true,
@@ -71,6 +84,16 @@ type AdminMemberListRecord = {
   membershipLevel: import("@prisma/client").MembershipLevel | null;
   membershipLevelExpiresAt: Date | null;
   playbookLegacyAccess: boolean;
+  organizationId: string | null;
+  orgTrialQuickReportUsed: boolean;
+  coreQuickReportNextEligibleAt: Date | null;
+  organization: {
+    active: boolean;
+    billingMode: "FAMILY_PAY" | "CLUB_PAY";
+    coveredLevel: "CORE" | "PLUS" | "ALL_ACCESS" | null;
+    trialStartsAt: Date | null;
+    trialEndsAt: Date | null;
+  } | null;
   signupDate: Date;
   assessmentCallBooked: boolean;
   assessmentCallDate: Date | null;
@@ -130,25 +153,26 @@ export function buildManualTierUpdateData(tier: DatabaseTier) {
 export function serializeAdminMemberSummary(user: AdminMemberListRecord) {
   const submissionCount =
     user._count.swingAnalysisSubmissions + user._count.mentalGameSubmissions;
-  const availability = getCoachingSubmissionAvailability({
+  const tierLabel = formatDatabaseTierLabel(user.membershipTier);
+  const accessFields = mergeOrgIntoAccessFields({
     membershipTier: user.membershipTier,
     membershipLevel: user.membershipLevel,
     membershipLevelExpiresAt: user.membershipLevelExpiresAt,
     playbookLegacyAccess: user.playbookLegacyAccess,
+    organizationId: user.organizationId,
+    orgTrialQuickReportUsed: user.orgTrialQuickReportUsed,
+    coreQuickReportNextEligibleAt: user.coreQuickReportNextEligibleAt,
+    organization: user.organization,
+  });
+
+  const availability = getCoachingSubmissionAvailability({
+    ...accessFields,
     freeSubmissionUsed: user.freeSubmissionUsed,
     playbookSubmissionsUsed: user.playbookSubmissionsUsed,
     coachingSubmissionsUsedThisMonth: user.coachingSubmissionsUsedThisMonth,
     coachingSubmissionPeriod: user.coachingSubmissionPeriod,
     eliteRolloverCredits: user.eliteRolloverCredits,
   });
-
-  const tierLabel = formatDatabaseTierLabel(user.membershipTier);
-  const accessFields = toPlaybookEntitlementFields(
-    user.membershipTier,
-    user.playbookLegacyAccess,
-    user.membershipLevel as import("@/lib/membership-levels-shared").MembershipLevelKey | null,
-    user.membershipLevelExpiresAt,
-  );
 
   return {
     id: user.id,
@@ -163,6 +187,7 @@ export function serializeAdminMemberSummary(user: AdminMemberListRecord) {
     membershipLevelExpiresAt: user.membershipLevelExpiresAt?.toISOString() ?? null,
     planDisplayLabel: formatAdminMemberPlanLabel(accessFields),
     planExpiryLabel: formatAdminMembershipLevelExpiry(user.membershipLevelExpiresAt),
+    baseTierLabel: formatAdminBaseTierLabel(user.membershipTier),
     productAccessCompact: formatMemberProductAccessCompact(
       user.membershipTier,
       user.playbookLegacyAccess,
@@ -226,6 +251,18 @@ export const adminMemberDetailSelect = {
   membershipLevel: true,
   membershipLevelExpiresAt: true,
   playbookLegacyAccess: true,
+  organizationId: true,
+  orgTrialQuickReportUsed: true,
+  coreQuickReportNextEligibleAt: true,
+  organization: {
+    select: {
+      active: true,
+      billingMode: true,
+      coveredLevel: true,
+      trialStartsAt: true,
+      trialEndsAt: true,
+    },
+  },
   signupDate: true,
   assessmentCallBooked: true,
   assessmentCallDate: true,

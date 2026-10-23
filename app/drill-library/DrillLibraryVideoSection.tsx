@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from "react";
 import VideoLibrary from "@/app/dashboard/VideoLibrary";
+import type { EffectiveAccessLevel } from "@/lib/access-shared";
 
 type DrillLibraryVideoSectionProps = {
   thumbnailMap: Record<string, string | null>;
   initialDrillId?: string;
   lockedDrillIds?: readonly string[];
+  lockedContentEffective?: EffectiveAccessLevel;
 };
 
 function VideoLibrarySkeleton() {
@@ -38,6 +40,7 @@ export default function DrillLibraryVideoSection({
   thumbnailMap,
   initialDrillId,
   lockedDrillIds = [],
+  lockedContentEffective = "FREE",
 }: DrillLibraryVideoSectionProps) {
   const [isReady, setIsReady] = useState(false);
 
@@ -54,6 +57,7 @@ export default function DrillLibraryVideoSection({
       thumbnailMap={thumbnailMap}
       initialDrillId={initialDrillId}
       lockedDrillIds={lockedDrillIds}
+      lockedContentEffective={lockedContentEffective}
     />
   );
 }

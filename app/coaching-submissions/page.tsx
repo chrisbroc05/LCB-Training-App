@@ -83,7 +83,7 @@ export default async function CoachingSubmissionsPage() {
           {getCoachingResponseTimeLabel(membershipTier)}.
         </p>
 
-        <CoachingSubmissionQuota availability={availability} membershipTier={membershipTier} />
+        <CoachingSubmissionQuota user={userFields} />
 
         <div className="mt-6 grid gap-4 sm:grid-cols-2">
           <article className="rounded-xl border border-[#2b3650] bg-black/30 p-4 sm:p-5">

@@ -117,6 +117,7 @@ export default function AdminPanel() {
   const [loadingList, setLoadingList] = useState(false);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [writtenResponse, setWrittenResponse] = useState("");
+  const [coachFocusPreset, setCoachFocusPreset] = useState("");
   const [manualVideoUrl, setManualVideoUrl] = useState("");
   const [showVimeoInput, setShowVimeoInput] = useState(false);
   const [uploadedResponseFileName, setUploadedResponseFileName] = useState("");
@@ -258,6 +259,9 @@ export default function AdminPanel() {
     const formData = new FormData();
     formData.set("writtenResponse", writtenResponse.trim());
     formData.set("recommendedDrills", JSON.stringify(selectedRecommendedDrills));
+    if (tab === "swing" && coachFocusPreset.trim()) {
+      formData.set("coachFocusPreset", coachFocusPreset.trim());
+    }
     if (manualVideoUrl.trim()) {
       formData.set("responseVideoUrl", manualVideoUrl.trim());
     }
@@ -808,6 +812,19 @@ export default function AdminPanel() {
                     placeholder="Write your response here..."
                     className="w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 placeholder:text-zinc-500 focus:border-[#22c55e]"
                   />
+
+                  {tab === "swing" ? (
+                    <label className="block text-sm text-zinc-300">
+                      2-week coach focus (optional)
+                      <input
+                        type="text"
+                        value={coachFocusPreset}
+                        onChange={(event) => setCoachFocusPreset(event.target.value)}
+                        placeholder="e.g. Stay through contact on middle pitches"
+                        className="mt-2 w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 placeholder:text-zinc-500 focus:border-[#22c55e]"
+                      />
+                    </label>
+                  ) : null}
 
                   <div className="space-y-3">
                     <input

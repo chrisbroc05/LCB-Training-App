@@ -24,7 +24,9 @@ import {
   type DatabaseTier,
 } from "@/lib/membership";
 import { getDrillLibraryVideoId } from "@/lib/drill-library-videos";
-import { userAccessSelect } from "@/lib/access-server";
+import { resolveEffectiveLevel } from "@/lib/access-shared";
+import { toAccessUserFields, userAccessSelect } from "@/lib/access-server";
+import { emptyAccessUserRow } from "@/lib/empty-access-user-shared";
 import { prisma } from "@/lib/prisma";
 import { fetchVimeoThumbnailMap } from "@/lib/vimeo-oembed";
 
@@ -48,10 +50,12 @@ export default async function DrillLibraryPage({ searchParams }: DrillLibraryPag
     where: { id: session.user.id },
     select: userAccessSelect,
   });
-  const membershipTier = (user?.membershipTier ?? "FREE") as DatabaseTier;
-  const playbookLegacyAccess = user?.playbookLegacyAccess ?? false;
-  const membershipLevel = user?.membershipLevel ?? null;
-  const membershipLevelExpiresAt = user?.membershipLevelExpiresAt ?? null;
+  const access = toAccessUserFields(user ?? emptyAccessUserRow);
+  const lockedContentEffective = resolveEffectiveLevel(access);
+  const membershipTier = access.membershipTier as DatabaseTier;
+  const playbookLegacyAccess = access.playbookLegacyAccess;
+  const membershipLevel = access.membershipLevel ?? null;
+  const membershipLevelExpiresAt = access.membershipLevelExpiresAt ?? null;
   const canBrowseLibrary = canAccessDrillLibrary(
     membershipTier,
     playbookLegacyAccess,
@@ -65,7 +69,8 @@ export default async function DrillLibraryPage({ searchParams }: DrillLibraryPag
     membershipLevelExpiresAt,
   );
   const grantedDrillIds = canBrowseLibrary ? [] : await loadUserGrantedDrillIds(session.user.id);
-  const showProgramUpsell = membershipTier === "FREE";
+  const showProgramUpsell =
+    lockedContentEffective === "FREE" || lockedContentEffective === "PLAYBOOK";
 
   if (!canBrowseLibrary) {
     if (initialDrillId && isDrillGrantedToUser(initialDrillId, grantedDrillIds)) {
@@ -87,11 +92,12 @@ export default async function DrillLibraryPage({ searchParams }: DrillLibraryPag
                   initialDrillId={initialDrillId}
                   allowedVideos={allowedVideos}
                   showProgramUpsell={showProgramUpsell}
+                  lockedContentEffective={lockedContentEffective}
                 />
               </DrillLibraryErrorBoundary>
               {showProgramUpsell ? (
                 <div className="hidden md:block">
-                  <DrillProgramUpsellLine />
+                  <DrillProgramUpsellLine effective={lockedContentEffective} />
                 </div>
               ) : null}
               <p className="mt-6 text-sm text-zinc-400">
@@ -191,6 +197,7 @@ export default async function DrillLibraryPage({ searchParams }: DrillLibraryPag
             thumbnailMap={thumbnailMap}
             initialDrillId={initialDrillId}
             lockedDrillIds={lockedDrillIds}
+            lockedContentEffective={lockedContentEffective}
           />
         </DrillLibraryErrorBoundary>
       </div>
@@ -201,6 +208,7 @@ export default async function DrillLibraryPage({ searchParams }: DrillLibraryPag
             thumbnailMap={thumbnailMap}
             initialDrillId={initialDrillId}
             lockedDrillIds={lockedDrillIds}
+            lockedContentEffective={lockedContentEffective}
           />
         </DrillLibraryErrorBoundary>
         <DrillLibraryMobileResources
