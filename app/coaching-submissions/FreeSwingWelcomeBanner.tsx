@@ -28,7 +28,7 @@ export default function FreeSwingWelcomeBanner() {
     <section className="mb-6 rounded-xl border border-[#22c55e]/40 bg-[#22c55e]/10 px-4 py-4 sm:px-5">
       <p className="text-sm leading-relaxed text-[#9df3bd] sm:text-base">
         Welcome to LCB Training! You are one step away -- upload your swing video below and Coach
-        Broc will personally review it and get back to you within 48 hours.
+        Broc will personally review it and get back to you within a few days.
       </p>
     </section>
   );

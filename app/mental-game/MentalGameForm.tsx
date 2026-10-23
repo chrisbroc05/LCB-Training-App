@@ -14,10 +14,10 @@ type ResponsePreference = "VIDEO_RESPONSE" | "WRITTEN_RESPONSE";
 const MAX_VIDEO_UPLOAD_BYTES = 100 * 1024 * 1024;
 
 type MentalGameFormProps = {
-  isFreeMember?: boolean;
+  confirmationVariant: "FREE" | "PREMIUM_VIDEO";
 };
 
-export default function MentalGameForm({ isFreeMember = false }: MentalGameFormProps) {
+export default function MentalGameForm({ confirmationVariant }: MentalGameFormProps) {
   const [playerName, setPlayerName] = useState("");
   const [playerAge, setPlayerAge] = useState("");
   const [topic, setTopic] = useState("SLUMP");
@@ -224,7 +224,7 @@ export default function MentalGameForm({ isFreeMember = false }: MentalGameFormP
           desktopPanelClassName="w-[94vw] max-w-2xl overflow-y-auto rounded-2xl border border-[#18243a] bg-[#0b1324] p-0 shadow-2xl sm:max-w-3xl"
         >
           <CoachingSubmissionConfirmation
-            isFreeMember={isFreeMember}
+            variant={confirmationVariant}
             summary={
               <div className="rounded-xl border border-[#2b3650] bg-black/40 p-4">
                 <p className="text-sm font-semibold text-zinc-200">Coaching Submission Summary</p>

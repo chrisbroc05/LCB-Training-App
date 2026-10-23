@@ -5,13 +5,13 @@ import { TWELVE_WEEK_PROGRAM_NAME } from "@/lib/twelve-week-program";
 import { TWELVE_WEEK_KICKOFF_AND_CHECKINS_SHORT } from "@/lib/twelve-week-program-copy-shared";
 
 type FreeMemberWhileYouWaitCardsProps = {
-  coachingHref?: string;
   programHref?: string;
+  fixItHref?: string;
 };
 
 export default function FreeMemberWhileYouWaitCards({
-  coachingHref = "/program",
   programHref = "/program",
+  fixItHref = "/fix-it",
 }: FreeMemberWhileYouWaitCardsProps) {
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -30,16 +30,16 @@ export default function FreeMemberWhileYouWaitCards({
       </article>
 
       <article className="flex h-full flex-col rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-5 sm:p-6">
-        <h3 className="text-lg font-semibold text-zinc-100">Monthly Coaching Memberships</h3>
+        <h3 className="text-lg font-semibold text-zinc-100">Fix-It Hitting Plans</h3>
         <p className="mt-3 flex-1 text-sm leading-relaxed text-zinc-300">
-          The 12-Week Coaching Program is the best path if you want ongoing coaching support with
-          unlimited submissions and {TWELVE_WEEK_KICKOFF_AND_CHECKINS_SHORT}.
+          Three-week plans with Coach Broc&apos;s drill videos for the swing issues he sees most
+          often.
         </p>
         <Link
-          href={coachingHref}
+          href={fixItHref}
           className="mt-5 inline-flex w-full items-center justify-center rounded-full border border-[#52B788] bg-transparent px-5 py-2.5 text-sm font-semibold text-[#52B788] transition hover:bg-[#52B788]/10 sm:w-auto"
         >
-          See Coaching Options
+          View Fix-It Plans
         </Link>
       </article>
     </div>
@@ -47,8 +47,8 @@ export default function FreeMemberWhileYouWaitCards({
 }
 
 export function FreeMemberWhileYouWaitSection({
-  coachingHref = "/upgrade?reason=memorable-required",
   programHref = "/program",
+  fixItHref = "/fix-it",
   showDashboardFooter = true,
 }: FreeMemberWhileYouWaitCardsProps & {
   showDashboardFooter?: boolean;
@@ -58,17 +58,17 @@ export function FreeMemberWhileYouWaitSection({
       <p className="text-sm font-medium text-zinc-200 sm:text-base">
         While you wait -- here is what else is waiting for you.
       </p>
-      <FreeMemberWhileYouWaitCards coachingHref={coachingHref} programHref={programHref} />
+      <FreeMemberWhileYouWaitCards programHref={programHref} fixItHref={fixItHref} />
       {showDashboardFooter ? (
         <p className="text-center text-sm text-zinc-400">
-          Already exploring? Head to your dashboard to see everything included with your free
-          account.{" "}
+          Already exploring? Head to your{" "}
           <Link
             href="/dashboard"
             className="font-semibold text-[#52B788] underline-offset-2 hover:text-[#9df3bd] hover:underline"
           >
-            Go to Dashboard
-          </Link>
+            dashboard
+          </Link>{" "}
+          to keep training.
         </p>
       ) : null}
     </div>

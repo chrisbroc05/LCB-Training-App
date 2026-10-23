@@ -41,7 +41,7 @@ export type GoalItemCategory = (typeof GOAL_ITEM_CATEGORIES)[number]["value"];
 export const MAX_GOAL_ITEMS = 5;
 
 export const GOAL_CHECKIN_SUBMITTED_MESSAGE =
-  "Your goals have been submitted. Coach Broc will review them and get back to you within 48 hours. Keep track of your progress below and reach out with any questions.";
+  "Your goals have been submitted. Coach Broc will review them and get back to you within a few days. Keep track of your progress below and reach out with any questions.";
 
 export const GOAL_CHECKIN_ALREADY_SUBMITTED_MESSAGE =
   "You have already submitted your goals for this month. Keep track of your progress below and check back next month.";

@@ -247,7 +247,7 @@ export default function ProfileGoalCheckinHistory({ hasAccess }: ProfileGoalChec
                       </div>
                     ) : entry.status === "pending" ? (
                       <p className="mt-4 text-sm text-zinc-400">
-                        Coach Broc is reviewing your goals and will respond within 48 hours.
+                        Coach Broc is reviewing your goals and will respond within a few days.
                       </p>
                     ) : null}
                   </div>

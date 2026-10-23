@@ -4,12 +4,20 @@ import { authOptions } from "@/lib/auth";
 import CoachingSubmissionQuota from "@/app/CoachingSubmissionQuota";
 import LockedFeaturePanel from "@/app/LockedFeaturePanel";
 import SwingAnalysisForm from "@/app/swing-analysis/SwingAnalysisForm";
+import { resolveEffectiveLevel } from "@/lib/access-shared";
 import {
   ensureCoachingSubmissionPeriod,
   getCoachingSubmissionAvailabilityForUser,
 } from "@/lib/coaching-submissions";
 import { PLAYBOOK_SUBMISSIONS_EXHAUSTED_MESSAGE } from "@/lib/coaching-submissions";
+import {
+  getSwingSubmissionConfirmationVariant,
+  shouldHideSwingResponsePreference,
+} from "@/lib/coaching-submission-confirmation-shared";
 import { freeSubmissionUsedUpgradeMessage } from "@/lib/membership";
+import { mergeOrgIntoAccessFields, userOrgAccessSelect } from "@/lib/org-server";
+import { loadCurrentOrgWeeklyFocusForUser } from "@/lib/org-weekly-focus-server";
+import { prisma } from "@/lib/prisma";
 
 export default async function SwingAnalysisPage() {
   const session = await getServerSession(authOptions);
@@ -22,7 +30,6 @@ export default async function SwingAnalysisPage() {
     redirect("/auth");
   }
 
-  const membershipTier = userFields.membershipTier;
   const availability = await getCoachingSubmissionAvailabilityForUser(session.user.id);
   const lockReason = availability?.lockReason ?? null;
 
@@ -78,6 +85,23 @@ export default async function SwingAnalysisPage() {
     redirect("/upgrade");
   }
 
+  const accessUser = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: {
+      membershipTier: true,
+      membershipLevel: true,
+      membershipLevelExpiresAt: true,
+      playbookLegacyAccess: true,
+      ...userOrgAccessSelect,
+    },
+  });
+
+  const accessFields = accessUser ? mergeOrgIntoAccessFields(accessUser) : null;
+  const effectiveLevel = accessFields ? resolveEffectiveLevel(accessFields) : "FREE";
+  const confirmationVariant = getSwingSubmissionConfirmationVariant(effectiveLevel);
+  const showResponsePreference = !shouldHideSwingResponsePreference(effectiveLevel);
+  const weeklyFocus = await loadCurrentOrgWeeklyFocusForUser(session.user.id);
+
   return (
     <div className="mx-auto w-full max-w-4xl px-4 py-10 sm:px-6 sm:py-14 md:py-20">
       <section className="rounded-3xl border border-[#18243a] bg-[#0b1324]/80 p-5 sm:p-8">
@@ -90,7 +114,11 @@ export default async function SwingAnalysisPage() {
         </p>
 
         <CoachingSubmissionQuota user={userFields} />
-        <SwingAnalysisForm isFreeMember={membershipTier === "FREE"} />
+        <SwingAnalysisForm
+          confirmationVariant={confirmationVariant}
+          showResponsePreference={showResponsePreference}
+          weeklyFocusTitle={weeklyFocus?.title ?? null}
+        />
       </section>
     </div>
   );

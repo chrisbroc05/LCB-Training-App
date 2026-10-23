@@ -3,11 +3,14 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import type { DatabaseTier } from "@/lib/membership";
+import { resolveEffectiveLevel } from "@/lib/access-shared";
 import {
   consumeCoachingSubmission,
   getCoachingSubmissionLimitError,
 } from "@/lib/coaching-submissions";
+import { shouldHideSwingResponsePreference } from "@/lib/coaching-submission-confirmation-shared";
 import { getFreeSwingAnalysisResponseMode } from "@/lib/free-swing-analysis-response-server";
+import { mergeOrgIntoAccessFields, userOrgAccessSelect } from "@/lib/org-server";
 import { prisma } from "@/lib/prisma";
 import { sendCoachNewSubmissionPush } from "@/lib/coach-push-instant";
 import { getCoachSubmissionEmailContext } from "@/lib/submission-coach-context";
@@ -159,8 +162,29 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!["VIDEO_RESPONSE", "WRITTEN_RESPONSE"].includes(responsePreference)) {
-      console.warn(`[swing-submit:${requestId}] Invalid response preference: ${responsePreference}`);
+    const accessUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        membershipTier: true,
+        membershipLevel: true,
+        membershipLevelExpiresAt: true,
+        playbookLegacyAccess: true,
+        ...userOrgAccessSelect,
+      },
+    });
+    const effectiveLevel = accessUser
+      ? resolveEffectiveLevel(mergeOrgIntoAccessFields(accessUser))
+      : "FREE";
+
+    let normalizedResponsePreference = responsePreference;
+    if (shouldHideSwingResponsePreference(effectiveLevel)) {
+      normalizedResponsePreference = "WRITTEN_RESPONSE";
+    }
+
+    if (!["VIDEO_RESPONSE", "WRITTEN_RESPONSE"].includes(normalizedResponsePreference)) {
+      console.warn(
+        `[swing-submit:${requestId}] Invalid response preference: ${normalizedResponsePreference}`,
+      );
       return NextResponse.json({ error: "Invalid response preference selected." }, { status: 400 });
     }
 
@@ -191,7 +215,7 @@ export async function POST(request: Request) {
             videoCategory: categoryValidation.value,
             notes,
             submittedVideo,
-            responsePreference: responsePreference as "VIDEO_RESPONSE" | "WRITTEN_RESPONSE",
+            responsePreference: normalizedResponsePreference as "VIDEO_RESPONSE" | "WRITTEN_RESPONSE",
             status: "PENDING",
             reviewTrack: consumed.reviewTrack,
           },

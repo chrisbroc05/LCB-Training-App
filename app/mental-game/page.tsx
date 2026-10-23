@@ -10,7 +10,11 @@ import {
   getCoachingSubmissionLockReason,
 } from "@/lib/coaching-submissions";
 import { PLAYBOOK_SUBMISSIONS_EXHAUSTED_MESSAGE } from "@/lib/coaching-submissions";
+import { resolveEffectiveLevel } from "@/lib/access-shared";
+import { getMentalSubmissionConfirmationVariant } from "@/lib/coaching-submission-confirmation-shared";
 import { freeSubmissionUsedUpgradeMessage } from "@/lib/membership";
+import { mergeOrgIntoAccessFields, userOrgAccessSelect } from "@/lib/org-server";
+import { prisma } from "@/lib/prisma";
 
 export default async function MentalGamePage() {
   const session = await getServerSession(authOptions);
@@ -23,7 +27,6 @@ export default async function MentalGamePage() {
     redirect("/auth");
   }
 
-  const membershipTier = userFields.membershipTier;
   const lockReason = getCoachingSubmissionLockReason(userFields);
 
   const availability = getCoachingSubmissionAvailability(userFields);
@@ -68,6 +71,21 @@ export default async function MentalGamePage() {
     redirect("/upgrade");
   }
 
+  const accessUser = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: {
+      membershipTier: true,
+      membershipLevel: true,
+      membershipLevelExpiresAt: true,
+      playbookLegacyAccess: true,
+      ...userOrgAccessSelect,
+    },
+  });
+  const effectiveLevel = accessUser
+    ? resolveEffectiveLevel(mergeOrgIntoAccessFields(accessUser))
+    : "FREE";
+  const confirmationVariant = getMentalSubmissionConfirmationVariant(effectiveLevel);
+
   return (
     <div className="mx-auto w-full max-w-4xl px-4 py-10 sm:px-6 sm:py-14 md:py-20">
       <section className="rounded-3xl border border-[#18243a] bg-[#0b1324]/80 p-5 sm:p-8">
@@ -79,7 +97,7 @@ export default async function MentalGamePage() {
         </p>
 
         <CoachingSubmissionQuota user={userFields} />
-        <MentalGameForm isFreeMember={membershipTier === "FREE"} />
+        <MentalGameForm confirmationVariant={confirmationVariant} />
       </section>
     </div>
   );

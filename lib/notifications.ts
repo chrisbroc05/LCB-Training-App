@@ -239,7 +239,7 @@ function buildSubmissionConfirmationEmailContent(params: {
                   ${buildEmailButton("View in Your Dashboard", profileUrl)}`);
 
   const bodyContentHtml = `<h1 style="margin:0 0 20px 0; font-family:Arial, Helvetica, sans-serif; font-size:28px; line-height:1.3; font-weight:700; color:#0A1628;">${escapeHtml(headline)}</h1>
-              <p style="margin:0 0 24px 0; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:1.7; color:#0A1628;">Your ${escapeHtml(submissionKind)} just landed with me. I watch every submission myself, no assistants, no shortcuts. You'll have my personal breakdown within 48 hours.</p>
+              <p style="margin:0 0 24px 0; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:1.7; color:#0A1628;">Your ${escapeHtml(submissionKind)} just landed with me. I watch every submission myself, no assistants, no shortcuts. You will have my personal breakdown within a few days.</p>
               ${buildEmailSectionLabel("YOUR SUBMISSION")}
               ${submissionRecapHtml}
               ${buildEmailSectionLabel("WHAT HAPPENS NEXT")}
@@ -257,7 +257,7 @@ function buildSubmissionConfirmationEmailContent(params: {
 
   const text = `${headline}
 
-Your ${submissionKind} just landed with me. I watch every submission myself, no assistants, no shortcuts. You'll have my personal breakdown within 48 hours.
+Your ${submissionKind} just landed with me. I watch every submission myself, no assistants, no shortcuts. You will have my personal breakdown within a few days.
 
 YOUR SUBMISSION
 Type: ${submissionLabel}
@@ -849,7 +849,7 @@ export async function sendGoalCheckinReceivedEmail(params: {
     subject: "Your Monthly Goals Were Received",
     text: `Hi ${params.displayName},
 
-Your monthly goal check-in was received. Coach Broc will review your goals and respond within 48 hours.
+Your monthly goal check-in was received. Coach Broc will review your goals and respond within a few days.
 
 View your submission: ${goalSettingUrl}
 
@@ -857,7 +857,7 @@ View your submission: ${goalSettingUrl}
     html: buildOnboardingEmailShell({
       heading: "Goals Received",
       intro: `Hi ${escapeHtml(params.displayName)}, your monthly goal check-in was received.`,
-      bodyHtml: `<p style="margin: 0 0 12px;">Coach Broc will review your goals and respond within 48 hours.</p>
+      bodyHtml: `<p style="margin: 0 0 12px;">Coach Broc will review your goals and respond within a few days.</p>
         <p style="margin: 0;"><a href="${escapeHtml(
           goalSettingUrl,
         )}" target="_blank" rel="noopener noreferrer" style="color:#8fd7ff; text-decoration:underline;">View your submission</a></p>`,

@@ -29,13 +29,20 @@ import {
   uploadVideoToPresignedUrl,
   type PresignedSwingUploadResponse,
 } from "@/lib/swing-submission-upload-client";
+import type { SwingSubmissionConfirmationVariant } from "@/lib/coaching-submission-confirmation-shared";
 import { useState } from "react";
 
 type SwingAnalysisFormProps = {
-  isFreeMember?: boolean;
+  confirmationVariant: SwingSubmissionConfirmationVariant;
+  showResponsePreference?: boolean;
+  weeklyFocusTitle?: string | null;
 };
 
-export default function SwingAnalysisForm({ isFreeMember = false }: SwingAnalysisFormProps) {
+export default function SwingAnalysisForm({
+  confirmationVariant,
+  showResponsePreference = true,
+  weeklyFocusTitle = null,
+}: SwingAnalysisFormProps) {
   const [playerName, setPlayerName] = useState("");
   const [videoFileName, setVideoFileName] = useState("");
   const [videoFile, setVideoFile] = useState<File | null>(null);
@@ -155,6 +162,10 @@ export default function SwingAnalysisForm({ isFreeMember = false }: SwingAnalysi
         r2Key = presignedUpload.r2Key;
       }
 
+      const effectiveResponsePreference = showResponsePreference
+        ? responsePreference
+        : "WRITTEN_RESPONSE";
+
       const response = await fetch("/api/swing-analysis/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -165,7 +176,7 @@ export default function SwingAnalysisForm({ isFreeMember = false }: SwingAnalysi
           videoCategory: categoryValidation.value,
           lookAtFocus: lookAtValidation.value,
           notes: trimmedNotes,
-          responsePreference,
+          responsePreference: effectiveResponsePreference,
           videoUrl: videoUrl.trim() || undefined,
           r2Key,
         }),
@@ -312,33 +323,35 @@ export default function SwingAnalysisForm({ isFreeMember = false }: SwingAnalysi
           </div>
         </label>
 
-        <fieldset>
-          <legend className="text-sm text-zinc-300">Preferred response type</legend>
-          <div className="mt-3 space-y-3">
-            <label className="flex items-center gap-3 text-zinc-100">
-              <input
-                type="radio"
-                name="responsePreference"
-                value="VIDEO_RESPONSE"
-                checked={responsePreference === "VIDEO_RESPONSE"}
-                onChange={() => setResponsePreference("VIDEO_RESPONSE")}
-                className="h-4 w-4 accent-[#22c55e]"
-              />
-              <span>Video Response from Coach</span>
-            </label>
-            <label className="flex items-center gap-3 text-zinc-100">
-              <input
-                type="radio"
-                name="responsePreference"
-                value="WRITTEN_RESPONSE"
-                checked={responsePreference === "WRITTEN_RESPONSE"}
-                onChange={() => setResponsePreference("WRITTEN_RESPONSE")}
-                className="h-4 w-4 accent-[#22c55e]"
-              />
-              <span>Written Response</span>
-            </label>
-          </div>
-        </fieldset>
+        {showResponsePreference ? (
+          <fieldset>
+            <legend className="text-sm text-zinc-300">Preferred response type</legend>
+            <div className="mt-3 space-y-3">
+              <label className="flex items-center gap-3 text-zinc-100">
+                <input
+                  type="radio"
+                  name="responsePreference"
+                  value="VIDEO_RESPONSE"
+                  checked={responsePreference === "VIDEO_RESPONSE"}
+                  onChange={() => setResponsePreference("VIDEO_RESPONSE")}
+                  className="h-4 w-4 accent-[#22c55e]"
+                />
+                <span>Video Response from Coach</span>
+              </label>
+              <label className="flex items-center gap-3 text-zinc-100">
+                <input
+                  type="radio"
+                  name="responsePreference"
+                  value="WRITTEN_RESPONSE"
+                  checked={responsePreference === "WRITTEN_RESPONSE"}
+                  onChange={() => setResponsePreference("WRITTEN_RESPONSE")}
+                  className="h-4 w-4 accent-[#22c55e]"
+                />
+                <span>Written Response</span>
+              </label>
+            </div>
+          </fieldset>
+        ) : null}
 
         {uploadProgress !== null && isSubmitting ? (
           <div className="rounded-lg border border-[#2b3650] bg-black/40 p-4">
@@ -375,7 +388,8 @@ export default function SwingAnalysisForm({ isFreeMember = false }: SwingAnalysi
           desktopPanelClassName="w-[94vw] max-w-2xl overflow-y-auto rounded-2xl border border-[#18243a] bg-[#0b1324] p-0 shadow-2xl sm:max-w-3xl"
         >
           <CoachingSubmissionConfirmation
-            isFreeMember={isFreeMember}
+            variant={confirmationVariant}
+            weeklyFocusTitle={weeklyFocusTitle}
             summary={
               <div className="rounded-xl border border-[#2b3650] bg-black/40 p-4">
                 <p className="text-sm font-semibold text-zinc-200">Coaching Submission Summary</p>

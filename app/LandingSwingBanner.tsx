@@ -36,7 +36,7 @@ export default function LandingSwingBanner({ isLoggedIn }: LandingSwingBannerPro
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="hidden text-sm leading-relaxed sm:block">
             Ready to submit your swing? Get started free and Coach Broc will personally review it
-            within 48 hours.
+            within a few days.
           </p>
           <p className="text-sm leading-relaxed sm:hidden">
             Get your free swing analysis from Coach Broc.

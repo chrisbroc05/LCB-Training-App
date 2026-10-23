@@ -124,7 +124,7 @@ export default function DashboardCoachingCard({
           ) : (
             <>
               <p className="mt-3 text-sm text-zinc-300">
-                Your submission has been sent. Coach Broc will be in touch within 48 hours.
+                Your submission has been sent. Coach Broc will be in touch within a few days.
               </p>
               <p className="mt-3 text-sm text-zinc-300">
                 Want unlimited coaching submissions and personal feedback? Join the 12-Week Coaching

@@ -175,7 +175,7 @@ export default function CoachingSubmissionHistory({
                   </div>
                 ) : (
                   <p className="mt-3 text-sm text-zinc-300">
-                    Coach Chris typically responds within 48 hours.
+                    Coach Broc typically responds within a few days.
                   </p>
                 )}
               </div>

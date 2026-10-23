@@ -74,12 +74,8 @@ export const goalCheckinRequiredMessage =
 export const freeSubmissionUsedUpgradeMessage =
   "Your one free submission has already been used. Join the 12-Week Coaching Program for unlimited submissions and full coaching support.";
 
-export function getCoachingResponseTimeLabel(tier: DatabaseTier) {
-  if (tier === "ELITE") {
-    return "24 hours (priority)";
-  }
-
-  return "48 hours";
+export function getCoachingResponseTimeLabel(_tier: DatabaseTier) {
+  return "a few days";
 }
 
 export const tierRank: Record<TierKey, number> = {
@@ -115,8 +111,8 @@ export const validDatabaseTiers: DatabaseTier[] = [
 ];
 
 export function formatDatabaseTierLabel(tier: DatabaseTier): string {
-  if (tier === "MEMORABLE") {
-    return "Memorable";
+  if (tier === "MEMORABLE" || tier === "ELITE") {
+    return "Member";
   }
 
   if (tier === "TWELVE_WEEK") {
