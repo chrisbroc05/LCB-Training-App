@@ -19,6 +19,7 @@ import {
   parseProgramDateKey,
 } from "@/lib/program-schedule";
 import { requireUnder13ParentUnlockResponse } from "@/lib/legal-under13-guard-server";
+import { assertUserCanAccessProgram } from "@/lib/program-membership-gate-server";
 import { prisma } from "@/lib/prisma";
 
 const AGE_GROUPS: ProgramAgeGroup[] = ["AGE_8_11", "AGE_12_15", "AGE_16_18"];
@@ -38,12 +39,8 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { membershipTier: true },
-  });
-
-  if (!user || user.membershipTier !== "TWELVE_WEEK") {
+  const accessResult = await assertUserCanAccessProgram(session.user.id);
+  if (!accessResult) {
     return NextResponse.json({ error: "Program access required." }, { status: 403 });
   }
 
@@ -69,14 +66,15 @@ export async function PATCH(request: Request) {
     return under13LockError;
   }
 
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { membershipTier: true, name: true, email: true },
-  });
-
-  if (!user || user.membershipTier !== "TWELVE_WEEK") {
+  const accessResult = await assertUserCanAccessProgram(session.user.id);
+  if (!accessResult) {
     return NextResponse.json({ error: "Program access required." }, { status: 403 });
   }
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { name: true, email: true },
+  });
 
   const existing = await prisma.programEnrollment.findUnique({
     where: { userId: session.user.id },

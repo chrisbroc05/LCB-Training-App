@@ -2,7 +2,8 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { isTwelveWeekProgramMember } from "@/lib/membership";
+import { canAccessProgramDashboard } from "@/lib/program-access-shared";
+import { toAccessUserFields, userAccessSelect } from "@/lib/access-server";
 import ProgramTodaySetupPrompt from "@/app/dashboard/ProgramTodaySetupPrompt";
 import ProgramTodayView from "@/app/dashboard/ProgramTodayView";
 import InPersonEmergencyReminderCard from "@/components/InPersonEmergencyReminderCard";
@@ -17,14 +18,15 @@ export default async function ProgramTodayPage() {
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
     select: {
-      membershipTier: true,
+      ...userAccessSelect,
       trainsInPerson: true,
       emergencyContactName: true,
       emergencyContactPhone: true,
     },
   });
 
-  if (!user || !isTwelveWeekProgramMember(user.membershipTier)) {
+  const access = user ? toAccessUserFields(user) : null;
+  if (!access || !canAccessProgramDashboard(access)) {
     redirect("/dashboard");
   }
 

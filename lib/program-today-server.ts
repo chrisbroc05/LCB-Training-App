@@ -131,7 +131,7 @@ export function toEnrollmentPlanInput(enrollment: {
 }
 
 export function buildProgramDayInfoForProgramDay(
-  enrollment: { startDate: Date | null },
+  enrollment: { startDate: Date | null; planMode?: import("@/lib/program-plan-mode-shared").ProgramPlanMode | null },
   programDay: number,
 ): ProgramDayInfo {
   if (!enrollment.startDate || programDay <= 0) {
@@ -223,7 +223,10 @@ export async function buildProgramTodayPayload(params: {
   now?: Date;
 }) {
   const now = params.now ?? new Date();
-  const todayInfo = getProgramDay({ startDate: params.enrollment.startDate }, now);
+  const todayInfo = getProgramDay(
+    { startDate: params.enrollment.startDate, planMode: params.enrollment.planMode },
+    now,
+  );
   const viewedProgramDay = params.viewedProgramDay ?? todayInfo.programDay;
   const viewedDayInfo =
     viewedProgramDay > 0
@@ -430,7 +433,10 @@ export async function buildProgramTodayPayload(params: {
   ] as const;
 
   const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-  const yesterdayInfo = getProgramDay({ startDate: params.enrollment.startDate }, yesterday);
+  const yesterdayInfo = getProgramDay(
+    { startDate: params.enrollment.startDate, planMode: params.enrollment.planMode },
+    yesterday,
+  );
   const startDate = params.enrollment.startDate;
   const calendarMonday = getChicagoMondayStart(now);
   const calendarMondayKey = formatProgramStartDateKey(calendarMonday);

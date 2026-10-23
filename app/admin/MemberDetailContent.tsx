@@ -11,6 +11,8 @@ import { formatOptionalDate, formatOptionalDateTime } from "@/lib/format-date";
 import { formatDatabaseTierLabel, validDatabaseTiers, type DatabaseTier } from "@/lib/membership";
 import AdminProductAccessPanel from "@/app/admin/AdminProductAccessPanel";
 import TierBadge from "@/app/admin/TierBadge";
+import AdminMembershipLevelSection from "@/app/admin/AdminMembershipLevelSection";
+import type { MembershipLevelKey } from "@/lib/membership-levels-shared";
 import type { MemberProductAccessSummary } from "@/lib/admin-product-access-shared";
 import type { InPersonTrainingInfo } from "@/lib/in-person-training-shared";
 
@@ -19,6 +21,8 @@ export type MemberDetail = {
   name: string | null;
   email: string;
   membershipTier: DatabaseTier;
+  membershipLevel: MembershipLevelKey | null;
+  membershipLevelExpiresAt: string | null;
   productAccessCompact: string;
   productAccess: MemberProductAccessSummary;
   signupDate: string;
@@ -511,6 +515,8 @@ export default function MemberDetailContent({
         productAccess={detail.productAccess}
         onUpdated={onMemberUpdated}
       />
+
+      <AdminMembershipLevelSection detail={detail} onUpdated={onMemberUpdated} />
 
       <div className="rounded-xl border border-[#2b3650] bg-[#0b1324]/70 p-4">
         <p className="text-sm font-semibold text-zinc-100">Manual Tier Override</p>

@@ -33,14 +33,20 @@ export default function LandingPricingSection() {
         </Link>
       </div>
 
-      <div className="mb-3 flex justify-center">
-        <BillingFrequencyToggle value={billingFrequency} onChange={setBillingFrequency} />
-      </div>
-      <p className="mb-8 text-center text-xs text-zinc-400">
-        Monthly and annual pricing applies to Memorable and Elite only.
-      </p>
+      {membershipTiers.some((tier) => usesBillingFrequencyToggle(tier.key)) ? (
+        <>
+          <div className="mb-3 flex justify-center">
+            <BillingFrequencyToggle value={billingFrequency} onChange={setBillingFrequency} />
+          </div>
+          <p className="mb-8 text-center text-xs text-zinc-400">
+            Toggle monthly or annual billing where available.
+          </p>
+        </>
+      ) : (
+        <div className="mb-8" />
+      )}
 
-      <div className="grid gap-5 md:grid-cols-4">
+      <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
         {membershipTiers.map((tier) => {
           const pricing = getTierPricing(tier.key, billingFrequency);
           const annualSavings =

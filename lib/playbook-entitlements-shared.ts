@@ -1,42 +1,50 @@
 /**
- * Playbook / Basic tier entitlements (client-safe: no server imports).
+ * Playbook / drill entitlements (client-safe). Delegates to access-shared.
  */
 
+import {
+  canAccessDrillLibraryBrowse,
+  canViewDrill as accessCanViewDrill,
+  canViewPlaybook as accessCanViewPlaybook,
+  canDownloadWorkoutPdfs,
+  hasFullDrillLibraryAccess as accessHasFullDrillLibrary,
+  type AccessUserFields,
+  type DrillViewAccessContext,
+} from "@/lib/access-shared";
 import type { DatabaseTier } from "@/lib/membership";
-import { hasDatabaseTierAccess } from "@/lib/membership";
-
-export type PlaybookEntitlementFields = {
-  membershipTier: DatabaseTier;
-  playbookLegacyAccess: boolean;
-};
+export type PlaybookEntitlementFields = AccessUserFields;
 
 export const PLAYBOOK_LIFETIME_SUBMISSION_LIMIT_NEW = 1;
 export const PLAYBOOK_LIFETIME_SUBMISSION_LIMIT_LEGACY = 2;
+
+export function toPlaybookEntitlementFields(
+  membershipTier: DatabaseTier,
+  playbookLegacyAccess: boolean,
+  membershipLevel: AccessUserFields["membershipLevel"] = null,
+  membershipLevelExpiresAt: AccessUserFields["membershipLevelExpiresAt"] = null,
+): PlaybookEntitlementFields {
+  return {
+    membershipTier,
+    playbookLegacyAccess,
+    membershipLevel,
+    membershipLevelExpiresAt,
+  };
+}
 
 export function hasPlaybookLegacyAccess(user: PlaybookEntitlementFields): boolean {
   return user.membershipTier === "BASIC" && user.playbookLegacyAccess;
 }
 
 export function canAccessPlaybookContent(user: PlaybookEntitlementFields): boolean {
-  return hasDatabaseTierAccess(user.membershipTier, "basic");
+  return accessCanViewPlaybook(user);
 }
 
 export function hasFullDrillLibraryAccess(user: PlaybookEntitlementFields): boolean {
-  if (
-    user.membershipTier === "TWELVE_WEEK" ||
-    user.membershipTier === "MEMORABLE" ||
-    user.membershipTier === "ELITE"
-  ) {
-    return true;
-  }
-  if (user.membershipTier === "BASIC") {
-    return user.playbookLegacyAccess;
-  }
-  return false;
+  return accessHasFullDrillLibrary(user);
 }
 
 export function hasPlaybookWorkoutProgramDownloads(user: PlaybookEntitlementFields): boolean {
-  return hasFullDrillLibraryAccess(user);
+  return canDownloadWorkoutPdfs(user);
 }
 
 export function getPlaybookLifetimeSubmissionLimit(user: PlaybookEntitlementFields): number | null {
@@ -48,32 +56,12 @@ export function getPlaybookLifetimeSubmissionLimit(user: PlaybookEntitlementFiel
     : PLAYBOOK_LIFETIME_SUBMISSION_LIMIT_NEW;
 }
 
-export type DrillViewEntitlementContext = PlaybookEntitlementFields & {
-  starterDrillIds: ReadonlySet<string>;
-  grantedDrillIds: readonly string[];
-  /** Future: ORG_TRIAL uses the same starter drill set. */
-  orgTrialStarterAccess?: boolean;
-};
+export type DrillViewEntitlementContext = DrillViewAccessContext;
 
 export function canViewDrill(context: DrillViewEntitlementContext, drillId: string): boolean {
-  if (hasFullDrillLibraryAccess(context)) {
-    return true;
-  }
-  if (context.grantedDrillIds.includes(drillId)) {
-    return true;
-  }
-  if (!context.starterDrillIds.has(drillId)) {
-    return false;
-  }
-  if (context.orgTrialStarterAccess) {
-    return true;
-  }
-  if (context.membershipTier === "BASIC") {
-    return true;
-  }
-  return false;
+  return accessCanViewDrill(context, drillId);
 }
 
 export function canAccessDrillLibraryBrowse(user: PlaybookEntitlementFields): boolean {
-  return canAccessPlaybookContent(user);
+  return canAccessDrillLibraryBrowse(user);
 }

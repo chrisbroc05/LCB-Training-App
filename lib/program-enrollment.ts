@@ -48,13 +48,36 @@ export async function activateTwelveWeekProgramAccess(userId: string) {
     },
   });
 
-  return ensureProgramEnrollmentForUser(userId);
+  const enrollment = await ensureProgramEnrollmentForUser(userId);
+  await prisma.programEnrollment.update({
+    where: { id: enrollment.id },
+    data: { planMode: "FIXED_12_WEEK" },
+  });
+  return enrollment;
+}
+
+export async function activateAllAccessMembership(userId: string) {
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      membershipLevel: "ALL_ACCESS",
+      membershipLevelExpiresAt: null,
+    },
+  });
+
+  const enrollment = await ensureProgramEnrollmentForUser(userId);
+  await prisma.programEnrollment.update({
+    where: { id: enrollment.id },
+    data: { planMode: "OPEN_ENDED" },
+  });
+  return enrollment;
 }
 
 export function serializeProgramEnrollment(enrollment: {
   id: string;
   userId: string;
   status: ProgramEnrollmentStatus;
+  planMode?: import("@/lib/program-plan-mode-shared").ProgramPlanMode;
   startDate: Date | null;
   ageGroup: ProgramAgeGroup | null;
   position: string | null;
@@ -76,6 +99,7 @@ export function serializeProgramEnrollment(enrollment: {
     id: enrollment.id,
     userId: enrollment.userId,
     status: enrollment.status,
+    planMode: enrollment.planMode ?? "FIXED_12_WEEK",
     startDate: enrollment.startDate
       ? formatProgramStartDateKey(enrollment.startDate)
       : null,

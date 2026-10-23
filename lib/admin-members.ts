@@ -33,6 +33,8 @@ export const adminMemberListSelect = {
   accountHolderName: true,
   email: true,
   membershipTier: true,
+  membershipLevel: true,
+  membershipLevelExpiresAt: true,
   playbookLegacyAccess: true,
   signupDate: true,
   assessmentCallBooked: true,
@@ -61,6 +63,8 @@ type AdminMemberListRecord = {
   accountHolderName: string | null;
   email: string;
   membershipTier: MembershipTier;
+  membershipLevel: import("@prisma/client").MembershipLevel | null;
+  membershipLevelExpiresAt: Date | null;
   playbookLegacyAccess: boolean;
   signupDate: Date;
   assessmentCallBooked: boolean;
@@ -123,6 +127,8 @@ export function serializeAdminMemberSummary(user: AdminMemberListRecord) {
     user._count.swingAnalysisSubmissions + user._count.mentalGameSubmissions;
   const availability = getCoachingSubmissionAvailability({
     membershipTier: user.membershipTier,
+    membershipLevel: user.membershipLevel,
+    membershipLevelExpiresAt: user.membershipLevelExpiresAt,
     playbookLegacyAccess: user.playbookLegacyAccess,
     freeSubmissionUsed: user.freeSubmissionUsed,
     playbookSubmissionsUsed: user.playbookSubmissionsUsed,
@@ -142,6 +148,8 @@ export function serializeAdminMemberSummary(user: AdminMemberListRecord) {
     signedUpBy: formatSignedUpBy(user.accountRole, user.accountHolderName),
     email: user.email,
     membershipTier: user.membershipTier,
+    membershipLevel: user.membershipLevel as import("@/lib/membership-levels-shared").MembershipLevelKey | null,
+    membershipLevelExpiresAt: user.membershipLevelExpiresAt?.toISOString() ?? null,
     productAccessCompact: formatMemberProductAccessCompact(
       user.membershipTier,
       user.playbookLegacyAccess,
@@ -202,6 +210,8 @@ export const adminMemberDetailSelect = {
   accountHolderName: true,
   email: true,
   membershipTier: true,
+  membershipLevel: true,
+  membershipLevelExpiresAt: true,
   playbookLegacyAccess: true,
   signupDate: true,
   assessmentCallBooked: true,
@@ -288,27 +298,8 @@ export const adminMemberDetailSelect = {
   },
 } as const;
 
-type AdminMemberDetailRecord = {
-  id: string;
-  name: string | null;
-  playerFirstName: string | null;
-  playerLastName: string | null;
-  accountRole: "PLAYER" | "PARENT";
-  accountHolderName: string | null;
-  email: string;
-  membershipTier: MembershipTier;
-  playbookLegacyAccess: boolean;
-  signupDate: Date;
-  assessmentCallBooked: boolean;
-  assessmentCallDate: Date | null;
-  twelveWeekCallBooked: boolean;
-  twelveWeekCallScheduledAt: Date | null;
+type AdminMemberDetailRecord = AdminMemberListRecord & {
   adminNotes: string | null;
-  freeSubmissionUsed: boolean;
-  playbookSubmissionsUsed: number;
-  coachingSubmissionsUsedThisMonth: number;
-  coachingSubmissionPeriod: string | null;
-  eliteRolloverCredits: number;
   stripeSubscriptionId: string | null;
   termsVersion: string | null;
   termsAcceptedAt: Date | null;
@@ -362,10 +353,6 @@ type AdminMemberDetailRecord = {
       }>;
     }>;
   } | null;
-  _count: {
-    swingAnalysisSubmissions: number;
-    mentalGameSubmissions: number;
-  };
 };
 
 function formatSubmissionStatus(status: string) {

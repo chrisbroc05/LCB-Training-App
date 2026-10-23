@@ -64,6 +64,8 @@ function applyPeriodResetIfNeeded(
 const coachingSubmissionUserSelect = {
   membershipTier: true,
   playbookLegacyAccess: true,
+  membershipLevel: true,
+  membershipLevelExpiresAt: true,
   freeSubmissionUsed: true,
   playbookSubmissionsUsed: true,
   coachingSubmissionsUsedThisMonth: true,

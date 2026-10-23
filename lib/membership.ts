@@ -1,11 +1,15 @@
+import {
+  canAccessDrillLibraryBrowse,
+  canDownloadWorkoutPdfs,
+  canViewPlaybook,
+  getWorkoutAccessMode,
+  hasFullDrillLibraryAccess,
+} from "@/lib/access-shared";
+import type { MembershipLevelKey } from "@/lib/membership-levels-shared";
+import { toPlaybookEntitlementFields } from "@/lib/playbook-entitlements-shared";
+
 export type TierKey = "free" | "basic" | "twelveWeek" | "memorable" | "elite";
 export type DatabaseTier = "FREE" | "BASIC" | "TWELVE_WEEK" | "MEMORABLE" | "ELITE";
-
-export const memorableSignupDescription =
-  "Everything in the Playbook plus 2 personal coaching submissions per month with 48-hour feedback, weekly goal setting check-ins, weekly accountability check-ins, and direct access to Coach Broc.";
-
-export const eliteSignupDescription =
-  "Everything in Memorable plus 4 submissions with rollover up to 8, priority 24-hour response, personalized monthly development plan, and monthly group coaching call.";
 
 export type MembershipTier = {
   key: TierKey;
@@ -42,27 +46,12 @@ export const membershipTiers: MembershipTier[] = [
       "Lifetime access -- pay once, never pay again",
     ],
   },
-  {
-    key: "memorable",
-    name: "Memorable",
-    priceLabel: "$149 / month",
-    summary: memorableSignupDescription,
-    features: [
-      "Everything in the Playbook plus 2 personal coaching submissions per month with 48-hour feedback",
-      "Weekly goal setting check-ins, weekly accountability check-ins, and direct access to Coach Broc",
-    ],
-  },
-  {
-    key: "elite",
-    name: "Elite",
-    priceLabel: "$249 / month",
-    summary: eliteSignupDescription,
-    features: [
-      "Everything in Memorable plus 4 submissions with rollover up to 8",
-      "Priority 24-hour response, personalized monthly development plan, and monthly group coaching call",
-    ],
-  },
 ];
+
+/** @deprecated Legacy subscription tiers removed from marketing; enum kept for existing accounts. */
+export const memorableSignupDescription = "Legacy membership.";
+/** @deprecated Legacy subscription tiers removed from marketing; enum kept for existing accounts. */
+export const eliteSignupDescription = "Legacy membership.";
 
 export const paidMembershipTiers = membershipTiers.filter(
   (tier): tier is MembershipTier & { key: Exclude<TierKey, "free"> } => tier.key !== "free",
@@ -173,30 +162,52 @@ export function hasDatabaseTierAccess(userTier: DatabaseTier, requiredTier: Tier
   return hasTierAccess(databaseTierToKey[userTier], requiredTier);
 }
 
-export function canAccessDrillLibrary(userTier: DatabaseTier) {
-  return hasDatabaseTierAccess(userTier, "basic");
+function accessFields(
+  userTier: DatabaseTier,
+  playbookLegacyAccess = false,
+  membershipLevel: MembershipLevelKey | null = null,
+  membershipLevelExpiresAt: Date | string | null = null,
+) {
+  return toPlaybookEntitlementFields(
+    userTier,
+    playbookLegacyAccess,
+    membershipLevel,
+    membershipLevelExpiresAt,
+  );
+}
+
+export function canAccessDrillLibrary(
+  userTier: DatabaseTier,
+  playbookLegacyAccess = false,
+  membershipLevel: MembershipLevelKey | null = null,
+  membershipLevelExpiresAt: Date | string | null = null,
+) {
+  return canAccessDrillLibraryBrowse(
+    accessFields(userTier, playbookLegacyAccess, membershipLevel, membershipLevelExpiresAt),
+  );
 }
 
 /** Full library (all drills unlocked). New Basic buyers get starter drills only. */
 export function canAccessFullDrillLibrary(
   userTier: DatabaseTier,
   playbookLegacyAccess: boolean,
+  membershipLevel: MembershipLevelKey | null = null,
+  membershipLevelExpiresAt: Date | string | null = null,
 ) {
-  if (
-    userTier === "TWELVE_WEEK" ||
-    userTier === "MEMORABLE" ||
-    userTier === "ELITE"
-  ) {
-    return true;
-  }
-  if (userTier === "BASIC") {
-    return playbookLegacyAccess;
-  }
-  return false;
+  return hasFullDrillLibraryAccess(
+    accessFields(userTier, playbookLegacyAccess, membershipLevel, membershipLevelExpiresAt),
+  );
 }
 
-export function canAccessPlaybook(userTier: DatabaseTier) {
-  return hasDatabaseTierAccess(userTier, "basic");
+export function canAccessPlaybook(
+  userTier: DatabaseTier,
+  playbookLegacyAccess = false,
+  membershipLevel: MembershipLevelKey | null = null,
+  membershipLevelExpiresAt: Date | string | null = null,
+) {
+  return canViewPlaybook(
+    accessFields(userTier, playbookLegacyAccess, membershipLevel, membershipLevelExpiresAt),
+  );
 }
 
 export const playbookLockedMessage =
@@ -205,18 +216,25 @@ export const playbookLockedMessage =
 export function canAccessWorkoutPrograms(
   userTier: DatabaseTier,
   playbookLegacyAccess = false,
+  membershipLevel: MembershipLevelKey | null = null,
+  membershipLevelExpiresAt: Date | string | null = null,
 ) {
-  if (
-    userTier === "TWELVE_WEEK" ||
-    userTier === "MEMORABLE" ||
-    userTier === "ELITE"
-  ) {
-    return true;
-  }
-  if (userTier === "BASIC") {
-    return playbookLegacyAccess;
-  }
-  return false;
+  return canDownloadWorkoutPdfs(
+    accessFields(userTier, playbookLegacyAccess, membershipLevel, membershipLevelExpiresAt),
+  );
+}
+
+export function canViewStarterWorkoutsInApp(
+  userTier: DatabaseTier,
+  playbookLegacyAccess = false,
+  membershipLevel: MembershipLevelKey | null = null,
+  membershipLevelExpiresAt: Date | string | null = null,
+) {
+  return (
+    getWorkoutAccessMode(
+      accessFields(userTier, playbookLegacyAccess, membershipLevel, membershipLevelExpiresAt),
+    ) === "starter_in_app"
+  );
 }
 
 /** Basic+ can open My Downloads (guides for new Basic, full set for legacy). */

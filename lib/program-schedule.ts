@@ -1,3 +1,8 @@
+import {
+  defaultProgramPlanMode,
+  type ProgramPlanMode,
+} from "@/lib/program-plan-mode-shared";
+
 const CHICAGO_TIME_ZONE = "America/Chicago";
 
 export const PROGRAM_DAY_COUNT = 84;
@@ -13,9 +18,28 @@ export type ProgramDayInfo = {
   isComplete: boolean;
 };
 
-type EnrollmentForSchedule = {
+export type EnrollmentForSchedule = {
   startDate: Date | null;
+  planMode?: ProgramPlanMode | null;
 };
+
+export function getRawProgramDayNumber(startDate: Date, dateKey: string) {
+  return getProgramDayNumberForDate(startDate, dateKey);
+}
+
+export function getProgramCycleIndex(rawProgramDay: number) {
+  if (rawProgramDay <= 0) {
+    return 0;
+  }
+  return Math.floor((rawProgramDay - 1) / PROGRAM_DAY_COUNT);
+}
+
+export function getCycleProgramDay(rawProgramDay: number) {
+  if (rawProgramDay <= 0) {
+    return 0;
+  }
+  return ((rawProgramDay - 1) % PROGRAM_DAY_COUNT) + 1;
+}
 
 const WEEKDAY_LABELS = ["M", "T", "W", "T", "F", "S", "S"] as const;
 const WEEKDAY_NAMES = [
@@ -257,12 +281,23 @@ export function getProgramDay(
     };
   }
 
-  const programDay = getProgramDayNumberForDate(enrollment.startDate, todayKey);
+  const planMode = enrollment.planMode ?? defaultProgramPlanMode();
+  const rawProgramDay = getProgramDayNumberForDate(enrollment.startDate, todayKey);
 
-  if (programDay > PROGRAM_DAY_COUNT) {
+  if (planMode === "OPEN_ENDED") {
+    const cycleProgramDay = getCycleProgramDay(rawProgramDay);
     return buildProgramDayInfo({
       startDate: enrollment.startDate,
-      programDay,
+      programDay: cycleProgramDay,
+      isBeforeStart: false,
+      isComplete: false,
+    });
+  }
+
+  if (rawProgramDay > PROGRAM_DAY_COUNT) {
+    return buildProgramDayInfo({
+      startDate: enrollment.startDate,
+      programDay: rawProgramDay,
       isBeforeStart: false,
       isComplete: true,
     });
@@ -270,7 +305,7 @@ export function getProgramDay(
 
   return buildProgramDayInfo({
     startDate: enrollment.startDate,
-    programDay,
+    programDay: rawProgramDay,
     isBeforeStart: false,
     isComplete: false,
   });

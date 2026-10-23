@@ -6,6 +6,7 @@ import { jsonNoStore } from "@/lib/api-no-store";
 import {
   getCoachUnreadCount,
   getOrCreateConversationForEnrollment,
+  getOrCreateConversationForUser,
   listCoachInbox,
 } from "@/lib/direct-messaging-server";
 
@@ -28,11 +29,20 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const body = (await request.json().catch(() => null)) as { enrollmentId?: string } | null;
-  if (typeof body?.enrollmentId !== "string" || !body.enrollmentId.trim()) {
-    return NextResponse.json({ error: "Enrollment id is required." }, { status: 400 });
+  const body = (await request.json().catch(() => null)) as {
+    enrollmentId?: string;
+    userId?: string;
+  } | null;
+
+  if (typeof body?.enrollmentId === "string" && body.enrollmentId.trim()) {
+    const conversation = await getOrCreateConversationForEnrollment(body.enrollmentId.trim());
+    return NextResponse.json({ conversationId: conversation.id });
   }
 
-  const conversation = await getOrCreateConversationForEnrollment(body.enrollmentId.trim());
-  return NextResponse.json({ conversationId: conversation.id });
+  if (typeof body?.userId === "string" && body.userId.trim()) {
+    const conversation = await getOrCreateConversationForUser(body.userId.trim());
+    return NextResponse.json({ conversationId: conversation.id });
+  }
+
+  return NextResponse.json({ error: "Enrollment id or user id is required." }, { status: 400 });
 }

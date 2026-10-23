@@ -3,15 +3,15 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { jsonNoStore } from "@/lib/api-no-store";
 import {
-  getEnrollmentForUser,
-  getMessagingAccessState,
-  getOrCreateConversation,
   getPlayerUnreadCount,
   listConversationMessages,
   markConversationRead,
+  resolvePlayerConversation,
   sendConversationMessage,
 } from "@/lib/direct-messaging-server";
+import { getMessagingReplyCopy } from "@/lib/access-shared";
 import { requireUnder13ParentUnlockResponse } from "@/lib/legal-under13-guard-server";
+import { prisma } from "@/lib/prisma";
 
 export { dynamic, revalidate } from "@/lib/api-no-store";
 
@@ -21,18 +21,18 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const enrollment = await getEnrollmentForUser(session.user.id);
-  const access = getMessagingAccessState(enrollment);
-  if (access === "none" || !enrollment) {
+  const resolved = await resolvePlayerConversation(session.user.id);
+  if (!resolved || resolved.access === "none") {
     return NextResponse.json({ error: "Messaging is not available." }, { status: 403 });
   }
 
-  const conversation = enrollment.conversation ?? (await getOrCreateConversation(enrollment.id));
-  const messages = await listConversationMessages(conversation.id);
+  const messages = await listConversationMessages(resolved.conversation.id);
+  const replyCopy = getMessagingReplyCopy(resolved.accessUser);
 
   return jsonNoStore({
-    access,
-    conversationId: conversation.id,
+    access: resolved.access,
+    replyCopy,
+    conversationId: resolved.conversation.id,
     messages: messages.map((message) => ({
       ...message,
       createdAt: message.createdAt.toISOString(),
@@ -52,9 +52,8 @@ export async function POST(request: Request) {
     return under13LockError;
   }
 
-  const enrollment = await getEnrollmentForUser(session.user.id);
-  const access = getMessagingAccessState(enrollment);
-  if (access !== "active" || !enrollment) {
+  const resolved = await resolvePlayerConversation(session.user.id);
+  if (!resolved || resolved.access !== "active") {
     return NextResponse.json({ error: "Messaging is read-only." }, { status: 403 });
   }
 
@@ -63,16 +62,25 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Message body is required." }, { status: 400 });
   }
 
+  const profile =
+    resolved.enrollment?.user ??
+    (await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { id: true, name: true, email: true },
+    }));
+  const playerUserId = profile?.id ?? session.user.id;
+  const playerName = profile?.name ?? null;
+  const playerEmail = profile?.email ?? session.user.email ?? "";
+
   try {
-    const conversation = enrollment.conversation ?? (await getOrCreateConversation(enrollment.id));
     const message = await sendConversationMessage({
-      conversationId: conversation.id,
+      conversationId: resolved.conversation.id,
       senderUserId: session.user.id,
       fromCoach: false,
       body: body.body,
-      playerUserId: enrollment.user.id,
-      playerName: enrollment.user.name,
-      playerEmail: enrollment.user.email,
+      playerUserId,
+      playerName,
+      playerEmail,
     });
 
     return NextResponse.json({
@@ -99,13 +107,13 @@ export async function PATCH() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const enrollment = await getEnrollmentForUser(session.user.id);
-  if (!enrollment?.conversation) {
+  const resolved = await resolvePlayerConversation(session.user.id);
+  if (!resolved?.conversation) {
     return NextResponse.json({ success: true });
   }
 
   await markConversationRead({
-    conversationId: enrollment.conversation.id,
+    conversationId: resolved.conversation.id,
     forCoach: false,
   });
 

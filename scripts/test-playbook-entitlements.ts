@@ -11,7 +11,12 @@ import {
 } from "../lib/playbook-entitlements-shared";
 
 function testNewBasicEntitlements() {
-  const user = { membershipTier: "BASIC" as const, playbookLegacyAccess: false };
+  const user = {
+    membershipTier: "BASIC" as const,
+    playbookLegacyAccess: false,
+    membershipLevel: null,
+    membershipLevelExpiresAt: null,
+  };
   assert.equal(getPlaybookLifetimeSubmissionLimit(user), 1);
   assert.equal(hasFullDrillLibraryAccess(user), false);
   assert.equal(hasPlaybookWorkoutProgramDownloads(user), false);
@@ -40,7 +45,12 @@ function testNewBasicEntitlements() {
 }
 
 function testLegacyBasicEntitlements() {
-  const user = { membershipTier: "BASIC" as const, playbookLegacyAccess: true };
+  const user = {
+    membershipTier: "BASIC" as const,
+    playbookLegacyAccess: true,
+    membershipLevel: null,
+    membershipLevelExpiresAt: null,
+  };
   assert.equal(getPlaybookLifetimeSubmissionLimit(user), 2);
   assert.equal(hasFullDrillLibraryAccess(user), true);
   assert.equal(canAccessWorkoutResourceFile(user, "LCB_Rotational_Sample.pdf"), true);

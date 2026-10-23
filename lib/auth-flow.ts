@@ -75,24 +75,20 @@ export function getPlaybookSignupButtonLabel(selectedTier: TierKey) {
     return "Create My Free Account";
   }
 
-  if (selectedTier === "memorable") {
-    return "Create Account and Add Coaching -- $149/month";
-  }
-
-  if (selectedTier === "elite") {
-    return "Create Account and Go Elite -- $249/month";
+  if (selectedTier === "memorable" || selectedTier === "elite") {
+    return "Create My Free Account";
   }
 
   return "Create Account and Unlock The Playbook -- $59";
 }
 
 export function getPlaybookResumeCheckoutButtonLabel(pendingTier: DatabaseTier) {
-  if (pendingTier === "MEMORABLE") {
-    return "Continue to Memorable Checkout";
+  if (pendingTier === "MEMORABLE" || pendingTier === "ELITE") {
+    return "Continue to Checkout";
   }
 
-  if (pendingTier === "ELITE") {
-    return "Continue to Elite Checkout";
+  if (pendingTier === "TWELVE_WEEK") {
+    return "Continue to 12-Week Program Checkout";
   }
 
   return "Continue to Playbook Checkout";

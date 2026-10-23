@@ -29,7 +29,7 @@ export async function POST() {
 
   if (user.membershipTier !== "MEMORABLE" && user.membershipTier !== "ELITE") {
     return NextResponse.json(
-      { error: "Billing management is available for Memorable and Elite members only." },
+      { error: "Billing management is available for active subscription members only." },
       { status: 403 },
     );
   }

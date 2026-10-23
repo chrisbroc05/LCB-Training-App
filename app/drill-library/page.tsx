@@ -45,12 +45,29 @@ export default async function DrillLibraryPage({ searchParams }: DrillLibraryPag
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { membershipTier: true, playbookLegacyAccess: true },
+    select: {
+      membershipTier: true,
+      playbookLegacyAccess: true,
+      membershipLevel: true,
+      membershipLevelExpiresAt: true,
+    },
   });
   const membershipTier = (user?.membershipTier ?? "FREE") as DatabaseTier;
   const playbookLegacyAccess = user?.playbookLegacyAccess ?? false;
-  const canBrowseLibrary = canAccessDrillLibrary(membershipTier);
-  const hasFullLibraryAccess = canAccessFullDrillLibrary(membershipTier, playbookLegacyAccess);
+  const membershipLevel = user?.membershipLevel ?? null;
+  const membershipLevelExpiresAt = user?.membershipLevelExpiresAt ?? null;
+  const canBrowseLibrary = canAccessDrillLibrary(
+    membershipTier,
+    playbookLegacyAccess,
+    membershipLevel,
+    membershipLevelExpiresAt,
+  );
+  const hasFullLibraryAccess = canAccessFullDrillLibrary(
+    membershipTier,
+    playbookLegacyAccess,
+    membershipLevel,
+    membershipLevelExpiresAt,
+  );
   const grantedDrillIds = canBrowseLibrary ? [] : await loadUserGrantedDrillIds(session.user.id);
   const showProgramUpsell = membershipTier === "FREE";
 
@@ -147,6 +164,8 @@ export default async function DrillLibraryPage({ searchParams }: DrillLibraryPag
               {
                 membershipTier,
                 playbookLegacyAccess,
+                membershipLevel,
+                membershipLevelExpiresAt,
                 starterDrillIds,
                 grantedDrillIds,
               },

@@ -21,6 +21,7 @@
     "test:program-task-completion": "npx --yes tsx scripts/test-program-task-completion.ts",
     "test:coaching-submissions": "npx --yes tsx scripts/test-coaching-submissions.ts",
     "test:playbook-entitlements": "npx --yes tsx scripts/test-playbook-entitlements.ts",
+    "test:access": "npx --yes tsx scripts/test-access.ts",
     "test:resources": "npx --yes tsx scripts/test-resources.ts",
     "test:resource-download-gate": "npx --yes tsx scripts/test-resource-download-gate.ts",
     "test:fix-it-plans": "npx --yes tsx scripts/test-fix-it-plans.ts",

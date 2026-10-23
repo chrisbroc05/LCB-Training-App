@@ -1,9 +1,10 @@
 import {
-  canAccessPlaybookContent,
-  hasPlaybookWorkoutProgramDownloads,
-  type PlaybookEntitlementFields,
-} from "@/lib/playbook-entitlements-shared";
-import { isTwelveWeekProgramMember, type DatabaseTier } from "@/lib/membership";
+  canDownloadGuideFilename,
+  canDownloadWorkoutPdfs,
+  type AccessUserFields,
+} from "@/lib/access-shared";
+import type { DatabaseTier } from "@/lib/membership";
+import { toPlaybookEntitlementFields, type PlaybookEntitlementFields } from "@/lib/playbook-entitlements-shared";
 
 export type WorkoutResourceTier = "basic" | "memorable" | "elite";
 
@@ -112,7 +113,7 @@ export function getWorkoutResourceUrl(filename: string) {
 }
 
 export function canAccessWorkoutResourceFile(
-  user: PlaybookEntitlementFields,
+  user: PlaybookEntitlementFields | AccessUserFields,
   filename: string,
 ): boolean {
   const resource = getWorkoutResource(filename);
@@ -120,19 +121,12 @@ export function canAccessWorkoutResourceFile(
     return false;
   }
 
-  if (resource.accessKind === "twelve_week_only") {
-    return isTwelveWeekProgramMember(user.membershipTier);
-  }
+  const access: AccessUserFields =
+    "membershipLevel" in user
+      ? user
+      : toPlaybookEntitlementFields(user.membershipTier, user.playbookLegacyAccess);
 
-  if (resource.accessKind === "playbook_guide") {
-    return canAccessPlaybookContent(user);
-  }
-
-  if (resource.accessKind === "legacy_playbook_bonus") {
-    return hasPlaybookWorkoutProgramDownloads(user);
-  }
-
-  return false;
+  return canDownloadGuideFilename(access, filename);
 }
 
 /** @deprecated Use canAccessWorkoutResourceFile with playbookLegacyAccess. */
@@ -141,11 +135,11 @@ export function canAccessWorkoutResource(
   requiredTier: WorkoutResourceTier,
   playbookLegacyAccess = false,
 ) {
-  const user: PlaybookEntitlementFields = { membershipTier, playbookLegacyAccess };
-  if (requiredTier === "elite" && isTwelveWeekProgramMember(membershipTier)) {
-    return true;
+  const user = toPlaybookEntitlementFields(membershipTier, playbookLegacyAccess);
+  if (requiredTier === "elite") {
+    return canDownloadGuideFilename(user, "LCB_Recruiting_Guide.pdf");
   }
-  return hasPlaybookWorkoutProgramDownloads(user);
+  return canDownloadWorkoutPdfs(user);
 }
 
 export function getWorkoutResourceUpgradeLabel(requiredTier: WorkoutResourceTier) {

@@ -325,7 +325,10 @@ export async function buildWeeklyRecapData(
     }
   }
 
-  const schedule = getProgramDay({ startDate: enrollment.startDate });
+  const schedule = getProgramDay({
+    startDate: enrollment.startDate,
+    planMode: enrollment.planMode,
+  });
   const completedWorkDays = getCompletedWorkDays(
     enrollment,
     planInput,
@@ -492,7 +495,10 @@ export async function buildCoachDailySummaryData(dateKey: string, now = new Date
 
   for (const enrollment of enrollments) {
     const name = enrollment.user.name ?? enrollment.user.email;
-    const schedule = getProgramDay({ startDate: enrollment.startDate }, now);
+    const schedule = getProgramDay(
+      { startDate: enrollment.startDate, planMode: enrollment.planMode },
+      now,
+    );
     const planInput = toEnrollmentPlanInput(enrollment);
 
     const completionDays = new Set<number>();
@@ -650,7 +656,10 @@ export async function buildCoachDailySummaryData(dateKey: string, now = new Date
   ]);
 
   const workDayCount = enrollments.filter((enrollment) => {
-    const schedule = getProgramDay({ startDate: enrollment.startDate }, now);
+    const schedule = getProgramDay(
+      { startDate: enrollment.startDate, planMode: enrollment.planMode },
+      now,
+    );
     return schedule.programDay > 0 && schedule.dayOfWeek !== 7 && !schedule.isComplete;
   }).length;
 

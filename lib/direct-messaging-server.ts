@@ -2,6 +2,15 @@ import "server-only";
 
 import type { ProgramEnrollment, User } from "@prisma/client";
 import {
+  canMessageCoach,
+  hasPersonalProgramDashboard,
+  resolveEffectiveLevel,
+  usesFixedTwelveWeekProgram,
+  usesOpenEndedProgram,
+  type AccessUserFields,
+} from "@/lib/access-shared";
+import { toAccessUserFields, userAccessSelect } from "@/lib/access-server";
+import {
   PLAYER_MESSAGE_RATE_LIMIT,
   PLAYER_MESSAGE_RATE_LIMIT_MESSAGE,
   PLAYER_MESSAGE_RATE_WINDOW_MS,
@@ -11,12 +20,12 @@ import {
   notifyCoachOfPlayerMessage,
   notifyPlayerOfCoachReply,
 } from "@/lib/direct-messaging-notifications";
-import { isTwelveWeekProgramMember } from "@/lib/membership";
 import { getProgramDay, PROGRAM_DAY_COUNT } from "@/lib/program-schedule";
+import { defaultProgramPlanMode } from "@/lib/program-plan-mode-shared";
 import { prisma } from "@/lib/prisma";
 
 type EnrollmentWithUser = ProgramEnrollment & {
-  user: Pick<User, "id" | "name" | "email" | "membershipTier">;
+  user: Pick<User, "id" | "name" | "email" | "membershipTier" | "membershipLevel" | "membershipLevelExpiresAt" | "playbookLegacyAccess">;
 };
 
 export type MessagingAccessState =
@@ -24,11 +33,27 @@ export type MessagingAccessState =
   | "active"
   | "read_only";
 
-export function getMessagingAccessState(
+function accessFromEnrollmentUser(user: EnrollmentWithUser["user"]): AccessUserFields {
+  return toAccessUserFields(user);
+}
+
+export function getProgramMessagingAccessState(
   enrollment: EnrollmentWithUser | null,
   now = new Date(),
 ): MessagingAccessState {
-  if (!enrollment || !isTwelveWeekProgramMember(enrollment.user.membershipTier)) {
+  if (!enrollment) {
+    return "none";
+  }
+
+  const access = accessFromEnrollmentUser(enrollment.user);
+  if (!canMessageCoach(access, now)) {
+    return "none";
+  }
+
+  const fixedTwelveWeek = usesFixedTwelveWeekProgram(access, now);
+  const openEnded = usesOpenEndedProgram(access, now);
+
+  if (!fixedTwelveWeek && !openEnded) {
     return "none";
   }
 
@@ -36,12 +61,66 @@ export function getMessagingAccessState(
     return "read_only";
   }
 
-  const schedule = getProgramDay({ startDate: enrollment.startDate }, now);
-  if (schedule.isComplete || schedule.programDay > PROGRAM_DAY_COUNT) {
+  const planMode = enrollment.planMode ?? defaultProgramPlanMode();
+  const schedule = getProgramDay(
+    { startDate: enrollment.startDate, planMode },
+    now,
+  );
+
+  if (openEnded && planMode === "OPEN_ENDED") {
+    return "active";
+  }
+
+  if (fixedTwelveWeek && (schedule.isComplete || schedule.programDay > PROGRAM_DAY_COUNT)) {
     return "read_only";
   }
 
-  return "active";
+  if (fixedTwelveWeek) {
+    return "active";
+  }
+
+  return "read_only";
+}
+
+export function getPlusMessagingAccessState(
+  access: AccessUserFields,
+  now = new Date(),
+): MessagingAccessState {
+  if (hasPersonalProgramDashboard(access, now)) {
+    return "none";
+  }
+  const effective = resolveEffectiveLevel(access, now);
+  if (effective === "PLUS" && canMessageCoach(access, now)) {
+    return "active";
+  }
+  if (effective === "LEGACY_MEMORABLE" || effective === "LEGACY_ELITE") {
+    return "active";
+  }
+  return "none";
+}
+
+export function getMessagingAccessStateForUser(
+  access: AccessUserFields,
+  enrollment: EnrollmentWithUser | null,
+  now = new Date(),
+): MessagingAccessState {
+  const plusState = getPlusMessagingAccessState(access, now);
+  if (plusState === "active") {
+    return "active";
+  }
+
+  return getProgramMessagingAccessState(enrollment, now);
+}
+
+/** @deprecated Use getMessagingAccessStateForUser with access + enrollment */
+export function getMessagingAccessState(
+  enrollment: EnrollmentWithUser | null,
+  now = new Date(),
+): MessagingAccessState {
+  if (!enrollment) {
+    return "none";
+  }
+  return getMessagingAccessStateForUser(accessFromEnrollmentUser(enrollment.user), enrollment, now);
 }
 
 export async function getEnrollmentForUser(userId: string) {
@@ -53,7 +132,7 @@ export async function getEnrollmentForUser(userId: string) {
           id: true,
           name: true,
           email: true,
-          membershipTier: true,
+          ...userAccessSelect,
         },
       },
       conversation: true,
@@ -61,7 +140,7 @@ export async function getEnrollmentForUser(userId: string) {
   });
 }
 
-export async function getOrCreateConversation(enrollmentId: string) {
+export async function getOrCreateConversationForEnrollment(enrollmentId: string) {
   const existing = await prisma.conversation.findUnique({
     where: { enrollmentId },
   });
@@ -75,8 +154,74 @@ export async function getOrCreateConversation(enrollmentId: string) {
   });
 }
 
-export async function getOrCreateConversationForEnrollment(enrollmentId: string) {
-  return getOrCreateConversation(enrollmentId);
+export async function getOrCreateConversationForUser(userId: string) {
+  const existing = await prisma.conversation.findUnique({
+    where: { userId },
+  });
+
+  if (existing) {
+    return existing;
+  }
+
+  return prisma.conversation.create({
+    data: { userId },
+  });
+}
+
+export async function resolvePlayerConversation(userId: string) {
+  const enrollment = await getEnrollmentForUser(userId);
+  const access = enrollment ? accessFromEnrollmentUser(enrollment.user) : await loadAccessFields(userId);
+
+  if (!access) {
+    return null;
+  }
+
+  const now = new Date();
+  const plusState = getPlusMessagingAccessState(access, now);
+  const onProgramMessaging =
+    hasPersonalProgramDashboard(access, now) &&
+    getProgramMessagingAccessState(enrollment, now) !== "none";
+
+  if (plusState === "active" && !onProgramMessaging) {
+    const conversation = await getOrCreateConversationForUser(userId);
+    return {
+      conversation,
+      access: "active" as const,
+      enrollment: null,
+      accessUser: access,
+    };
+  }
+
+  if (onProgramMessaging && enrollment) {
+    const conversation =
+      enrollment.conversation ?? (await getOrCreateConversationForEnrollment(enrollment.id));
+    return {
+      conversation,
+      access: getMessagingAccessStateForUser(access, enrollment, now),
+      enrollment,
+      accessUser: access,
+    };
+  }
+
+  if (plusState === "active") {
+    const conversation = await getOrCreateConversationForUser(userId);
+    return {
+      conversation,
+      access: "active" as const,
+      enrollment: null,
+      accessUser: access,
+    };
+  }
+
+  return null;
+}
+
+async function loadAccessFields(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: userAccessSelect,
+  });
+  return user ? toAccessUserFields(user) : null;
 }
 
 async function assertPlayerRateLimit(userId: string) {
@@ -215,12 +360,12 @@ export async function sendConversationMessage(params: {
 }
 
 export async function getPlayerUnreadCount(userId: string) {
-  const enrollment = await getEnrollmentForUser(userId);
-  if (!enrollment?.conversation) {
+  const resolved = await resolvePlayerConversation(userId);
+  if (!resolved?.conversation) {
     return 0;
   }
 
-  return enrollment.conversation.playerUnreadCount;
+  return resolved.conversation.playerUnreadCount;
 }
 
 export async function getCoachUnreadCount() {
@@ -245,6 +390,13 @@ export async function listCoachInbox() {
           },
         },
       },
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
       messages: {
         orderBy: { createdAt: "desc" },
         take: 1,
@@ -260,18 +412,27 @@ export async function listCoachInbox() {
 
   return conversations.map((conversation) => {
     const lastMessage = conversation.messages[0] ?? null;
-    const schedule = getProgramDay(
-      { startDate: conversation.enrollment.startDate },
-      new Date(),
-    );
+    const playerUser = conversation.enrollment?.user ?? conversation.user;
+    const schedule =
+      conversation.enrollment?.startDate != null
+        ? getProgramDay(
+            {
+              startDate: conversation.enrollment.startDate,
+              planMode: conversation.enrollment.planMode,
+            },
+            new Date(),
+          )
+        : null;
 
     return {
       id: conversation.id,
       enrollmentId: conversation.enrollmentId,
-      playerName: conversation.enrollment.user.name ?? conversation.enrollment.user.email,
-      playerEmail: conversation.enrollment.user.email,
-      ageGroup: conversation.enrollment.ageGroup,
-      weekNumber: schedule.weekNumber,
+      playerUserId: playerUser?.id ?? null,
+      playerName: playerUser?.name ?? playerUser?.email ?? "Member",
+      playerEmail: playerUser?.email ?? "",
+      ageGroup: conversation.enrollment?.ageGroup ?? null,
+      weekNumber: schedule?.weekNumber ?? null,
+      isPlusDirect: Boolean(conversation.userId && !conversation.enrollmentId),
       coachUnreadCount: conversation.coachUnreadCount,
       lastMessageAt: conversation.lastMessageAt.toISOString(),
       lastMessagePreview: lastMessage?.body ?? null,
@@ -292,8 +453,22 @@ export async function getConversationById(conversationId: string) {
               name: true,
               email: true,
               membershipTier: true,
+              membershipLevel: true,
+              membershipLevelExpiresAt: true,
+              playbookLegacyAccess: true,
             },
           },
+        },
+      },
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          membershipTier: true,
+          membershipLevel: true,
+          membershipLevelExpiresAt: true,
+          playbookLegacyAccess: true,
         },
       },
     },

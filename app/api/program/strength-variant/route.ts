@@ -6,6 +6,7 @@ import {
   isStrengthVariant,
   type StrengthVariant,
 } from "@/lib/strength-variant-shared";
+import { assertUserCanAccessProgram } from "@/lib/program-membership-gate-server";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
@@ -14,12 +15,8 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { membershipTier: true },
-  });
-
-  if (!user || user.membershipTier !== "TWELVE_WEEK") {
+  const accessResult = await assertUserCanAccessProgram(session.user.id);
+  if (!accessResult) {
     return NextResponse.json({ error: "Program access required." }, { status: 403 });
   }
 
@@ -40,12 +37,8 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { membershipTier: true },
-  });
-
-  if (!user || user.membershipTier !== "TWELVE_WEEK") {
+  const accessResult = await assertUserCanAccessProgram(session.user.id);
+  if (!accessResult) {
     return NextResponse.json({ error: "Program access required." }, { status: 403 });
   }
 

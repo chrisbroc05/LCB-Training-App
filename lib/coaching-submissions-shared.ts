@@ -2,6 +2,7 @@
  * Coaching submission limits and display helpers (client-safe: no server imports).
  */
 
+import { resolveEffectiveLevel, type AccessUserFields } from "@/lib/access-shared";
 import { formatDateWithYear, formatMonthYear } from "@/lib/format-date";
 import type { DatabaseTier } from "@/lib/membership";
 import {
@@ -19,9 +20,7 @@ export type CoachingSubmissionLockReason =
   | "monthly-limit"
   | null;
 
-export type CoachingSubmissionUserFields = {
-  membershipTier: DatabaseTier;
-  playbookLegacyAccess: boolean;
+export type CoachingSubmissionUserFields = AccessUserFields & {
   freeSubmissionUsed: boolean;
   playbookSubmissionsUsed: number;
   coachingSubmissionsUsedThisMonth: number;
@@ -131,8 +130,39 @@ export function getCoachingSubmissionAvailability(
   const periodKey = getCoachingSubmissionPeriodKey(now);
   const syncedUser = applyPeriodResetIfNeeded(user, periodKey);
   const resetsOnLabel = getNextCoachingSubmissionResetLabel(now);
+  const effective = resolveEffectiveLevel(syncedUser, now);
 
-  if (syncedUser.membershipTier === "TWELVE_WEEK") {
+  if (effective === "PLUS") {
+    const monthlyLimit = 1;
+    const monthlyRemaining = Math.max(0, monthlyLimit - syncedUser.coachingSubmissionsUsedThisMonth);
+    return {
+      canSubmit: monthlyRemaining > 0,
+      lockReason: monthlyRemaining > 0 ? null : "monthly-limit",
+      remaining: monthlyRemaining,
+      lifetimeLimit: null,
+      monthlyRemaining,
+      rolloverCredits: null,
+      monthlyLimit,
+      periodKey,
+      resetsOnLabel,
+    };
+  }
+
+  if (effective === "CORE") {
+    return {
+      canSubmit: true,
+      lockReason: null,
+      remaining: 1,
+      lifetimeLimit: null,
+      monthlyRemaining: null,
+      rolloverCredits: null,
+      monthlyLimit: null,
+      periodKey,
+      resetsOnLabel: "every 6 weeks",
+    };
+  }
+
+  if (syncedUser.membershipTier === "TWELVE_WEEK" || effective === "ALL_ACCESS") {
     return {
       canSubmit: true,
       lockReason: null,

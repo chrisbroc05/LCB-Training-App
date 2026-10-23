@@ -14,6 +14,17 @@ enum MembershipTier {
   ELITE
 }
 
+enum MembershipLevel {
+  CORE
+  PLUS
+  ALL_ACCESS
+}
+
+enum ProgramPlanMode {
+  FIXED_12_WEEK
+  OPEN_ENDED
+}
+
 enum SubscriptionStatus {
   NONE
   ACTIVE
@@ -162,6 +173,8 @@ model User {
   twelveWeekCallBooked             Boolean      @default(false)
   twelveWeekCallScheduledAt        DateTime?
   membershipTier         MembershipTier         @default(FREE)
+  membershipLevel        MembershipLevel?
+  membershipLevelExpiresAt DateTime?
   playbookLegacyAccess   Boolean                @default(false)
   membershipTierBeforeProgram MembershipTier?
   marketingEmailsSuppressed Boolean             @default(false)
@@ -217,6 +230,7 @@ model User {
   playbookProgress       PlaybookProgress?
   notifications          Notification[]
   programEnrollment      ProgramEnrollment?
+  directConversation     Conversation?          @relation("UserDirectConversation")
   pushSubscriptions      PushSubscription[]
   pushLogs               PushLog[]
   marketingEmailLogs     MarketingEmailLog[]
@@ -379,6 +393,7 @@ model ProgramEnrollment {
   userId                String                  @unique
   user                  User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
   status                ProgramEnrollmentStatus @default(ACTIVE)
+  planMode              ProgramPlanMode         @default(FIXED_12_WEEK)
   refundedAt            DateTime?
   refundAmountCents     Int?
   stripeRefundChargeId  String?                 @unique
@@ -477,9 +492,11 @@ model CoachAlertSettings {
 }
 
 model Conversation {
-  id                         String            @id @default(cuid())
-  enrollmentId               String            @unique
-  enrollment                 ProgramEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  id                         String             @id @default(cuid())
+  userId                     String?            @unique
+  user                       User?              @relation("UserDirectConversation", fields: [userId], references: [id], onDelete: Cascade)
+  enrollmentId               String?            @unique
+  enrollment                 ProgramEnrollment? @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
   createdAt                  DateTime          @default(now())
   lastMessageAt              DateTime          @default(now())
   coachUnreadCount           Int               @default(0)

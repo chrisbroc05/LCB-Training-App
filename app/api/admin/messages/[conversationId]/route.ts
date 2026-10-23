@@ -31,12 +31,17 @@ export async function GET(_request: Request, context: RouteContext) {
 
   const messages = await listConversationMessages(conversation.id);
 
+  const player = conversation.enrollment?.user ?? conversation.user;
+  if (!player) {
+    return NextResponse.json({ error: "Conversation player not found." }, { status: 404 });
+  }
+
   return jsonNoStore({
     conversation: {
       id: conversation.id,
       enrollmentId: conversation.enrollmentId,
-      playerName: conversation.enrollment.user.name ?? conversation.enrollment.user.email,
-      playerEmail: conversation.enrollment.user.email,
+      playerName: player.name ?? player.email,
+      playerEmail: player.email,
     },
     messages: messages.map((message) => ({
       ...message,
@@ -63,15 +68,20 @@ export async function POST(request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Message body is required." }, { status: 400 });
   }
 
+  const player = conversation.enrollment?.user ?? conversation.user;
+  if (!player) {
+    return NextResponse.json({ error: "Conversation player not found." }, { status: 404 });
+  }
+
   try {
     const message = await sendConversationMessage({
       conversationId: conversation.id,
       senderUserId: session.user.id,
       fromCoach: true,
       body: body.body,
-      playerUserId: conversation.enrollment.user.id,
-      playerName: conversation.enrollment.user.name,
-      playerEmail: conversation.enrollment.user.email,
+      playerUserId: player.id,
+      playerName: player.name,
+      playerEmail: player.email,
     });
 
     return jsonNoStore({
