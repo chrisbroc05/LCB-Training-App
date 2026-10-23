@@ -2,7 +2,9 @@ import { resolveEffectiveLevel } from "@/lib/access-shared";
 import { toAccessUserFields, userAccessSelect } from "@/lib/access-server";
 import { getOrgTrialIncludesLine } from "@/lib/org-trial-copy-shared";
 import { formatChicagoTrialEndLabel } from "@/lib/org-trial-dates-shared";
+import { resolveOrgTrialDashboardCardVisibility } from "@/lib/org-trial-dashboard-shared";
 import { prisma } from "@/lib/prisma";
+import OrgTrialDashboardCardClient from "@/app/dashboard/OrgTrialDashboardCardClient";
 
 type OrgTrialDashboardCardProps = {
   userId: string;
@@ -11,7 +13,11 @@ type OrgTrialDashboardCardProps = {
 export default async function OrgTrialDashboardCard({ userId }: OrgTrialDashboardCardProps) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: userAccessSelect,
+    select: {
+      ...userAccessSelect,
+      orgTrialDashboardDismissedAt: true,
+      orgTeam: { select: { id: true, name: true, active: true } },
+    },
   });
   if (!user) {
     return null;
@@ -22,23 +28,32 @@ export default async function OrgTrialDashboardCard({ userId }: OrgTrialDashboar
     return null;
   }
 
+  const visibility = resolveOrgTrialDashboardCardVisibility({
+    dismissedAt: user.orgTrialDashboardDismissedAt,
+    trialEndsAt: access.orgTrialEndsAt ?? null,
+  });
+  if (!visibility.show) {
+    return null;
+  }
+
   const orgName = access.orgName?.trim() || "Your organization";
   const endLabel = formatChicagoTrialEndLabel(access.orgTrialEndsAt ?? null);
-  const includesLine = getOrgTrialIncludesLine();
+  const trialEndsAtIso = access.orgTrialEndsAt
+    ? (access.orgTrialEndsAt instanceof Date
+        ? access.orgTrialEndsAt
+        : new Date(access.orgTrialEndsAt)
+      ).toISOString()
+    : null;
 
   return (
-    <article className="rounded-2xl border border-[#52B788]/40 bg-[#22c55e]/5 p-4 sm:p-6">
-      <p className="text-xs font-semibold uppercase tracking-wide text-[#9df3bd]">
-        {orgName} Trial
-      </p>
-      <h2 className="mt-2 text-lg font-semibold text-zinc-100">What your trial includes</h2>
-      <p className="mt-2 text-sm text-zinc-300">{includesLine}</p>
-      {endLabel ? (
-        <p className="mt-3 text-sm text-zinc-400">Trial ends on {endLabel} (Chicago time).</p>
-      ) : null}
-      {access.orgTeamName ? (
-        <p className="mt-2 text-xs text-zinc-500">Team: {access.orgTeamName}</p>
-      ) : null}
-    </article>
+    <OrgTrialDashboardCardClient
+      orgName={orgName}
+      includesLine={getOrgTrialIncludesLine()}
+      endLabel={endLabel}
+      trialEndsAtIso={trialEndsAtIso}
+      teamName={access.orgTeamName ?? user.orgTeam?.name ?? null}
+      mode={visibility.mode}
+      allowDismiss={visibility.mode === "standard"}
+    />
   );
 }

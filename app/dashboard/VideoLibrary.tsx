@@ -16,14 +16,13 @@ import {
 } from "@/lib/drill-library-videos";
 import { buildDrillLibraryEmbedUrl } from "@/lib/vimeo";
 
-const drillCategories = [
-  { key: "all", label: "All" },
-  { key: "hitting", label: "Hitting" },
-  { key: "fielding", label: "Fielding" },
-  { key: "mindset", label: "Mindset" },
-] as const;
+import {
+  DRILL_LIBRARY_CATEGORY_FILTERS,
+  type DrillLibraryCategoryFilterKey,
+} from "@/lib/drill-library-filter-shared";
 
-type DrillCategoryFilter = (typeof drillCategories)[number]["key"];
+type DrillCategoryFilter = DrillLibraryCategoryFilterKey;
+const drillCategories = DRILL_LIBRARY_CATEGORY_FILTERS;
 type DrillCategoryKey = DrillLibraryVideoItem["category"];
 
 type PlayerState = {

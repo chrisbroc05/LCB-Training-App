@@ -1,10 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import AdminDrillPicker from "@/app/components/admin/AdminDrillPicker";
 import type { AdminOrganizationTeamRecord } from "@/lib/admin-organizations-shared";
 import { formatWeekStartLabel } from "@/lib/org-weekly-focus-shared";
-
-type DrillOption = { id: string; title: string; categoryLabel: string };
 
 type FocusRecord = {
   id: string;
@@ -45,7 +44,6 @@ export default function OrgWeeklyFocusAdminPanel({
   const [form, setForm] = useState(emptyForm);
   const [focuses, setFocuses] = useState<FocusRecord[]>([]);
   const [teamPreview, setTeamPreview] = useState<TeamPreviewRow[]>([]);
-  const [drillOptions, setDrillOptions] = useState<DrillOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -86,19 +84,6 @@ export default function OrgWeeklyFocusAdminPanel({
       setLoading(true);
       setError(null);
       try {
-        const drillResponse = await fetch("/api/admin/drill-library");
-        const drillData = (await drillResponse.json()) as {
-          videos?: Array<{ id: string; title: string; categoryLabel: string }>;
-        };
-        if (!cancelled && drillResponse.ok) {
-          setDrillOptions(
-            (drillData.videos ?? []).map((video) => ({
-              id: video.id,
-              title: video.title,
-              categoryLabel: video.categoryLabel,
-            })),
-          );
-        }
         await loadFocuses();
       } catch (loadError) {
         if (!cancelled) {
@@ -215,20 +200,6 @@ export default function OrgWeeklyFocusAdminPanel({
     setStatus("Deleted");
   }
 
-  function toggleDrill(drillId: string) {
-    setForm((current) => {
-      if (current.drillIds.includes(drillId)) {
-        return { ...current, drillIds: current.drillIds.filter((id) => id !== drillId) };
-      }
-      if (current.drillIds.length >= 3) {
-        setError("Choose up to 3 drills.");
-        return current;
-      }
-      setError(null);
-      return { ...current, drillIds: [...current.drillIds, drillId] };
-    });
-  }
-
   if (loading) {
     return <p className="mt-5 text-sm text-zinc-500">Loading weekly focus...</p>;
   }
@@ -289,29 +260,13 @@ export default function OrgWeeklyFocusAdminPanel({
         className="mt-2 w-full rounded-lg border border-[#2b3650] bg-black px-3 py-2 text-sm text-zinc-100"
       />
 
-      <div className="mt-3">
-        <p className="text-xs text-zinc-400">Featured drills (up to 3)</p>
-        <div className="mt-2 max-h-40 space-y-1 overflow-y-auto rounded-lg border border-[#2b3650] p-2">
-          {drillOptions.length === 0 ? (
-            <p className="text-xs text-zinc-500">No drills loaded.</p>
-          ) : (
-            drillOptions.map((drill) => (
-              <label key={drill.id} className="flex cursor-pointer items-start gap-2 text-xs text-zinc-300">
-                <input
-                  type="checkbox"
-                  checked={form.drillIds.includes(drill.id)}
-                  onChange={() => toggleDrill(drill.id)}
-                  className="mt-0.5"
-                />
-                <span>
-                  {drill.title}
-                  <span className="text-zinc-500"> ({drill.categoryLabel})</span>
-                </span>
-              </label>
-            ))
-          )}
-        </div>
-      </div>
+      <AdminDrillPicker
+        selectedIds={form.drillIds}
+        onChange={(drillIds) => setForm((current) => ({ ...current, drillIds }))}
+        maxSelectable={3}
+        title="Featured drills"
+        description="Choose up to 3 drills from the library for this weekly focus."
+      />
 
       <div className="mt-3 flex flex-wrap gap-2">
         <button

@@ -262,6 +262,7 @@ model User {
   orgJoinedAt            DateTime?
   orgTeamChangedAt       DateTime?
   orgTrialQuickReportUsed Boolean               @default(false)
+  orgTrialDashboardDismissedAt DateTime?
   coreQuickReportNextEligibleAt DateTime?
   organization           Organization?          @relation(fields: [organizationId], references: [id], onDelete: SetNull)
   orgTeam                OrgTeam?               @relation(fields: [orgTeamId], references: [id], onDelete: SetNull)

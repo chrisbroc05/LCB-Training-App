@@ -1,8 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import BrandLogo from "@/app/BrandLogo";
 import MobileNotificationBell from "@/app/components/mobile/MobileNotificationBell";
+import OrgTrialDetailsModal from "@/app/components/OrgTrialDetailsModal";
+import type { OrgTrialHeaderSummary } from "@/lib/layout-access-server";
 import { getMobileFirstName } from "@/lib/mobile-ui";
 import { isTwelveWeekProgramMember, type DatabaseTier } from "@/lib/membership";
 
@@ -10,6 +13,7 @@ type AppHeaderBarProps = {
   membershipTier: DatabaseTier;
   userDisplayName: string;
   userEmail?: string | null;
+  orgTrialHeader?: OrgTrialHeaderSummary | null;
   variant?: "mobile" | "desktop";
 };
 
@@ -44,8 +48,10 @@ export default function AppHeaderBar({
   membershipTier,
   userDisplayName,
   userEmail,
+  orgTrialHeader = null,
   variant = "mobile",
 }: AppHeaderBarProps) {
+  const [trialModalOpen, setTrialModalOpen] = useState(false);
   const firstName = getMobileFirstName(userDisplayName, userEmail);
   const initial = getInitial(userDisplayName, userEmail);
   const showProgramPill = isTwelveWeekProgramMember(membershipTier);
@@ -70,6 +76,15 @@ export default function AppHeaderBar({
           </Link>
           <span className="app-header-greeting-row">
             <span className="app-header-greeting">Hey, {firstName}</span>
+            {orgTrialHeader ? (
+              <button
+                type="button"
+                onClick={() => setTrialModalOpen(true)}
+                className="app-header-program-pill"
+              >
+                Trial
+              </button>
+            ) : null}
             {showProgramPill ? (
               <Link href="/dashboard/today" className="app-header-program-pill">
                 12-Week
@@ -88,6 +103,16 @@ export default function AppHeaderBar({
           <span className="app-header-account-avatar">{initial}</span>
         </Link>
       </div>
+
+      {orgTrialHeader ? (
+        <OrgTrialDetailsModal
+          open={trialModalOpen}
+          onClose={() => setTrialModalOpen(false)}
+          orgName={orgTrialHeader.orgName}
+          endLabel={orgTrialHeader.endLabel}
+          teamName={orgTrialHeader.teamName}
+        />
+      ) : null}
     </>
   );
 }

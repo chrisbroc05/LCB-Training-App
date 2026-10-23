@@ -13,6 +13,11 @@ type ChicagoParts = {
   second: number;
 };
 
+export function readChicagoCalendarYmd(instant: Date) {
+  const parts = readChicagoParts(instant);
+  return { year: parts.year, month: parts.month, day: parts.day };
+}
+
 function readChicagoParts(instant: Date): ChicagoParts {
   const formatter = new Intl.DateTimeFormat("en-US", {
     timeZone: CHICAGO_TZ,

@@ -5,7 +5,10 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { canAccessCoachingNav, type DatabaseTier } from "@/lib/membership";
 import { isAdminEmail } from "@/lib/admin";
-import { loadLoggedInLayoutAccess } from "@/lib/layout-access-server";
+import {
+  loadLoggedInLayoutAccess,
+  type OrgTrialHeaderSummary,
+} from "@/lib/layout-access-server";
 import BrandLogo from "@/app/BrandLogo";
 import LoggedInSiteHeader from "@/app/components/LoggedInSiteHeader";
 import TopNavigation from "@/app/TopNavigation";
@@ -55,6 +58,7 @@ export default async function RootLayout({
   let hasPlaybookAccess = false;
   let hasMemberDownloadsAccess = false;
   let hasProgramEnrollment = false;
+  let orgTrialHeader: OrgTrialHeaderSummary | null = null;
   if (session?.user?.id) {
     const layoutAccess = await loadLoggedInLayoutAccess(session.user.id);
     membershipTier = layoutAccess.membershipTier;
@@ -63,6 +67,7 @@ export default async function RootLayout({
     hasPlaybookAccess = layoutAccess.hasPlaybookAccess;
     hasMemberDownloadsAccess = layoutAccess.hasMemberDownloadsAccess;
     hasProgramEnrollment = layoutAccess.hasProgramEnrollment;
+    orgTrialHeader = layoutAccess.orgTrialHeader;
   }
 
   const hasCoachingAccess = canAccessCoachingNav(membershipTier);
@@ -107,6 +112,7 @@ export default async function RootLayout({
           hasPlaybookAccess={hasPlaybookAccess}
           hasMemberDownloadsAccess={hasMemberDownloadsAccess}
           hasProgramEnrollment={hasProgramEnrollment}
+          orgTrialHeader={orgTrialHeader}
           userDisplayName={userDisplayName}
           userEmail={session?.user?.email}
           header={
@@ -121,6 +127,7 @@ export default async function RootLayout({
                 hasMemberDownloadsAccess={hasMemberDownloadsAccess}
                 hasCoachingAccess={hasCoachingAccess}
                 hasProgramEnrollment={hasProgramEnrollment}
+                orgTrialHeader={orgTrialHeader}
               />
             ) : (
               <header className="border-b border-[#18243a] bg-black/95 backdrop-blur">

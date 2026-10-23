@@ -12,6 +12,7 @@ import PublicPageShell from "@/components/PublicPageShell";
 import { shouldUseMobileAppChrome } from "@/lib/mobile-ui";
 import { isCompactPublicPage } from "@/lib/public-page-routes";
 import type { DatabaseTier } from "@/lib/membership";
+import type { OrgTrialHeaderSummary } from "@/lib/layout-access-server";
 
 type SiteShellProps = {
   children: React.ReactNode;
@@ -25,6 +26,7 @@ type SiteShellProps = {
   hasPlaybookAccess: boolean;
   hasMemberDownloadsAccess: boolean;
   hasProgramEnrollment: boolean;
+  orgTrialHeader: OrgTrialHeaderSummary | null;
   userDisplayName: string;
   userEmail?: string | null;
 };
@@ -41,6 +43,7 @@ export default function SiteShell({
   hasPlaybookAccess,
   hasMemberDownloadsAccess,
   hasProgramEnrollment,
+  orgTrialHeader,
   userDisplayName,
   userEmail,
 }: SiteShellProps) {
@@ -69,6 +72,7 @@ export default function SiteShell({
           membershipTier={membershipTier}
           userDisplayName={userDisplayName}
           userEmail={userEmail}
+          orgTrialHeader={orgTrialHeader}
         />
       ) : null}
       <div className={headerWrapperClass}>

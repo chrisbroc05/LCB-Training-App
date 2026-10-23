@@ -3,6 +3,7 @@
 import AppHeaderBar from "@/app/components/AppHeaderBar";
 import TopNavigation from "@/app/TopNavigation";
 import type { DatabaseTier } from "@/lib/membership";
+import type { OrgTrialHeaderSummary } from "@/lib/layout-access-server";
 
 type LoggedInSiteHeaderProps = {
   membershipTier: DatabaseTier;
@@ -14,6 +15,7 @@ type LoggedInSiteHeaderProps = {
   hasMemberDownloadsAccess: boolean;
   hasCoachingAccess: boolean;
   hasProgramEnrollment: boolean;
+  orgTrialHeader: OrgTrialHeaderSummary | null;
 };
 
 export default function LoggedInSiteHeader({
@@ -26,6 +28,7 @@ export default function LoggedInSiteHeader({
   hasMemberDownloadsAccess,
   hasCoachingAccess,
   hasProgramEnrollment,
+  orgTrialHeader,
 }: LoggedInSiteHeaderProps) {
   return (
     <header className="logged-in-site-header border-b border-[#18243a] bg-black/95 backdrop-blur">
@@ -35,6 +38,7 @@ export default function LoggedInSiteHeader({
             membershipTier={membershipTier}
             userDisplayName={userDisplayName}
             userEmail={userEmail}
+            orgTrialHeader={orgTrialHeader}
             variant="desktop"
           />
         </div>

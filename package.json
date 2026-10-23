@@ -24,6 +24,7 @@
     "test:access": "npx --yes tsx scripts/test-access.ts",
     "test:org-weekly-focus": "npx --yes tsx scripts/test-org-weekly-focus.ts",
     "test:drill-focus-grants": "npx --yes tsx scripts/test-drill-focus-grants.ts",
+    "test:org-trial-dashboard": "npx --yes tsx scripts/test-org-trial-dashboard.ts",
     "test:resources": "npx --yes tsx scripts/test-resources.ts",
     "test:resource-download-gate": "npx --yes tsx scripts/test-resource-download-gate.ts",
     "test:fix-it-plans": "npx --yes tsx scripts/test-fix-it-plans.ts",
