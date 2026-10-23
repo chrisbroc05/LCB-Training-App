@@ -48,8 +48,24 @@ export default function AdminMembershipLevelSection({
         setError(data.error ?? "Unable to update membership level.");
         return;
       }
+
+      const expectedLevel = levelDraft ? (levelDraft as MembershipLevelKey) : null;
+      if (data.member.membershipLevel !== expectedLevel) {
+        setError(
+          `Save did not persist (expected level ${expectedLevel ?? "none"}, got ${data.member.membershipLevel ?? "none"}). Refresh and try again.`,
+        );
+        return;
+      }
+
+      const expectedExpiresPrefix = expiresDraft || null;
+      const savedExpires = data.member.membershipLevelExpiresAt?.slice(0, 10) ?? null;
+      if (expectedExpiresPrefix !== savedExpires) {
+        setError("Membership level expiry did not save correctly. Refresh and try again.");
+        return;
+      }
+
       onUpdated(data.member);
-      setSuccess("Membership level updated.");
+      setSuccess(`Saved: ${data.member.planDisplayLabel}${data.member.planExpiryLabel ? ` (${data.member.planExpiryLabel})` : ""}.`);
     } catch {
       setError("Unable to update membership level right now.");
     } finally {

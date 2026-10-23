@@ -20,14 +20,21 @@ import { getCurrentMonthGoalCheckin } from "@/lib/goal-check-in";
 import { getCalendlyBookingUrl } from "@/lib/calendly-booking";
 import {
   canAccessCoachingNav,
-  canAccessDrillLibrary,
-  canAccessPlaybook,
   canAccessWorkoutPrograms,
-  formatUserFacingMembershipLabel,
   isManualMembershipMember,
   isTwelveWeekProgramMember,
   type DatabaseTier,
 } from "@/lib/membership";
+import {
+  canAccessDrillLibraryBrowse,
+  canDownloadWorkoutPdfs,
+  canViewPlaybook,
+  getWorkoutAccessMode,
+  resolveEffectiveLevel,
+  type AccessUserFields,
+} from "@/lib/access-shared";
+import { toAccessUserFields, userAccessSelect } from "@/lib/access-server";
+import { formatMemberPlanLabel } from "@/lib/member-plan-labels-shared";
 import { shouldShowProgramSetupBanner } from "@/lib/program-setup-shared";
 import { needsInPersonEmergencyContactReminder } from "@/lib/in-person-training-shared";
 import InPersonEmergencyReminderCard from "@/components/InPersonEmergencyReminderCard";
@@ -50,10 +57,11 @@ function getFirstName(name: string | null | undefined, email: string | null | un
   return email?.split("@")[0] || "Member";
 }
 
-function getQuickLinks(membershipTier: DatabaseTier, hasFreeSubmissionRemaining: boolean): QuickLink[] {
+function getQuickLinks(access: AccessUserFields, hasFreeSubmissionRemaining: boolean): QuickLink[] {
   const links: QuickLink[] = [];
+  const { membershipTier } = access;
 
-  if (canAccessDrillLibrary(membershipTier)) {
+  if (canAccessDrillLibraryBrowse(access)) {
     links.push({
       href: "/drill-library",
       label: "Drill Library",
@@ -61,7 +69,7 @@ function getQuickLinks(membershipTier: DatabaseTier, hasFreeSubmissionRemaining:
     });
   }
 
-  if (canAccessPlaybook(membershipTier)) {
+  if (canViewPlaybook(access)) {
     links.unshift({
       href: "/playbook",
       label: "The Next Level Playbook",
@@ -69,7 +77,21 @@ function getQuickLinks(membershipTier: DatabaseTier, hasFreeSubmissionRemaining:
     });
   }
 
-  if (canAccessWorkoutPrograms(membershipTier)) {
+  if (getWorkoutAccessMode(access) === "starter_in_app") {
+    links.push({
+      href: "/workouts/starters",
+      label: "Starter Workouts",
+      description: "Four-week workout plans in the app.",
+    });
+  }
+
+  if (canDownloadWorkoutPdfs(access)) {
+    links.push({
+      href: "/account/downloads",
+      label: "My Downloads",
+      description: "Download strength, speed, and mobility programs.",
+    });
+  } else if (canAccessWorkoutPrograms(membershipTier, access.playbookLegacyAccess, access.membershipLevel, access.membershipLevelExpiresAt)) {
     links.push({
       href: "/account/downloads",
       label: "My Downloads",
@@ -158,7 +180,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       coachingSubmissionsUsedThisMonth: true,
       coachingSubmissionPeriod: true,
       eliteRolloverCredits: true,
-      membershipTier: true,
+      ...userAccessSelect,
       twelveWeekProgramEndsAt: true,
       twelveWeekCallBooked: true,
       twelveWeekCallScheduledAt: true,
@@ -179,19 +201,18 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   }
 
   const membershipTier = userRecord.membershipTier as DatabaseTier;
+  const access = toAccessUserFields(userRecord);
+  const effectiveLevel = resolveEffectiveLevel(access);
   const coachingFields = await ensureCoachingSubmissionPeriod(session.user.id);
   const coachingAvailability = coachingFields
     ? getCoachingSubmissionAvailability(coachingFields)
     : null;
   const freeSubmissionUsed = userRecord.freeSubmissionUsed;
-  const membershipLabel = formatUserFacingMembershipLabel(membershipTier);
+  const membershipLabel = formatMemberPlanLabel(access);
   const calendlyBookingUrl = getCalendlyBookingUrl();
   const firstName = getFirstName(userRecord.name, session.user.email);
-  const quickLinks = getQuickLinks(
-    membershipTier,
-    membershipTier === "FREE" && !freeSubmissionUsed,
-  );
-  const isPaidMember = membershipTier !== "FREE";
+  const quickLinks = getQuickLinks(access, effectiveLevel === "FREE" && !freeSubmissionUsed);
+  const isPaidMember = effectiveLevel !== "FREE";
   const hasSubscription = Boolean(userRecord.stripeSubscriptionId);
   const isManualMembership = isManualMembershipMember(
     membershipTier,
@@ -419,8 +440,9 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         <>
           <div className="mt-8 space-y-4 sm:space-y-5">
             <DashboardMembershipCard
-              membershipTier={membershipTier}
+              planLabel={membershipLabel}
               isPaidMember={isPaidMember}
+              showUpgradeLink={effectiveLevel === "FREE" || effectiveLevel === "PLAYBOOK"}
               isManualMembership={isManualMembership}
               subscriptionCurrentPeriodEnd={userRecord.subscriptionCurrentPeriodEnd}
               subscriptionCancelAtPeriodEnd={userRecord.subscriptionCancelAtPeriodEnd}

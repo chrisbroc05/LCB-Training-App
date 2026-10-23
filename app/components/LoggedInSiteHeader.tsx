@@ -9,7 +9,9 @@ type LoggedInSiteHeaderProps = {
   userDisplayName: string;
   userEmail?: string | null;
   isAdmin: boolean;
-  hasBasicAccess: boolean;
+  hasDrillLibraryAccess: boolean;
+  hasPlaybookAccess: boolean;
+  hasMemberDownloadsAccess: boolean;
   hasCoachingAccess: boolean;
   hasProgramEnrollment: boolean;
 };
@@ -19,7 +21,9 @@ export default function LoggedInSiteHeader({
   userDisplayName,
   userEmail,
   isAdmin,
-  hasBasicAccess,
+  hasDrillLibraryAccess,
+  hasPlaybookAccess,
+  hasMemberDownloadsAccess,
   hasCoachingAccess,
   hasProgramEnrollment,
 }: LoggedInSiteHeaderProps) {
@@ -38,7 +42,9 @@ export default function LoggedInSiteHeader({
           <TopNavigation
             isLoggedIn
             isAdmin={isAdmin}
-            hasBasicAccess={hasBasicAccess}
+            hasDrillLibraryAccess={hasDrillLibraryAccess}
+            hasPlaybookAccess={hasPlaybookAccess}
+            hasMemberDownloadsAccess={hasMemberDownloadsAccess}
             hasCoachingAccess={hasCoachingAccess}
             hasProgramEnrollment={hasProgramEnrollment}
             userDisplayName={userDisplayName}

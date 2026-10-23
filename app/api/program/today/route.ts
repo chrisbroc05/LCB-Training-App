@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { canAccessPlaybook } from "@/lib/membership";
+import { toAccessUserFields, userAccessSelect } from "@/lib/access-server";
 import { buildProgramTodayPayload } from "@/lib/program-today-server";
 import { prisma } from "@/lib/prisma";
 
@@ -13,7 +14,7 @@ export async function GET(request: Request) {
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { membershipTier: true },
+    select: userAccessSelect,
   });
 
   if (!user || user.membershipTier !== "TWELVE_WEEK") {
@@ -40,6 +41,13 @@ export async function GET(request: Request) {
 
   return NextResponse.json({
     ...payload,
-    canAccessPlaybook: canAccessPlaybook(user.membershipTier),
+    canAccessPlaybook: user
+      ? canAccessPlaybook(
+          user.membershipTier,
+          user.playbookLegacyAccess,
+          user.membershipLevel,
+          user.membershipLevelExpiresAt,
+        )
+      : false,
   });
 }

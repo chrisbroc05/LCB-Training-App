@@ -42,7 +42,6 @@ export default function DashboardEnrolledHomeSection({
     <div className={gridClassName}>
       <DashboardEnrolledSubmissionCard className={cardClassName} />
       <DashboardPlaybookProgressCard
-        membershipTier={membershipTier}
         userId={userId}
         className={cardClassName}
         showForEnrolled

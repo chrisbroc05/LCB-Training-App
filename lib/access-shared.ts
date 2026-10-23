@@ -157,7 +157,15 @@ export function canViewDrill(context: DrillViewAccessContext, drillId: string, n
 }
 
 export function canViewPlaybook(user: AccessUserFields, now = new Date()): boolean {
-  return canAccessDrillLibraryBrowse(user, now);
+  const effective = resolveEffectiveLevel(user, now);
+  return (
+    effective === "TWELVE_WEEK" ||
+    effective === "ALL_ACCESS" ||
+    effective === "PLUS" ||
+    effective === "PLAYBOOK" ||
+    effective === "LEGACY_ELITE" ||
+    effective === "LEGACY_MEMORABLE"
+  );
 }
 
 export type WorkoutAccessMode = "starter_in_app" | "full_programs" | "none";

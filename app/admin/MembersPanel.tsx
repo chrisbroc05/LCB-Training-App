@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import MemberDetailContent, { type MemberDetail } from "@/app/admin/MemberDetailContent";
-import TierBadge from "@/app/admin/TierBadge";
+import AdminMemberPlanBadge from "@/app/admin/AdminMemberPlanBadge";
 import MobileBottomSheet from "@/app/components/mobile/MobileBottomSheet";
 import { useIsMobile } from "@/app/components/mobile/useIsMobile";
 import { toAssessmentCallInputValues } from "@/lib/assessment-call";
@@ -18,6 +18,8 @@ type MemberSummary = {
   name: string | null;
   email: string;
   membershipTier: DatabaseTier;
+  planDisplayLabel: string;
+  planExpiryLabel: string | null;
   productAccessCompact: string;
   signupDate: string;
   lastActiveAt: string | null;
@@ -569,7 +571,10 @@ export default function MembersPanel() {
                           </p>
                           <p className="mt-0.5 truncate text-xs text-zinc-400">{member.email}</p>
                         </div>
-                        <TierBadge tier={member.membershipTier} />
+                        <AdminMemberPlanBadge
+                          planDisplayLabel={member.planDisplayLabel}
+                          planExpiryLabel={member.planExpiryLabel}
+                        />
                       </div>
                       <p className="mt-2 text-xs text-zinc-500">{member.productAccessCompact}</p>
                       <div className="mt-3 flex items-center justify-between text-xs text-zinc-400">
@@ -591,7 +596,7 @@ export default function MembersPanel() {
                     <tr className="border-b border-[#2b3650] text-xs uppercase tracking-wide text-zinc-400">
                       <th className="px-3 py-3 font-semibold">Name</th>
                       <th className="px-3 py-3 font-semibold">Email</th>
-                      <th className="px-3 py-3 font-semibold">Tier</th>
+                      <th className="px-3 py-3 font-semibold">Plan</th>
                       <th className="px-3 py-3 font-semibold">Products</th>
                       <th className="px-3 py-3 font-semibold">Member Since</th>
                       <th className="px-3 py-3 font-semibold">Last Active</th>
@@ -617,7 +622,10 @@ export default function MembersPanel() {
                           </td>
                           <td className="px-3 py-3 text-zinc-300">{member.email}</td>
                           <td className="px-3 py-3">
-                            <TierBadge tier={member.membershipTier} />
+                            <AdminMemberPlanBadge
+                          planDisplayLabel={member.planDisplayLabel}
+                          planExpiryLabel={member.planExpiryLabel}
+                        />
                           </td>
                           <td className="px-3 py-3 text-xs text-zinc-400">
                             {member.productAccessCompact}

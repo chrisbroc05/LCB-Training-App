@@ -20,7 +20,10 @@ type SiteShellProps = {
   adminToggle: React.ReactNode;
   isLoggedIn: boolean;
   membershipTier: DatabaseTier;
-  hasBasicAccess: boolean;
+  currentPlanLabel: string;
+  hasDrillLibraryAccess: boolean;
+  hasPlaybookAccess: boolean;
+  hasMemberDownloadsAccess: boolean;
   hasProgramEnrollment: boolean;
   userDisplayName: string;
   userEmail?: string | null;
@@ -33,7 +36,10 @@ export default function SiteShell({
   adminToggle,
   isLoggedIn,
   membershipTier,
-  hasBasicAccess,
+  currentPlanLabel,
+  hasDrillLibraryAccess,
+  hasPlaybookAccess,
+  hasMemberDownloadsAccess,
   hasProgramEnrollment,
   userDisplayName,
   userEmail,
@@ -74,7 +80,8 @@ export default function SiteShell({
       </main>
       {useMobileChrome ? (
         <MobileBottomNav
-          hasBasicAccess={hasBasicAccess}
+          hasDrillLibraryAccess={hasDrillLibraryAccess}
+          hasPlaybookAccess={hasPlaybookAccess}
           hasProgramEnrollment={hasProgramEnrollment}
         />
       ) : null}
@@ -86,7 +93,11 @@ export default function SiteShell({
 
   if (useMobileChrome) {
     return (
-      <MobileAppProvider membershipTier={membershipTier} hasBasicAccess={hasBasicAccess}>
+      <MobileAppProvider
+        membershipTier={membershipTier}
+        currentPlanLabel={currentPlanLabel}
+        hasPlaybookAccess={hasPlaybookAccess}
+      >
         {shell}
       </MobileAppProvider>
     );

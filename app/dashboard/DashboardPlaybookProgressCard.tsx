@@ -1,32 +1,51 @@
 import Link from "next/link";
-import type { DatabaseTier } from "@/lib/membership";
 import { canAccessPlaybook } from "@/lib/membership";
+import { toAccessUserFields, userAccessSelect } from "@/lib/access-server";
+import { PUBLIC_MEMBERSHIP_UPGRADE_GENERIC_LABEL } from "@/lib/membership-levels-shared";
 import { ensurePlaybookProgress, serializePlaybookProgress } from "@/lib/playbook";
+import { prisma } from "@/lib/prisma";
 
 type DashboardPlaybookProgressCardProps = {
-  membershipTier: DatabaseTier;
   userId: string;
   className?: string;
   showForEnrolled?: boolean;
 };
 
 export default async function DashboardPlaybookProgressCard({
-  membershipTier,
   userId,
   className = "",
   showForEnrolled = false,
 }: DashboardPlaybookProgressCardProps) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: userAccessSelect,
+  });
+  const access = user
+    ? toAccessUserFields(user)
+    : toAccessUserFields({
+        membershipTier: "FREE",
+        playbookLegacyAccess: false,
+        membershipLevel: null,
+        membershipLevelExpiresAt: null,
+      });
   const visibilityClass = showForEnrolled ? "" : "md:hidden";
   const articleClassName = ["rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-5 sm:p-6", visibilityClass, className]
     .filter(Boolean)
     .join(" ");
 
-  if (!canAccessPlaybook(membershipTier)) {
+  if (
+    !canAccessPlaybook(
+      access.membershipTier,
+      access.playbookLegacyAccess,
+      access.membershipLevel,
+      access.membershipLevelExpiresAt,
+    )
+  ) {
     return (
       <article className={articleClassName}>
         <h2 className="text-lg font-semibold text-zinc-100 sm:text-xl">The Next Level Playbook</h2>
         <p className="mt-2 text-sm text-zinc-400">
-          Unlock the playbook with a Basic membership to start working through all four chapters.
+          {PUBLIC_MEMBERSHIP_UPGRADE_GENERIC_LABEL} The Playbook is included with Plus and above.
         </p>
         <Link
           href="/playbook"

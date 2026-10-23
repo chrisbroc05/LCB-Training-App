@@ -4,14 +4,17 @@ import {
   getUpgradeLabelForLevel,
 } from "../lib/membership-levels-shared";
 import {
+  canAccessDrillLibraryBrowse,
   canDownloadGuideFilename,
   canMessageCoach,
   canViewDrill,
+  canViewPlaybook,
   getReviewAllowance,
   getWorkoutAccessMode,
   hasFullDrillLibraryAccess,
   resolveEffectiveLevel,
 } from "../lib/access-shared";
+import { formatAdminMemberPlanLabel } from "../lib/member-plan-labels-shared";
 import { getProgramDay, getCycleProgramDay, PROGRAM_DAY_COUNT } from "../lib/program-schedule";
 import { parseProgramDateKey } from "../lib/program-schedule";
 import { toPlaybookEntitlementFields } from "../lib/playbook-entitlements-shared";
@@ -52,6 +55,15 @@ assert.equal(hasFullDrillLibraryAccess(fields("BASIC", { legacy: true })), true)
 assert.equal(hasFullDrillLibraryAccess(fields("BASIC", { legacy: false })), false);
 assert.equal(getWorkoutAccessMode(fields("BASIC", { legacy: true })), "full_programs");
 assert.equal(getWorkoutAccessMode(fields("BASIC", { legacy: false })), "none");
+
+console.log("test-access: admin plan labels and Train tab gates");
+assert.equal(formatAdminMemberPlanLabel(fields("FREE", { level: "CORE" })), "Free + Core");
+assert.equal(canAccessDrillLibraryBrowse(fields("FREE", { level: "CORE" })), true);
+assert.equal(canViewPlaybook(fields("FREE", { level: "CORE" })), false);
+assert.equal(canAccessDrillLibraryBrowse(fields("FREE", { level: "PLUS" })), true);
+assert.equal(canViewPlaybook(fields("FREE", { level: "PLUS" })), true);
+assert.equal(canAccessDrillLibraryBrowse(fields("FREE", { level: "ALL_ACCESS" })), true);
+assert.equal(getWorkoutAccessMode(fields("FREE", { level: "ALL_ACCESS" })), "full_programs");
 
 console.log("test-access: CORE vs PLUS");
 assert.equal(getWorkoutAccessMode(fields("FREE", { level: "CORE" })), "starter_in_app");

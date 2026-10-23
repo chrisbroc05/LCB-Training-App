@@ -4,9 +4,14 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useOptionalMobileApp } from "@/app/components/mobile/MobileAppProvider";
+import {
+  getMobilePlaybookTabLockedMessage,
+  getMobileTrainTabLockedMessage,
+} from "@/lib/mobile-nav-access-copy";
 
 type MobileBottomNavProps = {
-  hasBasicAccess: boolean;
+  hasDrillLibraryAccess: boolean;
+  hasPlaybookAccess: boolean;
   hasProgramEnrollment: boolean;
 };
 
@@ -143,14 +148,10 @@ function LockIcon() {
 
 function getLockedUpgradeMessage(tabKey: NavTab["key"]) {
   if (tabKey === "playbook") {
-    return "Upgrade to Basic or above to unlock The Next Level Playbook.";
+    return getMobilePlaybookTabLockedMessage();
   }
 
-  if (tabKey === "resources") {
-    return "Upgrade to Basic or above to unlock downloadable resources and guides.";
-  }
-
-  return "Upgrade to Basic or above to unlock the drill library and training videos.";
+  return getMobileTrainTabLockedMessage();
 }
 
 function isTabActive(pathname: string, tab: NavTab) {
@@ -158,7 +159,8 @@ function isTabActive(pathname: string, tab: NavTab) {
 }
 
 export default function MobileBottomNav({
-  hasBasicAccess,
+  hasDrillLibraryAccess,
+  hasPlaybookAccess,
   hasProgramEnrollment,
 }: MobileBottomNavProps) {
   const pathname = usePathname();
@@ -189,7 +191,7 @@ export default function MobileBottomNav({
       key: "playbook",
       label: "Playbook",
       href: "/playbook",
-      locked: !hasBasicAccess,
+      locked: !hasPlaybookAccess,
       isActive: (path) => path.startsWith("/playbook"),
       icon: (active) => <BookIcon active={active} />,
     },
@@ -197,7 +199,7 @@ export default function MobileBottomNav({
       key: "train",
       label: "Train",
       href: "/drill-library",
-      locked: !hasBasicAccess,
+      locked: !hasDrillLibraryAccess,
       isActive: (path) => path.startsWith("/drill-library"),
       icon: (active) => <PlayIcon active={active} />,
     },

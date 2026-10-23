@@ -127,7 +127,7 @@ export default function MobileDashboardView({
             unreadResponse={unreadResponse}
           />
 
-          <DashboardPlaybookProgressCard membershipTier={membershipTier} userId={userId} />
+          <DashboardPlaybookProgressCard userId={userId} />
 
           {canAccessCoachingNav(membershipTier) ? (
             <div className="mobile-card [&_article]:border-0 [&_article]:bg-transparent [&_article]:p-0">

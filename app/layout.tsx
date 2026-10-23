@@ -3,13 +3,9 @@ import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import {
-  canAccessCoachingNav,
-  hasDatabaseTierAccess,
-  type DatabaseTier,
-} from "@/lib/membership";
+import { canAccessCoachingNav, type DatabaseTier } from "@/lib/membership";
 import { isAdminEmail } from "@/lib/admin";
-import { prisma } from "@/lib/prisma";
+import { loadLoggedInLayoutAccess } from "@/lib/layout-access-server";
 import BrandLogo from "@/app/BrandLogo";
 import LoggedInSiteHeader from "@/app/components/LoggedInSiteHeader";
 import TopNavigation from "@/app/TopNavigation";
@@ -53,24 +49,21 @@ export default async function RootLayout({
   const userDisplayName = session?.user?.name?.trim() ?? "";
 
   let membershipTier: DatabaseTier = "FREE";
+  let currentPlanLabel = "Free";
+  let hasDrillLibraryAccess = false;
+  let hasPlaybookAccess = false;
+  let hasMemberDownloadsAccess = false;
   let hasProgramEnrollment = false;
   if (session?.user?.id) {
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { membershipTier: true },
-    });
-    membershipTier = (user?.membershipTier ?? "FREE") as DatabaseTier;
-
-    if (membershipTier === "TWELVE_WEEK") {
-      const enrollment = await prisma.programEnrollment.findUnique({
-        where: { userId: session.user.id },
-        select: { id: true },
-      });
-      hasProgramEnrollment = Boolean(enrollment);
-    }
+    const layoutAccess = await loadLoggedInLayoutAccess(session.user.id);
+    membershipTier = layoutAccess.membershipTier;
+    currentPlanLabel = layoutAccess.currentPlanLabel;
+    hasDrillLibraryAccess = layoutAccess.hasDrillLibraryAccess;
+    hasPlaybookAccess = layoutAccess.hasPlaybookAccess;
+    hasMemberDownloadsAccess = layoutAccess.hasMemberDownloadsAccess;
+    hasProgramEnrollment = layoutAccess.hasProgramEnrollment;
   }
 
-  const hasBasicAccess = hasDatabaseTierAccess(membershipTier, "basic");
   const hasCoachingAccess = canAccessCoachingNav(membershipTier);
   const hasAdminAccess = isAdminEmail(session?.user?.email);
 
@@ -107,7 +100,10 @@ export default async function RootLayout({
         <SiteShell
           isLoggedIn={Boolean(session?.user)}
           membershipTier={membershipTier}
-          hasBasicAccess={hasBasicAccess}
+          currentPlanLabel={currentPlanLabel}
+          hasDrillLibraryAccess={hasDrillLibraryAccess}
+          hasPlaybookAccess={hasPlaybookAccess}
+          hasMemberDownloadsAccess={hasMemberDownloadsAccess}
           hasProgramEnrollment={hasProgramEnrollment}
           userDisplayName={userDisplayName}
           userEmail={session?.user?.email}
@@ -118,7 +114,9 @@ export default async function RootLayout({
                 userDisplayName={userDisplayName}
                 userEmail={session.user.email}
                 isAdmin={hasAdminAccess}
-                hasBasicAccess={hasBasicAccess}
+                hasDrillLibraryAccess={hasDrillLibraryAccess}
+                hasPlaybookAccess={hasPlaybookAccess}
+                hasMemberDownloadsAccess={hasMemberDownloadsAccess}
                 hasCoachingAccess={hasCoachingAccess}
                 hasProgramEnrollment={hasProgramEnrollment}
               />
@@ -137,7 +135,9 @@ export default async function RootLayout({
                     <TopNavigation
                       isLoggedIn={false}
                       isAdmin={false}
-                      hasBasicAccess={false}
+                      hasDrillLibraryAccess={false}
+                      hasPlaybookAccess={false}
+                      hasMemberDownloadsAccess={false}
                       hasCoachingAccess={false}
                       hasProgramEnrollment={false}
                     />

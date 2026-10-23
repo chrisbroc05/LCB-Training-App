@@ -2,7 +2,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import PlaybookApp from "@/app/playbook/PlaybookApp";
 import PlaybookPurchasePage from "@/app/playbook/PlaybookPurchasePage";
-import { canAccessPlaybook, type DatabaseTier } from "@/lib/membership";
+import { canAccessPlaybook } from "@/lib/membership";
+import { toAccessUserFields, userAccessSelect } from "@/lib/access-server";
 import { prisma } from "@/lib/prisma";
 
 type PlaybookPageProps = {
@@ -17,11 +18,18 @@ export default async function PlaybookPage({ searchParams }: PlaybookPageProps) 
   if (session?.user) {
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { membershipTier: true },
+      select: userAccessSelect,
     });
-    const membershipTier = (user?.membershipTier ?? "FREE") as DatabaseTier;
+    const access = user
+      ? toAccessUserFields(user)
+      : toAccessUserFields({
+          membershipTier: "FREE",
+          playbookLegacyAccess: false,
+          membershipLevel: null,
+          membershipLevelExpiresAt: null,
+        });
 
-    if (canAccessPlaybook(membershipTier)) {
+    if (canAccessPlaybook(access.membershipTier, access.playbookLegacyAccess, access.membershipLevel, access.membershipLevelExpiresAt)) {
       return <PlaybookApp />;
     }
   }

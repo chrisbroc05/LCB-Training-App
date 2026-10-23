@@ -3,11 +3,8 @@
 import Link from "next/link";
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
 import MobileBottomSheet from "@/app/components/mobile/MobileBottomSheet";
-import {
-  formatUserFacingMembershipLabel,
-  isTwelveWeekProgramMember,
-  type DatabaseTier,
-} from "@/lib/membership";
+import { isTwelveWeekProgramMember, type DatabaseTier } from "@/lib/membership";
+import { PUBLIC_MEMBERSHIP_UPGRADE_GENERIC_LABEL } from "@/lib/membership-levels-shared";
 import { PLAYBOOK_NAME } from "@/lib/playbook-branding";
 
 type MobileAppContextValue = {
@@ -20,13 +17,15 @@ const MobileAppContext = createContext<MobileAppContextValue | null>(null);
 type MobileAppProviderProps = {
   children: React.ReactNode;
   membershipTier: DatabaseTier;
-  hasBasicAccess: boolean;
+  currentPlanLabel: string;
+  hasPlaybookAccess: boolean;
 };
 
 export function MobileAppProvider({
   children,
   membershipTier,
-  hasBasicAccess,
+  currentPlanLabel,
+  hasPlaybookAccess,
 }: MobileAppProviderProps) {
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [upgradeMessage, setUpgradeMessage] = useState<string | null>(null);
@@ -56,9 +55,9 @@ export function MobileAppProvider({
     [openUpgradeSheet, closeUpgradeSheet],
   );
 
-  const defaultMessage = hasBasicAccess
+  const defaultMessage = hasPlaybookAccess
     ? "Join the 12-Week Coaching Program for personal coaching from Coach Broc."
-    : `Unlock ${PLAYBOOK_NAME}, the drill library, and training resources with a Basic membership.`;
+    : `${PUBLIC_MEMBERSHIP_UPGRADE_GENERIC_LABEL} Unlock ${PLAYBOOK_NAME}, the drill library, and training resources.`;
 
   return (
     <MobileAppContext.Provider value={value}>
@@ -91,7 +90,7 @@ export function MobileAppProvider({
             {upgradeMessage ?? defaultMessage}
           </p>
           <p className="mt-3 text-sm text-zinc-500">
-            Current plan: {formatUserFacingMembershipLabel(membershipTier)}
+            Current plan: {currentPlanLabel}
           </p>
         </MobileBottomSheet>
       ) : null}

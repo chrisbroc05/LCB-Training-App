@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { canAccessPlaybook } from "@/lib/membership";
+import { toAccessUserFields, userAccessSelect } from "@/lib/access-server";
 import { prisma } from "@/lib/prisma";
 
 export async function requirePlaybookMember() {
@@ -18,7 +19,7 @@ export async function requirePlaybookMember() {
       id: true,
       email: true,
       name: true,
-      membershipTier: true,
+      ...userAccessSelect,
     },
   });
 
@@ -28,10 +29,18 @@ export async function requirePlaybookMember() {
     };
   }
 
-  if (!canAccessPlaybook(user.membershipTier)) {
+  const access = toAccessUserFields(user);
+  if (
+    !canAccessPlaybook(
+      access.membershipTier,
+      access.playbookLegacyAccess,
+      access.membershipLevel,
+      access.membershipLevelExpiresAt,
+    )
+  ) {
     return {
       error: NextResponse.json(
-        { error: "The Next Level Playbook is available on Basic and 12-Week Program memberships." },
+        { error: "The Next Level Playbook is available with Plus, All-Access, or the 12-Week Program." },
         { status: 403 },
       ),
     };

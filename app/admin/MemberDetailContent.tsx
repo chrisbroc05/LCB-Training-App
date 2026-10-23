@@ -10,7 +10,7 @@ import {
 import { formatOptionalDate, formatOptionalDateTime } from "@/lib/format-date";
 import { formatDatabaseTierLabel, validDatabaseTiers, type DatabaseTier } from "@/lib/membership";
 import AdminProductAccessPanel from "@/app/admin/AdminProductAccessPanel";
-import TierBadge from "@/app/admin/TierBadge";
+import AdminMemberPlanBadge from "@/app/admin/AdminMemberPlanBadge";
 import AdminMembershipLevelSection from "@/app/admin/AdminMembershipLevelSection";
 import type { MembershipLevelKey } from "@/lib/membership-levels-shared";
 import type { MemberProductAccessSummary } from "@/lib/admin-product-access-shared";
@@ -23,6 +23,8 @@ export type MemberDetail = {
   membershipTier: DatabaseTier;
   membershipLevel: MembershipLevelKey | null;
   membershipLevelExpiresAt: string | null;
+  planDisplayLabel: string;
+  planExpiryLabel: string | null;
   productAccessCompact: string;
   productAccess: MemberProductAccessSummary;
   signupDate: string;
@@ -181,7 +183,10 @@ export default function MemberDetailContent({
         </h3>
         <p className="mt-1 text-sm text-zinc-300">{detail.email}</p>
         <div className="mt-3 flex flex-wrap items-center gap-3">
-          <TierBadge tier={detail.membershipTier} />
+          <AdminMemberPlanBadge
+            planDisplayLabel={detail.planDisplayLabel}
+            planExpiryLabel={detail.planExpiryLabel}
+          />
           <span className="rounded-full border border-[#2b3650] px-2.5 py-0.5 text-[11px] font-medium text-zinc-300">
             {detail.productAccessCompact}
           </span>

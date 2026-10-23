@@ -23,6 +23,11 @@ import { serializeInPersonTrainingInfo } from "@/lib/in-person-training-shared";
 import { getTwelveWeekProgramEndDate } from "@/lib/twelve-week-program";
 
 import { formatAccountRoleLabel, formatSignedUpBy, getPlayerFullName } from "@/lib/account-shared";
+import {
+  formatAdminMemberPlanLabel,
+  formatAdminMembershipLevelExpiry,
+} from "@/lib/member-plan-labels-shared";
+import { toPlaybookEntitlementFields } from "@/lib/playbook-entitlements-shared";
 
 export const adminMemberListSelect = {
   id: true,
@@ -138,6 +143,12 @@ export function serializeAdminMemberSummary(user: AdminMemberListRecord) {
   });
 
   const tierLabel = formatDatabaseTierLabel(user.membershipTier);
+  const accessFields = toPlaybookEntitlementFields(
+    user.membershipTier,
+    user.playbookLegacyAccess,
+    user.membershipLevel as import("@/lib/membership-levels-shared").MembershipLevelKey | null,
+    user.membershipLevelExpiresAt,
+  );
 
   return {
     id: user.id,
@@ -150,6 +161,8 @@ export function serializeAdminMemberSummary(user: AdminMemberListRecord) {
     membershipTier: user.membershipTier,
     membershipLevel: user.membershipLevel as import("@/lib/membership-levels-shared").MembershipLevelKey | null,
     membershipLevelExpiresAt: user.membershipLevelExpiresAt?.toISOString() ?? null,
+    planDisplayLabel: formatAdminMemberPlanLabel(accessFields),
+    planExpiryLabel: formatAdminMembershipLevelExpiry(user.membershipLevelExpiresAt),
     productAccessCompact: formatMemberProductAccessCompact(
       user.membershipTier,
       user.playbookLegacyAccess,

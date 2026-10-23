@@ -42,6 +42,8 @@ export const authOptions: NextAuthOptions = {
           email: user.email,
           name: user.name,
           membershipTier: user.membershipTier,
+          membershipLevel: user.membershipLevel,
+          membershipLevelExpiresAt: user.membershipLevelExpiresAt,
         };
       },
     }),
@@ -54,6 +56,12 @@ export const authOptions: NextAuthOptions = {
 
       if (user && "membershipTier" in user) {
         token.membershipTier = user.membershipTier;
+      }
+      if (user && "membershipLevel" in user) {
+        token.membershipLevel = user.membershipLevel;
+        token.membershipLevelExpiresAt = user.membershipLevelExpiresAt
+          ? user.membershipLevelExpiresAt.toISOString()
+          : null;
       }
 
       if (user?.id) {
@@ -70,9 +78,16 @@ export const authOptions: NextAuthOptions = {
       if (token.sub) {
         const dbUser = await prisma.user.findUnique({
           where: { id: token.sub },
-          select: { membershipTier: true, pendingCheckoutTier: true },
+          select: {
+            membershipTier: true,
+            membershipLevel: true,
+            membershipLevelExpiresAt: true,
+            pendingCheckoutTier: true,
+          },
         });
         token.membershipTier = dbUser?.membershipTier;
+        token.membershipLevel = dbUser?.membershipLevel ?? null;
+        token.membershipLevelExpiresAt = dbUser?.membershipLevelExpiresAt?.toISOString() ?? null;
         const pendingCheckoutTier = dbUser?.pendingCheckoutTier;
         token.pendingCheckoutTier =
           pendingCheckoutTier === "BASIC" ||
@@ -104,6 +119,11 @@ export const authOptions: NextAuthOptions = {
             | "ELITE"
             | null
             | undefined) ?? null;
+        session.user.membershipLevel =
+          (token.membershipLevel as import("@/lib/membership-levels-shared").MembershipLevelKey | null) ??
+          null;
+        session.user.membershipLevelExpiresAt =
+          (token.membershipLevelExpiresAt as string | null | undefined) ?? null;
       }
       return session;
     },

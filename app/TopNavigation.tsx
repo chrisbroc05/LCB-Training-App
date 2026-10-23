@@ -10,7 +10,9 @@ import { shouldUseMobileAppChrome } from "@/lib/mobile-ui";
 type TopNavigationProps = {
   isLoggedIn: boolean;
   isAdmin: boolean;
-  hasBasicAccess: boolean;
+  hasDrillLibraryAccess: boolean;
+  hasPlaybookAccess: boolean;
+  hasMemberDownloadsAccess: boolean;
   hasCoachingAccess: boolean;
   hasProgramEnrollment: boolean;
   userDisplayName?: string;
@@ -43,24 +45,38 @@ function isAnyLinkActive(links: NavLink[], pathname: string) {
   return links.some((link) => link.isActive(pathname));
 }
 
-function buildTrainLinks(): NavLink[] {
-  return [
-    {
+function buildTrainLinks(options: {
+  hasDrillLibraryAccess: boolean;
+  hasPlaybookAccess: boolean;
+  hasMemberDownloadsAccess: boolean;
+}): NavLink[] {
+  const links: NavLink[] = [];
+
+  if (options.hasDrillLibraryAccess) {
+    links.push({
       label: "Drill Library",
       href: "/drill-library",
       isActive: (path) => path.startsWith("/drill-library"),
-    },
-    {
+    });
+  }
+
+  if (options.hasPlaybookAccess) {
+    links.push({
       label: "Playbook",
       href: "/playbook",
       isActive: (path) => path.startsWith("/playbook"),
-    },
-    {
+    });
+  }
+
+  if (options.hasMemberDownloadsAccess) {
+    links.push({
       label: "My Downloads",
       href: "/account/downloads",
       isActive: (path) => path.startsWith("/account/downloads"),
-    },
-  ];
+    });
+  }
+
+  return links;
 }
 
 function buildCoachingLinks(): NavLink[] {
@@ -370,7 +386,9 @@ function MobileNavGroup({
 export default function TopNavigation({
   isLoggedIn,
   isAdmin,
-  hasBasicAccess,
+  hasDrillLibraryAccess,
+  hasPlaybookAccess,
+  hasMemberDownloadsAccess,
   hasCoachingAccess,
   hasProgramEnrollment,
   userDisplayName,
@@ -466,7 +484,13 @@ export default function TopNavigation({
     );
   }
 
-  const trainGroup: NavGroup = { label: "Train", links: buildTrainLinks() };
+  const trainLinks = buildTrainLinks({
+    hasDrillLibraryAccess,
+    hasPlaybookAccess,
+    hasMemberDownloadsAccess,
+  });
+  const trainGroup: NavGroup = { label: "Train", links: trainLinks };
+  const showTrainNav = trainLinks.length > 0;
   const coachingGroup: NavGroup = { label: "Coaching", links: buildCoachingLinks() };
   const suppressMobileMenu = shouldUseMobileAppChrome(isLoggedIn, pathname);
 
@@ -499,7 +523,7 @@ export default function TopNavigation({
           Resources
         </Link>
 
-        {hasBasicAccess ? (
+        {showTrainNav ? (
           <DesktopDropdown
             dropdownId="train"
             group={trainGroup}
@@ -582,7 +606,7 @@ export default function TopNavigation({
                 </div>
               </div>
 
-              {hasBasicAccess ? (
+              {showTrainNav ? (
                 <MobileNavGroup
                   title="Train"
                   links={trainGroup.links}

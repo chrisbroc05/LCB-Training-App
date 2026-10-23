@@ -1,29 +1,27 @@
 import Link from "next/link";
 import { formatOptionalDate } from "@/lib/format-date";
-import { formatUserFacingMembershipLabel, type DatabaseTier } from "@/lib/membership";
-
 type DashboardMembershipCardProps = {
-  membershipTier: DatabaseTier;
+  planLabel: string;
   isPaidMember: boolean;
+  showUpgradeLink: boolean;
   isManualMembership: boolean;
   subscriptionCurrentPeriodEnd: Date | null;
   subscriptionCancelAtPeriodEnd: boolean;
 };
 
 export default function DashboardMembershipCard({
-  membershipTier,
+  planLabel,
   isPaidMember,
+  showUpgradeLink,
   isManualMembership,
   subscriptionCurrentPeriodEnd,
   subscriptionCancelAtPeriodEnd,
 }: DashboardMembershipCardProps) {
-  const showUpgradeLink = membershipTier === "FREE" || membershipTier === "BASIC";
-
   return (
     <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
       <h2 className="text-lg font-semibold text-zinc-100">Membership</h2>
       <div className="mt-3 inline-flex rounded-full border border-[#22c55e]/40 bg-[#22c55e]/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#9df3bd]">
-        {formatUserFacingMembershipLabel(membershipTier)}
+        {planLabel}
       </div>
 
       {isPaidMember ? (
@@ -41,8 +39,8 @@ export default function DashboardMembershipCard({
         </div>
       ) : (
         <p className="mt-3 text-sm text-zinc-300">
-          You are on the Free plan. Send your one free coaching submission, or upgrade to the
-          12-Week Coaching Program, The Playbook, or a Remote Session.
+          Send your one free coaching submission, or upgrade for more training content and coaching
+          support.
         </p>
       )}
 
