@@ -2,6 +2,8 @@ import Link from "next/link";
 import ProfileCard from "@/app/profile/ProfileCard";
 import MemberSubmissionVideo, { CoachResponseVideo } from "@/app/profile/MemberSubmissionVideo";
 import RecommendedDrillsSection from "@/app/profile/RecommendedDrillsSection";
+import WrittenPlayerReportSection from "@/app/profile/WrittenPlayerReportSection";
+import { submissionHasWrittenPlayerReport } from "@/lib/quick-written-report-shared";
 import { formatDateTime } from "@/lib/format-date";
 import type { DatabaseTier } from "@/lib/membership";
 
@@ -21,6 +23,14 @@ export type ProfileSubmission = {
   responseVideoUrl: string | null;
   recommendedDrillIds: string[];
   extraLines: string[];
+  writtenReport?: {
+    strengths: string[];
+    areasToImprove: string[];
+    recommendedDrillLines: string[];
+    noteFromCoach: string | null;
+    libraryDrillIds: string[];
+    hasEvaluationPdf: boolean;
+  } | null;
 };
 
 type CoachingSubmissionHistoryProps = {
@@ -109,7 +119,26 @@ export default function CoachingSubmissionHistory({
                 <p className="text-sm font-semibold text-zinc-100">Coach Chris Response</p>
                 {selectedSubmission.status === "COMPLETED" ? (
                   <div className="mt-3 space-y-3">
-                    {selectedSubmission.responseText ? (
+                    {selectedSubmission.writtenReport &&
+                    submissionHasWrittenPlayerReport({
+                      reportStrengths: selectedSubmission.writtenReport.strengths,
+                      evaluationPdfR2Key: selectedSubmission.writtenReport.hasEvaluationPdf
+                        ? "set"
+                        : null,
+                    }) ? (
+                      <WrittenPlayerReportSection
+                        strengths={selectedSubmission.writtenReport.strengths}
+                        areasToImprove={selectedSubmission.writtenReport.areasToImprove}
+                        recommendedDrillLines={selectedSubmission.writtenReport.recommendedDrillLines}
+                        noteFromCoach={selectedSubmission.writtenReport.noteFromCoach}
+                        libraryDrillIds={selectedSubmission.writtenReport.libraryDrillIds}
+                        submissionId={selectedSubmission.id}
+                        hasEvaluationPdf={selectedSubmission.writtenReport.hasEvaluationPdf}
+                        drillThumbnailMap={recommendedDrillThumbnailMap}
+                      />
+                    ) : null}
+                    {selectedSubmission.responseText &&
+                    !selectedSubmission.writtenReport?.strengths.length ? (
                       <p className="whitespace-pre-wrap text-sm text-zinc-300">
                         {selectedSubmission.responseText}
                       </p>

@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
+import { QUICK_WRITTEN_REPORT_TRACKS } from "@/lib/quick-written-report-shared";
 
 type SubmissionType = "swing" | "mental";
 
@@ -46,6 +47,12 @@ export async function GET(request: Request) {
   }
 
   const submissions = await prisma.swingAnalysisSubmission.findMany({
+    where: {
+      OR: [
+        { reviewTrack: null },
+        { reviewTrack: { notIn: [...QUICK_WRITTEN_REPORT_TRACKS] } },
+      ],
+    },
     orderBy: { createdAt: "desc" },
     select: {
       id: true,

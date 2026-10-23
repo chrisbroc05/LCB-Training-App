@@ -79,9 +79,60 @@ export function isValidR2ObjectKey(key: string) {
   return (
     (key.startsWith("submissions/") ||
       key.startsWith("responses/") ||
-      key.startsWith("coach-videos/")) &&
+      key.startsWith("coach-videos/") ||
+      key.startsWith("evaluations/")) &&
     !key.includes("..")
   );
+}
+
+export function buildEvaluationPdfKey(submissionId: string) {
+  return `evaluations/${submissionId}/${Date.now()}-${randomUUID()}-player-evaluation.pdf`;
+}
+
+export function isEvaluationPdfKey(key: string, submissionId: string) {
+  const prefix = `evaluations/${submissionId}/`;
+  return key.startsWith(prefix) && isValidR2ObjectKey(key);
+}
+
+export async function uploadEvaluationPdfBuffer(params: {
+  key: string;
+  pdfBuffer: Buffer;
+}) {
+  const { bucketName } = getR2Config();
+
+  await getR2Client().send(
+    new PutObjectCommand({
+      Bucket: bucketName,
+      Key: params.key,
+      Body: params.pdfBuffer,
+      ContentType: "application/pdf",
+      ContentLength: params.pdfBuffer.length,
+    }),
+  );
+
+  return params.key;
+}
+
+export async function createPresignedEvaluationPdfDownloadUrl(key: string) {
+  const { bucketName } = getR2Config();
+  const fileName = sanitizeFileName(key.split("/").pop() ?? "player-evaluation.pdf");
+
+  const command = new GetObjectCommand({
+    Bucket: bucketName,
+    Key: key,
+    ResponseContentDisposition: `attachment; filename="${fileName}"`,
+    ResponseContentType: "application/pdf",
+  });
+
+  const downloadUrl = await getSignedUrl(getR2Client(), command, {
+    expiresIn: ADMIN_VIDEO_DOWNLOAD_EXPIRY_SECONDS,
+  });
+
+  return {
+    downloadUrl,
+    fileName,
+    expiresInSeconds: ADMIN_VIDEO_DOWNLOAD_EXPIRY_SECONDS,
+  };
 }
 
 export function buildUserSubmissionVideoKey(userId: string, fileName: string) {

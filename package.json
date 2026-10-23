@@ -20,6 +20,7 @@
     "test:program-stats": "npx --yes tsx scripts/test-program-stats.ts",
     "test:program-task-completion": "npx --yes tsx scripts/test-program-task-completion.ts",
     "test:coaching-submissions": "npx --yes tsx scripts/test-coaching-submissions.ts",
+    "test:written-report-parse": "npx --yes tsx scripts/test-written-report-parse.ts",
     "test:playbook-entitlements": "npx --yes tsx scripts/test-playbook-entitlements.ts",
     "test:access": "npx --yes tsx scripts/test-access.ts",
     "test:org-weekly-focus": "npx --yes tsx scripts/test-org-weekly-focus.ts",

@@ -18,6 +18,7 @@ export type CoachingSubmissionLockReason =
   | "playbook-used"
   | "free-used"
   | "monthly-limit"
+  | "pending-quick-report"
   | null;
 
 export type CoachingSubmissionUserFields = AccessUserFields & {
@@ -133,19 +134,43 @@ function applyPeriodResetIfNeeded(
   return nextUser;
 }
 
+export type CoachingSubmissionAvailabilityOptions = {
+  hasPendingQuickWrittenReport?: boolean;
+};
+
+function applyPendingQuickReportLock(
+  availability: CoachingSubmissionAvailability,
+  hasPendingQuickWrittenReport?: boolean,
+): CoachingSubmissionAvailability {
+  if (!hasPendingQuickWrittenReport) {
+    return availability;
+  }
+
+  return {
+    ...availability,
+    canSubmit: false,
+    lockReason: "pending-quick-report",
+    remaining: 0,
+    monthlyRemaining: availability.monthlyRemaining === null ? null : 0,
+  };
+}
+
 export function getCoachingSubmissionAvailability(
   user: CoachingSubmissionUserFields,
   now = new Date(),
+  options?: CoachingSubmissionAvailabilityOptions,
 ): CoachingSubmissionAvailability {
   const periodKey = getCoachingSubmissionPeriodKey(now);
   const syncedUser = applyPeriodResetIfNeeded(user, periodKey);
   const resetsOnLabel = getNextCoachingSubmissionResetLabel(now);
   const effective = resolveEffectiveLevel(syncedUser, now);
+  const finalize = (availability: CoachingSubmissionAvailability) =>
+    applyPendingQuickReportLock(availability, options?.hasPendingQuickWrittenReport);
 
   if (effective === "PLUS") {
     const monthlyLimit = 1;
     const monthlyRemaining = Math.max(0, monthlyLimit - syncedUser.coachingSubmissionsUsedThisMonth);
-    return {
+    return finalize({
       canSubmit: monthlyRemaining > 0,
       lockReason: monthlyRemaining > 0 ? null : "monthly-limit",
       remaining: monthlyRemaining,
@@ -155,13 +180,13 @@ export function getCoachingSubmissionAvailability(
       monthlyLimit,
       periodKey,
       resetsOnLabel,
-    };
+    });
   }
 
   if (effective === "CORE") {
     const nextEligible = parseWhen(syncedUser.coreQuickReportNextEligibleAt);
     const canSubmit = !nextEligible || nextEligible.getTime() <= now.getTime();
-    return {
+    return finalize({
       canSubmit,
       lockReason: canSubmit ? null : "monthly-limit",
       remaining: canSubmit ? 1 : 0,
@@ -171,12 +196,12 @@ export function getCoachingSubmissionAvailability(
       monthlyLimit: null,
       periodKey,
       resetsOnLabel: nextEligible ? formatDateWithYear(nextEligible) : "every 6 weeks",
-    };
+    });
   }
 
   if (effective === "ORG_TRIAL") {
     const canSubmit = !syncedUser.orgTrialQuickReportUsed;
-    return {
+    return finalize({
       canSubmit,
       lockReason: canSubmit ? null : "playbook-used",
       remaining: canSubmit ? 1 : 0,
@@ -186,11 +211,11 @@ export function getCoachingSubmissionAvailability(
       monthlyLimit: null,
       periodKey,
       resetsOnLabel: "org trial",
-    };
+    });
   }
 
   if (syncedUser.membershipTier === "TWELVE_WEEK" || effective === "ALL_ACCESS") {
-    return {
+    return finalize({
       canSubmit: true,
       lockReason: null,
       remaining: 999,
@@ -200,7 +225,7 @@ export function getCoachingSubmissionAvailability(
       monthlyLimit: null,
       periodKey,
       resetsOnLabel,
-    };
+    });
   }
 
   if (syncedUser.membershipTier === "BASIC") {
@@ -213,7 +238,7 @@ export function getCoachingSubmissionAvailability(
         membershipLevelExpiresAt: syncedUser.membershipLevelExpiresAt,
       }) ?? PLAYBOOK_LIFETIME_SUBMISSION_LIMIT_NEW;
     const remaining = Math.max(0, lifetimeLimit - used);
-    return {
+    return finalize({
       canSubmit: remaining > 0,
       lockReason: remaining > 0 ? null : "playbook-used",
       remaining,
@@ -223,12 +248,12 @@ export function getCoachingSubmissionAvailability(
       monthlyLimit: null,
       periodKey,
       resetsOnLabel,
-    };
+    });
   }
 
   if (effective === "FREE" && syncedUser.membershipTier === "FREE") {
     const remaining = syncedUser.freeSubmissionUsed ? 0 : FREE_LIFETIME_SUBMISSION_LIMIT;
-    return {
+    return finalize({
       canSubmit: remaining > 0,
       lockReason: syncedUser.freeSubmissionUsed ? "free-used" : null,
       remaining,
@@ -238,7 +263,7 @@ export function getCoachingSubmissionAvailability(
       monthlyLimit: null,
       periodKey,
       resetsOnLabel,
-    };
+    });
   }
 
   if (syncedUser.membershipTier === "MEMORABLE") {
@@ -247,7 +272,7 @@ export function getCoachingSubmissionAvailability(
       MEMORABLE_MONTHLY_LIMIT - syncedUser.coachingSubmissionsUsedThisMonth,
     );
 
-    return {
+    return finalize({
       canSubmit: monthlyRemaining > 0,
       lockReason: monthlyRemaining > 0 ? null : "monthly-limit",
       remaining: monthlyRemaining,
@@ -257,7 +282,7 @@ export function getCoachingSubmissionAvailability(
       monthlyLimit: MEMORABLE_MONTHLY_LIMIT,
       periodKey,
       resetsOnLabel,
-    };
+    });
   }
 
   const monthlyRemaining = Math.max(
@@ -269,7 +294,7 @@ export function getCoachingSubmissionAvailability(
     monthlyRemaining + syncedUser.eliteRolloverCredits,
   );
 
-  return {
+  return finalize({
     canSubmit: remaining > 0,
     lockReason: remaining > 0 ? null : "monthly-limit",
     remaining,
@@ -279,7 +304,7 @@ export function getCoachingSubmissionAvailability(
     monthlyLimit: ELITE_MONTHLY_LIMIT,
     periodKey,
     resetsOnLabel,
-  };
+  });
 }
 
 export function canSubmitCoachingForms(user: CoachingSubmissionUserFields) {

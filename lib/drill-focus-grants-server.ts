@@ -34,7 +34,11 @@ export async function loadPermanentGrantedDrillIds(userId: string) {
   const [swingSubmissions, mentalSubmissions] = await Promise.all([
     prisma.swingAnalysisSubmission.findMany({
       where: { userId, respondedAt: { not: null } },
-      select: { recommendedDrills: true, coachFocusPreset: true },
+      select: {
+        recommendedDrills: true,
+        reportLibraryDrillIds: true,
+        coachFocusPreset: true,
+      },
     }),
     prisma.mentalGameSubmission.findMany({
       where: { userId, respondedAt: { not: null } },

@@ -14,6 +14,7 @@ import {
   getCoachingSubmissionPeriodKey,
   canSubmitCoachingForms,
 } from "@/lib/coaching-submissions-shared";
+import { QUICK_WRITTEN_REPORT_TRACKS } from "@/lib/quick-written-report-shared";
 
 export {
   FREE_LIFETIME_SUBMISSION_LIMIT,
@@ -109,6 +110,30 @@ function toCoachingSubmissionUserFields(
 
 const SIX_WEEKS_MS = 6 * 7 * 24 * 60 * 60 * 1000;
 
+export async function getCoachingSubmissionAvailabilityForUser(userId: string) {
+  const fields = await ensureCoachingSubmissionPeriod(userId);
+  if (!fields) {
+    return null;
+  }
+
+  const hasPendingQuickWrittenReport = await userHasPendingQuickWrittenReport(userId);
+  return getCoachingSubmissionAvailability(fields, new Date(), {
+    hasPendingQuickWrittenReport,
+  });
+}
+
+export async function userHasPendingQuickWrittenReport(userId: string) {
+  const pending = await prisma.swingAnalysisSubmission.findFirst({
+    where: {
+      userId,
+      status: "PENDING",
+      reviewTrack: { in: [...QUICK_WRITTEN_REPORT_TRACKS] },
+    },
+    select: { id: true },
+  });
+  return Boolean(pending);
+}
+
 export async function ensureCoachingSubmissionPeriod(userId: string) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -163,7 +188,19 @@ export async function consumeCoachingSubmission(
   const periodKey = getCoachingSubmissionPeriodKey();
   const syncedUser = applyPeriodResetIfNeeded(toCoachingSubmissionUserFields(user), periodKey);
 
-  const availability = getCoachingSubmissionAvailability(syncedUser);
+  const pendingQuick = await tx.swingAnalysisSubmission.findFirst({
+    where: {
+      userId,
+      status: "PENDING",
+      reviewTrack: { in: [...QUICK_WRITTEN_REPORT_TRACKS] },
+    },
+    select: { id: true },
+  });
+  const hasPendingQuickWrittenReport = Boolean(pendingQuick);
+
+  const availability = getCoachingSubmissionAvailability(syncedUser, new Date(), {
+    hasPendingQuickWrittenReport,
+  });
   if (!availability.canSubmit) {
     return { ok: false as const, availability, membershipTier: syncedUser.membershipTier };
   }
@@ -203,14 +240,7 @@ export async function consumeCoachingSubmission(
   }
 
   if (effective === "CORE") {
-    const nextEligible = new Date(Date.now() + SIX_WEEKS_MS);
-    await tx.user.update({
-      where: { id: userId },
-      data: {
-        ...periodSync,
-        coreQuickReportNextEligibleAt: nextEligible,
-      },
-    });
+    await tx.user.update({ where: { id: userId }, data: periodSync });
     return {
       ok: true as const,
       availability,
@@ -220,13 +250,7 @@ export async function consumeCoachingSubmission(
   }
 
   if (effective === "ORG_TRIAL") {
-    await tx.user.update({
-      where: { id: userId },
-      data: {
-        ...periodSync,
-        orgTrialQuickReportUsed: true,
-      },
-    });
+    await tx.user.update({ where: { id: userId }, data: periodSync });
     return {
       ok: true as const,
       availability,
@@ -252,13 +276,7 @@ export async function consumeCoachingSubmission(
   }
 
   if (effective === "FREE") {
-    await tx.user.update({
-      where: { id: userId },
-      data: {
-        ...periodSync,
-        freeSubmissionUsed: true,
-      },
-    });
+    await tx.user.update({ where: { id: userId }, data: periodSync });
     return {
       ok: true as const,
       availability,
@@ -315,6 +333,60 @@ export async function consumeCoachingSubmission(
   };
 }
 
+export async function applyQuickReportAllowanceOnSend(
+  tx: Pick<typeof prisma, "user">,
+  userId: string,
+  reviewTrack: CoachingReviewTrack,
+) {
+  const user = await tx.user.findUnique({
+    where: { id: userId },
+    select: coachingSubmissionUserSelect,
+  });
+  if (!user) {
+    throw new Error("User not found.");
+  }
+
+  const periodKey = getCoachingSubmissionPeriodKey();
+  const syncedUser = applyPeriodResetIfNeeded(toCoachingSubmissionUserFields(user), periodKey);
+  const periodSync = {
+    coachingSubmissionPeriod: syncedUser.coachingSubmissionPeriod,
+    coachingSubmissionsUsedThisMonth: syncedUser.coachingSubmissionsUsedThisMonth,
+    eliteRolloverCredits: syncedUser.eliteRolloverCredits,
+  };
+
+  if (reviewTrack === "QUICK_SIX_WEEK") {
+    await tx.user.update({
+      where: { id: userId },
+      data: {
+        ...periodSync,
+        coreQuickReportNextEligibleAt: new Date(Date.now() + SIX_WEEKS_MS),
+      },
+    });
+    return;
+  }
+
+  if (reviewTrack === "ORG_TRIAL_QUICK") {
+    await tx.user.update({
+      where: { id: userId },
+      data: {
+        ...periodSync,
+        orgTrialQuickReportUsed: true,
+      },
+    });
+    return;
+  }
+
+  if (reviewTrack === "FREE_ONCE") {
+    await tx.user.update({
+      where: { id: userId },
+      data: {
+        ...periodSync,
+        freeSubmissionUsed: true,
+      },
+    });
+  }
+}
+
 export function getCoachingSubmissionLimitError(
   membershipTier: DatabaseTier,
   lockReason: CoachingSubmissionLockReason,
@@ -329,6 +401,10 @@ export function getCoachingSubmissionLimitError(
 
   if (lockReason === "monthly-limit") {
     return "You have used all coaching submissions for this month. Your count resets on the 1st.";
+  }
+
+  if (lockReason === "pending-quick-report") {
+    return "Coach Broc is finishing your written report. You can submit again after it is sent.";
   }
 
   if (membershipTier === "BASIC") {

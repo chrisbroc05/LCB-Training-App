@@ -12,6 +12,7 @@ export type CoachFocusSubmissionRow = {
 
 export type PermanentSubmissionRow = {
   recommendedDrills: readonly string[];
+  reportLibraryDrillIds?: readonly string[];
   coachFocusPreset?: string | null;
 };
 
@@ -57,6 +58,12 @@ export function collectPermanentRecommendedDrillIds(
       continue;
     }
     for (const drillId of submission.recommendedDrills) {
+      const trimmed = drillId.trim();
+      if (trimmed) {
+        ids.add(trimmed);
+      }
+    }
+    for (const drillId of submission.reportLibraryDrillIds ?? []) {
       const trimmed = drillId.trim();
       if (trimmed) {
         ids.add(trimmed);

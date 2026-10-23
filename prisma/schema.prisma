@@ -266,9 +266,22 @@ model User {
   coreQuickReportNextEligibleAt DateTime?
   organization           Organization?          @relation(fields: [organizationId], references: [id], onDelete: SetNull)
   orgTeam                OrgTeam?               @relation(fields: [orgTeamId], references: [id], onDelete: SetNull)
+  fixItGrants            UserFixItGrant[]
 
   @@index([organizationId])
   @@index([orgTeamId])
+}
+
+model UserFixItGrant {
+  id                  String   @id @default(cuid())
+  userId              String
+  resourceSlug        String
+  createdAt           DateTime @default(now())
+  createdByAdminEmail String
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, resourceSlug])
+  @@index([userId])
 }
 
 model Organization {
@@ -855,15 +868,21 @@ model SwingAnalysisSubmission {
   status             MentalGameSubmissionStatus   @default(PENDING)
   responseText       String?
   responseVideoUrl   String?
-  recommendedDrills  String[]                     @default([])
-  memberVimeoLink    String?
-  reviewTrack        CoachingReviewTrack?
-  coachFocusPreset   String?
-  coachFocusEndsAt   DateTime?
-  respondedAt        DateTime?
-  createdAt          DateTime                     @default(now())
-  updatedAt          DateTime                     @updatedAt
-  user               User                         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recommendedDrills            String[]                     @default([])
+  memberVimeoLink              String?
+  reviewTrack                  CoachingReviewTrack?
+  coachFocusPreset             String?
+  coachFocusEndsAt             DateTime?
+  reportStrengths              String[]                     @default([])
+  reportAreasToImprove         String[]                     @default([])
+  reportRecommendedDrillLines  String[]                     @default([])
+  reportNoteFromCoach          String?
+  reportLibraryDrillIds        String[]                     @default([])
+  evaluationPdfR2Key           String?
+  respondedAt                  DateTime?
+  createdAt                    DateTime                     @default(now())
+  updatedAt                    DateTime                     @updatedAt
+  user                         User                         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([reviewTrack, status, createdAt])

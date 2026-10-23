@@ -39,7 +39,12 @@ def build_bullet_list(items: list[str], style: ParagraphStyle) -> Paragraph:
     return Paragraph(bullets, style)
 
 
-def build_player_eval_pdf(project_root: Path, evaluation: PlayerEvaluation, output_path: Path) -> None:
+def build_player_eval_pdf(
+    project_root: Path,
+    evaluation: PlayerEvaluation,
+    output_path: Path,
+    platform_note_html: str | None = None,
+) -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     doc = SimpleDocTemplate(
@@ -119,7 +124,7 @@ def build_player_eval_pdf(project_root: Path, evaluation: PlayerEvaluation, outp
         textColor=WHITE,
     )
 
-    platform_note = (
+    platform_note = platform_note_html or (
         f"Between sessions, {evaluation.first_name} can keep developing with "
         f"<b>The Next Level Playbook</b> and the full LCB Training online platform -- video drills, "
         f"workout programs, and coaching tools built to support his progress.<br/><br/>"

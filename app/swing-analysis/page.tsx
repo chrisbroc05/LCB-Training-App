@@ -6,8 +6,7 @@ import LockedFeaturePanel from "@/app/LockedFeaturePanel";
 import SwingAnalysisForm from "@/app/swing-analysis/SwingAnalysisForm";
 import {
   ensureCoachingSubmissionPeriod,
-  getCoachingSubmissionAvailability,
-  getCoachingSubmissionLockReason,
+  getCoachingSubmissionAvailabilityForUser,
 } from "@/lib/coaching-submissions";
 import { PLAYBOOK_SUBMISSIONS_EXHAUSTED_MESSAGE } from "@/lib/coaching-submissions";
 import { freeSubmissionUsedUpgradeMessage } from "@/lib/membership";
@@ -24,9 +23,8 @@ export default async function SwingAnalysisPage() {
   }
 
   const membershipTier = userFields.membershipTier;
-  const lockReason = getCoachingSubmissionLockReason(userFields);
-
-  const availability = getCoachingSubmissionAvailability(userFields);
+  const availability = await getCoachingSubmissionAvailabilityForUser(session.user.id);
+  const lockReason = availability?.lockReason ?? null;
 
   if (lockReason === "playbook-used") {
     return (
@@ -52,19 +50,31 @@ export default async function SwingAnalysisPage() {
     );
   }
 
+  if (lockReason === "pending-quick-report") {
+    return (
+      <LockedFeaturePanel
+        title="Coaching Submissions"
+        description="Upload your latest swing video and include context so our coaches can provide targeted feedback."
+        message="Coach Broc is finishing your written report. You can submit again after it is sent."
+        upgradeLabel="View profile"
+        upgradeHref="/profile"
+      />
+    );
+  }
+
   if (lockReason === "monthly-limit") {
     return (
       <LockedFeaturePanel
         title="Coaching Submissions"
         description="Upload your latest swing video and include context so our coaches can provide targeted feedback."
-        message={`You have used all coaching submissions for this month. Your count resets on ${availability.resetsOnLabel}.`}
+        message={`You have used all coaching submissions for this month. Your count resets on ${availability?.resetsOnLabel ?? "the next period"}.`}
         upgradeLabel="View Membership"
         upgradeHref="/settings"
       />
     );
   }
 
-  if (!availability.canSubmit) {
+  if (!availability?.canSubmit) {
     redirect("/upgrade");
   }
 

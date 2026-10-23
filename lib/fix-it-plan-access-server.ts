@@ -63,6 +63,23 @@ export async function resolveFixItPlanAccessEmail(params: {
 
   const sessionUserId = params.sessionUserId?.trim();
   if (sessionUserId) {
+    const grant = await prisma.userFixItGrant.findUnique({
+      where: {
+        userId_resourceSlug: {
+          userId: sessionUserId,
+          resourceSlug: params.resourceSlug,
+        },
+      },
+      select: { id: true },
+    });
+    if (grant) {
+      const user = await prisma.user.findUnique({
+        where: { id: sessionUserId },
+        select: { email: true },
+      });
+      return user?.email?.toLowerCase() ?? null;
+    }
+
     if (await userHasActiveResourcePurchase(sessionUserId, params.resourceSlug)) {
       const user = await prisma.user.findUnique({
         where: { id: sessionUserId },

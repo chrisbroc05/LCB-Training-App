@@ -16,7 +16,7 @@ import ProgramSetupBanner from "@/app/dashboard/ProgramSetupBanner";
 import MonthlyGoalProgressCard from "@/app/dashboard/MonthlyGoalProgressCard";
 import {
   ensureCoachingSubmissionPeriod,
-  getCoachingSubmissionAvailability,
+  getCoachingSubmissionAvailabilityForUser,
 } from "@/lib/coaching-submissions";
 import { getCurrentMonthGoalCheckin } from "@/lib/goal-check-in";
 import { getCalendlyBookingUrl } from "@/lib/calendly-booking";
@@ -206,9 +206,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const access = toAccessUserFields(userRecord);
   const effectiveLevel = resolveEffectiveLevel(access);
   const coachingFields = await ensureCoachingSubmissionPeriod(session.user.id);
-  const coachingAvailability = coachingFields
-    ? getCoachingSubmissionAvailability(coachingFields)
-    : null;
+  const coachingAvailability = await getCoachingSubmissionAvailabilityForUser(session.user.id);
   const freeSubmissionUsed = userRecord.freeSubmissionUsed;
   const membershipLabel = formatMemberPlanLabel(access);
   const calendlyBookingUrl = getCalendlyBookingUrl();

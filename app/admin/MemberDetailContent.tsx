@@ -9,6 +9,7 @@ import {
 } from "@/lib/assessment-call";
 import { formatOptionalDate, formatOptionalDateTime } from "@/lib/format-date";
 import { formatDatabaseTierLabel, validDatabaseTiers, type DatabaseTier } from "@/lib/membership";
+import AdminFixItGrantPanel from "@/app/admin/AdminFixItGrantPanel";
 import AdminProductAccessPanel from "@/app/admin/AdminProductAccessPanel";
 import AdminMemberPlanBadge from "@/app/admin/AdminMemberPlanBadge";
 import AdminMembershipLevelSection from "@/app/admin/AdminMembershipLevelSection";
@@ -519,6 +520,12 @@ export default function MemberDetailContent({
         memberId={detail.id}
         memberEmail={detail.email}
         productAccess={detail.productAccess}
+        onUpdated={onMemberUpdated}
+      />
+
+      <AdminFixItGrantPanel
+        memberId={detail.id}
+        membershipLevel={detail.membershipLevel}
         onUpdated={onMemberUpdated}
       />
 

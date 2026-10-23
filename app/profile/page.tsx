@@ -11,10 +11,7 @@ import ProfileGoalCheckinHistory from "@/app/profile/ProfileGoalCheckinHistory";
 import SignOutButton from "@/app/components/SignOutButton";
 import { profilePageStackClass, profilePageTitleClass } from "@/app/profile/profile-styles";
 import { authOptions } from "@/lib/auth";
-import {
-  ensureCoachingSubmissionPeriod,
-  getCoachingSubmissionAvailability,
-} from "@/lib/coaching-submissions";
+import { getCoachingSubmissionAvailabilityForUser } from "@/lib/coaching-submissions";
 import {
   canAccessCoachingNav,
   canAccessPlaybook,
@@ -58,7 +55,7 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
     typeof resolvedSearchParams.type === "string" ? resolvedSearchParams.type.toUpperCase() : "";
   const selectedIdParam = typeof resolvedSearchParams.id === "string" ? resolvedSearchParams.id : "";
 
-  const [user, swingSubmissions, mentalSubmissions, coachingFields] = await Promise.all([
+  const [user, swingSubmissions, mentalSubmissions, availability] = await Promise.all([
     prisma.user.findUnique({
       where: { id: session.user.id },
       select: {
@@ -79,7 +76,7 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
       where: { userId: session.user.id },
       orderBy: { createdAt: "desc" },
     }),
-    ensureCoachingSubmissionPeriod(session.user.id),
+    getCoachingSubmissionAvailabilityForUser(session.user.id),
   ]);
 
   if (!user) {
@@ -101,6 +98,17 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
       responseText: item.responseText,
       responseVideoUrl: item.responseVideoUrl,
       recommendedDrillIds: item.recommendedDrills,
+      writtenReport:
+        item.reportStrengths.length > 0 || item.evaluationPdfR2Key
+          ? {
+              strengths: item.reportStrengths,
+              areasToImprove: item.reportAreasToImprove,
+              recommendedDrillLines: item.reportRecommendedDrillLines,
+              noteFromCoach: item.reportNoteFromCoach,
+              libraryDrillIds: item.reportLibraryDrillIds,
+              hasEvaluationPdf: Boolean(item.evaluationPdfR2Key),
+            }
+          : null,
       extraLines: [
         ...(item.pitchType ? [`Pitch Focus: ${item.pitchType}`] : []),
         ...(item.videoCategory
@@ -129,9 +137,13 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
 
   const recommendedDrillUrls = [
     ...new Set(
-      merged.flatMap((submission) =>
-        getDrillLibraryVideosByIds(submission.recommendedDrillIds).map((video) => video.url),
-      ),
+      merged.flatMap((submission) => {
+        const ids = [
+          ...submission.recommendedDrillIds,
+          ...(submission.writtenReport?.libraryDrillIds ?? []),
+        ];
+        return getDrillLibraryVideosByIds(ids).map((video) => video.url);
+      }),
     ),
   ];
   const recommendedDrillThumbnailMap =
@@ -143,9 +155,6 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
         item.id === selectedIdParam && item.type === (selectedTypeParam === "MENTAL" ? "MENTAL" : "SWING"),
     ) ?? merged[0];
 
-  const availability = coachingFields
-    ? getCoachingSubmissionAvailability(coachingFields)
-    : null;
   const submissionsRemaining =
     membershipTier === "TWELVE_WEEK"
       ? null

@@ -74,6 +74,19 @@ function testPlaybookTierIgnoresFreeFlag() {
   assert.equal(exhaustedLegacy.canSubmit, false);
 }
 
+function testPendingQuickReportLock() {
+  const available = getCoachingSubmissionAvailability(
+    baseFields({
+      membershipTier: "FREE",
+      freeSubmissionUsed: false,
+    }),
+    new Date(),
+    { hasPendingQuickWrittenReport: true },
+  );
+  assert.equal(available.canSubmit, false);
+  assert.equal(available.lockReason, "pending-quick-report");
+}
+
 function testTwelveWeekUnlimited() {
   const availability = getCoachingSubmissionAvailability(
     baseFields({
@@ -90,6 +103,7 @@ function testTwelveWeekUnlimited() {
 function main() {
   testFreeTier();
   testPlaybookTierIgnoresFreeFlag();
+  testPendingQuickReportLock();
   testTwelveWeekUnlimited();
   console.log("test-coaching-submissions: all passed");
 }
