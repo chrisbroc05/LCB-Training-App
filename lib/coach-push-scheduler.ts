@@ -32,7 +32,7 @@ export async function maybeSendCoachNightlySummaryPush(params: {
   }
 
   const title = "Today at LCB";
-  const url = "/admin/program";
+  const url = "/admin";
   const dedupeKey = `coach:COACH_NIGHTLY_SUMMARY:${params.dateKey}`;
 
   params.previews.push({
@@ -79,7 +79,7 @@ export async function sendTestCoachNightlySummaryPush(params: {
     message: {
       title: "Today at LCB",
       body,
-      url: "/admin/program",
+      url: "/admin",
     },
   });
 
@@ -141,7 +141,7 @@ export async function sendTestCoachNewProgramPlayerPush(params: {
     message: {
       title: `New 12-week player: ${name}`,
       body: "Open their program page in admin.",
-      url: `/admin/program/${params.enrollmentId || "test"}`,
+      url: `/admin/coaching/program/${params.enrollmentId || "test"}`,
     },
   });
 

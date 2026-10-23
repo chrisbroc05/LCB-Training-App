@@ -1,3 +1,3 @@
 export function getAdminProgramPlayerUrl(enrollmentId: string) {
-  return `/admin/program/${enrollmentId}`;
+  return `/admin/coaching/program/${enrollmentId}`;
 }

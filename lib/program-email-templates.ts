@@ -535,8 +535,8 @@ export function buildCoachDailySummaryEmail(params: {
     notFinishedCount: params.notFinished.length,
     business: params.business,
   });
-  const adminUrl = `${getPublicAppUrl()}/admin/program`;
-  const leadsAdminUrl = `${getPublicAppUrl()}/admin/leads`;
+  const adminUrl = `${getPublicAppUrl()}/admin`;
+  const leadsAdminUrl = `${getPublicAppUrl()}/admin/business/leads`;
   const businessBlocks = buildCoachDailySummaryBusinessHtml(params.business);
 
   const finishedHtml =

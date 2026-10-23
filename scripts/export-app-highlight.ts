@@ -6,7 +6,7 @@ import { chromium } from "playwright";
 const BASE_URL = process.env.SOCIAL_EXPORT_BASE_URL ?? "http://127.0.0.1:3002";
 const EXPORT_EMAIL = process.env.SOCIAL_EXPORT_EMAIL ?? process.env.ADMIN_EMAIL;
 const EXPORT_PASSWORD = process.env.SOCIAL_EXPORT_PASSWORD;
-const SLIDE_PATH = "/admin/social/app-highlight";
+const SLIDE_PATH = "/admin/content/app-highlight";
 const SLIDE_COUNT = 11;
 
 const OUTPUT_DIRS = [

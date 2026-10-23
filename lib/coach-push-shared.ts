@@ -8,9 +8,10 @@ export type CoachAlertSettingsState = {
 
 export type CoachSubmissionTab = "swing" | "mental";
 
-export function buildAdminSubmissionUrl(tab: CoachSubmissionTab, submissionId: string) {
-  return `/admin?tab=${tab}&submissionId=${submissionId}`;
-}
+export {
+  buildAdminSubmissionUrl,
+  buildAdminCoachingReviewsUrl,
+} from "@/lib/admin-routes-shared";
 
 export function getCoachSubmissionTypeLabel(tab: CoachSubmissionTab) {
   return tab === "swing" ? "Swing analysis" : "Mental game";

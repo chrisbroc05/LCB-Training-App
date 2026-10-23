@@ -111,9 +111,23 @@ function getResponseVideoDisplayName(url: string | null | undefined) {
   return segment;
 }
 
-export default function AdminPanel() {
+type AdminPanelMode = "full" | "reviews" | "goal" | "members" | "playbook";
+
+type AdminPanelProps = {
+  mode?: AdminPanelMode;
+};
+
+export default function AdminPanel({ mode = "full" }: AdminPanelProps) {
   const searchParams = useSearchParams();
-  const [tab, setTab] = useState<TabType>("swing");
+  const initialTab: TabType =
+    mode === "goal"
+      ? "goal"
+      : mode === "members"
+        ? "members"
+        : mode === "playbook"
+          ? "playbook"
+          : "swing";
+  const [tab, setTab] = useState<TabType>(initialTab);
   const [items, setItems] = useState<SubmissionListItem[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<SubmissionDetail | null>(null);
@@ -139,8 +153,11 @@ export default function AdminPanel() {
 
   useEffect(() => {
     const tabParam = searchParams.get("tab");
+    const legacySubmission = searchParams.get("submission");
     if (tabParam === "swing" || tabParam === "mental") {
       setTab(tabParam);
+    } else if (legacySubmission === "swing" || legacySubmission === "mental") {
+      setTab(legacySubmission);
     }
   }, [searchParams]);
 
@@ -160,7 +177,8 @@ export default function AdminPanel() {
 
       const data = (await response.json()) as { submissions: SubmissionListItem[] };
       setItems(data.submissions);
-      const submissionId = searchParams.get("submissionId");
+      const submissionId =
+        searchParams.get("submissionId") ?? searchParams.get("id");
       if (submissionId && data.submissions.some((item) => item.id === submissionId)) {
         setSelectedId(submissionId);
       } else {
@@ -465,65 +483,84 @@ export default function AdminPanel() {
     }
   };
 
+  const showSwingMental = mode === "full" || mode === "reviews";
+  const showGoal = mode === "full" || mode === "goal";
+  const showMembers = mode === "full" || mode === "members";
+  const showPlaybook = mode === "full" || mode === "playbook";
+
+  const showTabBar = mode === "full" || mode === "reviews";
+
   return (
     <div className="mt-6">
-      <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={() => setTab("swing")}
-          className={`rounded-full px-3 py-1.5 text-xs font-semibold sm:px-4 sm:py-2 sm:text-sm ${
-            tab === "swing"
-              ? "bg-[#22c55e] text-black"
-              : "border border-[#2b3650] text-zinc-200 hover:border-[#7f9434]"
-          }`}
-        >
-          Swing Analysis
-        </button>
-        <button
-          type="button"
-          onClick={() => setTab("mental")}
-          className={`rounded-full px-3 py-1.5 text-xs font-semibold sm:px-4 sm:py-2 sm:text-sm ${
-            tab === "mental"
-              ? "bg-[#22c55e] text-black"
-              : "border border-[#2b3650] text-zinc-200 hover:border-[#7f9434]"
-          }`}
-        >
-          Mental Game
-        </button>
-        <button
-          type="button"
-          onClick={() => setTab("goal")}
-          className={`rounded-full px-3 py-1.5 text-xs font-semibold sm:px-4 sm:py-2 sm:text-sm ${
-            tab === "goal"
-              ? "bg-[#22c55e] text-black"
-              : "border border-[#2b3650] text-zinc-200 hover:border-[#7f9434]"
-          }`}
-        >
-          Goal Check-Ins
-        </button>
-        <button
-          type="button"
-          onClick={() => setTab("members")}
-          className={`rounded-full px-3 py-1.5 text-xs font-semibold sm:px-4 sm:py-2 sm:text-sm ${
-            tab === "members"
-              ? "bg-[#22c55e] text-black"
-              : "border border-[#2b3650] text-zinc-200 hover:border-[#7f9434]"
-          }`}
-        >
-          Members
-        </button>
-        <button
-          type="button"
-          onClick={() => setTab("playbook")}
-          className={`rounded-full px-3 py-1.5 text-xs font-semibold sm:px-4 sm:py-2 sm:text-sm ${
-            tab === "playbook"
-              ? "bg-[#22c55e] text-black"
-              : "border border-[#2b3650] text-zinc-200 hover:border-[#7f9434]"
-          }`}
-        >
-          Playbook Reflections
-        </button>
-      </div>
+      {showTabBar ? (
+        <div className="flex flex-wrap gap-2">
+          {showSwingMental ? (
+            <>
+              <button
+                type="button"
+                onClick={() => setTab("swing")}
+                className={`rounded-full px-3 py-1.5 text-xs font-semibold sm:px-4 sm:py-2 sm:text-sm ${
+                  tab === "swing"
+                    ? "bg-[#22c55e] text-black"
+                    : "border border-[#2b3650] text-zinc-200 hover:border-[#7f9434]"
+                }`}
+              >
+                Swing Analysis
+              </button>
+              <button
+                type="button"
+                onClick={() => setTab("mental")}
+                className={`rounded-full px-3 py-1.5 text-xs font-semibold sm:px-4 sm:py-2 sm:text-sm ${
+                  tab === "mental"
+                    ? "bg-[#22c55e] text-black"
+                    : "border border-[#2b3650] text-zinc-200 hover:border-[#7f9434]"
+                }`}
+              >
+                Mental Game
+              </button>
+            </>
+          ) : null}
+          {showGoal ? (
+            <button
+              type="button"
+              onClick={() => setTab("goal")}
+              className={`rounded-full px-3 py-1.5 text-xs font-semibold sm:px-4 sm:py-2 sm:text-sm ${
+                tab === "goal"
+                  ? "bg-[#22c55e] text-black"
+                  : "border border-[#2b3650] text-zinc-200 hover:border-[#7f9434]"
+              }`}
+            >
+              Goal Check-Ins
+            </button>
+          ) : null}
+          {showMembers ? (
+            <button
+              type="button"
+              onClick={() => setTab("members")}
+              className={`rounded-full px-3 py-1.5 text-xs font-semibold sm:px-4 sm:py-2 sm:text-sm ${
+                tab === "members"
+                  ? "bg-[#22c55e] text-black"
+                  : "border border-[#2b3650] text-zinc-200 hover:border-[#7f9434]"
+              }`}
+            >
+              Members
+            </button>
+          ) : null}
+          {showPlaybook ? (
+            <button
+              type="button"
+              onClick={() => setTab("playbook")}
+              className={`rounded-full px-3 py-1.5 text-xs font-semibold sm:px-4 sm:py-2 sm:text-sm ${
+                tab === "playbook"
+                  ? "bg-[#22c55e] text-black"
+                  : "border border-[#2b3650] text-zinc-200 hover:border-[#7f9434]"
+              }`}
+            >
+              Playbook Reflections
+            </button>
+          ) : null}
+        </div>
+      ) : null}
 
       {tab === "members" ? (
         <MembersPanel />
@@ -553,7 +590,7 @@ export default function AdminPanel() {
               <div className="flex items-center justify-between gap-2">
                 {item.enrollmentId ? (
                   <Link
-                    href={`/admin/program/${item.enrollmentId}`}
+                    href={`/admin/coaching/program/${item.enrollmentId}`}
                     onClick={(event) => event.stopPropagation()}
                     className="text-sm font-semibold text-zinc-100 hover:text-[#52B788]"
                   >

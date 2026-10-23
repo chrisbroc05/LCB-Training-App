@@ -576,7 +576,7 @@ export default function AdminProgramPlayerPanel({
       {!embedded ? (
       <section className="rounded-3xl border border-[#18243a] bg-[#0b1324]/80 p-5 sm:p-8">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <Link href="/admin/program" className="text-sm font-semibold text-[#52B788]">
+          <Link href="/admin/coaching/program" className="text-sm font-semibold text-[#52B788]">
             Back to overview
           </Link>
           <div className="flex flex-wrap gap-2">

@@ -3,9 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import AdminProgramCoachAlerts from "@/app/admin/program/AdminProgramCoachAlerts";
-import AdminProgramEmailTools from "@/app/admin/program/AdminProgramEmailTools";
 import AdminMessagesNavLink from "@/components/AdminMessagesNavLink";
+import { ADMIN_ROUTES, buildAdminProgramPlayerUrl } from "@/lib/admin-routes-shared";
 
 type WaitingOnSetupPlayer = {
   enrollmentId: string;
@@ -132,17 +131,17 @@ export default function AdminProgramOverview() {
           </div>
           <div className="flex flex-wrap gap-2">
             <Link
-              href="/admin/program/cues"
+              href={ADMIN_ROUTES.content.programCues}
               className="inline-flex rounded-full border border-[#52B788] px-4 py-2 text-sm font-semibold text-[#52B788]"
             >
               My Hitting Focuses
             </Link>
             <AdminMessagesNavLink />
             <Link
-              href="/admin"
+              href={ADMIN_ROUTES.today}
               className="inline-flex rounded-full border border-[#2b3650] px-4 py-2 text-sm font-semibold text-zinc-300"
             >
-              Back to admin
+              Today
             </Link>
           </div>
         </div>
@@ -175,7 +174,7 @@ export default function AdminProgramOverview() {
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
                     <Link
-                      href={`/admin/program/${player.enrollmentId}`}
+                      href={buildAdminProgramPlayerUrl(player.enrollmentId)}
                       className="text-base font-semibold text-zinc-100 hover:text-[#52B788]"
                     >
                       {player.name}
@@ -211,7 +210,7 @@ export default function AdminProgramOverview() {
         {players.map((player) => (
           <Link
             key={player.enrollmentId}
-            href={`/admin/program/${player.enrollmentId}`}
+            href={buildAdminProgramPlayerUrl(player.enrollmentId)}
             className="block rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 transition hover:border-[#52B788]/40"
           >
             <div className="flex flex-wrap items-start justify-between gap-3">
@@ -265,7 +264,7 @@ export default function AdminProgramOverview() {
           {latestNotes.map((note, index) => (
             <Link
               key={`${note.enrollmentId}-${note.programDay}-${index}`}
-              href={`/admin/program/${note.enrollmentId}`}
+              href={buildAdminProgramPlayerUrl(note.enrollmentId)}
               className="block rounded-xl border border-[#2b3650] bg-black/20 p-3"
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
@@ -281,14 +280,6 @@ export default function AdminProgramOverview() {
         </div>
       </section>
 
-      <AdminProgramCoachAlerts />
-
-      <AdminProgramEmailTools
-        players={players.map((player) => ({
-          enrollmentId: player.enrollmentId,
-          name: player.name,
-        }))}
-      />
     </div>
   );
 }

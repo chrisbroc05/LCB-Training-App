@@ -302,13 +302,13 @@ export async function buildAdminProgramPlayerDetail(enrollmentId: string, now = 
       ...swingSubmissions.map((item) => ({
         type: "swing" as const,
         id: item.id,
-        href: `/admin?submission=swing&id=${item.id}`,
+        href: `/admin/coaching/reviews?tab=swing&submissionId=${item.id}`,
         createdAt: item.createdAt.toISOString(),
       })),
       ...mentalSubmissions.map((item) => ({
         type: "mental" as const,
         id: item.id,
-        href: `/admin?submission=mental&id=${item.id}`,
+        href: `/admin/coaching/reviews?tab=mental&submissionId=${item.id}`,
         createdAt: item.createdAt.toISOString(),
       })),
     ],

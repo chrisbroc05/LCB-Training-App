@@ -43,7 +43,7 @@ export async function sendCoachNewProgramPlayerPush(params: {
     message: {
       title: `New 12-week player: ${name}`,
       body: "Open their program page in admin.",
-      url: `/admin/program/${params.enrollmentId}`,
+      url: `/admin/coaching/program/${params.enrollmentId}`,
     },
   });
 }

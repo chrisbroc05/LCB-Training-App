@@ -141,7 +141,7 @@ export default function AdminProgramCuesPanel() {
             </p>
           </div>
           <Link
-            href="/admin/program"
+            href="/admin/coaching/program"
             className="inline-flex rounded-full border border-[#2b3650] px-4 py-2 text-sm font-semibold text-zinc-300"
           >
             Back to overview

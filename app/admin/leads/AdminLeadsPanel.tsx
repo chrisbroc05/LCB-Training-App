@@ -57,7 +57,8 @@ type QuizDashboard = {
 type AdminLeadsPanelProps = {
   leads: LeadRow[];
   purchases: PurchaseRow[];
-  quizDashboard: QuizDashboard;
+  quizDashboard?: QuizDashboard;
+  view?: "leads" | "sales" | "combined";
 };
 
 function buildPurchasedSlugsByEmail(purchases: PurchaseRow[]) {
@@ -93,8 +94,16 @@ function formatResourceFunnel(lead: LeadRow, purchasedSlugs: Set<string>) {
   return labels.length ? labels.join("; ") : "-";
 }
 
-export default function AdminLeadsPanel({ leads, purchases, quizDashboard }: AdminLeadsPanelProps) {
+export default function AdminLeadsPanel({
+  leads,
+  purchases,
+  quizDashboard,
+  view = "combined",
+}: AdminLeadsPanelProps) {
   const [activeTab, setActiveTab] = useState<"leads" | "quiz">("leads");
+  const showLeads = view === "leads" || view === "combined";
+  const showSales = view === "sales" || view === "combined";
+  const showQuiz = view === "combined" && quizDashboard;
   const [roleFilter, setRoleFilter] = useState<string>("ALL");
   const purchasedByEmail = useMemo(() => buildPurchasedSlugsByEmail(purchases), [purchases]);
 
@@ -134,38 +143,40 @@ export default function AdminLeadsPanel({ leads, purchases, quizDashboard }: Adm
 
   return (
     <div className="space-y-10">
-      <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={() => setActiveTab("leads")}
-          className={`rounded-full px-4 py-2 text-sm font-semibold ${
-            activeTab === "leads"
-              ? "bg-[#22c55e]/20 text-[#9df3bd]"
-              : "border border-[#2b3650] text-zinc-400"
-          }`}
-        >
-          Leads
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab("quiz")}
-          className={`rounded-full px-4 py-2 text-sm font-semibold ${
-            activeTab === "quiz"
-              ? "bg-[#22c55e]/20 text-[#9df3bd]"
-              : "border border-[#2b3650] text-zinc-400"
-          }`}
-        >
-          Player IQ Quiz
-        </button>
-      </div>
+      {showQuiz ? (
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setActiveTab("leads")}
+            className={`rounded-full px-4 py-2 text-sm font-semibold ${
+              activeTab === "leads"
+                ? "bg-[#22c55e]/20 text-[#9df3bd]"
+                : "border border-[#2b3650] text-zinc-400"
+            }`}
+          >
+            Leads
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("quiz")}
+            className={`rounded-full px-4 py-2 text-sm font-semibold ${
+              activeTab === "quiz"
+                ? "bg-[#22c55e]/20 text-[#9df3bd]"
+                : "border border-[#2b3650] text-zinc-400"
+            }`}
+          >
+            Player IQ Quiz
+          </button>
+        </div>
+      ) : null}
 
-      {activeTab === "quiz" ? (
+      {showQuiz && activeTab === "quiz" && quizDashboard ? (
         <section className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
           <AdminQuizPanel {...quizDashboard} />
         </section>
       ) : null}
 
-      {activeTab === "leads" ? (
+      {showLeads && (!showQuiz || activeTab === "leads") ? (
       <>
       <section className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -231,6 +242,7 @@ export default function AdminLeadsPanel({ leads, purchases, quizDashboard }: Adm
         </div>
       </section>
 
+      {showSales ? (
       <section className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
         <h2 className="text-lg font-semibold text-zinc-100">Resource purchases</h2>
         <div className="mt-4 overflow-x-auto">
@@ -264,7 +276,44 @@ export default function AdminLeadsPanel({ leads, purchases, quizDashboard }: Adm
           </table>
         </div>
       </section>
+      ) : null}
       </>
+      ) : null}
+
+      {showSales && view === "sales" ? (
+      <section className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
+        <h2 className="text-lg font-semibold text-zinc-100">Resource purchases</h2>
+        <div className="mt-4 overflow-x-auto">
+          <table className="min-w-full text-left text-sm text-zinc-300">
+            <thead className="text-xs uppercase text-zinc-500">
+              <tr>
+                <th className="px-2 py-2">Email</th>
+                <th className="px-2 py-2">Resource</th>
+                <th className="px-2 py-2">Amount</th>
+                <th className="px-2 py-2">Date</th>
+                <th className="px-2 py-2">Session</th>
+              </tr>
+            </thead>
+            <tbody>
+              {purchases.map((purchase) => (
+                <tr key={purchase.id} className="border-t border-[#18243a]">
+                  <td className="px-2 py-2">{purchase.email}</td>
+                  <td className="px-2 py-2">{purchase.resourceSlug}</td>
+                  <td className="px-2 py-2">
+                    {purchase.amountCents != null
+                      ? `$${(purchase.amountCents / 100).toFixed(2)}`
+                      : "-"}
+                  </td>
+                  <td className="px-2 py-2 whitespace-nowrap">
+                    {new Date(purchase.createdAt).toLocaleDateString()}
+                  </td>
+                  <td className="px-2 py-2 font-mono text-xs">{purchase.stripeSessionId.slice(0, 16)}...</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
       ) : null}
     </div>
   );

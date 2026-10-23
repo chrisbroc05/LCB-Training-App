@@ -68,7 +68,7 @@ export default function AdminMessagesPage() {
             {unreadCount > 0 ? `${unreadCount} unread` : "All caught up"}
           </p>
         </div>
-        <Link href="/admin/program" className="text-sm font-semibold text-[#52B788]">
+        <Link href="/admin/coaching/program" className="text-sm font-semibold text-[#52B788]">
           Program overview
         </Link>
       </div>

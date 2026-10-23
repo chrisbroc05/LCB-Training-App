@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
-import AdminPortalNav from "@/components/AdminPortalNav";
 import { shouldUseMobileAppChrome } from "@/lib/mobile-ui";
 
 type TopNavigationProps = {
@@ -411,7 +410,6 @@ export default function TopNavigation({
   if (isAdmin && pathname.startsWith("/admin")) {
     return (
       <div className="flex flex-wrap items-center justify-end gap-2 md:justify-self-end">
-        <AdminPortalNav />
         <button
           type="button"
           onClick={handleLogout}

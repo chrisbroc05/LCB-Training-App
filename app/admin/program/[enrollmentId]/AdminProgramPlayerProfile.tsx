@@ -273,7 +273,7 @@ export default function AdminProgramPlayerProfile({ enrollmentId }: { enrollment
   return (
     <div className="flex flex-col space-y-6 pb-24">
       <div className="sticky top-0 z-20 -mx-4 border-b border-[#18243a] bg-[#070d18]/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6">
-        <Link href="/admin/program" className="text-xs font-semibold text-[#52B788]">
+        <Link href="/admin/coaching/program" className="text-xs font-semibold text-[#52B788]">
           Back to overview
         </Link>
         {header ? (

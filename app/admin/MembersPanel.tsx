@@ -18,6 +18,8 @@ type MemberSummary = {
   name: string | null;
   email: string;
   membershipTier: DatabaseTier;
+  membershipLevel: import("@/lib/membership-levels-shared").MembershipLevelKey | null;
+  membershipLevelExpiresAt: string | null;
   planDisplayLabel: string;
   planExpiryLabel: string | null;
   productAccessCompact: string;
@@ -55,6 +57,20 @@ function getMemberCallBooked(member: MemberSummary) {
 
 type TierFilter = "ALL" | DatabaseTier;
 
+type MembersPanelProps = {
+  listFilter?: "all" | "all-access-plus";
+};
+
+function memberHasActiveAllAccessOrPlus(member: MemberSummary) {
+  if (member.membershipLevel !== "PLUS" && member.membershipLevel !== "ALL_ACCESS") {
+    return false;
+  }
+  if (!member.membershipLevelExpiresAt) {
+    return true;
+  }
+  return new Date(member.membershipLevelExpiresAt).getTime() > Date.now();
+}
+
 function CallStatusIndicator({ booked }: { booked: boolean }) {
   return (
     <div className="mt-2 flex items-center gap-1.5 text-xs text-zinc-400">
@@ -67,8 +83,9 @@ function CallStatusIndicator({ booked }: { booked: boolean }) {
   );
 }
 
-export default function MembersPanel() {
+export default function MembersPanel({ listFilter = "all" }: MembersPanelProps) {
   const isMobile = useIsMobile();
+  const lockTierFilter = listFilter === "all-access-plus";
   const [members, setMembers] = useState<MemberSummary[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<MemberDetail | null>(null);
@@ -152,6 +169,9 @@ export default function MembersPanel() {
     const normalizedQuery = searchQuery.trim().toLowerCase();
 
     return members.filter((member) => {
+      if (listFilter === "all-access-plus" && !memberHasActiveAllAccessOrPlus(member)) {
+        return false;
+      }
       if (tierFilter !== "ALL" && member.membershipTier !== tierFilter) {
         return false;
       }
@@ -164,7 +184,7 @@ export default function MembersPanel() {
       const email = member.email.toLowerCase();
       return name.includes(normalizedQuery) || email.includes(normalizedQuery);
     });
-  }, [members, searchQuery, tierFilter]);
+  }, [members, searchQuery, tierFilter, listFilter]);
 
   const updateMemberInList = (updatedMember: MemberSummary) => {
     setMembers((current) =>
@@ -524,27 +544,29 @@ export default function MembersPanel() {
                 className="mt-2 w-full rounded-lg border border-[#2b3650] bg-[#0b1324]/80 px-3 py-2 text-sm text-zinc-100"
               />
             </div>
-            <div className="w-full md:w-auto">
-              <label
-                className="block text-sm font-medium text-zinc-200"
-                htmlFor="member-tier-filter"
-              >
-                Filter by tier
-              </label>
-              <select
-                id="member-tier-filter"
-                value={tierFilter}
-                onChange={(event) => setTierFilter(event.target.value as TierFilter)}
-                className="mt-2 w-full rounded-lg border border-[#2b3650] bg-[#0b1324]/80 px-3 py-2 text-sm text-zinc-100 md:min-w-[180px]"
-              >
-                <option value="ALL">All</option>
-                {validDatabaseTiers.map((tier) => (
-                  <option key={tier} value={tier}>
-                    {formatDatabaseTierLabel(tier)}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {!lockTierFilter ? (
+              <div className="w-full md:w-auto">
+                <label
+                  className="block text-sm font-medium text-zinc-200"
+                  htmlFor="member-tier-filter"
+                >
+                  Filter by tier
+                </label>
+                <select
+                  id="member-tier-filter"
+                  value={tierFilter}
+                  onChange={(event) => setTierFilter(event.target.value as TierFilter)}
+                  className="mt-2 w-full rounded-lg border border-[#2b3650] bg-[#0b1324]/80 px-3 py-2 text-sm text-zinc-100 md:min-w-[180px]"
+                >
+                  <option value="ALL">All</option>
+                  {validDatabaseTiers.map((tier) => (
+                    <option key={tier} value={tier}>
+                      {formatDatabaseTierLabel(tier)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
           </div>
 
           {loadingList ? (

@@ -120,7 +120,7 @@ export default function TwelveWeekPlayersSection() {
             Track program setup, start dates, and player answers for the 12-Week Program.
           </p>
           <Link
-            href="/admin/program"
+            href="/admin/coaching/program"
             className="mt-3 inline-flex rounded-full border border-[#52B788] px-4 py-2 text-sm font-semibold text-[#52B788]"
           >
             Program overview

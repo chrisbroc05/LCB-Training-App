@@ -891,7 +891,7 @@ export async function sendPlaybookReflectionSharedNotification(params: {
   chapterTitle: string;
 }) {
   const transporter = createTransporter();
-  const adminUrl = `${getPublicAppUrl()}/admin`;
+  const adminUrl = `${getPublicAppUrl()}/admin/coaching/playbook-reflections`;
 
   await transporter.sendMail({
     from: process.env.NOTIFICATION_EMAIL,
@@ -923,7 +923,7 @@ export async function sendAccountDeletionRequestNotification(params: {
   membershipTier: DatabaseTier;
 }) {
   const transporter = createTransporter();
-  const adminUrl = `${getPublicAppUrl()}/admin`;
+  const adminUrl = `${getPublicAppUrl()}/admin/players/members`;
 
   await transporter.sendMail({
     from: process.env.NOTIFICATION_EMAIL,

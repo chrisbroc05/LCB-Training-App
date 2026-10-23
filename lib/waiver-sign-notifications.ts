@@ -19,7 +19,7 @@ export async function sendCoachWaiverSignedPush(params: {
     message: {
       title: `Waiver signed: ${playersLabel} (${contextLabel})`,
       body: "Open waivers in admin.",
-      url: "/admin/waivers",
+      url: "/admin/players/waivers",
     },
   });
 }
