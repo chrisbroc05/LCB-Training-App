@@ -48,17 +48,36 @@ function addCalendarDays(year: number, month: number, day: number, delta: number
   };
 }
 
+const CHICAGO_DATE_INPUT = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Calendar date strings from `<input type="date">` are Chicago days, not UTC midnight. */
+export function toChicagoCalendarInstant(value: Date | string): Date {
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? new Date() : value;
+  }
+  const trimmed = value.trim();
+  if (CHICAGO_DATE_INPUT.test(trimmed)) {
+    const parsed = parseChicagoDateInput(trimmed);
+    if (parsed) {
+      return chicagoStartOfCalendarDay(parsed.year, parsed.month, parsed.day);
+    }
+  }
+  const fallback = new Date(trimmed);
+  return Number.isNaN(fallback.getTime()) ? new Date() : fallback;
+}
+
 /** Monday 00:00 America/Chicago for the week containing `date`. */
-export function getWeekStartMondayChicago(date = new Date()): Date {
-  const { year, month, day } = readChicagoYmd(date);
-  const weekday = readChicagoWeekdayIndex(date);
+export function getWeekStartMondayChicago(date: Date | string = new Date()): Date {
+  const instant = toChicagoCalendarInstant(date);
+  const { year, month, day } = readChicagoYmd(instant);
+  const weekday = readChicagoWeekdayIndex(instant);
   const daysFromMonday = weekday === 0 ? 6 : weekday - 1;
   const monday = addCalendarDays(year, month, day, -daysFromMonday);
   return chicagoStartOfCalendarDay(monday.year, monday.month, monday.day);
 }
 
 export function formatWeekStartChicagoInputValue(weekStart: Date | string): string {
-  const instant = weekStart instanceof Date ? weekStart : new Date(weekStart);
+  const instant = toChicagoCalendarInstant(weekStart);
   const { year, month, day } = readChicagoYmd(instant);
   return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
@@ -73,20 +92,13 @@ export function parseWeekStartChicagoInput(value: string): Date | null {
 }
 
 export function weekStartDatesMatch(a: Date | string, b: Date | string): boolean {
-  const left = a instanceof Date ? a : new Date(a);
-  const right = b instanceof Date ? b : new Date(b);
-  if (Number.isNaN(left.getTime()) || Number.isNaN(right.getTime())) {
-    return false;
-  }
   return (
-    getWeekStartMondayChicago(left).getTime() === getWeekStartMondayChicago(right).getTime()
+    getWeekStartMondayChicago(a).getTime() === getWeekStartMondayChicago(b).getTime()
   );
 }
 
 export function formatWeekStartLabel(weekStart: Date | string): string {
-  const normalized = getWeekStartMondayChicago(
-    weekStart instanceof Date ? weekStart : new Date(weekStart),
-  );
+  const normalized = getWeekStartMondayChicago(weekStart);
   const { year, month, day } = readChicagoYmd(normalized);
   const display = new Date(Date.UTC(year, month - 1, day, 12, 0, 0, 0));
   return display.toLocaleDateString("en-US", {

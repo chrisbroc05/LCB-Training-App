@@ -1,13 +1,18 @@
+import { chicagoStartOfCalendarDay } from "../lib/org-trial-dates-shared";
 import {
   buildTeamFocusPreview,
   formatWeekStartChicagoInputValue,
+  formatWeekStartLabel,
   getWeekStartMondayChicago,
   parseWeekStartChicagoInput,
   pickOrgWeeklyFocusForMember,
+  toChicagoCalendarInstant,
   weekStartDatesMatch,
 } from "../lib/org-weekly-focus-shared";
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import {
+  applyTestDatabaseUrl,
+  resolveTestDatabaseIntegration,
+} from "./test-db-guard";
 
 function assert(condition: boolean, message: string) {
   if (!condition) {
@@ -22,23 +27,52 @@ function chicagoWeekday(instant: Date): string {
   }).format(instant);
 }
 
-function testChicagoMondayWeek() {
-  const sample = parseWeekStartChicagoInput("2026-10-23");
-  assert(sample !== null, "parse week input");
-  const monday = getWeekStartMondayChicago(sample!);
-  assert(chicagoWeekday(monday) === "Monday", "week start must be Monday in Chicago");
+function chicagoDay(year: number, month: number, day: number) {
+  return chicagoStartOfCalendarDay(year, month, day);
+}
 
-  const thursday = parseWeekStartChicagoInput("2026-10-22");
-  assert(thursday !== null, "parse another day");
-  const mondayFromThursday = getWeekStartMondayChicago(thursday!);
+function testChicagoMondayWeek() {
+  const expectedMonday = "2026-10-19";
+
+  const friday = chicagoDay(2026, 10, 23);
   assert(
-    weekStartDatesMatch(mondayFromThursday, monday),
+    formatWeekStartChicagoInputValue(getWeekStartMondayChicago(friday)) === expectedMonday,
+    "Friday Oct 23 2026 should resolve to Monday Oct 19",
+  );
+
+  const sunday = chicagoDay(2026, 10, 25);
+  assert(
+    formatWeekStartChicagoInputValue(getWeekStartMondayChicago(sunday)) === expectedMonday,
+    "Sunday Oct 25 2026 should resolve to Monday Oct 19 (six days earlier)",
+  );
+
+  const monday = chicagoDay(2026, 10, 19);
+  assert(
+    formatWeekStartChicagoInputValue(getWeekStartMondayChicago(monday)) === expectedMonday,
+    "Monday Oct 19 2026 should stay on Oct 19",
+  );
+
+  assert(
+    formatWeekStartChicagoInputValue(getWeekStartMondayChicago("2026-10-23")) === expectedMonday,
+    "date input string for Friday must not use UTC midnight parsing",
+  );
+  assert(
+    formatWeekStartLabel("2026-10-23").includes("Oct 19"),
+    "preview label for week picker value must show Oct 19, not prior week",
+  );
+  assert(
+    formatWeekStartChicagoInputValue(getWeekStartMondayChicago(toChicagoCalendarInstant("2026-10-19"))) ===
+      expectedMonday,
+    "date input string for Monday must stay on that Monday",
+  );
+
+  const mondayFromPicker = parseWeekStartChicagoInput("2026-10-22");
+  assert(mondayFromPicker !== null, "parse week input");
+  assert(
+    weekStartDatesMatch(mondayFromPicker!, expectedMonday),
     "days in the same week should resolve to the same Monday",
   );
-  assert(
-    formatWeekStartChicagoInputValue(monday) === formatWeekStartChicagoInputValue(mondayFromThursday),
-    "week input labels should match",
-  );
+  assert(chicagoWeekday(getWeekStartMondayChicago(friday)) === "Monday", "week start must be Monday");
 }
 
 function testTeamOverridesClub() {
@@ -98,36 +132,17 @@ function testTeamPreview() {
   assert(preview[1]?.focusTitle === "Keep hands back" && preview[1]?.source === "club", "16U preview");
 }
 
-function loadDatabaseUrlFromEnvFile() {
-  if (process.env.DATABASE_URL) {
-    return;
-  }
-  try {
-    const envPath = resolve(process.cwd(), ".env");
-    const text = readFileSync(envPath, "utf8");
-    for (const line of text.split("\n")) {
-      const trimmed = line.trim();
-      if (!trimmed || trimmed.startsWith("#")) {
-        continue;
-      }
-      const match = trimmed.match(/^DATABASE_URL=(.*)$/);
-      if (match) {
-        process.env.DATABASE_URL = match[1].replace(/^["']|["']$/g, "");
-        break;
-      }
-    }
-  } catch {
-    /* no local .env */
-  }
-}
-
 async function testSaveAndReadBack() {
-  loadDatabaseUrlFromEnvFile();
-  if (!process.env.DATABASE_URL) {
-    console.log("skip integration: DATABASE_URL not set");
+  const decision = resolveTestDatabaseIntegration();
+  if (decision.warning) {
+    console.warn(decision.warning);
+  }
+  if (!decision.run || !decision.databaseUrl) {
+    console.log("skip integration: no safe TEST_DATABASE_URL / DATABASE_URL for writes");
     return;
   }
 
+  applyTestDatabaseUrl(decision.databaseUrl);
   const { prisma } = await import("../lib/prisma");
 
   const org = await prisma.organization.findFirst({
