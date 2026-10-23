@@ -7,6 +7,7 @@ import {
 } from "@/lib/access-shared";
 import type { DatabaseTier } from "@/lib/membership";
 import { mergeOrgIntoAccessFields, userOrgAccessSelect } from "@/lib/org-server";
+import { loadMergedGrantedDrillIdsForUser } from "@/lib/drill-focus-grants-server";
 import { prisma } from "@/lib/prisma";
 
 export type UserAccessSelect = {
@@ -54,35 +55,18 @@ export async function loadDrillViewContext(userId: string): Promise<{
     return null;
   }
 
-  const [catalogRows, swingSubmissions, mentalSubmissions] = await Promise.all([
+  const [catalogRows, grantedDrillIds] = await Promise.all([
     prisma.drillLibraryCatalog.findMany({
       where: { isStarterDrill: true },
       select: { vimeoId: true },
     }),
-    prisma.swingAnalysisSubmission.findMany({
-      where: { userId, respondedAt: { not: null } },
-      select: { recommendedDrills: true },
-    }),
-    prisma.mentalGameSubmission.findMany({
-      where: { userId, respondedAt: { not: null } },
-      select: { recommendedDrills: true },
-    }),
+    loadMergedGrantedDrillIdsForUser(userId),
   ]);
-
-  const grantedDrillIds = new Set<string>();
-  for (const submission of [...swingSubmissions, ...mentalSubmissions]) {
-    for (const drillId of submission.recommendedDrills) {
-      const trimmed = drillId.trim();
-      if (trimmed) {
-        grantedDrillIds.add(trimmed);
-      }
-    }
-  }
 
   return {
     access: toAccessUserFields(user),
     starterDrillIds: new Set(catalogRows.map((row) => row.vimeoId)),
-    grantedDrillIds: [...grantedDrillIds],
+    grantedDrillIds,
   };
 }
 

@@ -28,7 +28,7 @@ export async function loadDrillLibraryAccessForUser(userId: string) {
   const lockedDrillMessage = getDrillLockedSurfaceMessage(access);
   const showProgramUpsell = effectiveLevel === "FREE" || effectiveLevel === "PLAYBOOK";
 
-  const grantedDrillIds = canBrowseLibrary ? [] : await loadUserGrantedDrillIds(userId);
+  const grantedDrillIds = hasFullLibraryAccess ? [] : await loadUserGrantedDrillIds(userId);
   const starterDrillIds = hasFullLibraryAccess ? new Set<string>() : await loadStarterDrillIdSet();
 
   const drillContext = mergeDrillViewContext(access, starterDrillIds, grantedDrillIds);
