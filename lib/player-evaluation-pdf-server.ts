@@ -1,19 +1,17 @@
 import "server-only";
 
-import { execFile } from "node:child_process";
-import { readFile, unlink, writeFile } from "node:fs/promises";
-import os from "node:os";
-import path from "node:path";
-import { promisify } from "node:util";
+import { resolveEffectiveLevel } from "@/lib/access-shared";
 import { formatDateWithYear } from "@/lib/format-date";
+import { mergeOrgIntoAccessFields } from "@/lib/org-server";
 import {
-  getPlayerEvaluationPlatformNoteHtml,
+  buildPlayerEvaluationCtaContent,
+  CORE_QUICK_REPORT_INTERVAL_MS,
   type PlayerEvaluationCtaTrack,
+  type ReportRecommendedFixItSlug,
 } from "@/lib/player-evaluation-cta-shared";
+import { renderPlayerEvaluationPdfToBuffer } from "@/lib/player-evaluation-pdf-node";
 import type { WrittenReportSections } from "@/lib/written-report-parse-shared";
 import { getDrillLibraryVideosByIds } from "@/lib/drill-library-videos";
-
-const execFileAsync = promisify(execFile);
 
 function splitPlayerName(playerName: string) {
   const parts = playerName.trim().split(/\s+/).filter(Boolean);
@@ -50,6 +48,8 @@ export function buildPlayerEvaluationRecommendedDrillLines(
   return lines;
 }
 
+type PdfUserContext = Parameters<typeof mergeOrgIntoAccessFields>[0];
+
 export async function generatePlayerEvaluationPdfBuffer(params: {
   playerName: string;
   teamLabel: string;
@@ -57,44 +57,44 @@ export async function generatePlayerEvaluationPdfBuffer(params: {
   sections: WrittenReportSections;
   libraryDrillIds: string[];
   reviewTrack: PlayerEvaluationCtaTrack;
+  recommendedFixItSlug?: ReportRecommendedFixItSlug | null;
+  user?: PdfUserContext | null;
 }) {
   const { firstName, lastName } = splitPlayerName(params.playerName);
   const recommendedDrills = buildPlayerEvaluationRecommendedDrillLines(
     params.sections,
     params.libraryDrillIds,
   );
-  const platformNoteHtml = getPlayerEvaluationPlatformNoteHtml(firstName, params.reviewTrack);
 
-  const tempDir = os.tmpdir();
-  const stamp = Date.now();
-  const outputPath = path.join(tempDir, `lcb-player-eval-${stamp}.pdf`);
-  const inputPath = path.join(tempDir, `lcb-player-eval-${stamp}.json`);
+  const accessFields = params.user ? mergeOrgIntoAccessFields(params.user) : null;
+  const effective = accessFields ? resolveEffectiveLevel(accessFields) : null;
+  const membershipIncludesFixIt = effective === "PLUS" || effective === "ALL_ACCESS";
 
-  const payload = {
-    outputPath,
-    platformNoteHtml,
-    evaluation: {
-      first_name: firstName,
-      last_name: lastName,
-      team: params.teamLabel.trim() || "LCB Training",
-      eval_date: formatDateWithYear(params.evalDate),
-      strengths: params.sections.strengths,
-      areas_to_improve: params.sections.areasToImprove,
-      recommended_drills: recommendedDrills,
-      closing_note: params.sections.noteFromCoach,
-    },
-  };
-
-  await writeFile(inputPath, JSON.stringify(payload));
-  const scriptPath = path.join(process.cwd(), "scripts/render_player_eval_json.py");
-
-  try {
-    await execFileAsync("python3", [scriptPath, inputPath], {
-      maxBuffer: 10 * 1024 * 1024,
-    });
-    return await readFile(outputPath);
-  } finally {
-    await unlink(inputPath).catch(() => undefined);
-    await unlink(outputPath).catch(() => undefined);
+  let coreNextEligibleAt: Date | null = null;
+  if (params.reviewTrack === "QUICK_SIX_WEEK") {
+    coreNextEligibleAt = new Date(params.evalDate.getTime() + CORE_QUICK_REPORT_INTERVAL_MS);
   }
+
+  const cta = buildPlayerEvaluationCtaContent({
+    firstName,
+    reviewTrack: params.reviewTrack,
+    recommendedFixItSlug: params.recommendedFixItSlug,
+    membershipIncludesFixIt,
+    coreNextEligibleAt,
+    orgTrialEndsAt: accessFields?.orgTrialEndsAt
+      ? new Date(accessFields.orgTrialEndsAt)
+      : null,
+  });
+
+  return renderPlayerEvaluationPdfToBuffer({
+    firstName,
+    lastName,
+    teamLabel: params.teamLabel.trim() || "LCB Training",
+    evalDateLabel: formatDateWithYear(params.evalDate),
+    strengths: params.sections.strengths,
+    areasToImprove: params.sections.areasToImprove,
+    recommendedDrills,
+    noteFromCoach: params.sections.noteFromCoach,
+    cta,
+  });
 }

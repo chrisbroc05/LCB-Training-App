@@ -18,6 +18,7 @@
 /out/
 
 /tmp/
+docs/samples/.comparison-thumbs/
 
 # production
 /build

@@ -7,6 +7,7 @@ import {
   consumeCoachingSubmission,
   getCoachingSubmissionLimitError,
 } from "@/lib/coaching-submissions";
+import { getFreeSwingAnalysisResponseMode } from "@/lib/free-swing-analysis-response-server";
 import { prisma } from "@/lib/prisma";
 import { sendCoachNewSubmissionPush } from "@/lib/coach-push-instant";
 import { getCoachSubmissionEmailContext } from "@/lib/submission-coach-context";
@@ -164,9 +165,12 @@ export async function POST(request: Request) {
     }
 
     console.log(`[swing-submit:${requestId}] Creating swing submission record`);
+    const freeSwingAnalysisResponseMode = await getFreeSwingAnalysisResponseMode();
     const transactionResult = await withTimeout(
       prisma.$transaction(async (tx) => {
-        const consumed = await consumeCoachingSubmission(tx, userId);
+        const consumed = await consumeCoachingSubmission(tx, userId, {
+          freeSwingAnalysisResponseMode,
+        });
         if (!consumed.ok) {
           return {
             ok: false as const,
@@ -189,7 +193,7 @@ export async function POST(request: Request) {
             submittedVideo,
             responsePreference: responsePreference as "VIDEO_RESPONSE" | "WRITTEN_RESPONSE",
             status: "PENDING",
-            reviewTrack: consumed.reviewTrack ?? undefined,
+            reviewTrack: consumed.reviewTrack,
           },
         });
 

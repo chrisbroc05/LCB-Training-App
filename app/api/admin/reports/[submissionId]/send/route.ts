@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin";
 import { parseWrittenReportPaste } from "@/lib/written-report-parse-shared";
+import { parseReportRecommendedFixItSlug } from "@/lib/player-evaluation-cta-shared";
 import {
   parseWrittenReportLibraryDrillIds,
   sendQuickWrittenReportForSubmission,
@@ -71,10 +72,16 @@ export async function POST(request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Select up to 2 library drills." }, { status: 400 });
   }
 
+  const fixItParse = parseReportRecommendedFixItSlug(record?.recommendedFixItSlug);
+  if (!fixItParse.ok) {
+    return NextResponse.json({ error: fixItParse.error }, { status: 400 });
+  }
+
   const result = await sendQuickWrittenReportForSubmission({
     submissionId,
     sections: sectionsResult.sections,
     libraryDrillIds: drillParse.ids,
+    recommendedFixItSlug: fixItParse.slug,
   });
 
   if (!result.ok) {

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+"""Local one-off helper only. Production PDFs are generated in Node (lib/player-evaluation-pdf-node.ts)."""
 
 from __future__ import annotations
 

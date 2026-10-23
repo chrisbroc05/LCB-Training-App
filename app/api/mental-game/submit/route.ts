@@ -7,6 +7,7 @@ import {
   consumeCoachingSubmission,
   getCoachingSubmissionLimitError,
 } from "@/lib/coaching-submissions";
+import { getFreeSwingAnalysisResponseMode } from "@/lib/free-swing-analysis-response-server";
 import { prisma } from "@/lib/prisma";
 import { sendCoachNewSubmissionPush } from "@/lib/coach-push-instant";
 import { getCoachSubmissionEmailContext } from "@/lib/submission-coach-context";
@@ -124,8 +125,11 @@ export async function POST(request: Request) {
       videoPath = storedVideo.relativeUrl;
     }
 
+    const freeSwingAnalysisResponseMode = await getFreeSwingAnalysisResponseMode();
     const transactionResult = await prisma.$transaction(async (tx) => {
-      const consumed = await consumeCoachingSubmission(tx, userId);
+      const consumed = await consumeCoachingSubmission(tx, userId, {
+        freeSwingAnalysisResponseMode,
+      });
       if (!consumed.ok) {
         return {
           ok: false as const,

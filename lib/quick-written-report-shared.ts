@@ -1,5 +1,6 @@
 /**
- * Quick written player evaluation reports (client-safe).
+ * Review tracks that receive the structured written player evaluation + PDF (client-safe).
+ * Reports queue membership for FREE_ONCE depends on admin free-swing response mode.
  */
 
 export const QUICK_WRITTEN_REPORT_TRACKS = [

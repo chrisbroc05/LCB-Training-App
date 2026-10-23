@@ -34,6 +34,11 @@ enum CoachingReviewTrack {
   PROGRAM
 }
 
+enum FreeSwingAnalysisResponseMode {
+  VIDEO
+  WRITTEN_REPORT
+}
+
 enum ProgramPlanMode {
   FIXED_12_WEEK
   OPEN_ENDED
@@ -582,6 +587,11 @@ model PushSubscription {
   @@index([endpoint])
 }
 
+model AppAdminSettings {
+  id                            Int                           @id @default(1)
+  freeSwingAnalysisResponseMode FreeSwingAnalysisResponseMode @default(VIDEO)
+}
+
 model CoachAlertSettings {
   userId                     String   @id
   user                       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -878,6 +888,7 @@ model SwingAnalysisSubmission {
   reportRecommendedDrillLines  String[]                     @default([])
   reportNoteFromCoach          String?
   reportLibraryDrillIds        String[]                     @default([])
+  reportRecommendedFixItSlug   String?
   evaluationPdfR2Key           String?
   respondedAt                  DateTime?
   createdAt                    DateTime                     @default(now())

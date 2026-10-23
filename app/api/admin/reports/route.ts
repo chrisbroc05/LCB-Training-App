@@ -3,7 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
-import { QUICK_WRITTEN_REPORT_TRACKS } from "@/lib/quick-written-report-shared";
+import { getFreeSwingAnalysisResponseMode } from "@/lib/free-swing-analysis-response-server";
+import { getReportsQueueReviewTracks } from "@/lib/reports-queue-shared";
 import { serializeAdminQuickReportRow } from "@/lib/written-report-send-server";
 
 export async function GET() {
@@ -12,10 +13,13 @@ export async function GET() {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  const freeSwingMode = await getFreeSwingAnalysisResponseMode();
+  const reportsQueueTracks = getReportsQueueReviewTracks(freeSwingMode);
+
   const submissions = await prisma.swingAnalysisSubmission.findMany({
     where: {
       status: "PENDING",
-      reviewTrack: { in: [...QUICK_WRITTEN_REPORT_TRACKS] },
+      reviewTrack: { in: reportsQueueTracks },
     },
     orderBy: { createdAt: "asc" },
     select: {

@@ -256,7 +256,7 @@ def main() -> None:
             "him take the next step. Please reach out anytime."
         ),
     )
-    output_path = project_root / "public" / "player-evaluations" / "LCB_Eval_Hellman.pdf"
+    output_path = project_root / "docs" / "samples" / "player-evaluations" / "LCB_Eval_Hellman.pdf"
     build_player_eval_pdf(project_root, evaluation, output_path)
 
     try:

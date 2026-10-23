@@ -3,7 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
-import { QUICK_WRITTEN_REPORT_TRACKS } from "@/lib/quick-written-report-shared";
+import { getFreeSwingAnalysisResponseMode } from "@/lib/free-swing-analysis-response-server";
+import { getReportsQueueReviewTracks } from "@/lib/reports-queue-shared";
 
 type SubmissionType = "swing" | "mental";
 
@@ -46,11 +47,14 @@ export async function GET(request: Request) {
     });
   }
 
+  const freeSwingMode = await getFreeSwingAnalysisResponseMode();
+  const reportsQueueTracks = getReportsQueueReviewTracks(freeSwingMode);
+
   const submissions = await prisma.swingAnalysisSubmission.findMany({
     where: {
       OR: [
         { reviewTrack: null },
-        { reviewTrack: { notIn: [...QUICK_WRITTEN_REPORT_TRACKS] } },
+        { reviewTrack: { notIn: reportsQueueTracks } },
       ],
     },
     orderBy: { createdAt: "desc" },

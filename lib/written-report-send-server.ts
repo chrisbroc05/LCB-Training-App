@@ -29,8 +29,9 @@ import {
   mergeReportLibraryDrillIds,
   resolveDrillIdsFromReportLines,
 } from "@/lib/written-report-drill-grants-shared";
-import { mergeOrgIntoAccessFields } from "@/lib/org-server";
+import { mergeOrgIntoAccessFields, userOrgAccessSelect } from "@/lib/org-server";
 import { formatEffectiveAccessLabel } from "@/lib/access-shared";
+import type { ReportRecommendedFixItSlug } from "@/lib/player-evaluation-cta-shared";
 
 function toCtaTrack(reviewTrack: CoachingReviewTrack): PlayerEvaluationCtaTrack {
   if (isQuickWrittenReportTrack(reviewTrack)) {
@@ -57,6 +58,7 @@ export async function sendQuickWrittenReportForSubmission(params: {
   submissionId: string;
   sections: WrittenReportSections;
   libraryDrillIds: string[];
+  recommendedFixItSlug?: ReportRecommendedFixItSlug | null;
 }) {
   const existing = await prisma.swingAnalysisSubmission.findUnique({
     where: { id: params.submissionId },
@@ -66,9 +68,11 @@ export async function sendQuickWrittenReportForSubmission(params: {
           id: true,
           email: true,
           membershipTier: true,
+          membershipLevel: true,
+          membershipLevelExpiresAt: true,
+          playbookLegacyAccess: true,
           currentTeam: true,
-          organization: { select: { name: true } },
-          orgTeam: { select: { name: true } },
+          ...userOrgAccessSelect,
         },
       },
     },
@@ -102,6 +106,8 @@ export async function sendQuickWrittenReportForSubmission(params: {
     sections: params.sections,
     libraryDrillIds: reportLibraryDrillIds,
     reviewTrack: toCtaTrack(existing.reviewTrack),
+    recommendedFixItSlug: params.recommendedFixItSlug ?? null,
+    user: existing.user,
   });
 
   const evaluationPdfR2Key = buildEvaluationPdfKey(existing.id);
@@ -119,6 +125,7 @@ export async function sendQuickWrittenReportForSubmission(params: {
         reportRecommendedDrillLines: params.sections.recommendedDrills,
         reportNoteFromCoach: params.sections.noteFromCoach,
         reportLibraryDrillIds,
+        reportRecommendedFixItSlug: params.recommendedFixItSlug ?? null,
         recommendedDrills,
         evaluationPdfR2Key,
       },

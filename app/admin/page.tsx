@@ -6,6 +6,7 @@ import { authOptions } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin";
 import { buildAdminProgramOverview } from "@/lib/admin-program-overview";
 import { prisma } from "@/lib/prisma";
+import AdminFreeSwingResponseSetting from "@/app/admin/AdminFreeSwingResponseSetting";
 import AdminPanel from "@/app/admin/AdminPanel";
 import FreeMembersSection from "@/app/admin/FreeMembersSection";
 import TwelveWeekPlayersSection from "@/app/admin/TwelveWeekPlayersSection";
@@ -120,6 +121,8 @@ export default async function AdminPage() {
           </div>
         </div>
       </section>
+
+      <AdminFreeSwingResponseSetting />
 
       <section className="rounded-3xl border border-[#18243a] bg-[#0b1324]/80 p-5 sm:p-8">
         <h1 className="text-2xl font-semibold leading-tight text-zinc-100 sm:text-3xl">Admin Submissions Inbox</h1>

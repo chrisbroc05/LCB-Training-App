@@ -14,7 +14,9 @@ import {
   getCoachingSubmissionPeriodKey,
   canSubmitCoachingForms,
 } from "@/lib/coaching-submissions-shared";
-import { QUICK_WRITTEN_REPORT_TRACKS } from "@/lib/quick-written-report-shared";
+import type { FreeSwingAnalysisResponseMode } from "@/lib/free-swing-analysis-response-shared";
+import { getFreeSwingAnalysisResponseMode } from "@/lib/free-swing-analysis-response-server";
+import { getReportsQueueReviewTracks } from "@/lib/reports-queue-shared";
 
 export {
   FREE_LIFETIME_SUBMISSION_LIMIT,
@@ -116,22 +118,36 @@ export async function getCoachingSubmissionAvailabilityForUser(userId: string) {
     return null;
   }
 
-  const hasPendingQuickWrittenReport = await userHasPendingQuickWrittenReport(userId);
+  const freeSwingMode = await getFreeSwingAnalysisResponseMode();
+  const hasPendingQuickWrittenReport = await userHasPendingReportsQueueSubmission(
+    userId,
+    freeSwingMode,
+  );
   return getCoachingSubmissionAvailability(fields, new Date(), {
     hasPendingQuickWrittenReport,
   });
 }
 
-export async function userHasPendingQuickWrittenReport(userId: string) {
+export async function userHasPendingReportsQueueSubmission(
+  userId: string,
+  freeSwingMode?: FreeSwingAnalysisResponseMode,
+) {
+  const mode = freeSwingMode ?? (await getFreeSwingAnalysisResponseMode());
+  const queueTracks = getReportsQueueReviewTracks(mode);
   const pending = await prisma.swingAnalysisSubmission.findFirst({
     where: {
       userId,
       status: "PENDING",
-      reviewTrack: { in: [...QUICK_WRITTEN_REPORT_TRACKS] },
+      reviewTrack: { in: queueTracks },
     },
     select: { id: true },
   });
   return Boolean(pending);
+}
+
+/** @deprecated Use userHasPendingReportsQueueSubmission */
+export async function userHasPendingQuickWrittenReport(userId: string) {
+  return userHasPendingReportsQueueSubmission(userId);
 }
 
 export async function ensureCoachingSubmissionPeriod(userId: string) {
@@ -175,7 +191,11 @@ type CoachingSubmissionTransactionClient = Pick<
 export async function consumeCoachingSubmission(
   tx: CoachingSubmissionTransactionClient,
   userId: string,
+  options?: { freeSwingAnalysisResponseMode?: FreeSwingAnalysisResponseMode },
 ) {
+  const freeSwingMode =
+    options?.freeSwingAnalysisResponseMode ?? (await getFreeSwingAnalysisResponseMode());
+  const reportsQueueTracks = getReportsQueueReviewTracks(freeSwingMode);
   const user = await tx.user.findUnique({
     where: { id: userId },
     select: coachingSubmissionUserSelect,
@@ -192,7 +212,7 @@ export async function consumeCoachingSubmission(
     where: {
       userId,
       status: "PENDING",
-      reviewTrack: { in: [...QUICK_WRITTEN_REPORT_TRACKS] },
+      reviewTrack: { in: reportsQueueTracks },
     },
     select: { id: true },
   });
@@ -277,11 +297,13 @@ export async function consumeCoachingSubmission(
 
   if (effective === "FREE") {
     await tx.user.update({ where: { id: userId }, data: periodSync });
+    const reviewTrack: CoachingReviewTrack | null =
+      freeSwingMode === "WRITTEN_REPORT" ? "FREE_ONCE" : null;
     return {
       ok: true as const,
       availability,
       membershipTier: syncedUser.membershipTier,
-      reviewTrack: "FREE_ONCE" as CoachingReviewTrack,
+      reviewTrack,
     };
   }
 

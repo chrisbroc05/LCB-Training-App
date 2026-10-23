@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { resolveEffectiveLevel } from "@/lib/access-shared";
 import { isAdminEmail } from "@/lib/admin";
+import { mergeOrgIntoAccessFields, userOrgAccessSelect } from "@/lib/org-server";
 import { createAppNotification } from "@/lib/app-notifications";
 import { parseRecommendedDrillsFormValue } from "@/lib/drill-library-videos";
 import { sendSubmissionResponseEmail } from "@/lib/notifications";
@@ -162,6 +164,28 @@ export async function POST(request: Request, context: RouteContext) {
       coachFocusEndsAt,
     },
   });
+
+  if (existing.reviewTrack !== "FREE_ONCE") {
+    const freeTierUser = await prisma.user.findUnique({
+      where: { id: updated.userId },
+      select: {
+        membershipTier: true,
+        membershipLevel: true,
+        membershipLevelExpiresAt: true,
+        playbookLegacyAccess: true,
+        ...userOrgAccessSelect,
+      },
+    });
+    if (
+      freeTierUser &&
+      resolveEffectiveLevel(mergeOrgIntoAccessFields(freeTierUser)) === "FREE"
+    ) {
+      await prisma.user.update({
+        where: { id: updated.userId },
+        data: { freeSubmissionUsed: true },
+      });
+    }
+  }
 
   const user = await prisma.user.findUnique({
     where: { id: updated.userId },

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AdminDrillPicker from "@/app/components/admin/AdminDrillPicker";
 import { formatDateTime } from "@/lib/format-date";
+import { REPORT_RECOMMENDED_FIX_IT_OPTIONS } from "@/lib/player-evaluation-cta-shared";
 import {
   parseWrittenReportPaste,
   type WrittenReportSections,
@@ -53,6 +54,7 @@ export default function AdminReportsPanel() {
   const [sections, setSections] = useState<WrittenReportSections | null>(null);
   const [parseError, setParseError] = useState("");
   const [libraryDrillIds, setLibraryDrillIds] = useState<string[]>([]);
+  const [recommendedFixItSlug, setRecommendedFixItSlug] = useState("");
   const [sendError, setSendError] = useState("");
   const [sending, setSending] = useState(false);
 
@@ -88,6 +90,7 @@ export default function AdminReportsPanel() {
     setSections(null);
     setParseError("");
     setLibraryDrillIds([]);
+    setRecommendedFixItSlug("");
     setSendError("");
   }, [selectedId]);
 
@@ -117,6 +120,7 @@ export default function AdminReportsPanel() {
         paste,
         sections,
         libraryDrillIds,
+        recommendedFixItSlug: recommendedFixItSlug || null,
       }),
     });
     setSending(false);
@@ -239,6 +243,21 @@ export default function AdminReportsPanel() {
                   selectedIds={libraryDrillIds}
                   onChange={setLibraryDrillIds}
                 />
+
+                <label className="block text-sm text-zinc-300">
+                  Recommended Fix-It plan (optional)
+                  <select
+                    value={recommendedFixItSlug}
+                    onChange={(event) => setRecommendedFixItSlug(event.target.value)}
+                    className="mt-2 w-full rounded-lg border border-[#2b3650] bg-black/40 px-3 py-2 text-sm text-zinc-100"
+                  >
+                    {REPORT_RECOMMENDED_FIX_IT_OPTIONS.map((option) => (
+                      <option key={option.label} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
 
                 <button
                   type="button"

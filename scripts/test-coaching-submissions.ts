@@ -4,6 +4,7 @@ import {
   PLAYBOOK_LIFETIME_SUBMISSION_LIMIT,
 } from "../lib/coaching-submissions-shared";
 import { PLAYBOOK_LIFETIME_SUBMISSION_LIMIT_LEGACY } from "../lib/playbook-entitlements-shared";
+import { getReportsQueueReviewTracks } from "../lib/reports-queue-shared";
 
 function baseFields(
   overrides: Partial<Parameters<typeof getCoachingSubmissionAvailability>[0]> = {},
@@ -87,6 +88,11 @@ function testPendingQuickReportLock() {
   assert.equal(available.lockReason, "pending-quick-report");
 }
 
+function testReportsQueueTracksDefaultVideo() {
+  const tracks = getReportsQueueReviewTracks("VIDEO");
+  assert.deepEqual(tracks, ["QUICK_SIX_WEEK", "ORG_TRIAL_QUICK"]);
+}
+
 function testTwelveWeekUnlimited() {
   const availability = getCoachingSubmissionAvailability(
     baseFields({
@@ -104,6 +110,7 @@ function main() {
   testFreeTier();
   testPlaybookTierIgnoresFreeFlag();
   testPendingQuickReportLock();
+  testReportsQueueTracksDefaultVideo();
   testTwelveWeekUnlimited();
   console.log("test-coaching-submissions: all passed");
 }
