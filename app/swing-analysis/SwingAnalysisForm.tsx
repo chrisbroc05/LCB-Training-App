@@ -58,6 +58,7 @@ export default function SwingAnalysisForm({
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [videoUploadProcessing, setVideoUploadProcessing] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [submittedNotes, setSubmittedNotes] = useState("");
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
@@ -71,6 +72,10 @@ export default function SwingAnalysisForm({
       return `Uploading video... ${uploadProgress}%`;
     }
 
+    if (videoUploadProcessing) {
+      return "Processing video...";
+    }
+
     return "Submitting...";
   })();
 
@@ -78,6 +83,7 @@ export default function SwingAnalysisForm({
     event.preventDefault();
     setSubmitError("");
     setUploadProgress(null);
+    setVideoUploadProcessing(false);
 
     if (!playerName.trim()) {
       setSubmitError("Please provide the player name.");
@@ -162,8 +168,11 @@ export default function SwingAnalysisForm({
         }
 
         r2Key = presignedUpload.r2Key;
+        setUploadProgress(100);
+        setVideoUploadProcessing(true);
         submittedVideoPosterR2Key =
           (await uploadVideoPosterForR2Key({ videoR2Key: r2Key, source: videoFile })) ?? undefined;
+        setVideoUploadProcessing(false);
       }
 
       const effectiveResponsePreference = showResponsePreference
@@ -212,6 +221,7 @@ export default function SwingAnalysisForm({
     } finally {
       setIsSubmitting(false);
       setUploadProgress(null);
+      setVideoUploadProcessing(false);
     }
   };
 
@@ -358,7 +368,11 @@ export default function SwingAnalysisForm({
           </fieldset>
         ) : null}
 
-        {uploadProgress !== null && isSubmitting ? (
+        {videoUploadProcessing && isSubmitting ? (
+          <p className="text-sm text-zinc-300">Processing video...</p>
+        ) : null}
+
+        {uploadProgress !== null && isSubmitting && !videoUploadProcessing ? (
           <div className="rounded-lg border border-[#2b3650] bg-black/40 p-4">
             <div className="flex items-center justify-between text-sm text-zinc-300">
               <span>Uploading video</span>

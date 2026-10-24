@@ -23,11 +23,20 @@ import {
   SUBMISSION_VIDEO_UPLOAD_FAILED_MESSAGE,
 } from "@/lib/submission-video-limits";
 import { formatDateTime, formatOptionalDateTime } from "@/lib/format-date";
+import { saveAdminSubmissionResponseVideo } from "@/lib/admin-response-video-upload-client";
 import { uploadVideoPosterForR2Key } from "@/lib/video-poster-capture-client";
 import {
   uploadVideoToPresignedUrl,
   type PresignedSwingUploadResponse,
 } from "@/lib/swing-submission-upload-client";
+
+type ResponseVideoUploadPhase =
+  | "idle"
+  | "preparing"
+  | "uploading"
+  | "processing"
+  | "attached"
+  | "error";
 
 type TabType = "swing" | "mental" | "goal" | "members" | "playbook";
 
@@ -149,6 +158,10 @@ export default function AdminPanel({ mode = "full" }: AdminPanelProps) {
   const [responseUploadProgress, setResponseUploadProgress] = useState<number | null>(null);
   const [responseR2UploadError, setResponseR2UploadError] = useState("");
   const [responseR2UploadSuccess, setResponseR2UploadSuccess] = useState(false);
+  const [responseVideoPhase, setResponseVideoPhase] = useState<ResponseVideoUploadPhase>("idle");
+  const [pendingResponseR2Key, setPendingResponseR2Key] = useState<string | null>(null);
+  const [pendingPosterSource, setPendingPosterSource] = useState<File | null>(null);
+  const [responseVideoUploadAttempted, setResponseVideoUploadAttempted] = useState(false);
   const [selectedRecommendedDrills, setSelectedRecommendedDrills] = useState<string[]>([]);
 
   useEffect(() => {
@@ -218,14 +231,39 @@ export default function AdminPanel({ mode = "full" }: AdminPanelProps) {
       setResponseSummary("");
       setResponseR2UploadError("");
       setResponseR2UploadSuccess(false);
+      setResponseVideoPhase("idle");
+      setPendingResponseR2Key(null);
+      setPendingPosterSource(null);
+      setResponseVideoUploadAttempted(false);
+      setResponseUploadProgress(null);
+      setUploadingResponseR2(false);
+      setResponseUploadPreparing(false);
       setSelectedRecommendedDrills([]);
     };
 
     void loadDetail();
   }, [selectedId, tab]);
 
+  const memberVimeoEmbedUrl = detail?.memberVimeoLink ? toVimeoEmbedUrl(detail.memberVimeoLink) : null;
+
+  const hasUploadedR2Video = detail?.responseVideoUrl
+    ? isR2VideoReference(detail.responseVideoUrl)
+    : false;
+  const responseVideoDisplayName =
+    uploadedResponseFileName || getResponseVideoDisplayName(detail?.responseVideoUrl);
+  const hasResponseVideoReady =
+    hasUploadedR2Video || responseVideoPhase === "attached" || Boolean(uploadedResponseFileName);
+  const responseVideoBusy =
+    uploadingResponseR2 ||
+    responseVideoPhase === "preparing" ||
+    responseVideoPhase === "uploading" ||
+    responseVideoPhase === "processing";
+  const canSendResponse =
+    !responseVideoBusy &&
+    Boolean(writtenResponse.trim() || hasUploadedR2Video || manualVideoUrl.trim());
+
   useEffect(() => {
-    if (!uploadingResponseR2) {
+    if (!responseVideoBusy) {
       return;
     }
 
@@ -236,19 +274,7 @@ export default function AdminPanel({ mode = "full" }: AdminPanelProps) {
 
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [uploadingResponseR2]);
-
-  const memberVimeoEmbedUrl = detail?.memberVimeoLink ? toVimeoEmbedUrl(detail.memberVimeoLink) : null;
-
-  const hasUploadedR2Video = detail?.responseVideoUrl
-    ? isR2VideoReference(detail.responseVideoUrl)
-    : false;
-  const responseVideoDisplayName =
-    uploadedResponseFileName || getResponseVideoDisplayName(detail?.responseVideoUrl);
-  const hasResponseVideoReady = hasUploadedR2Video || Boolean(uploadedResponseFileName);
-  const canSendResponse = Boolean(
-    writtenResponse.trim() || hasUploadedR2Video || manualVideoUrl.trim(),
-  );
+  }, [responseVideoBusy]);
 
   const fallbackVideoUrl = useMemo(() => {
     if (!detail) {
@@ -272,6 +298,27 @@ export default function AdminPanel({ mode = "full" }: AdminPanelProps) {
     }
 
     setSendError("");
+    if (responseVideoBusy) {
+      setSendError("Wait for the video upload to finish before sending.");
+      return;
+    }
+    if (pendingResponseR2Key && !hasUploadedR2Video) {
+      setSendError(
+        "Your video is in storage but not attached to this submission. Use Retry attach below.",
+      );
+      return;
+    }
+    if (
+      responseVideoUploadAttempted &&
+      !hasUploadedR2Video &&
+      !manualVideoUrl.trim() &&
+      responseVideoPhase === "error"
+    ) {
+      setSendError(
+        "Video upload failed. Retry the upload or send without video before submitting.",
+      );
+      return;
+    }
     if (!canSendResponse) {
       setSendError("Provide a written response or upload a video.");
       return;
@@ -340,6 +387,68 @@ export default function AdminPanel({ mode = "full" }: AdminPanelProps) {
     );
   };
 
+  const finalizeResponseVideoUpload = async (params: {
+    r2Key: string;
+    file: File;
+  }): Promise<boolean> => {
+    if (!detail || (tab !== "swing" && tab !== "mental")) {
+      return false;
+    }
+
+    setResponseVideoPhase("processing");
+    setResponseUploadProgress(100);
+    setResponseR2UploadError("");
+    setResponseR2UploadSuccess(false);
+
+    try {
+      const responseVideoPosterR2Key =
+        (await uploadVideoPosterForR2Key({
+          videoR2Key: params.r2Key,
+          source: params.file,
+          uploadUrlPath: "/api/admin/video-poster/upload-url",
+        })) ?? undefined;
+
+      const saved = await saveAdminSubmissionResponseVideo({
+        submissionId: detail.id,
+        submissionType: tab,
+        r2Key: params.r2Key,
+        responseVideoPosterR2Key,
+      });
+
+      setPendingResponseR2Key(null);
+      setPendingPosterSource(null);
+      setResponseR2UploadSuccess(true);
+      setResponseVideoPhase("attached");
+      setUploadedResponseFileName(params.file.name);
+      setDetail({
+        ...detail,
+        responseVideoUrl: saved.responseVideoUrl,
+      });
+      return true;
+    } catch (error) {
+      setResponseVideoPhase("error");
+      setPendingResponseR2Key(params.r2Key);
+      setPendingPosterSource(params.file);
+      setResponseR2UploadError(
+        error instanceof Error ? error.message : "Unable to attach response video.",
+      );
+      return false;
+    }
+  };
+
+  const handleRetryAttachResponseVideo = async () => {
+    if (!pendingResponseR2Key || !pendingPosterSource) {
+      return;
+    }
+    setUploadingResponseR2(true);
+    await finalizeResponseVideoUpload({
+      r2Key: pendingResponseR2Key,
+      file: pendingPosterSource,
+    });
+    setUploadingResponseR2(false);
+    setResponseUploadProgress(null);
+  };
+
   const handleUploadResponseVideo = async (file: File | null) => {
     if (!detail || !file) {
       return;
@@ -351,14 +460,19 @@ export default function AdminPanel({ mode = "full" }: AdminPanelProps) {
 
     if (file.size > MAX_ADMIN_RESPONSE_VIDEO_BYTES) {
       setResponseR2UploadError(ADMIN_RESPONSE_VIDEO_TOO_LARGE_MESSAGE);
+      setResponseVideoPhase("error");
       return;
     }
 
+    setResponseVideoUploadAttempted(true);
     setUploadingResponseR2(true);
     setResponseUploadPreparing(true);
+    setResponseVideoPhase("preparing");
     setResponseUploadProgress(null);
     setResponseR2UploadError("");
     setResponseR2UploadSuccess(false);
+    setPendingResponseR2Key(null);
+    setPendingPosterSource(null);
 
     try {
       const uploadUrlResponse = await fetch("/api/admin/response-upload-url", {
@@ -384,6 +498,7 @@ export default function AdminPanel({ mode = "full" }: AdminPanelProps) {
 
       setResponseUploadPreparing(false);
       setResponseUploadProgress(0);
+      setResponseVideoPhase("uploading");
 
       try {
         await uploadVideoToPresignedUrl(
@@ -396,47 +511,22 @@ export default function AdminPanel({ mode = "full" }: AdminPanelProps) {
         throw new Error(SUBMISSION_VIDEO_UPLOAD_FAILED_MESSAGE);
       }
 
-      const responseVideoPosterR2Key =
-        (await uploadVideoPosterForR2Key({
-          videoR2Key: presignedUpload.r2Key,
-          source: file,
-          uploadUrlPath: "/api/admin/video-poster/upload-url",
-        })) ?? undefined;
-
-      const saveResponse = await fetch("/api/admin/upload-response", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          submissionId: detail.id,
-          submissionType: tab,
-          r2Key: presignedUpload.r2Key,
-          responseVideoPosterR2Key,
-        }),
+      const attached = await finalizeResponseVideoUpload({
+        r2Key: presignedUpload.r2Key,
+        file,
       });
-
-      const savePayload = (await saveResponse.json().catch(() => ({}))) as {
-        error?: string;
-        responseVideoUrl?: string;
-      };
-
-      if (!saveResponse.ok) {
-        throw new Error(savePayload.error ?? "Unable to save response video.");
+      if (attached) {
+        setResponseUploadProgress(null);
       }
-
-      setResponseR2UploadSuccess(true);
-      setUploadedResponseFileName(file.name);
-      setDetail({
-        ...detail,
-        responseVideoUrl: savePayload.responseVideoUrl ?? detail.responseVideoUrl ?? null,
-      });
     } catch (error) {
+      setResponseVideoPhase("error");
       setResponseR2UploadError(
         error instanceof Error ? error.message : "Unable to upload response video.",
       );
+      setResponseUploadProgress(null);
     } finally {
       setUploadingResponseR2(false);
       setResponseUploadPreparing(false);
-      setResponseUploadProgress(null);
     }
   };
 
@@ -451,6 +541,11 @@ export default function AdminPanel({ mode = "full" }: AdminPanelProps) {
 
     setResponseR2UploadError("");
     setResponseR2UploadSuccess(false);
+    setResponseVideoPhase("idle");
+    setPendingResponseR2Key(null);
+    setPendingPosterSource(null);
+    setResponseVideoUploadAttempted(false);
+    setResponseUploadProgress(null);
     setUploadedResponseFileName("");
     setResponseVideoInputKey((current) => current + 1);
 
@@ -880,7 +975,7 @@ export default function AdminPanel({ mode = "full" }: AdminPanelProps) {
                       ref={responseVideoInputRef}
                       type="file"
                       accept="video/*"
-                      disabled={uploadingResponseR2}
+                      disabled={responseVideoBusy}
                       onChange={(event) => {
                         const file = event.target.files?.[0] ?? null;
                         void handleUploadResponseVideo(file);
@@ -910,7 +1005,7 @@ export default function AdminPanel({ mode = "full" }: AdminPanelProps) {
                           <button
                             type="button"
                             onClick={() => void handleReplaceResponseVideo()}
-                            disabled={uploadingResponseR2}
+                            disabled={responseVideoBusy}
                             className="rounded-full border border-[#52B788]/40 px-4 py-1.5 text-xs font-semibold text-[#52B788] transition hover:border-[#52B788] hover:text-[#9df3bd] disabled:cursor-not-allowed disabled:opacity-50"
                           >
                             Replace Video
@@ -921,7 +1016,7 @@ export default function AdminPanel({ mode = "full" }: AdminPanelProps) {
                       <button
                         type="button"
                         onClick={() => responseVideoInputRef.current?.click()}
-                        disabled={uploadingResponseR2}
+                        disabled={responseVideoBusy}
                         className="rounded-full bg-[#52B788] px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-[#9df3bd] disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         Upload Response Video
@@ -932,7 +1027,12 @@ export default function AdminPanel({ mode = "full" }: AdminPanelProps) {
                       <p className="text-sm text-zinc-400">Preparing video...</p>
                     ) : null}
 
-                    {responseUploadProgress !== null && uploadingResponseR2 ? (
+                    {responseVideoPhase === "processing" ? (
+                      <p className="text-sm text-zinc-300">Processing video...</p>
+                    ) : null}
+
+                    {responseUploadProgress !== null &&
+                    (responseVideoPhase === "uploading" || responseVideoPhase === "preparing") ? (
                       <div className="rounded-lg border border-[#2b3650] bg-black/40 p-4">
                         <div className="flex items-center justify-between text-sm text-zinc-300">
                           <span>Uploading response video</span>
@@ -947,17 +1047,38 @@ export default function AdminPanel({ mode = "full" }: AdminPanelProps) {
                       </div>
                     ) : null}
 
-                    {!uploadingResponseR2 && !hasResponseVideoReady ? (
+                    {!responseVideoBusy && !hasResponseVideoReady ? (
                       <p className="text-xs text-zinc-500">
                         Max file size is {ADMIN_RESPONSE_VIDEO_MAX_SIZE_LABEL}.
                       </p>
                     ) : null}
 
                     {responseR2UploadError ? (
-                      <p className="text-sm text-red-300">{responseR2UploadError}</p>
+                      <div className="space-y-2">
+                        <p className="text-sm text-red-300">{responseR2UploadError}</p>
+                        {pendingResponseR2Key ? (
+                          <button
+                            type="button"
+                            onClick={() => void handleRetryAttachResponseVideo()}
+                            disabled={responseVideoBusy}
+                            className="rounded-full border border-[#52B788]/40 px-4 py-1.5 text-xs font-semibold text-[#52B788] transition hover:border-[#52B788] hover:text-[#9df3bd] disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            Retry attach video
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => responseVideoInputRef.current?.click()}
+                            disabled={responseVideoBusy}
+                            className="rounded-full border border-[#52B788]/40 px-4 py-1.5 text-xs font-semibold text-[#52B788] transition hover:border-[#52B788] hover:text-[#9df3bd] disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            Retry upload
+                          </button>
+                        )}
+                      </div>
                     ) : null}
-                    {responseR2UploadSuccess ? (
-                      <p className="text-sm font-medium text-[#9df3bd]">Response video uploaded.</p>
+                    {responseR2UploadSuccess || responseVideoPhase === "attached" ? (
+                      <p className="text-sm font-medium text-[#9df3bd]">Video attached.</p>
                     ) : null}
                   </div>
 

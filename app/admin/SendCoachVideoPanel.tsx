@@ -40,6 +40,7 @@ export default function SendCoachVideoPanel({
   const [drillCategory, setDrillCategory] = useState("");
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [uploadPreparing, setUploadPreparing] = useState(false);
+  const [uploadProcessing, setUploadProcessing] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -48,6 +49,7 @@ export default function SendCoachVideoPanel({
     abortUploadRef.current = null;
     setUploadPreparing(false);
     setUploadProgress(null);
+    setUploadProcessing(false);
     setSending(false);
   };
 
@@ -107,12 +109,17 @@ export default function SendCoachVideoPanel({
       await upload.promise;
       abortUploadRef.current = null;
 
+      setUploadProgress(100);
+      setUploadProcessing(true);
+
       const posterR2Key =
         (await uploadVideoPosterForR2Key({
           videoR2Key: uploadUrlPayload.r2Key,
           source: file,
           uploadUrlPath: "/api/admin/video-poster/upload-url",
         })) ?? null;
+
+      setUploadProcessing(false);
 
       const createResponse = await fetch("/api/admin/coach-videos", {
         method: "POST",
@@ -154,7 +161,7 @@ export default function SendCoachVideoPanel({
     }
   };
 
-  const isUploading = uploadPreparing || uploadProgress !== null;
+  const isUploading = uploadPreparing || uploadProgress !== null || uploadProcessing;
 
   return (
     <section className="rounded-2xl border border-[#52B788]/40 bg-[#0b1324]/90 p-4 sm:p-5">
@@ -231,7 +238,11 @@ export default function SendCoachVideoPanel({
           <p className="text-sm text-zinc-400">Preparing upload...</p>
         ) : null}
 
-        {uploadProgress !== null ? (
+        {uploadProcessing ? (
+          <p className="text-sm text-zinc-300">Processing video...</p>
+        ) : null}
+
+        {uploadProgress !== null && !uploadProcessing ? (
           <div>
             <div className="h-2 overflow-hidden rounded-full bg-[#2b3650]">
               <div
@@ -250,7 +261,7 @@ export default function SendCoachVideoPanel({
             onClick={() => void handleSend()}
             className="rounded-full bg-[#22c55e] px-5 py-2 text-sm font-semibold text-black disabled:opacity-60"
           >
-            {sending ? "Sending..." : "Send video"}
+            {uploadProcessing ? "Processing..." : sending ? "Sending..." : "Send video"}
           </button>
           {isUploading ? (
             <button

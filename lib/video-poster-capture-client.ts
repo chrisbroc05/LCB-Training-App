@@ -4,6 +4,8 @@
  * Capture a JPEG poster frame from a local or remote video (browser only).
  */
 
+import { VIDEO_POSTER_CAPTURE_TIMEOUT_MS } from "@/lib/video-poster-capture-shared";
+
 const POSTER_SEEK_SECONDS = 1;
 const POSTER_JPEG_QUALITY = 0.85;
 const POSTER_MAX_WIDTH = 1280;
@@ -103,12 +105,28 @@ export async function captureVideoPosterJpegBlob(
   }
 }
 
+async function withPosterCaptureTimeout<T>(promise: Promise<T>): Promise<T | null> {
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<null>((resolve) => {
+        timer = setTimeout(() => resolve(null), VIDEO_POSTER_CAPTURE_TIMEOUT_MS);
+      }),
+    ]);
+  } finally {
+    if (timer) {
+      clearTimeout(timer);
+    }
+  }
+}
+
 export async function uploadVideoPosterForR2Key(params: {
   videoR2Key: string;
   source: File | string;
   uploadUrlPath?: string;
 }): Promise<string | null> {
-  const blob = await captureVideoPosterJpegBlob(params.source);
+  const blob = await withPosterCaptureTimeout(captureVideoPosterJpegBlob(params.source));
   if (!blob) {
     return null;
   }

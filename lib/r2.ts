@@ -3,6 +3,7 @@ import { Readable } from "stream";
 import {
   GetObjectCommand,
   HeadObjectCommand,
+  ListObjectsV2Command,
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
@@ -454,4 +455,42 @@ export async function getR2ObjectStream(key: string) {
     contentType: response.ContentType ?? "video/mp4",
     contentLength: response.ContentLength,
   };
+}
+
+export type R2ListedObject = {
+  key: string;
+  sizeBytes: number | null;
+  lastModified: Date | null;
+};
+
+export async function listR2ObjectsWithPrefix(prefix: string): Promise<R2ListedObject[]> {
+  const { bucketName } = getR2Config();
+  const client = getR2Client();
+  const objects: R2ListedObject[] = [];
+  let continuationToken: string | undefined;
+
+  do {
+    const response = await client.send(
+      new ListObjectsV2Command({
+        Bucket: bucketName,
+        Prefix: prefix,
+        ContinuationToken: continuationToken,
+      }),
+    );
+
+    for (const object of response.Contents ?? []) {
+      if (!object.Key) {
+        continue;
+      }
+      objects.push({
+        key: object.Key,
+        sizeBytes: object.Size ?? null,
+        lastModified: object.LastModified ?? null,
+      });
+    }
+
+    continuationToken = response.IsTruncated ? response.NextContinuationToken : undefined;
+  } while (continuationToken);
+
+  return objects;
 }

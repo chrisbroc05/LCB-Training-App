@@ -36,6 +36,7 @@
     "test:resources": "npx --yes tsx scripts/test-resources.ts",
     "test:resource-download-gate": "npx --yes tsx scripts/test-resource-download-gate.ts",
     "test:fix-it-plans": "npx --yes tsx scripts/test-fix-it-plans.ts",
+    "test:video-poster-capture": "npx --yes tsx scripts/test-video-poster-capture-shared.ts",
     "build:fix-it-pdfs": "python3 scripts/build-fix-it-pdfs.py",
     "build:starter-pdfs": "npx --yes tsx scripts/export-workout-programs-json.ts && python3 scripts/build-starter-pdfs.py",
     "export:app-highlight": "npx --yes tsx scripts/export-app-highlight-local.ts && python3 marketing/build_app_highlight_pdf.py",
