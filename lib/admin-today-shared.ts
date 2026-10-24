@@ -7,6 +7,8 @@ export type AdminTodayAttention = {
   total: number;
 };
 
+import type { AdminTodayInsights } from "@/lib/admin-today-insights-shared";
+
 export type AdminTodaySnapshot = {
   videoReviewsWaiting: number;
   writtenReportsWaiting: number;
@@ -15,4 +17,5 @@ export type AdminTodaySnapshot = {
   checkoutsStartedOpenCount: number;
   salesTodayCount: number;
   attention: AdminTodayAttention;
+  insights: AdminTodayInsights;
 };

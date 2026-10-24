@@ -8,6 +8,7 @@ import { loadUnconfirmedMinorParentSummaries } from "@/lib/legal-server";
 import { getChicagoTodayDateKey } from "@/lib/program-schedule";
 import { getChicagoDayEnd, getChicagoDayStart } from "@/lib/program-email-chicago";
 
+import { buildAdminTodayInsights } from "@/lib/admin-today-insights-server";
 import type { AdminTodayAttention, AdminTodaySnapshot } from "@/lib/admin-today-shared";
 
 export type { AdminTodayAttention, AdminTodaySnapshot } from "@/lib/admin-today-shared";
@@ -101,6 +102,8 @@ export async function buildAdminTodaySnapshot(now = new Date()): Promise<AdminTo
       unconfirmedMinorNames.length,
   };
 
+  const insights = await buildAdminTodayInsights(now, writtenReportsPending);
+
   return {
     videoReviewsWaiting: swingVideoPending + mentalPending,
     writtenReportsWaiting: writtenReportsPending,
@@ -109,6 +112,7 @@ export async function buildAdminTodaySnapshot(now = new Date()): Promise<AdminTo
     checkoutsStartedOpenCount,
     salesTodayCount,
     attention,
+    insights,
   };
 }
 

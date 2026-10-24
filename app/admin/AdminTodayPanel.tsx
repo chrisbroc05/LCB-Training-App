@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import AdminTodayInsightsSections from "@/app/admin/AdminTodayInsightsSections";
 import { ADMIN_ROUTES } from "@/lib/admin-routes-shared";
 import type { AdminTodaySnapshot } from "@/lib/admin-today-shared";
 
@@ -69,11 +70,6 @@ export default function AdminTodayPanel() {
   const attentionDetail =
     attentionDetailParts.length > 0 ? attentionDetailParts.join(" | ") : "All clear";
 
-  const unconfirmedPreview =
-    data.attention.unconfirmedMinorNames.length > 0
-      ? data.attention.unconfirmedMinorNames.slice(0, 5).join(", ")
-      : null;
-
   return (
     <div className="space-y-6">
       <header>
@@ -115,12 +111,11 @@ export default function AdminTodayPanel() {
         />
       </div>
 
-      {unconfirmedPreview ? (
-        <section className="rounded-2xl border border-[#18243a] bg-[#0b1324]/60 p-4">
-          <p className="text-xs uppercase tracking-wide text-zinc-500">Unconfirmed minors (read-only)</p>
-          <p className="mt-2 text-sm text-zinc-300">{unconfirmedPreview}</p>
-        </section>
-      ) : null}
+      <AdminTodayInsightsSections
+        coachingLoad={data.insights.coachingLoad}
+        growth={data.insights.growth}
+        comingUp={data.insights.comingUp}
+      />
     </div>
   );
 }
