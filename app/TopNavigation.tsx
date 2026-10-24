@@ -335,6 +335,11 @@ function DesktopAccountDropdown({
       openDropdown={openDropdown}
       scheduleCloseDropdown={scheduleCloseDropdown}
     >
+      {isAdmin ? (
+        <Link href="/admin" className={dropdownItemClass(pathname.startsWith("/admin"))}>
+          Admin
+        </Link>
+      ) : null}
       {accountLinks.map((link) => (
         <Link
           key={link.href}
@@ -344,14 +349,6 @@ function DesktopAccountDropdown({
           {link.label}
         </Link>
       ))}
-      {isAdmin ? (
-        <Link
-          href="/admin"
-          className={dropdownItemClass(pathname.startsWith("/admin"))}
-        >
-          Admin portal
-        </Link>
-      ) : null}
       <button
         type="button"
         onClick={onLogout}
@@ -639,6 +636,15 @@ export default function TopNavigation({
                   Account
                 </p>
                 <div className="space-y-1">
+                  {isAdmin ? (
+                    <Link
+                      href="/admin"
+                      onClick={closeMenus}
+                      className={linkClass(pathname.startsWith("/admin"))}
+                    >
+                      Admin
+                    </Link>
+                  ) : null}
                   {buildAccountLinks().map((link) => (
                     <Link
                       key={link.href}

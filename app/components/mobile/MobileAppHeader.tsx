@@ -9,6 +9,7 @@ type MobileAppHeaderProps = {
   userDisplayName: string;
   userEmail?: string | null;
   orgTrialHeader?: OrgTrialHeaderSummary | null;
+  isAdmin?: boolean;
 };
 
 export default function MobileAppHeader({
@@ -16,6 +17,7 @@ export default function MobileAppHeader({
   userDisplayName,
   userEmail,
   orgTrialHeader = null,
+  isAdmin = false,
 }: MobileAppHeaderProps) {
   return (
     <header className="mobile-app-header md:hidden">
@@ -26,6 +28,7 @@ export default function MobileAppHeader({
           userEmail={userEmail}
           orgTrialHeader={orgTrialHeader}
           variant="mobile"
+          isAdmin={isAdmin}
         />
       </div>
     </header>

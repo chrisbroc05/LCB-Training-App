@@ -114,6 +114,7 @@ export default async function RootLayout({
           orgTrialHeader={orgTrialHeader}
           userDisplayName={userDisplayName}
           userEmail={session?.user?.email}
+          isAdmin={hasAdminAccess}
           header={
             session?.user ? (
               <LoggedInSiteHeader

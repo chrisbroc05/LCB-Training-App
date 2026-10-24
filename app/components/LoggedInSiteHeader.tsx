@@ -40,6 +40,7 @@ export default function LoggedInSiteHeader({
             userEmail={userEmail}
             orgTrialHeader={orgTrialHeader}
             variant="desktop"
+            isAdmin={isAdmin}
           />
         </div>
         <div className="mt-3 border-t border-[#18243a] pt-3">

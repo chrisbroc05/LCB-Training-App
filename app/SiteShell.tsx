@@ -29,6 +29,7 @@ type SiteShellProps = {
   orgTrialHeader: OrgTrialHeaderSummary | null;
   userDisplayName: string;
   userEmail?: string | null;
+  isAdmin?: boolean;
 };
 
 export default function SiteShell({
@@ -46,6 +47,7 @@ export default function SiteShell({
   orgTrialHeader,
   userDisplayName,
   userEmail,
+  isAdmin = false,
 }: SiteShellProps) {
   const pathname = usePathname();
   const isStandaloneLanding = pathname.startsWith("/details") || pathname.startsWith("/remote");
@@ -74,6 +76,7 @@ export default function SiteShell({
           userDisplayName={userDisplayName}
           userEmail={userEmail}
           orgTrialHeader={orgTrialHeader}
+          isAdmin={isAdmin}
         />
       ) : null}
       <div className={headerWrapperClass}>

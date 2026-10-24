@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 import BrandLogo from "@/app/BrandLogo";
+import AppHeaderAccountMenu from "@/app/components/AppHeaderAccountMenu";
 import MobileNotificationBell from "@/app/components/mobile/MobileNotificationBell";
 import OrgTrialDetailsModal from "@/app/components/OrgTrialDetailsModal";
 import type { OrgTrialHeaderSummary } from "@/lib/layout-access-server";
@@ -15,6 +17,7 @@ type AppHeaderBarProps = {
   userEmail?: string | null;
   orgTrialHeader?: OrgTrialHeaderSummary | null;
   variant?: "mobile" | "desktop";
+  isAdmin?: boolean;
 };
 
 function SettingsIcon() {
@@ -50,11 +53,14 @@ export default function AppHeaderBar({
   userEmail,
   orgTrialHeader = null,
   variant = "mobile",
+  isAdmin = false,
 }: AppHeaderBarProps) {
+  const pathname = usePathname();
   const [trialModalOpen, setTrialModalOpen] = useState(false);
   const firstName = getMobileFirstName(userDisplayName, userEmail);
   const initial = getInitial(userDisplayName, userEmail);
   const showProgramPill = isTwelveWeekProgramMember(membershipTier);
+  const showAdminPill = isAdmin && !pathname.startsWith("/admin");
 
   return (
     <>
@@ -90,6 +96,11 @@ export default function AppHeaderBar({
                 12-Week
               </Link>
             ) : null}
+            {showAdminPill ? (
+              <Link href="/admin" className="app-header-admin-pill">
+                Admin
+              </Link>
+            ) : null}
           </span>
         </div>
       </div>
@@ -98,10 +109,7 @@ export default function AppHeaderBar({
         <Link href="/settings" className="app-header-settings-button" aria-label="Settings">
           <SettingsIcon />
         </Link>
-        <Link href="/profile" className="app-header-account-link" aria-label="Account">
-          <span className="app-header-account-name">{firstName}</span>
-          <span className="app-header-account-avatar">{initial}</span>
-        </Link>
+        <AppHeaderAccountMenu isAdmin={isAdmin} firstName={firstName} initial={initial} />
       </div>
 
       {orgTrialHeader ? (
