@@ -1,9 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo } from "react";
+import { ADMIN_ROUTES } from "@/lib/admin-routes-shared";
 
 type QuizRow = {
   id: string;
+  leadId: string | null;
   name: string;
   email: string;
   role: string;
@@ -47,8 +50,7 @@ export default function AdminQuizPanel({
     <div className="space-y-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold text-zinc-100">Player IQ Quiz</h2>
-          <p className="mt-1 text-sm text-zinc-400">
+          <p className="text-sm text-zinc-400">
             {totalCompleted} completed | average score {averageScore}
           </p>
         </div>
@@ -60,7 +62,7 @@ export default function AdminQuizPanel({
         </a>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {Object.entries(levelCounts).map(([level, count]) => (
           <div
             key={level}
@@ -76,7 +78,7 @@ export default function AdminQuizPanel({
         <h3 className="text-sm font-bold uppercase tracking-wide text-zinc-400">
           Per-question accuracy
         </h3>
-        <div className="mt-3 overflow-x-auto rounded-xl border border-[#18243a]">
+        <div className="mt-3 hidden admin-table-wrap md:block">
           <table className="min-w-full text-left text-sm text-zinc-300">
             <thead className="bg-[#0b1324] text-xs uppercase text-zinc-500">
               <tr>
@@ -91,18 +93,54 @@ export default function AdminQuizPanel({
                 <tr key={stat.order} className="border-t border-[#18243a]">
                   <td className="px-4 py-3">{stat.order}</td>
                   <td className="px-4 py-3">{stat.difficulty}</td>
-                  <td className="px-4 py-3">{stat.percentCorrect}% ({stat.answered})</td>
+                  <td className="px-4 py-3">
+                    {stat.percentCorrect}% ({stat.answered})
+                  </td>
                   <td className="max-w-md px-4 py-3 text-zinc-400">{stat.prompt}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+        <ul className="mt-3 space-y-2 md:hidden">
+          {questionStats.map((stat) => (
+            <li key={stat.order} className="rounded-xl border border-[#18243a] p-3 text-sm">
+              <p className="font-semibold text-zinc-200">
+                Q{stat.order} | {stat.percentCorrect}% correct
+              </p>
+              <p className="mt-1 text-xs text-zinc-500">{stat.difficulty}</p>
+              <p className="mt-2 text-zinc-400">{stat.prompt}</p>
+            </li>
+          ))}
+        </ul>
       </section>
 
       <section>
-        <h3 className="text-sm font-bold uppercase tracking-wide text-zinc-400">Recent attempts</h3>
-        <div className="mt-3 overflow-x-auto rounded-xl border border-[#18243a]">
+        <h3 className="text-sm font-bold uppercase tracking-wide text-zinc-400">Attempts</h3>
+        <p className="mt-1 text-xs text-zinc-500">Tap an attempt for full answers.</p>
+        <ul className="mt-3 space-y-2 md:hidden">
+          {completedRows.map((row) => (
+            <li key={row.id}>
+              <Link
+                href={ADMIN_ROUTES.content.quizAttempt(row.id)}
+                className="block rounded-xl border border-[#18243a] p-3"
+              >
+                <p className="font-semibold text-zinc-100">{row.name}</p>
+                <p className="text-xs text-zinc-500">{row.email}</p>
+                <p className="mt-2 text-sm text-zinc-300">
+                  {row.role} | Score {row.score ?? "-"} | {row.level ?? "-"}
+                </p>
+                <p className="mt-1 text-xs text-zinc-500">
+                  M {row.mindset ?? "-"} / G {row.gameIq ?? "-"} / T {row.training ?? "-"}
+                </p>
+                <p className="mt-1 text-xs text-zinc-500">
+                  {row.completedAt ? new Date(row.completedAt).toLocaleDateString() : "-"}
+                </p>
+              </Link>
+            </li>
+          ))}
+        </ul>
+        <div className="mt-3 hidden admin-table-wrap md:block">
           <table className="min-w-full text-left text-sm text-zinc-300">
             <thead className="bg-[#0b1324] text-xs uppercase text-zinc-500">
               <tr>
@@ -121,8 +159,26 @@ export default function AdminQuizPanel({
                   <td className="whitespace-nowrap px-4 py-3 text-zinc-400">
                     {row.completedAt ? new Date(row.completedAt).toLocaleDateString() : "-"}
                   </td>
-                  <td className="px-4 py-3">{row.name}</td>
-                  <td className="px-4 py-3">{row.email}</td>
+                  <td className="px-4 py-3">
+                    <Link
+                      href={ADMIN_ROUTES.content.quizAttempt(row.id)}
+                      className="font-medium text-[#9df3bd] hover:underline"
+                    >
+                      {row.name}
+                    </Link>
+                  </td>
+                  <td className="px-4 py-3">
+                    {row.leadId ? (
+                      <Link
+                        href={ADMIN_ROUTES.business.leadDetail(row.leadId)}
+                        className="text-[#52B788] hover:underline"
+                      >
+                        {row.email}
+                      </Link>
+                    ) : (
+                      row.email
+                    )}
+                  </td>
                   <td className="px-4 py-3">{row.role}</td>
                   <td className="px-4 py-3">{row.score ?? "-"}</td>
                   <td className="px-4 py-3">{row.level ?? "-"}</td>

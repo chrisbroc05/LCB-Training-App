@@ -1,12 +1,16 @@
+import AdminPageHeader from "@/app/admin/AdminPageHeader";
 import AdminProgramEmailToolsSection from "@/app/admin/settings/program-email/AdminProgramEmailToolsSection";
+import { ADMIN_ROUTES } from "@/lib/admin-routes-shared";
 
 export default function AdminSettingsProgramEmailPage() {
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold text-zinc-100">Program email tools</h1>
-        <p className="mt-2 text-sm text-zinc-400">Utilities for program-related email sends.</p>
-      </header>
+      <AdminPageHeader
+        title="Program email tools"
+        description="Utilities for program-related email sends."
+        backHref={ADMIN_ROUTES.settings.hub}
+        backLabel="Settings"
+      />
       <AdminProgramEmailToolsSection />
     </div>
   );

@@ -22,6 +22,9 @@ function navLinkClass(active: boolean) {
 }
 
 function isNavItemActive(pathname: string, item: { href: string; matchPrefix: string }) {
+  if (item.href === item.matchPrefix) {
+    return pathname === item.href;
+  }
   if (item.href === ADMIN_ROUTES.messages) {
     return pathname.startsWith("/admin/messages");
   }

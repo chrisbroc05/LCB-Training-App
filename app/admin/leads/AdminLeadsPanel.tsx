@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import AdminQuizPanel from "@/app/admin/leads/AdminQuizPanel";
+import { ADMIN_ROUTES } from "@/lib/admin-routes-shared";
 import { formatLeadResourceCheckoutStatus } from "@/lib/lead-checkout-status-shared";
 import { getResourceDefinition } from "@/lib/resources-shared";
 
@@ -32,6 +34,7 @@ type PurchaseRow = {
 type QuizDashboard = {
   rows: Array<{
     id: string;
+    leadId: string | null;
     name: string;
     email: string;
     role: string;
@@ -220,8 +223,22 @@ export default function AdminLeadsPanel({
                 const purchased = purchasedByEmail.get(lead.email.toLowerCase()) ?? new Set<string>();
                 return (
                   <tr key={lead.id} className="border-t border-[#18243a]">
-                    <td className="px-2 py-2">{lead.firstName}</td>
-                    <td className="px-2 py-2">{lead.email}</td>
+                    <td className="px-2 py-2">
+                      <Link
+                        href={ADMIN_ROUTES.business.leadDetail(lead.id)}
+                        className="font-medium text-[#9df3bd] hover:underline"
+                      >
+                        {lead.firstName}
+                      </Link>
+                    </td>
+                    <td className="px-2 py-2">
+                      <Link
+                        href={ADMIN_ROUTES.business.leadDetail(lead.id)}
+                        className="text-[#52B788] hover:underline"
+                      >
+                        {lead.email}
+                      </Link>
+                    </td>
                     <td className="px-2 py-2">{lead.role}</td>
                     <td className="px-2 py-2">{lead.source}</td>
                     <td className="px-2 py-2">

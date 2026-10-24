@@ -5,6 +5,7 @@
 export const ADMIN_ROUTES = {
   today: "/admin",
   coaching: {
+    hub: "/admin/coaching",
     reviews: "/admin/coaching/reviews",
     reports: "/admin/coaching/reports",
     goalCheckins: "/admin/coaching/goal-checkins",
@@ -15,6 +16,7 @@ export const ADMIN_ROUTES = {
   messages: "/admin/messages",
   messageThread: (conversationId: string) => `/admin/messages/${conversationId}`,
   players: {
+    hub: "/admin/players",
     members: "/admin/players/members",
     free: "/admin/players/free",
     organizations: "/admin/players/organizations",
@@ -22,18 +24,25 @@ export const ADMIN_ROUTES = {
     testing: "/admin/testing",
   },
   content: {
+    hub: "/admin/content",
     drillLibrary: "/admin/content/drill-library",
     programCues: "/admin/content/program-cues",
     quiz: "/admin/content/quiz",
+    quizAttempt: (attemptId: string) => `/admin/content/quiz/${attemptId}`,
+    resources: "/admin/content/resources",
+    resourceDetail: (slug: string) => `/admin/content/resources/${slug}`,
     appHighlight: "/admin/content/app-highlight",
     fixIt: "/admin/content/fix-it",
   },
   business: {
+    hub: "/admin/business",
     leads: "/admin/business/leads",
+    leadDetail: (leadId: string) => `/admin/business/leads/${leadId}`,
     sales: "/admin/business/sales",
     grants: "/admin/business/grants",
   },
   settings: {
+    hub: "/admin/settings",
     coaching: "/admin/settings/coaching",
     alerts: "/admin/settings/alerts",
     programEmail: "/admin/settings/program-email",

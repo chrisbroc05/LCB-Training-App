@@ -5,6 +5,7 @@ import {
   type PlayerIqAnswers,
   type PlayerIqLevel,
 } from "@/lib/player-iq-quiz-shared";
+import { ADMIN_ROUTES } from "@/lib/admin-routes-shared";
 import { prisma } from "@/lib/prisma";
 
 export async function loadQuizAdminDashboard() {
@@ -13,7 +14,7 @@ export async function loadQuizAdminDashboard() {
     orderBy: { completedAt: "desc" },
     take: 500,
     include: {
-      lead: { select: { firstName: true, email: true } },
+      lead: { select: { id: true, firstName: true, email: true } },
       user: { select: { name: true, email: true } },
     },
   });
@@ -72,6 +73,7 @@ export async function loadQuizAdminDashboard() {
     const categoryScores = attempt.categoryScores as Record<string, number> | null;
     return {
       id: attempt.id,
+      leadId: attempt.lead?.id ?? null,
       name,
       email,
       role: attempt.role,
@@ -130,6 +132,83 @@ function csvEscape(value: string) {
     return `"${value.replace(/"/g, '""')}"`;
   }
   return value;
+}
+
+export type QuizAttemptAnswerRow = {
+  order: number;
+  prompt: string;
+  selectedOptionId: string | null;
+  selectedLabel: string;
+  correctOptionId: string;
+  correctLabel: string;
+  isCorrect: boolean;
+  why: string;
+};
+
+export async function loadQuizAttemptAdminDetail(attemptId: string) {
+  const attempt = await prisma.quizAttempt.findUnique({
+    where: { id: attemptId },
+    include: {
+      lead: { select: { id: true, firstName: true, email: true, role: true } },
+      user: { select: { id: true, name: true, email: true } },
+    },
+  });
+
+  if (!attempt || !attempt.completedAt) {
+    return null;
+  }
+
+  const answers = attempt.answers as PlayerIqAnswers;
+  const optionOrder = attempt.optionOrder as Record<string, string[]> | null;
+  const categoryScores = attempt.categoryScores as Record<string, number> | null;
+
+  const answerRows: QuizAttemptAnswerRow[] = PLAYER_IQ_QUESTIONS.map((question) => {
+    const selectedOptionId = answers[question.id] ?? null;
+    const selectedOption = question.options.find((option) => option.id === selectedOptionId);
+    const correctOption = question.options.find((option) => option.id === question.correctOptionId);
+    return {
+      order: question.order,
+      prompt: question.prompt,
+      selectedOptionId,
+      selectedLabel: selectedOption?.text ?? "No answer",
+      correctOptionId: question.correctOptionId,
+      correctLabel: correctOption?.text ?? "",
+      isCorrect: selectedOptionId === question.correctOptionId,
+      why: question.why,
+    };
+  });
+
+  const email = attempt.lead?.email ?? attempt.user?.email ?? "";
+  const name =
+    attempt.lead?.firstName ??
+    attempt.user?.name?.split(/\s+/)[0] ??
+    "Unknown";
+
+  let leadId = attempt.lead?.id ?? null;
+  if (!leadId && email) {
+    const lead = await prisma.lead.findUnique({
+      where: { email: email.toLowerCase() },
+      select: { id: true },
+    });
+    leadId = lead?.id ?? null;
+  }
+
+  return {
+    id: attempt.id,
+    name,
+    email,
+    role: attempt.role,
+    score: attempt.score,
+    level: attempt.level,
+    completedAt: attempt.completedAt.toISOString(),
+    mindset: categoryScores?.mindset ?? null,
+    gameIq: categoryScores?.gameIq ?? null,
+    training: categoryScores?.training ?? null,
+    leadId,
+    leadHref: leadId ? ADMIN_ROUTES.business.leadDetail(leadId) : null,
+    answerRows,
+    optionOrder,
+  };
 }
 
 export async function countQuizCompletionsForDay(dayStart: Date, dayEnd: Date) {

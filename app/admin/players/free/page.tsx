@@ -1,5 +1,7 @@
-import { prisma } from "@/lib/prisma";
+import AdminPageHeader from "@/app/admin/AdminPageHeader";
 import FreeMembersSection from "@/app/admin/FreeMembersSection";
+import { ADMIN_ROUTES } from "@/lib/admin-routes-shared";
+import { prisma } from "@/lib/prisma";
 
 export default async function AdminPlayersFreePage() {
   const freeMembers = await prisma.user.findMany({
@@ -16,9 +18,13 @@ export default async function AdminPlayersFreePage() {
   });
 
   return (
-    <section className="rounded-3xl border border-[#18243a] bg-[#0b1324]/80 p-5 sm:p-8">
-      <h1 className="text-2xl font-semibold text-zinc-100 sm:text-3xl">Free accounts</h1>
-      <p className="mt-2 text-sm text-zinc-300">Assessment call scheduling for free signups.</p>
+    <section className="admin-page-section">
+      <AdminPageHeader
+        title="Free accounts"
+        description="Assessment call scheduling for free signups."
+        backHref={ADMIN_ROUTES.players.hub}
+        backLabel="Players"
+      />
       <FreeMembersSection
         initialMembers={freeMembers.map((member) => ({
           ...member,

@@ -1,12 +1,16 @@
+import AdminPageHeader from "@/app/admin/AdminPageHeader";
 import AdminProgramCuesPanel from "@/app/admin/program/cues/AdminProgramCuesPanel";
+import { ADMIN_ROUTES } from "@/lib/admin-routes-shared";
 
 export default function AdminContentProgramCuesPage() {
   return (
     <div className="space-y-4">
-      <header>
-        <h1 className="text-2xl font-semibold text-zinc-100 sm:text-3xl">Program hitting focuses</h1>
-        <p className="mt-2 text-sm text-zinc-400">My Hitting Focuses library for the 12-week program.</p>
-      </header>
+      <AdminPageHeader
+        title="Program hitting focuses"
+        description="My Hitting Focuses library for the 12-week program."
+        backHref={ADMIN_ROUTES.content.hub}
+        backLabel="Content"
+      />
       <AdminProgramCuesPanel />
     </div>
   );

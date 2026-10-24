@@ -1,4 +1,6 @@
+import AdminPageHeader from "@/app/admin/AdminPageHeader";
 import AdminLeadsPanel from "@/app/admin/leads/AdminLeadsPanel";
+import { ADMIN_ROUTES } from "@/lib/admin-routes-shared";
 import { loadAdminLeadsPageData } from "@/lib/admin-leads-page-server";
 
 export default async function AdminBusinessSalesPage() {
@@ -6,10 +8,12 @@ export default async function AdminBusinessSalesPage() {
 
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold text-zinc-100">Sales</h1>
-        <p className="mt-2 text-sm text-zinc-400">Paid resource purchases.</p>
-      </header>
+      <AdminPageHeader
+        title="Sales"
+        description="Paid resource purchases."
+        backHref={ADMIN_ROUTES.business.hub}
+        backLabel="Business"
+      />
       <AdminLeadsPanel leads={leads} purchases={purchases} view="sales" />
     </div>
   );

@@ -1,12 +1,16 @@
+import AdminPageHeader from "@/app/admin/AdminPageHeader";
 import AdminProgramCoachAlerts from "@/app/admin/program/AdminProgramCoachAlerts";
+import { ADMIN_ROUTES } from "@/lib/admin-routes-shared";
 
 export default function AdminSettingsAlertsPage() {
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold text-zinc-100">Coach alerts</h1>
-        <p className="mt-2 text-sm text-zinc-400">Push notification tests and subscription info.</p>
-      </header>
+      <AdminPageHeader
+        title="Coach alerts"
+        description="Push notification tests and subscription info."
+        backHref={ADMIN_ROUTES.settings.hub}
+        backLabel="Settings"
+      />
       <AdminProgramCoachAlerts />
     </div>
   );

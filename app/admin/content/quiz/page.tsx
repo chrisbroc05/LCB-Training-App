@@ -1,4 +1,6 @@
+import AdminPageHeader from "@/app/admin/AdminPageHeader";
 import AdminQuizPanel from "@/app/admin/leads/AdminQuizPanel";
+import { ADMIN_ROUTES } from "@/lib/admin-routes-shared";
 import { loadQuizAdminDashboard } from "@/lib/player-iq-quiz-admin-server";
 
 export default async function AdminContentQuizPage() {
@@ -6,11 +8,13 @@ export default async function AdminContentQuizPage() {
 
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold text-zinc-100 sm:text-3xl">Player IQ Quiz</h1>
-        <p className="mt-2 text-sm text-zinc-400">Completion stats and question performance.</p>
-      </header>
-      <section className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
+      <AdminPageHeader
+        title="Player IQ Quiz"
+        description="Every attempt, averages, level distribution, and per-question accuracy."
+        backHref={ADMIN_ROUTES.content.hub}
+        backLabel="Content"
+      />
+      <section className="admin-page-section">
         <AdminQuizPanel {...quizDashboard} />
       </section>
     </div>

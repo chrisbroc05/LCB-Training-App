@@ -1,15 +1,19 @@
 "use client";
 
+import AdminPageHeader from "@/app/admin/AdminPageHeader";
 import AdminProgramOverview from "@/app/admin/program/AdminProgramOverview";
 import TwelveWeekPlayersSection from "@/app/admin/TwelveWeekPlayersSection";
+import { ADMIN_ROUTES } from "@/lib/admin-routes-shared";
 
 export default function AdminProgramPlayersTabs() {
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold text-zinc-100 sm:text-3xl">Program players</h1>
-        <p className="mt-2 text-sm text-zinc-400">12-week roster, setup, and daily progress.</p>
-      </header>
+      <AdminPageHeader
+        title="Program players"
+        description="12-week roster, setup, and daily progress."
+        backHref={ADMIN_ROUTES.coaching.hub}
+        backLabel="Coaching"
+      />
 
       <AdminProgramOverview />
       <TwelveWeekPlayersSection defaultCollapsed />
