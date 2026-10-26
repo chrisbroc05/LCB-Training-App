@@ -1,10 +1,10 @@
 import Link from "next/link";
+import { buildMemberPdfViewerHref } from "@/lib/my-resources-shared";
 import {
   canAccessWorkoutResourceFile,
   getWorkoutResourceLockMessage,
   getWorkoutResourceUpgradeHref,
   getWorkoutResourceUpgradeLabel,
-  getWorkoutResourceUrl,
   type WorkoutResource,
 } from "@/lib/workout-resources";
 import type { PlaybookEntitlementFields } from "@/lib/playbook-entitlements-shared";
@@ -28,9 +28,7 @@ export default function ResourceGuideCard({
       {hasAccess ? (
         <div className="mt-4 border-t border-[#2b3650] pt-4">
           <Link
-            href={getWorkoutResourceUrl(resource.filename)}
-            target="_blank"
-            rel="noopener noreferrer"
+            href={buildMemberPdfViewerHref({ kind: "guide", file: resource.filename })}
             className="resources-action-pill"
           >
             {resource.actionLabel}

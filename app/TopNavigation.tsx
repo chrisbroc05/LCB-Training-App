@@ -69,9 +69,11 @@ function buildTrainLinks(options: {
 
   if (options.hasMemberDownloadsAccess) {
     links.push({
-      label: "My Downloads",
-      href: "/account/downloads",
-      isActive: (path) => path.startsWith("/account/downloads"),
+      label: "My Resources",
+      href: "/resources?tab=mine",
+      isActive: (path) =>
+        path.startsWith("/account/downloads") ||
+        (path.startsWith("/resources") && path.includes("tab=mine")),
     });
   }
 

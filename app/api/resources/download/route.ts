@@ -25,7 +25,7 @@ function redirectDownloadError(
   );
 }
 
-async function serveFile(request: Request, fileKey: string) {
+async function serveFile(request: Request, fileKey: string, inline: boolean) {
   const filePath = getPrivateResourceAbsolutePath(fileKey);
   let fileBuffer: Buffer;
   try {
@@ -39,7 +39,7 @@ async function serveFile(request: Request, fileKey: string) {
     status: 200,
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="${filename}"`,
+      "Content-Disposition": `${inline ? "inline" : "attachment"}; filename="${filename}"`,
       "Cache-Control": "private, no-store",
     },
   });
@@ -48,6 +48,8 @@ async function serveFile(request: Request, fileKey: string) {
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const token = url.searchParams.get("token")?.trim();
+  const inline =
+    url.searchParams.get("inline") === "1" && url.searchParams.get("download") !== "1";
 
   if (!token) {
     return redirectDownloadError(request, "invalid");
@@ -62,7 +64,7 @@ export async function GET(request: Request) {
     if (gate.kind !== "allow") {
       return redirectDownloadError(request, "invalid", gate.resourceSlug);
     }
-    return serveFile(request, gate.payload.fileKey);
+    return serveFile(request, gate.payload.fileKey, inline);
   }
 
   const paidGate = await resolvePaidResourceDownloadGate(token);
@@ -90,5 +92,5 @@ export async function GET(request: Request) {
     return redirectDownloadError(request, "not_authorized", payload.resourceSlug);
   }
 
-  return serveFile(request, payload.fileKey);
+  return serveFile(request, payload.fileKey, inline);
 }

@@ -20,6 +20,8 @@ export type WorkoutResource = {
   requiredTier: WorkoutResourceTier;
   accessKind: WorkoutResourceAccessKind;
   actionLabel: string;
+  /** When set, PDF lives outside private/guides/ (e.g. starters). */
+  storageFileKey?: string;
 };
 
 export type WorkoutResourceGroup = {
@@ -71,6 +73,15 @@ export const workoutResourceGroups: WorkoutResourceGroup[] = [
         requiredTier: "basic",
         accessKind: "playbook_guide",
         actionLabel: "View Guide",
+      },
+      {
+        filename: "LCB_Arm_Care_4Week_Starter.pdf",
+        title: "Arm Care Routine",
+        description: "Band and mobility routine to keep arms healthy all season.",
+        requiredTier: "basic",
+        accessKind: "playbook_guide",
+        actionLabel: "View Routine",
+        storageFileKey: "resources/starters/LCB_Arm_Care_4Week_Starter.pdf",
       },
       {
         filename: "LCB_Rotational_Sample.pdf",

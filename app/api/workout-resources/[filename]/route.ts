@@ -17,11 +17,16 @@ type RouteContext = {
 };
 
 function getWorkoutResourcePdfPath(filename: string) {
+  const resource = getWorkoutResource(filename);
+  if (resource?.storageFileKey) {
+    return getPrivateResourceAbsolutePath(resource.storageFileKey);
+  }
   return getPrivateResourceAbsolutePath(`guides/${filename}`);
 }
 
-export async function GET(_request: Request, context: RouteContext) {
+export async function GET(request: Request, context: RouteContext) {
   const { filename } = await context.params;
+  const asDownload = new URL(request.url).searchParams.get("download") === "1";
   const resource = getWorkoutResource(filename);
 
   if (!resource) {
@@ -58,7 +63,7 @@ export async function GET(_request: Request, context: RouteContext) {
     status: 200,
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `inline; filename="${filename}"`,
+      "Content-Disposition": `${asDownload ? "attachment" : "inline"}; filename="${filename}"`,
       "Cache-Control": "private, no-store",
     },
   });

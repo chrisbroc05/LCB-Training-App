@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { buildMemberPdfViewerHref } from "@/lib/my-resources-shared";
 import { useEffect, useState } from "react";
 import {
   ageGroupDetails,
@@ -12,14 +13,16 @@ import {
   type WorkoutProgramCard,
 } from "@/lib/workout-programs";
 
-function ResourceActionPill({ href, label }: { href: string; label: string }) {
+function ResourceActionPill({ href, label, filename }: { href: string; label: string; filename?: string }) {
+  const viewerHref =
+    filename && href.startsWith("/api/workouts/")
+      ? buildMemberPdfViewerHref({ kind: "workout", file: filename })
+      : filename && href.includes("Rotational")
+        ? buildMemberPdfViewerHref({ kind: "guide", file: "LCB_Rotational_Sample.pdf" })
+        : href;
+
   return (
-    <Link
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="resources-action-pill"
-    >
+    <Link href={viewerHref} className="resources-action-pill">
       {label}
     </Link>
   );
@@ -32,17 +35,21 @@ function WorkoutProgramCardView({ program }: { program: WorkoutProgramCard }) {
       <p className="mt-2 text-sm leading-relaxed text-zinc-300">{program.description}</p>
       <div className="mt-4 border-t border-[#2b3650] pt-4">
         <div className="flex flex-wrap gap-2">
-          {program.downloads.map((download) => (
-            <ResourceActionPill
-              key={`${program.title}-${download.label}-${download.href}`}
-              href={download.href}
-              label={
-                program.layout === "single"
-                  ? program.singleActionLabel ?? download.label
-                  : download.label
-              }
-            />
-          ))}
+          {program.downloads.map((download) => {
+            const filename = download.href.split("/").pop()?.split("?")[0];
+            return (
+              <ResourceActionPill
+                key={`${program.title}-${download.label}-${download.href}`}
+                href={download.href}
+                filename={filename}
+                label={
+                  program.layout === "single"
+                    ? program.singleActionLabel ?? download.label
+                    : download.label
+                }
+              />
+            );
+          })}
         </div>
       </div>
     </article>

@@ -91,14 +91,14 @@ function getQuickLinks(access: AccessUserFields, hasFreeSubmissionRemaining: boo
 
   if (canDownloadWorkoutPdfs(access)) {
     links.push({
-      href: "/account/downloads",
-      label: "My Downloads",
+      href: "/resources?tab=mine",
+      label: "My Resources",
       description: "Download strength, speed, and mobility programs.",
     });
   } else if (canAccessWorkoutPrograms(membershipTier, access.playbookLegacyAccess, access.membershipLevel, access.membershipLevelExpiresAt)) {
     links.push({
-      href: "/account/downloads",
-      label: "My Downloads",
+      href: "/resources?tab=mine",
+      label: "My Resources",
       description: "Download strength, speed, and mobility programs.",
     });
   }

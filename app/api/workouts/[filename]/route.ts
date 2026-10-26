@@ -5,7 +5,9 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin";
-import { canAccessWorkoutPrograms, type DatabaseTier } from "@/lib/membership";
+import { canDownloadWorkoutPdfs } from "@/lib/access-shared";
+import { toAccessUserFields, userAccessSelect } from "@/lib/access-server";
+import { emptyAccessUserRow } from "@/lib/empty-access-user-shared";
 import { prisma } from "@/lib/prisma";
 
 type RouteContext = {
@@ -53,8 +55,9 @@ function getWorkoutPdfPath(filename: string) {
   return path.join(process.cwd(), "public", "workouts", filename);
 }
 
-export async function GET(_request: Request, context: RouteContext) {
+export async function GET(request: Request, context: RouteContext) {
   const { filename } = await context.params;
+  const asDownload = new URL(request.url).searchParams.get("download") === "1";
   if (!allowedFilenames.has(filename)) {
     return NextResponse.json({ error: "Workout file not found." }, { status: 404 });
   }
@@ -67,12 +70,14 @@ export async function GET(_request: Request, context: RouteContext) {
   if (!isAdminEmail(session.user.email)) {
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { membershipTier: true, playbookLegacyAccess: true },
+      select: userAccessSelect,
     });
-    const membershipTier = (user?.membershipTier ?? "FREE") as DatabaseTier;
+    const access = user
+      ? toAccessUserFields(user)
+      : toAccessUserFields(emptyAccessUserRow);
 
-    if (!canAccessWorkoutPrograms(membershipTier, user?.playbookLegacyAccess ?? false)) {
-      return NextResponse.json({ error: "Basic membership required." }, { status: 403 });
+    if (!canDownloadWorkoutPdfs(access)) {
+      return NextResponse.json({ error: "Membership upgrade required." }, { status: 403 });
     }
   }
 
@@ -87,7 +92,7 @@ export async function GET(_request: Request, context: RouteContext) {
     status: 200,
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `inline; filename="${filename}"`,
+      "Content-Disposition": `${asDownload ? "attachment" : "inline"}; filename="${filename}"`,
       "Cache-Control": "private, no-store",
     },
   });

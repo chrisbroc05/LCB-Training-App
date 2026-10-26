@@ -9,6 +9,8 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const resourceSlug = url.searchParams.get("resource")?.trim() ?? "";
   const token = url.searchParams.get("token")?.trim() ?? null;
+  const inline =
+    url.searchParams.get("inline") === "1" && url.searchParams.get("download") !== "1";
 
   if (!isFixItResourceSlug(resourceSlug)) {
     return NextResponse.redirect(buildAppRedirectUrl(request, "/resources/download/recover"));
@@ -48,7 +50,7 @@ export async function GET(request: Request) {
     status: 200,
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="${filename}"`,
+      "Content-Disposition": `${inline ? "inline" : "attachment"}; filename="${filename}"`,
       "Cache-Control": "private, no-store",
     },
   });
