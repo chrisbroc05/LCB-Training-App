@@ -1,13 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-/** Host patterns that indicate a hosted production-style Postgres (never write tests here). */
-const PRODUCTION_DATABASE_HOST_PATTERNS = [
-  /\.render\.com/i,
-  /\.rds\.amazonaws\.com/i,
-  /\.supabase\.co/i,
-  /\.neon\.tech/i,
-];
+import { isProductionDatabaseUrl } from "../lib/dev-environment-guard-shared";
 
 export function loadDatabaseUrlFromEnvFile() {
   if (process.env.DATABASE_URL) {
@@ -33,11 +27,7 @@ export function loadDatabaseUrlFromEnvFile() {
 }
 
 export function isLikelyProductionDatabaseUrl(databaseUrl: string): boolean {
-  const normalized = databaseUrl.trim();
-  if (!normalized) {
-    return false;
-  }
-  return PRODUCTION_DATABASE_HOST_PATTERNS.some((pattern) => pattern.test(normalized));
+  return isProductionDatabaseUrl(databaseUrl);
 }
 
 export type TestDatabaseIntegrationDecision = {

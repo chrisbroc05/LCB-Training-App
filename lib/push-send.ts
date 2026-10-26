@@ -4,6 +4,7 @@ import webpush from "web-push";
 import type { PushNotificationType } from "@prisma/client";
 import { getPublicAppUrl } from "@/lib/email-layout";
 import type { PushMessagePayload } from "@/lib/push-shared";
+import { recordDevOutboxPush, shouldCaptureOutboundInDev } from "@/lib/dev-outbox-server";
 import { prisma } from "@/lib/prisma";
 
 const MAX_FAILURE_COUNT = 5;
@@ -112,13 +113,32 @@ export async function sendPushToUser(
     skipDedupeCheck?: boolean;
   },
 ) {
-  if (!ensureWebPushConfigured()) {
-    return { sent: 0, skipped: true, reason: "push_not_configured" as const };
-  }
-
   const type = options?.type ?? "TEST";
   const dateKey = new Date().toISOString().slice(0, 10);
   const dedupeKey = options?.dedupeKey ?? buildPushDedupeKey(userId, type, dateKey);
+
+  if (shouldCaptureOutboundInDev()) {
+    recordDevOutboxPush({
+      userId,
+      title: message.title,
+      body: message.body,
+      url: normalizePushUrl(message.url),
+    });
+    console.log("[dev outbox push]", userId, message.title);
+    await recordPushLog({
+      userId,
+      type,
+      dedupeKey,
+      success: true,
+      error: null,
+      skipLog: options?.skipLog,
+    });
+    return { sent: 1, skipped: false, reason: null };
+  }
+
+  if (!ensureWebPushConfigured()) {
+    return { sent: 0, skipped: true, reason: "push_not_configured" as const };
+  }
 
   if (!options?.skipDedupeCheck && !options?.skipLog) {
     const alreadySent = await hasPushBeenSent(dedupeKey);

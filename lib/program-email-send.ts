@@ -1,26 +1,9 @@
 import "server-only";
 
-import nodemailer from "nodemailer";
+import { sendNotificationEmail } from "@/lib/email-delivery-server";
 import type { ProgramEmailRecipient, ProgramEmailType } from "@prisma/client";
 import { EMAIL_REPLY_TO } from "@/lib/email-layout";
 import { prisma } from "@/lib/prisma";
-
-function createTransporter() {
-  const notificationEmail = process.env.NOTIFICATION_EMAIL;
-  const emailPassword = process.env.EMAIL_PASSWORD;
-
-  if (!notificationEmail || !emailPassword) {
-    throw new Error("NOTIFICATION_EMAIL and EMAIL_PASSWORD are required for program emails.");
-  }
-
-  return nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: notificationEmail,
-      pass: emailPassword,
-    },
-  });
-}
 
 export function buildEmailDedupeKey(params: {
   enrollmentId: string | null;
@@ -57,13 +40,12 @@ export async function sendProgramEmail(params: {
   dateKey: string;
   skipLog?: boolean;
 }) {
-  const transporter = createTransporter();
   const fromEmail = process.env.NOTIFICATION_EMAIL;
   if (!fromEmail) {
     throw new Error("NOTIFICATION_EMAIL is required for program emails.");
   }
 
-  await transporter.sendMail({
+  await sendNotificationEmail({
     from: `"LCB Training" <${fromEmail}>`,
     to: params.to,
     replyTo: EMAIL_REPLY_TO,

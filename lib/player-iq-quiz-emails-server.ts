@@ -1,6 +1,6 @@
 import "server-only";
 
-import nodemailer from "nodemailer";
+import { sendNotificationEmail } from "@/lib/email-delivery-server";
 import {
   buildEmailButton,
   buildEmailFooterText,
@@ -29,18 +29,6 @@ import { buildSwingAnalysisSignupUrl } from "@/lib/resources-lead-shared";
 import { prisma } from "@/lib/prisma";
 
 const QUIZ_RESULTS_EMAIL_TYPE = "PLAYER_IQ_QUIZ_RESULTS";
-
-function createTransporter() {
-  const notificationEmail = process.env.NOTIFICATION_EMAIL;
-  const emailPassword = process.env.EMAIL_PASSWORD;
-  if (!notificationEmail || !emailPassword) {
-    throw new Error("NOTIFICATION_EMAIL and EMAIL_PASSWORD are required.");
-  }
-  return nodemailer.createTransport({
-    service: "gmail",
-    auth: { user: notificationEmail, pass: emailPassword },
-  });
-}
 
 function resolveCtaHref(
   ctaKey: string,
@@ -197,7 +185,7 @@ ${buildEmailFooterText()}`;
     throw new Error("NOTIFICATION_EMAIL is required.");
   }
 
-  await createTransporter().sendMail({
+  await sendNotificationEmail({
     from: `"Coach Broc | LCB Training" <${fromEmail}>`,
     to: params.toEmail,
     replyTo: EMAIL_REPLY_TO,

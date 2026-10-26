@@ -1,6 +1,6 @@
 import "server-only";
 
-import nodemailer from "nodemailer";
+import { sendNotificationEmail } from "@/lib/email-delivery-server";
 import {
   buildEmailButton,
   buildEmailFooterText,
@@ -11,23 +11,6 @@ import {
 } from "@/lib/email-layout";
 import { LEGAL_PAGE_PATHS } from "@/lib/legal-shared";
 import { buildParentConsentConfirmUrl } from "@/lib/parent-consent-token";
-
-function createTransporter() {
-  const notificationEmail = process.env.NOTIFICATION_EMAIL;
-  const emailPassword = process.env.EMAIL_PASSWORD;
-
-  if (!notificationEmail || !emailPassword) {
-    throw new Error("NOTIFICATION_EMAIL and EMAIL_PASSWORD are required for parent consent emails.");
-  }
-
-  return nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: notificationEmail,
-      pass: emailPassword,
-    },
-  });
-}
 
 function getPlayerFirstName(name: string | null | undefined, email: string) {
   const source = (name ?? email).trim();
@@ -132,9 +115,7 @@ export async function sendParentConsentConfirmEmail(params: {
   }
 
   const email = buildParentConsentConfirmEmail(params);
-  const transporter = createTransporter();
-
-  await transporter.sendMail({
+  await sendNotificationEmail({
     from: `"LCB Training" <${fromEmail}>`,
     to: params.to,
     replyTo: EMAIL_REPLY_TO,
@@ -170,8 +151,7 @@ Open Today: ${todayUrl}
 
 ${buildEmailFooterText()}`;
 
-  const transporter = createTransporter();
-  await transporter.sendMail({
+  await sendNotificationEmail({
     from: `"LCB Training" <${fromEmail}>`,
     to: params.to,
     replyTo: EMAIL_REPLY_TO,

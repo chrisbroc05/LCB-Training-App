@@ -1,6 +1,6 @@
 import "server-only";
 
-import nodemailer from "nodemailer";
+import { sendNotificationEmail } from "@/lib/email-delivery-server";
 import {
   buildEmailSectionLabel,
   buildMemberEmailHtml,
@@ -11,23 +11,6 @@ import {
 import { formatLongDate } from "@/lib/format-date";
 import { LEGAL_PAGE_PATHS } from "@/lib/legal-shared";
 import { formatWaiverPlayerNameList } from "@/lib/waiver-sign-shared";
-
-function createTransporter() {
-  const notificationEmail = process.env.NOTIFICATION_EMAIL;
-  const emailPassword = process.env.EMAIL_PASSWORD;
-
-  if (!notificationEmail || !emailPassword) {
-    throw new Error("NOTIFICATION_EMAIL and EMAIL_PASSWORD are required for waiver emails.");
-  }
-
-  return nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: notificationEmail,
-      pass: emailPassword,
-    },
-  });
-}
 
 export async function sendWaiverConfirmationEmail(params: {
   to: string;
@@ -69,8 +52,7 @@ Waiver: ${appUrl}${LEGAL_PAGE_PATHS.waiver}
 
 See you at training.`;
 
-  const transporter = createTransporter();
-  await transporter.sendMail({
+  await sendNotificationEmail({
     from: `"LCB Training" <${notificationEmail}>`,
     to: params.to,
     replyTo: EMAIL_REPLY_TO,

@@ -1,7 +1,7 @@
 import "server-only";
 
 import type { MarketingEmailType } from "@prisma/client";
-import nodemailer from "nodemailer";
+import { sendNotificationEmail } from "@/lib/email-delivery-server";
 import { EMAIL_REPLY_TO } from "@/lib/email-layout";
 import {
   buildMarketingEmailContent,
@@ -10,23 +10,6 @@ import {
 } from "@/lib/marketing-email-templates";
 import type { MarketingEmailTypeValue } from "@/lib/marketing-email-shared";
 import { prisma } from "@/lib/prisma";
-
-function createTransporter() {
-  const notificationEmail = process.env.NOTIFICATION_EMAIL;
-  const emailPassword = process.env.EMAIL_PASSWORD;
-
-  if (!notificationEmail || !emailPassword) {
-    throw new Error("NOTIFICATION_EMAIL and EMAIL_PASSWORD are required for marketing emails.");
-  }
-
-  return nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: notificationEmail,
-      pass: emailPassword,
-    },
-  });
-}
 
 export function buildMarketingEmailDedupeKey(params: {
   userId: string;
@@ -64,13 +47,12 @@ export async function sendMarketingEmail(params: {
   const subject = params.subjectPrefix
     ? `${params.subjectPrefix}${content.subject}`
     : content.subject;
-  const transporter = createTransporter();
   const fromEmail = process.env.NOTIFICATION_EMAIL;
   if (!fromEmail) {
     throw new Error("NOTIFICATION_EMAIL is required for marketing emails.");
   }
 
-  await transporter.sendMail({
+  await sendNotificationEmail({
     from: `"Coach Broc | LCB Training" <${fromEmail}>`,
     to: params.recipient.email,
     replyTo: EMAIL_REPLY_TO,

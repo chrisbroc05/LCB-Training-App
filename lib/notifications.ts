@@ -1,4 +1,4 @@
-import nodemailer from "nodemailer";
+import { sendNotificationEmail } from "@/lib/email-delivery-server";
 import {
   buildDrillLibraryUrl,
   buildEmailButton,
@@ -26,23 +26,6 @@ import type { DatabaseTier } from "@/lib/membership";
 import { formatDatabaseTierLabel } from "@/lib/membership";
 import { prisma } from "@/lib/prisma";
 import { getCoachSubmissionEmailContext } from "@/lib/submission-coach-context";
-
-function createTransporter() {
-  const notificationEmail = process.env.NOTIFICATION_EMAIL;
-  const emailPassword = process.env.EMAIL_PASSWORD;
-
-  if (!notificationEmail || !emailPassword) {
-    throw new Error("NOTIFICATION_EMAIL and EMAIL_PASSWORD are required for notifications.");
-  }
-
-  return nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: notificationEmail,
-      pass: emailPassword,
-    },
-  });
-}
 
 function getNotificationRecipient() {
   const notificationEmail = process.env.NOTIFICATION_EMAIL;
@@ -148,8 +131,7 @@ export async function sendNewMemberNotification(params: {
   userEmail: string;
   membershipTier: DatabaseTier;
 }) {
-  const transporter = createTransporter();
-  await transporter.sendMail({
+  await sendNotificationEmail({
     from: process.env.NOTIFICATION_EMAIL,
     to: getNotificationRecipient(),
     subject: "New Member Signed Up",
@@ -290,7 +272,6 @@ export async function sendSubmissionReceivedEmail(params: {
   membershipTier: DatabaseTier;
   submittedAt?: Date;
 }) {
-  const transporter = createTransporter();
   const emailContent = buildSubmissionConfirmationEmailContent({
     firstName: params.firstName,
     submissionType: params.submissionType,
@@ -299,7 +280,7 @@ export async function sendSubmissionReceivedEmail(params: {
     submittedAt: params.submittedAt ?? new Date(),
   });
 
-  await transporter.sendMail({
+  await sendNotificationEmail({
     from: process.env.NOTIFICATION_EMAIL,
     to: params.toEmail,
     replyTo: EMAIL_REPLY_TO,
@@ -312,10 +293,9 @@ export async function sendSubmissionReceivedEmail(params: {
 async function sendCoachSubmissionNotificationEmail(
   params: CoachSubmissionNotificationEmailParams,
 ) {
-  const transporter = createTransporter();
   const emailContent = buildCoachSubmissionNotificationEmailContent(params);
 
-  await transporter.sendMail({
+  await sendNotificationEmail({
     from: process.env.NOTIFICATION_EMAIL,
     to: getNotificationRecipient(),
     replyTo: EMAIL_REPLY_TO,
@@ -348,7 +328,6 @@ export async function sendTestCoachSubmissionNotificationEmail(params: {
   toEmail: string;
   enrollmentId?: string;
 }) {
-  const transporter = createTransporter();
   let ageGroupLabel: string | null = "Ages 12-15";
   let programWeekNumber: number | null = 3;
   let membershipTier: DatabaseTier = "TWELVE_WEEK";
@@ -393,7 +372,7 @@ export async function sendTestCoachSubmissionNotificationEmail(params: {
     submittedAt: new Date(),
   });
 
-  await transporter.sendMail({
+  await sendNotificationEmail({
     from: process.env.NOTIFICATION_EMAIL,
     to: params.toEmail,
     replyTo: EMAIL_REPLY_TO,
@@ -539,7 +518,6 @@ export async function sendPlayerEvaluationReportEmail(params: {
   pdfDownloadUrl: string;
   recommendedDrillIds?: string[];
 }) {
-  const transporter = createTransporter();
   const firstName = params.playerName.trim().split(/\s+/)[0] ?? "";
   const profileUrl = buildSubmissionResponseUrl("SWING_ANALYSIS", params.submissionId);
   const subject = firstName
@@ -557,7 +535,7 @@ export async function sendPlayerEvaluationReportEmail(params: {
 View in the app: ${profileUrl}
 Download PDF: ${params.pdfDownloadUrl}`;
 
-  await transporter.sendMail({
+  await sendNotificationEmail({
     from: process.env.NOTIFICATION_EMAIL,
     to: params.toEmail,
     replyTo: EMAIL_REPLY_TO,
@@ -584,7 +562,6 @@ export async function sendSubmissionResponseEmail(params: {
   };
   videoDownloadLink?: string;
 }) {
-  const transporter = createTransporter();
   const firstName = params.playerName.trim().split(/\s+/)[0] ?? "";
   const emailContent = buildSubmissionResponseEmailContent({
     firstName,
@@ -595,7 +572,7 @@ export async function sendSubmissionResponseEmail(params: {
     isTwelveWeekEnrolled: params.membershipTier === "TWELVE_WEEK",
   });
 
-  await transporter.sendMail({
+  await sendNotificationEmail({
     from: process.env.NOTIFICATION_EMAIL,
     to: params.toEmail,
     replyTo: EMAIL_REPLY_TO,
@@ -619,10 +596,9 @@ export async function sendSubscriptionCancellationEmail(params: {
   displayName: string;
   effectiveEndDate: Date;
 }) {
-  const transporter = createTransporter();
   const formattedDate = formatLongDate(params.effectiveEndDate);
 
-  await transporter.sendMail({
+  await sendNotificationEmail({
     from: process.env.NOTIFICATION_EMAIL,
     to: params.toEmail,
     subject: "LCB Training Subscription Cancellation Confirmed",
@@ -650,7 +626,6 @@ export async function sendPaymentFailedEmail(params: {
   currency?: string | null;
   invoiceUrl?: string | null;
 }) {
-  const transporter = createTransporter();
   const amountDue =
     typeof params.amountDueCents === "number"
       ? `${(params.amountDueCents / 100).toFixed(2)} ${(params.currency ?? "USD").toUpperCase()}`
@@ -672,7 +647,7 @@ ${invoiceLink ? `\nInvoice link: ${invoiceLink}` : ""}
       )}" target="_blank" rel="noopener noreferrer" style="color:#8fd7ff; text-decoration:underline;">View Invoice</a></p>`
     : "";
 
-  await transporter.sendMail({
+  await sendNotificationEmail({
     from: process.env.NOTIFICATION_EMAIL,
     to: params.toEmail,
     subject: "Payment Failed - Update Billing Information",
@@ -701,10 +676,9 @@ export async function sendMembershipTierChangeEmail(params: {
   displayName: string;
   newTier: DatabaseTier;
 }) {
-  const transporter = createTransporter();
   const tierLabel = getTierLabel(params.newTier);
 
-  await transporter.sendMail({
+  await sendNotificationEmail({
     from: process.env.NOTIFICATION_EMAIL,
     to: params.toEmail,
     subject: "Your Membership Tier Has Been Updated",
@@ -765,7 +739,6 @@ export async function sendGoalCheckinSubmissionNotification(params: {
     targetValue: string | null;
   }>;
 }) {
-  const transporter = createTransporter();
   const goalRows =
     params.goals?.map((goal, index) => ({
       label: `Goal ${index + 1}`,
@@ -802,7 +775,7 @@ export async function sendGoalCheckinSubmissionNotification(params: {
       )
       .join("\n") ?? "";
 
-  await transporter.sendMail({
+  await sendNotificationEmail({
     from: process.env.NOTIFICATION_EMAIL,
     to: getNotificationRecipient(),
     subject: "New Monthly Goal Check-In Submission",
@@ -824,10 +797,9 @@ export async function sendGoalCheckinReceivedEmail(params: {
   toEmail: string;
   displayName: string;
 }) {
-  const transporter = createTransporter();
   const goalSettingUrl = `${getPublicAppUrl()}/goal-setting`;
 
-  await transporter.sendMail({
+  await sendNotificationEmail({
     from: process.env.NOTIFICATION_EMAIL,
     to: params.toEmail,
     subject: "Your Monthly Goals Were Received",
@@ -854,10 +826,9 @@ export async function sendGoalCheckinResponseEmail(params: {
   displayName: string;
   coachResponse: string;
 }) {
-  const transporter = createTransporter();
   const goalSettingUrl = `${getPublicAppUrl()}/goal-setting`;
 
-  await transporter.sendMail({
+  await sendNotificationEmail({
     from: process.env.NOTIFICATION_EMAIL,
     to: params.toEmail,
     subject: "Coach Broc Responded to Your Monthly Goals",
@@ -890,10 +861,9 @@ export async function sendPlaybookReflectionSharedNotification(params: {
   chapterNumber: number;
   chapterTitle: string;
 }) {
-  const transporter = createTransporter();
   const adminUrl = `${getPublicAppUrl()}/admin/coaching/playbook-reflections`;
 
-  await transporter.sendMail({
+  await sendNotificationEmail({
     from: process.env.NOTIFICATION_EMAIL,
     to: getNotificationRecipient(),
     subject: `${params.memberName} shared their Chapter ${params.chapterNumber} reflections with you`,
@@ -922,10 +892,9 @@ export async function sendAccountDeletionRequestNotification(params: {
   memberEmail: string;
   membershipTier: DatabaseTier;
 }) {
-  const transporter = createTransporter();
   const adminUrl = `${getPublicAppUrl()}/admin/players/members`;
 
-  await transporter.sendMail({
+  await sendNotificationEmail({
     from: process.env.NOTIFICATION_EMAIL,
     to: getNotificationRecipient(),
     subject: `${params.memberName} has requested account deletion`,
@@ -951,7 +920,6 @@ export async function sendPlaybookPurchaseConfirmationEmail(params: {
   toEmail: string;
   firstName: string;
 }) {
-  const transporter = createTransporter();
   const appUrl = getPublicAppUrl();
   const dashboardUrl = `${appUrl}/dashboard`;
   const playbookUrl = `${appUrl}/playbook/read`;
@@ -993,7 +961,7 @@ LCB Training`;
       )}" style="color:#2D6A4F;">${escapeHtml(drillLibraryUrl)}</a></p>`,
   });
 
-  await transporter.sendMail({
+  await sendNotificationEmail({
     from: process.env.NOTIFICATION_EMAIL,
     to: params.toEmail,
     replyTo: EMAIL_REPLY_TO,
@@ -1007,7 +975,6 @@ export async function sendRemoteSessionPurchaseConfirmationEmail(params: {
   toEmail: string;
   firstName: string;
 }) {
-  const transporter = createTransporter();
   const bookingUrl = getCalendlyBookingUrl();
 
   const subject = "Book your LCB Remote Session";
@@ -1030,7 +997,7 @@ LCB Training`;
       ${buildEmailButton("Book your session", bookingUrl)}`,
   });
 
-  await transporter.sendMail({
+  await sendNotificationEmail({
     from: process.env.NOTIFICATION_EMAIL,
     to: params.toEmail,
     replyTo: EMAIL_REPLY_TO,
@@ -1041,10 +1008,9 @@ LCB Training`;
 }
 
 export async function sendCoachRefundProcessedNotification(params: { playerName: string }) {
-  const transporter = createTransporter();
   const name = params.playerName.trim() || "Player";
 
-  await transporter.sendMail({
+  await sendNotificationEmail({
     from: process.env.NOTIFICATION_EMAIL,
     to: getNotificationRecipient(),
     subject: `Refund processed for ${name}`,

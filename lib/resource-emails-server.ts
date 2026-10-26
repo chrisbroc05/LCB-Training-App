@@ -1,6 +1,6 @@
 import "server-only";
 
-import nodemailer from "nodemailer";
+import { sendNotificationEmail } from "@/lib/email-delivery-server";
 import {
   buildEmailButton,
   buildEmailFooterText,
@@ -14,18 +14,6 @@ import { createFixItPlanAccessToken } from "@/lib/fix-it-plan-access-token";
 import { buildFixItPlanPath, isFixItResourceSlug } from "@/lib/fix-it-plans-shared";
 import { getResourceDefinition, getResourceDownloadLabel } from "@/lib/resources-shared";
 import { createResourceDownloadToken } from "@/lib/resource-download-token";
-
-function createTransporter() {
-  const notificationEmail = process.env.NOTIFICATION_EMAIL;
-  const emailPassword = process.env.EMAIL_PASSWORD;
-  if (!notificationEmail || !emailPassword) {
-    throw new Error("NOTIFICATION_EMAIL and EMAIL_PASSWORD are required.");
-  }
-  return nodemailer.createTransport({
-    service: "gmail",
-    auth: { user: notificationEmail, pass: emailPassword },
-  });
-}
 
 function buildDownloadLink(email: string, resourceSlug: string, fileKey: string) {
   const token = createResourceDownloadToken({ email, resourceSlug, fileKey });
@@ -92,7 +80,7 @@ ${buildEmailFooterText()}`;
     throw new Error("NOTIFICATION_EMAIL is required.");
   }
 
-  await createTransporter().sendMail({
+  await sendNotificationEmail({
     from: `"Coach Broc | LCB Training" <${fromEmail}>`,
     to: params.toEmail,
     replyTo: EMAIL_REPLY_TO,
@@ -138,7 +126,7 @@ export async function sendResourceDownloadLinksEmail(params: {
     throw new Error("NOTIFICATION_EMAIL is required.");
   }
 
-  await createTransporter().sendMail({
+  await sendNotificationEmail({
     from: `"Coach Broc | LCB Training" <${fromEmail}>`,
     to: params.toEmail,
     replyTo: EMAIL_REPLY_TO,
@@ -175,7 +163,7 @@ ${buildEmailButton("Open your Fix-It plan", planUrl)}
     throw new Error("NOTIFICATION_EMAIL is required.");
   }
 
-  await createTransporter().sendMail({
+  await sendNotificationEmail({
     from: `"Coach Broc | LCB Training" <${fromEmail}>`,
     to: params.toEmail,
     replyTo: EMAIL_REPLY_TO,
@@ -246,7 +234,7 @@ ${buildEmailFooterText()}`;
     throw new Error("NOTIFICATION_EMAIL is required.");
   }
 
-  await createTransporter().sendMail({
+  await sendNotificationEmail({
     from: `"Coach Broc | LCB Training" <${fromEmail}>`,
     to: params.toEmail,
     replyTo: EMAIL_REPLY_TO,
@@ -279,7 +267,7 @@ ${buildEmailFooterText()}`;
     throw new Error("NOTIFICATION_EMAIL is required.");
   }
 
-  await createTransporter().sendMail({
+  await sendNotificationEmail({
     from: `"Coach Broc | LCB Training" <${fromEmail}>`,
     to: params.toEmail,
     replyTo: EMAIL_REPLY_TO,
