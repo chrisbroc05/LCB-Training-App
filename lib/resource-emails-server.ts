@@ -13,11 +13,32 @@ import { buildLeadUnsubscribeUrl } from "@/lib/lead-unsubscribe-token";
 import { createFixItPlanAccessToken } from "@/lib/fix-it-plan-access-token";
 import { buildFixItPlanPath, isFixItResourceSlug } from "@/lib/fix-it-plans-shared";
 import { getResourceDefinition, getResourceDownloadLabel } from "@/lib/resources-shared";
-import { createResourceDownloadToken } from "@/lib/resource-download-token";
+import {
+  buildLeadResourceEmailDownloadUrl,
+  buildPurchaseResourceEmailDownloadUrl,
+} from "@/lib/resource-email-download-token";
+import { normalizeLeadEmail } from "@/lib/leads-shared";
+import { prisma } from "@/lib/prisma";
 
-function buildDownloadLink(email: string, resourceSlug: string, fileKey: string) {
-  const token = createResourceDownloadToken({ email, resourceSlug, fileKey });
-  return `${getPublicAppUrl()}/api/resources/download?token=${encodeURIComponent(token)}`;
+const RESOURCE_EMAIL_DOWNLOAD_COPY =
+  "Use the links below to download. These email links stay valid for a long time; each time you open one, we generate a fresh secure download for you.";
+
+async function lookupActivePurchaseId(email: string, resourceSlug: string) {
+  const normalized = normalizeLeadEmail(email);
+  const purchase = await prisma.resourcePurchase.findFirst({
+    where: { email: normalized, resourceSlug, refundedAt: null },
+    orderBy: { createdAt: "desc" },
+    select: { id: true },
+  });
+  return purchase?.id ?? null;
+}
+
+function buildLeadDownloadLink(leadId: string, resourceSlug: string, fileKey: string) {
+  return buildLeadResourceEmailDownloadUrl(leadId, resourceSlug, fileKey);
+}
+
+function buildPurchaseDownloadLink(purchaseId: string, fileKey: string) {
+  return buildPurchaseResourceEmailDownloadUrl(purchaseId, fileKey);
 }
 
 function buildLeadUnsubscribeFooterHtml(leadId: string) {
@@ -43,7 +64,7 @@ export async function sendResourceDeliveryEmail(params: {
   const linksHtml = resource.downloadFileKeys
     .map((fileKey) => {
       const label = getResourceDownloadLabel(fileKey);
-      const href = buildDownloadLink(params.toEmail, params.resourceSlug, fileKey);
+      const href = buildLeadDownloadLink(params.leadId, params.resourceSlug, fileKey);
       return `<li style="margin:0 0 8px 0;"><a href="${escapeHtml(href)}" style="color:#2D6A4F; text-decoration:underline;">${escapeHtml(label)}</a></li>`;
     })
     .join("");
@@ -51,20 +72,20 @@ export async function sendResourceDeliveryEmail(params: {
   const linksText = resource.downloadFileKeys
     .map((fileKey) => {
       const label = getResourceDownloadLabel(fileKey);
-      const href = buildDownloadLink(params.toEmail, params.resourceSlug, fileKey);
+      const href = buildLeadDownloadLink(params.leadId, params.resourceSlug, fileKey);
       return `- ${label}: ${href}`;
     })
     .join("\n");
 
   const subject = `Your ${resource.title} from LCB Training`;
   const bodyHtml = `<p style="margin:0 0 16px 0; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:1.7; color:#0A1628;">Hi ${escapeHtml(params.firstName)},</p>
-<p style="margin:0 0 16px 0; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:1.7; color:#0A1628;">Thanks for grabbing <strong>${escapeHtml(resource.title)}</strong>. Use the links below to download. Each link expires in 15 minutes for security, so save the PDFs to your device.</p>
+<p style="margin:0 0 16px 0; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:1.7; color:#0A1628;">Thanks for grabbing <strong>${escapeHtml(resource.title)}</strong>. ${escapeHtml(RESOURCE_EMAIL_DOWNLOAD_COPY)}</p>
 <ul style="margin:0 0 16px 20px; padding:0; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:1.7; color:#0A1628;">${linksHtml}</ul>
 ${buildLeadUnsubscribeFooterHtml(params.leadId)}`;
 
   const text = `Hi ${params.firstName},
 
-Thanks for grabbing ${resource.title}. Download links (expire in 15 minutes):
+Thanks for grabbing ${resource.title}. ${RESOURCE_EMAIL_DOWNLOAD_COPY}
 
 ${linksText}${buildLeadUnsubscribeFooterText(params.leadId)}
 
@@ -99,27 +120,32 @@ export async function sendResourceDownloadLinksEmail(params: {
     throw new Error("Resource has no downloadable files.");
   }
 
+  const purchaseId = await lookupActivePurchaseId(params.toEmail, params.resourceSlug);
+  if (!purchaseId) {
+    throw new Error("No active purchase found for this email and resource.");
+  }
+
   const linksHtml = resource.downloadFileKeys
     .map((fileKey) => {
       const label = getResourceDownloadLabel(fileKey);
-      const href = buildDownloadLink(params.toEmail, params.resourceSlug, fileKey);
+      const href = buildPurchaseDownloadLink(purchaseId, fileKey);
       return `<li style="margin:0 0 8px 0;"><a href="${escapeHtml(href)}" style="color:#2D6A4F; text-decoration:underline;">${escapeHtml(label)}</a></li>`;
     })
     .join("");
 
   const subject = `Your ${resource.title} download links`;
-  const bodyHtml = `<p style="margin:0 0 16px 0; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:1.7; color:#0A1628;">Here are fresh download links for <strong>${escapeHtml(resource.title)}</strong>. Each link expires in 15 minutes, so save the PDFs to your device.</p>
+  const bodyHtml = `<p style="margin:0 0 16px 0; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:1.7; color:#0A1628;">Here are download links for <strong>${escapeHtml(resource.title)}</strong>. ${escapeHtml(RESOURCE_EMAIL_DOWNLOAD_COPY)}</p>
 <ul style="margin:0 0 16px 20px; padding:0; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:1.7; color:#0A1628;">${linksHtml}</ul>`;
 
   const linksText = resource.downloadFileKeys
     .map((fileKey) => {
       const label = getResourceDownloadLabel(fileKey);
-      const href = buildDownloadLink(params.toEmail, params.resourceSlug, fileKey);
+      const href = buildPurchaseDownloadLink(purchaseId, fileKey);
       return `- ${label}: ${href}`;
     })
     .join("\n");
 
-  const text = `Download links for ${resource.title} (expire in 15 minutes):\n\n${linksText}\n\n${buildEmailFooterText()}`;
+  const text = `Download links for ${resource.title}. ${RESOURCE_EMAIL_DOWNLOAD_COPY}\n\n${linksText}\n\n${buildEmailFooterText()}`;
 
   const fromEmail = process.env.NOTIFICATION_EMAIL;
   if (!fromEmail) {
@@ -177,6 +203,7 @@ export async function sendResourcePurchaseReceiptEmail(params: {
   toEmail: string;
   firstName: string;
   resourceSlug: string;
+  purchaseId: string;
 }) {
   const resource = getResourceDefinition(params.resourceSlug);
   if (!resource?.downloadFileKeys?.length) {
@@ -198,7 +225,7 @@ export async function sendResourcePurchaseReceiptEmail(params: {
   const linksHtml = resource.downloadFileKeys
     .map((fileKey) => {
       const label = getResourceDownloadLabel(fileKey);
-      const href = buildDownloadLink(params.toEmail, params.resourceSlug, fileKey);
+      const href = buildPurchaseDownloadLink(params.purchaseId, fileKey);
       return `<li style="margin:0 0 8px 0;"><a href="${escapeHtml(href)}" style="color:#2D6A4F; text-decoration:underline;">${escapeHtml(label)}</a></li>`;
     })
     .join("");
@@ -224,7 +251,10 @@ ${
       : ""
   }
 ${resource.downloadFileKeys
-  .map((fileKey) => `${getResourceDownloadLabel(fileKey)}: ${buildDownloadLink(params.toEmail, params.resourceSlug, fileKey)}`)
+  .map(
+    (fileKey) =>
+      `${getResourceDownloadLabel(fileKey)}: ${buildPurchaseDownloadLink(params.purchaseId, fileKey)}`,
+  )
   .join("\n")}
 
 ${buildEmailFooterText()}`;

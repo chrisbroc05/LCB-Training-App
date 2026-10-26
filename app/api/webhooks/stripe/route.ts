@@ -202,7 +202,7 @@ export async function POST(request: Request) {
               });
               linkedUserId = user?.id ?? null;
             }
-            await prisma.resourcePurchase.create({
+            const purchase = await prisma.resourcePurchase.create({
               data: {
                 email: buyerEmail ?? "",
                 userId: linkedUserId,
@@ -235,6 +235,7 @@ export async function POST(request: Request) {
                   toEmail: buyerEmail,
                   firstName,
                   resourceSlug,
+                  purchaseId: purchase.id,
                 });
               } catch (error) {
                 console.error("Failed to send resource purchase receipt email", error);
