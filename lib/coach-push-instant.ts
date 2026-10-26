@@ -2,6 +2,7 @@ import "server-only";
 
 import { prisma } from "@/lib/prisma";
 import {
+  buildAdminCoachingReportsUrl,
   buildAdminSubmissionUrl,
   getCoachSubmissionTypeLabel,
   type CoachSubmissionTab,
@@ -13,18 +14,26 @@ export async function sendCoachNewSubmissionPush(params: {
   submissionId: string;
   submissionTab: CoachSubmissionTab;
   playerName: string;
+  notificationKind?: "VIDEO_REVIEW" | "WRITTEN_REPORT";
+  effectivePlanLabel?: string | null;
 }) {
   const firstName = getPlayerFirstName(params.playerName, "Player");
-  const typeLabel = getCoachSubmissionTypeLabel(params.submissionTab);
+  const isWrittenReport = params.notificationKind === "WRITTEN_REPORT";
+  const typeLabel = isWrittenReport
+    ? params.effectivePlanLabel?.trim() || "Written report"
+    : getCoachSubmissionTypeLabel(params.submissionTab);
+  const url = isWrittenReport
+    ? buildAdminCoachingReportsUrl(params.submissionId, "pending")
+    : buildAdminSubmissionUrl(params.submissionTab, params.submissionId);
 
   return sendCoachAlertPushSafe({
     type: "COACH_NEW_SUBMISSION",
     dedupeKey: `coach:COACH_NEW_SUBMISSION:${params.submissionTab}:${params.submissionId}`,
     settingKey: "newVideosEnabled",
     message: {
-      title: `New video from ${firstName}`,
-      body: typeLabel,
-      url: buildAdminSubmissionUrl(params.submissionTab, params.submissionId),
+      title: isWrittenReport ? `Swing report requested: ${firstName}` : `New video from ${firstName}`,
+      body: isWrittenReport ? "Report requested" : typeLabel,
+      url,
     },
   });
 }

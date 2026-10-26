@@ -1,12 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { isAdminEmail } from "@/lib/admin";
-import { prisma } from "@/lib/prisma";
-import {
-  createPresignedEvaluationPdfDownloadUrl,
-  isEvaluationPdfKey,
-} from "@/lib/r2";
+import { resolveEvaluationPdfPresignedDownloadUrl } from "@/lib/evaluation-pdf-download-server";
 
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
@@ -19,35 +14,18 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "submissionId is required." }, { status: 400 });
   }
 
-  const submission = await prisma.swingAnalysisSubmission.findUnique({
-    where: { id: submissionId },
-    select: {
-      userId: true,
-      evaluationPdfR2Key: true,
-      status: true,
-    },
+  const resolved = await resolveEvaluationPdfPresignedDownloadUrl({
+    submissionId,
+    userId: session.user.id,
+    userEmail: session.user.email,
   });
 
-  if (!submission?.evaluationPdfR2Key) {
-    return NextResponse.json({ error: "Evaluation PDF not found." }, { status: 404 });
+  if (!resolved.ok) {
+    return NextResponse.json({ error: resolved.error }, { status: resolved.status });
   }
 
-  const isOwner = submission.userId === session.user.id;
-  const isAdmin = isAdminEmail(session.user.email);
-  if (!isOwner && !isAdmin) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
-  if (
-    submission.status !== "COMPLETED" ||
-    !isEvaluationPdfKey(submission.evaluationPdfR2Key, submissionId)
-  ) {
-    return NextResponse.json({ error: "Evaluation PDF not available." }, { status: 404 });
-  }
-
-  const { downloadUrl, expiresInSeconds } = await createPresignedEvaluationPdfDownloadUrl(
-    submission.evaluationPdfR2Key,
-  );
-
-  return NextResponse.json({ downloadUrl, expiresInSeconds });
+  return NextResponse.json({
+    downloadUrl: resolved.downloadUrl,
+    expiresInSeconds: resolved.expiresInSeconds,
+  });
 }

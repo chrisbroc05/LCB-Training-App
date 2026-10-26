@@ -1,5 +1,6 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import AdminReportsPendingPanel from "@/app/admin/reports/AdminReportsPendingPanel";
 import AdminReportsSentPanel from "@/app/admin/reports/AdminReportsSentPanel";
@@ -7,7 +8,10 @@ import AdminReportsSentPanel from "@/app/admin/reports/AdminReportsSentPanel";
 type ReportsTab = "pending" | "sent";
 
 export default function AdminReportsPanel() {
-  const [tab, setTab] = useState<ReportsTab>("pending");
+  const searchParams = useSearchParams();
+  const initialTab = searchParams.get("tab") === "sent" ? "sent" : "pending";
+  const initialSubmissionId = searchParams.get("submissionId")?.trim() || null;
+  const [tab, setTab] = useState<ReportsTab>(initialTab);
 
   return (
     <div className="mt-6">
@@ -36,7 +40,9 @@ export default function AdminReportsPanel() {
         </button>
       </div>
 
-      {tab === "pending" ? <AdminReportsPendingPanel /> : null}
+      {tab === "pending" ? (
+        <AdminReportsPendingPanel initialSelectedId={initialSubmissionId} />
+      ) : null}
       {tab === "sent" ? <AdminReportsSentPanel /> : null}
     </div>
   );

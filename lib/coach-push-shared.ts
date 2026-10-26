@@ -11,6 +11,7 @@ export type CoachSubmissionTab = "swing" | "mental";
 export {
   buildAdminSubmissionUrl,
   buildAdminCoachingReviewsUrl,
+  buildAdminCoachingReportsUrl,
 } from "@/lib/admin-routes-shared";
 
 export function getCoachSubmissionTypeLabel(tab: CoachSubmissionTab) {

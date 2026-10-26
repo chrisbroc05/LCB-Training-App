@@ -3,12 +3,16 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import type { DatabaseTier } from "@/lib/membership";
-import { resolveEffectiveLevel } from "@/lib/access-shared";
+import { formatEffectiveAccessLabel, resolveEffectiveLevel } from "@/lib/access-shared";
 import {
   consumeCoachingSubmission,
   getCoachingSubmissionLimitError,
 } from "@/lib/coaching-submissions";
-import { shouldHideSwingResponsePreference } from "@/lib/coaching-submission-confirmation-shared";
+import {
+  getSwingSubmissionConfirmationVariant,
+  shouldHideSwingResponsePreference,
+} from "@/lib/coaching-submission-confirmation-shared";
+import { isReportsQueueReviewTrack } from "@/lib/reports-queue-shared";
 import { getFreeSwingAnalysisResponseMode } from "@/lib/free-swing-analysis-response-server";
 import { mergeOrgIntoAccessFields, userOrgAccessSelect } from "@/lib/org-server";
 import { prisma } from "@/lib/prisma";
@@ -273,6 +277,15 @@ export async function POST(request: Request) {
     const firstName =
       session.user.name?.trim().split(/\s+/)[0] ?? playerName.trim().split(/\s+/)[0] ?? "";
     const coachEmailContext = await getCoachSubmissionEmailContext(userId, membershipTier);
+    const effectivePlanLabel = accessUser
+      ? formatEffectiveAccessLabel(mergeOrgIntoAccessFields(accessUser))
+      : null;
+    const isWrittenReportQueue = isReportsQueueReviewTrack(
+      createdSubmission.reviewTrack,
+      freeSwingAnalysisResponseMode,
+    );
+    const coachNotificationKind = isWrittenReportQueue ? "WRITTEN_REPORT" : "VIDEO_REVIEW";
+    const swingConfirmationVariant = getSwingSubmissionConfirmationVariant(effectiveLevel);
 
     console.log(
       `[swing-submit:${requestId}] Sending submission notification`,
@@ -284,6 +297,8 @@ export async function POST(request: Request) {
           firstName,
           fullName: playerName,
           membershipTier,
+          notificationKind: coachNotificationKind,
+          effectivePlanLabel,
           whereWasThis: whereValidation.value,
           lookAtFocus: lookAtValidation.value,
           videoCategory: categoryValidation.value,
@@ -303,6 +318,8 @@ export async function POST(request: Request) {
       submissionId: createdSubmission.id,
       submissionTab: "swing",
       playerName,
+      notificationKind: coachNotificationKind,
+      effectivePlanLabel,
     });
 
     try {
@@ -313,6 +330,7 @@ export async function POST(request: Request) {
           submissionType: "SWING",
           playerNotes: notes,
           membershipTier,
+          swingConfirmationVariant,
           submittedAt: createdSubmission.createdAt,
         }),
         EMAIL_TIMEOUT_MS,

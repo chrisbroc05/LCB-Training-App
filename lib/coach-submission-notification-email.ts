@@ -1,4 +1,5 @@
 import {
+  buildAdminCoachingReportsUrl,
   buildAdminSubmissionUrl,
   type CoachSubmissionTab,
 } from "@/lib/coach-push-shared";
@@ -15,16 +16,19 @@ import {
   formatLongDateTime,
 } from "@/lib/format-date";
 import type { DatabaseTier } from "@/lib/membership";
-import { formatDatabaseTierLabel } from "@/lib/membership";
 import { getChicagoMondayStart } from "@/lib/program-schedule";
 import {
   getSubmissionTypeLabelForEmail,
   type SubmissionVideoCategory,
 } from "@/lib/submission-form-shared";
 
+export type CoachSubmissionNotificationKind = "VIDEO_REVIEW" | "WRITTEN_REPORT";
+
 export type CoachSubmissionNotificationEmailParams = {
   submissionId: string;
   submissionTab: CoachSubmissionTab;
+  notificationKind?: CoachSubmissionNotificationKind;
+  effectivePlanLabel?: string | null;
   firstName: string;
   fullName: string;
   membershipTier: DatabaseTier;
@@ -64,31 +68,49 @@ function buildCoachSubmissionContextLine(params: CoachSubmissionNotificationEmai
   }
 
   if (params.membershipTier === "FREE") {
-    return "Free submission";
+    return params.notificationKind === "WRITTEN_REPORT"
+      ? "Free - written report"
+      : "Free submission";
   }
 
-  return formatDatabaseTierLabel(params.membershipTier);
+  const planLabel = params.effectivePlanLabel?.trim();
+  if (planLabel) {
+    return planLabel;
+  }
+
+  return "Member submission";
 }
 
-function buildAdminSubmissionOpenUrl(submissionTab: CoachSubmissionTab, submissionId: string) {
-  const adminPath = buildAdminSubmissionUrl(submissionTab, submissionId);
+function buildAdminSubmissionOpenUrl(params: CoachSubmissionNotificationEmailParams) {
+  const adminPath =
+    params.notificationKind === "WRITTEN_REPORT"
+      ? buildAdminCoachingReportsUrl(params.submissionId, "pending")
+      : buildAdminSubmissionUrl(params.submissionTab, params.submissionId);
   return `${getPublicAppUrl()}${buildAuthRedirectPath(adminPath)}`;
 }
 
 export function buildCoachSubmissionNotificationEmailContent(
   params: CoachSubmissionNotificationEmailParams,
 ) {
+  const isWrittenReport = params.notificationKind === "WRITTEN_REPORT";
   const submissionTypeLabel = getSubmissionTypeLabelForEmail({
     submissionTab: params.submissionTab,
     videoCategory: params.videoCategory,
   });
   const trimmedFirstName = params.firstName.trim() || params.fullName.trim().split(/\s+/)[0] || "Player";
-  const subject = `New video from ${trimmedFirstName}: ${submissionTypeLabel}`;
-  const headline = `${params.fullName.trim()} sent a ${submissionTypeLabel} video`;
+  const subject = isWrittenReport
+    ? `Swing report requested: ${trimmedFirstName}`
+    : `New video from ${trimmedFirstName}: ${submissionTypeLabel}`;
+  const headline = isWrittenReport
+    ? `${params.fullName.trim()} requested a written swing report`
+    : `${params.fullName.trim()} sent a ${submissionTypeLabel} video`;
   const contextLine = buildCoachSubmissionContextLine(params);
   const dueLabel = getCoachSubmissionResponseDueLabel(params.membershipTier, params.submittedAt);
-  const adminUrl = buildAdminSubmissionOpenUrl(params.submissionTab, params.submissionId);
+  const adminUrl = buildAdminSubmissionOpenUrl(params);
   const note = params.note.trim() || "No note provided.";
+  const footerLine = isWrittenReport
+    ? "Report requested"
+    : `Respond by ${dueLabel}`;
 
   const whereSection =
     params.whereWasThis && params.whereWasThis.trim()
@@ -109,7 +131,7 @@ export function buildCoachSubmissionNotificationEmailContent(
               ${buildEmailSectionLabel("THEIR NOTE")}
               <p style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:1.7; color:#0A1628; white-space:pre-wrap;">${escapeHtml(note)}</p>
               ${buildEmailButton("Open in admin", adminUrl)}
-              <p style="margin:24px 0 0 0; font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:1.6; color:#6B7280;">Respond by ${escapeHtml(dueLabel)}</p>`;
+              <p style="margin:24px 0 0 0; font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:1.6; color:#6B7280;">${escapeHtml(footerLine)}</p>`;
 
   const whereText =
     params.whereWasThis && params.whereWasThis.trim()
@@ -129,7 +151,7 @@ ${note}
 
 Open in admin: ${adminUrl}
 
-Respond by ${dueLabel}`;
+${footerLine}`;
 
   return {
     subject,

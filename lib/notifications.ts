@@ -26,6 +26,11 @@ import type { DatabaseTier } from "@/lib/membership";
 import { formatDatabaseTierLabel } from "@/lib/membership";
 import { prisma } from "@/lib/prisma";
 import { getCoachSubmissionEmailContext } from "@/lib/submission-coach-context";
+import {
+  COACH_RESPONSE_WITHIN_FEW_DAYS_LABEL,
+  type SwingSubmissionConfirmationVariant,
+} from "@/lib/coaching-submission-confirmation-shared";
+import { buildEvaluationReportPdfEmailUrl } from "@/lib/evaluation-report-pdf-token";
 
 function getNotificationRecipient() {
   const notificationEmail = process.env.NOTIFICATION_EMAIL;
@@ -155,43 +160,70 @@ function buildSubmissionConfirmationEmailContent(params: {
   submissionType: SubmissionConfirmationType;
   playerNotes: string;
   isTwelveWeekEnrolled: boolean;
+  swingConfirmationVariant?: SwingSubmissionConfirmationVariant;
   submittedAt: Date;
 }) {
   const trimmedFirstName = params.firstName.trim();
   const hasFirstName = trimmedFirstName.length > 0;
   const isSwing = params.submissionType === "SWING";
+  const swingVariant = params.swingConfirmationVariant ?? "PREMIUM_VIDEO";
+  const isWrittenSwingReport = isSwing && swingVariant === "WRITTEN_REPORT";
   const submissionLabel = isSwing ? "Swing Analysis" : "Mental Game";
-  const submissionKind = isSwing ? "swing video" : "mental game question";
+  const submissionKind = isWrittenSwingReport
+    ? "swing"
+    : isSwing
+      ? "swing video"
+      : "mental game question";
   const profileUrl = `${getPublicAppUrl()}/profile`;
   const programUrl = `${getPublicAppUrl()}/program`;
   const submittedAtLabel = formatWeekdayDateTime(params.submittedAt);
   const notes = truncateSubmissionNotes(params.playerNotes);
-  const headline = hasFirstName
-    ? `Got it, ${trimmedFirstName}. I'm on it.`
-    : "Got it. I'm on it.";
-  const subject = hasFirstName
-    ? isSwing
-      ? `Got your video, ${trimmedFirstName}. I'm on it.`
-      : `Got your question, ${trimmedFirstName}. I'm on it.`
-    : isSwing
-      ? "Got your video. I'm on it."
-      : "Got your question. I'm on it.";
+  const headline = isWrittenSwingReport
+    ? hasFirstName
+      ? `Got your swing, ${trimmedFirstName}. I'm on it.`
+      : "Got your swing. I'm on it."
+    : hasFirstName
+      ? `Got it, ${trimmedFirstName}. I'm on it.`
+      : "Got it. I'm on it.";
+  const subject = isWrittenSwingReport
+    ? hasFirstName
+      ? `Got your swing, ${trimmedFirstName}. I'm on it.`
+      : "Got your swing. I'm on it."
+    : hasFirstName
+      ? isSwing
+        ? `Got your video, ${trimmedFirstName}. I'm on it.`
+        : `Got your question, ${trimmedFirstName}. I'm on it.`
+      : isSwing
+        ? "Got your video. I'm on it."
+        : "Got your question. I'm on it.";
 
-  const whatHappensNextHtml = isSwing
+  const introParagraph = isWrittenSwingReport
+    ? `Your swing just landed with me. I watch every submission myself, no assistants, no shortcuts. You'll get your written swing report ${COACH_RESPONSE_WITHIN_FEW_DAYS_LABEL}.`
+    : `Your ${submissionKind} just landed with me. I watch every submission myself, no assistants, no shortcuts. You will have my personal breakdown within a few days.`;
+
+  const whatHappensNextHtml = isWrittenSwingReport
     ? `<ol style="margin:0; padding-left:20px; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:1.7; color:#0A1628;">
+        <li style="margin:0 0 8px 0; color:#0A1628;">I watch your video, more than once.</li>
+        <li style="margin:0 0 8px 0; color:#0A1628;">I write your report: strengths, what to work on, and drills.</li>
+        <li style="margin:0; color:#0A1628;">You get it in the app with a PDF.</li>
+      </ol>`
+    : isSwing
+      ? `<ol style="margin:0; padding-left:20px; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:1.7; color:#0A1628;">
         <li style="margin:0 0 8px 0; color:#0A1628;">I watch your video, more than once.</li>
         <li style="margin:0 0 8px 0; color:#0A1628;">I record a video breakdown talking you through exactly what I see.</li>
         <li style="margin:0; color:#0A1628;">You get drills from my library picked for what you need most.</li>
       </ol>`
-    : `<ol style="margin:0; padding-left:20px; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:1.7; color:#0A1628;">
+      : `<ol style="margin:0; padding-left:20px; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:1.7; color:#0A1628;">
         <li style="margin:0 0 8px 0; color:#0A1628;">I read your question carefully.</li>
         <li style="margin:0 0 8px 0; color:#0A1628;">I record a personal response for you.</li>
         <li style="margin:0; color:#0A1628;">You get tools and drills to put it into action.</li>
       </ol>`;
 
-  const whatHappensNextText = isSwing
-    ? "1. I watch your video, more than once.\n2. I record a video breakdown talking you through exactly what I see.\n3. You get drills from my library picked for what you need most."
-    : "1. I read your question carefully.\n2. I record a personal response for you.\n3. You get tools and drills to put it into action.";
+  const whatHappensNextText = isWrittenSwingReport
+    ? "1. I watch your video, more than once.\n2. I write your report: strengths, what to work on, and drills.\n3. You get it in the app with a PDF."
+    : isSwing
+      ? "1. I watch your video, more than once.\n2. I record a video breakdown talking you through exactly what I see.\n3. You get drills from my library picked for what you need most."
+      : "1. I read your question carefully.\n2. I record a personal response for you.\n3. You get tools and drills to put it into action.";
 
   const notesHtml = notes
     ? `<tr>
@@ -201,11 +233,14 @@ function buildSubmissionConfirmationEmailContent(params: {
 
   const notesText = notes ? `\nYour notes: ${notes}` : "";
 
-  const upsellSectionsHtml = params.isTwelveWeekEnrolled
+  const suppressProgramUpsell =
+    params.isTwelveWeekEnrolled || isWrittenSwingReport;
+
+  const upsellSectionsHtml = suppressProgramUpsell
     ? ""
     : buildEmailNonMemberUpsellHtml({ programPitchVariant: "confirmation", programUrl });
 
-  const upsellSectionsText = params.isTwelveWeekEnrolled
+  const upsellSectionsText = suppressProgramUpsell
     ? ""
     : buildEmailNonMemberUpsellText({ programPitchVariant: "confirmation", programUrl });
 
@@ -221,7 +256,7 @@ function buildSubmissionConfirmationEmailContent(params: {
                   ${buildEmailButton("View in Your Dashboard", profileUrl)}`);
 
   const bodyContentHtml = `<h1 style="margin:0 0 20px 0; font-family:Arial, Helvetica, sans-serif; font-size:28px; line-height:1.3; font-weight:700; color:#0A1628;">${escapeHtml(headline)}</h1>
-              <p style="margin:0 0 24px 0; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:1.7; color:#0A1628;">Your ${escapeHtml(submissionKind)} just landed with me. I watch every submission myself, no assistants, no shortcuts. You will have my personal breakdown within a few days.</p>
+              <p style="margin:0 0 24px 0; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:1.7; color:#0A1628;">${escapeHtml(introParagraph)}</p>
               ${buildEmailSectionLabel("YOUR SUBMISSION")}
               ${submissionRecapHtml}
               ${buildEmailSectionLabel("WHAT HAPPENS NEXT")}
@@ -239,7 +274,7 @@ function buildSubmissionConfirmationEmailContent(params: {
 
   const text = `${headline}
 
-Your ${submissionKind} just landed with me. I watch every submission myself, no assistants, no shortcuts. You will have my personal breakdown within a few days.
+${introParagraph}
 
 YOUR SUBMISSION
 Type: ${submissionLabel}
@@ -270,6 +305,7 @@ export async function sendSubmissionReceivedEmail(params: {
   submissionType: SubmissionConfirmationType;
   playerNotes: string;
   membershipTier: DatabaseTier;
+  swingConfirmationVariant?: SwingSubmissionConfirmationVariant;
   submittedAt?: Date;
 }) {
   const emailContent = buildSubmissionConfirmationEmailContent({
@@ -277,6 +313,7 @@ export async function sendSubmissionReceivedEmail(params: {
     submissionType: params.submissionType,
     playerNotes: params.playerNotes,
     isTwelveWeekEnrolled: params.membershipTier === "TWELVE_WEEK",
+    swingConfirmationVariant: params.swingConfirmationVariant,
     submittedAt: params.submittedAt ?? new Date(),
   });
 
@@ -513,13 +550,14 @@ ${buildEmailFooterText()}`;
 
 export async function sendPlayerEvaluationReportEmail(params: {
   toEmail: string;
+  userId: string;
   playerName: string;
   submissionId: string;
-  pdfDownloadUrl: string;
   recommendedDrillIds?: string[];
 }) {
   const firstName = params.playerName.trim().split(/\s+/)[0] ?? "";
   const profileUrl = buildSubmissionResponseUrl("SWING_ANALYSIS", params.submissionId);
+  const pdfUrl = buildEvaluationReportPdfEmailUrl(params.submissionId, params.userId);
   const subject = firstName
     ? `${firstName}, your swing report is ready`
     : "Your swing report is ready";
@@ -527,13 +565,13 @@ export async function sendPlayerEvaluationReportEmail(params: {
   const bodyContentHtml = `<h1 style="margin:0 0 20px 0; font-family:Arial, Helvetica, sans-serif; font-size:28px; line-height:1.3; font-weight:700; color:#0A1628;">Your Swing Report is ready.</h1>
               <p style="margin:0 0 24px 0; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:1.7; color:#0A1628;">Coach Broc finished your written swing report. Read it in the app or download the PDF.</p>
               ${buildEmailButton("View in the app", profileUrl)}
-              ${buildEmailButton("Download PDF", params.pdfDownloadUrl)}`;
+              ${buildEmailButton("Download PDF", pdfUrl)}`;
 
   const html = buildMemberEmailHtml({ title: subject, bodyContentHtml });
   const text = `Your Swing Report is ready.
 
 View in the app: ${profileUrl}
-Download PDF: ${params.pdfDownloadUrl}`;
+Download PDF: ${pdfUrl}`;
 
   await sendNotificationEmail({
     from: process.env.NOTIFICATION_EMAIL,

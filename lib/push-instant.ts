@@ -7,17 +7,19 @@ export async function sendCoachResponsePush(params: {
   userId: string;
   submissionType: "SWING_ANALYSIS" | "MENTAL_GAME";
   submissionId: string | number;
+  responseMode?: "VIDEO" | "WRITTEN";
 }) {
   const path = buildSubmissionResponseProfilePath(
     params.submissionType,
     String(params.submissionId),
   );
+  const isWrittenReport = params.responseMode === "WRITTEN";
 
   return sendPushToUserSafe(
     params.userId,
     {
-      title: "Coach Broc responded to your video",
-      body: "Your feedback is ready to review.",
+      title: isWrittenReport ? "Your swing report is ready" : "Coach Broc responded to your video",
+      body: isWrittenReport ? "Your written report and PDF are in the app." : "Your feedback is ready to review.",
       url: path,
     },
     {

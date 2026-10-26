@@ -57,6 +57,14 @@ export function buildAdminCoachingReviewsUrl(tab: CoachSubmissionTab, submission
   return `${ADMIN_ROUTES.coaching.reviews}?${params.toString()}`;
 }
 
+export function buildAdminCoachingReportsUrl(
+  submissionId: string,
+  tab: "pending" | "sent" = "pending",
+) {
+  const params = new URLSearchParams({ submissionId, tab });
+  return `${ADMIN_ROUTES.coaching.reports}?${params.toString()}`;
+}
+
 /** @deprecated Use buildAdminCoachingReviewsUrl */
 export function buildAdminSubmissionUrl(tab: CoachSubmissionTab, submissionId: string) {
   return buildAdminCoachingReviewsUrl(tab, submissionId);

@@ -46,9 +46,9 @@ function EditableSectionList(props: {
   );
 }
 
-export default function AdminReportsPendingPanel() {
+export default function AdminReportsPendingPanel(props: { initialSelectedId?: string | null }) {
   const [items, setItems] = useState<QuickReportListItem[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(props.initialSelectedId ?? null);
   const [loading, setLoading] = useState(false);
   const [paste, setPaste] = useState("");
   const [sections, setSections] = useState<WrittenReportSections | null>(null);
@@ -74,12 +74,13 @@ export default function AdminReportsPendingPanel() {
     const data = (await response.json()) as { submissions: QuickReportListItem[] };
     setItems(data.submissions);
     setSelectedId((current) => {
-      if (current && data.submissions.some((item) => item.id === current)) {
-        return current;
+      const preferred = current ?? props.initialSelectedId ?? null;
+      if (preferred && data.submissions.some((item) => item.id === preferred)) {
+        return preferred;
       }
       return data.submissions[0]?.id ?? null;
     });
-  }, []);
+  }, [props.initialSelectedId]);
 
   useEffect(() => {
     void loadQueue();

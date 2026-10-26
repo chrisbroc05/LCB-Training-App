@@ -14,11 +14,7 @@ import type { PlayerEvaluationCtaTrack } from "@/lib/player-evaluation-cta-share
 import { sendCoachResponsePush } from "@/lib/push-instant";
 import { prisma } from "@/lib/prisma";
 import { isQuickWrittenReportTrack } from "@/lib/quick-written-report-shared";
-import {
-  buildEvaluationPdfKey,
-  createPresignedEvaluationPdfDownloadUrl,
-  uploadEvaluationPdfBuffer,
-} from "@/lib/r2";
+import { buildEvaluationPdfKey, uploadEvaluationPdfBuffer } from "@/lib/r2";
 import { sendSecondEmailCoachResponseCopy } from "@/lib/second-email-send";
 import { shouldSendNotificationEmail } from "@/lib/user-notification-preferences";
 import {
@@ -51,8 +47,6 @@ async function deliverQuickWrittenReportEmails(params: {
   recommendedDrills: string[];
   evaluationPdfR2Key: string;
 }) {
-  const { downloadUrl } = await createPresignedEvaluationPdfDownloadUrl(params.evaluationPdfR2Key);
-
   const shouldSendEmail = await shouldSendNotificationEmail(
     params.userId,
     "notifySubmissionResponse",
@@ -61,9 +55,9 @@ async function deliverQuickWrittenReportEmails(params: {
   if (shouldSendEmail) {
     await sendPlayerEvaluationReportEmail({
       toEmail: params.userEmail,
+      userId: params.userId,
       playerName: params.playerName,
       submissionId: params.submissionId,
-      pdfDownloadUrl: downloadUrl,
       recommendedDrillIds: params.recommendedDrills,
     });
   }
@@ -190,6 +184,7 @@ export async function sendQuickWrittenReportForSubmission(params: {
     userId: updated.userId,
     submissionType: "SWING_ANALYSIS",
     submissionId: updated.id,
+    responseMode: "WRITTEN",
   });
 
   await createAppNotification({
