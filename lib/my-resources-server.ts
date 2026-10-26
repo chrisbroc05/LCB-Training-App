@@ -15,12 +15,15 @@ import {
 } from "@/lib/fix-it-plans-shared";
 import {
   buildMemberPdfViewerHref,
-  type MyResourceGroupItem,
+  type MyResourceGuideRowModel,
   type MyResourceLinkItem,
+  type MyResourcePdfAction,
   type MyResourcePdfItem,
+  type MyResourceProgramCardModel,
   type MyResourcesViewModel,
   type MyResourceSection,
   type MyResourceTreeItem,
+  type MyResourceWorkoutProgramsSection,
 } from "@/lib/my-resources-shared";
 import {
   buildGuidePdfApiHref,
@@ -30,9 +33,15 @@ import {
   buildWorkoutPdfApiHref,
   MY_RESOURCES_AGE_GROUPS,
   MY_RESOURCES_GUIDE_FILENAMES,
+  MY_RESOURCES_PHASE_PILL_LABELS,
   MY_RESOURCES_PROGRAMS,
   ROTATIONAL_POWER_FILENAME,
 } from "@/lib/my-resources-catalog-shared";
+import {
+  PROGRAM_AGE_GROUP_WORKOUT_AGE,
+  type ProgramAgeGroup,
+} from "@/lib/program-enrollment-shared";
+import type { AgeGroupKey } from "@/lib/workout-programs";
 import { createResourceDownloadToken } from "@/lib/resource-download-token";
 import {
   canDownloadPaidResourceFile,
@@ -73,68 +82,84 @@ function linkItem(params: {
   };
 }
 
-function groupItem(id: string, label: string, children: MyResourceTreeItem[]): MyResourceGroupItem {
-  return { kind: "group", id, label, children };
+function buildPhaseActions(
+  buildFilename: (ageKey: AgeGroupKey, phase: 1 | 2 | 3) => string,
+  ageKey: AgeGroupKey,
+): MyResourcePdfAction[] {
+  return ([1, 2, 3] as const).map((phase) => {
+    const file = buildFilename(ageKey, phase);
+    return {
+      label: MY_RESOURCES_PHASE_PILL_LABELS[phase],
+      viewerHref: buildMemberPdfViewerHref({ kind: "workout", file }),
+      downloadHref: buildWorkoutPdfApiHref(file, true),
+    };
+  });
 }
 
-function buildFullWorkoutProgramsSection(access: AccessUserFields, isAdmin: boolean): MyResourceSection | null {
+function buildFullWorkoutProgramsSection(
+  access: AccessUserFields,
+  isAdmin: boolean,
+  preferredAgeGroup: AgeGroupKey | null,
+): MyResourceWorkoutProgramsSection | null {
   if (!isAdmin && !canDownloadWorkoutPdfs(access)) {
     return null;
   }
 
-  const programGroups: MyResourceTreeItem[] = MY_RESOURCES_PROGRAMS.map((program) => {
+  const programs: MyResourceProgramCardModel[] = MY_RESOURCES_PROGRAMS.map((program) => {
     if (program.key === "rotational") {
-      return pdfItem({
-        id: "rotational-power",
-        label: program.title,
-        viewerHref: buildMemberPdfViewerHref({ kind: "guide", file: ROTATIONAL_POWER_FILENAME }),
-        downloadHref: buildGuidePdfApiHref(ROTATIONAL_POWER_FILENAME, true),
-      });
+      return {
+        key: program.key,
+        title: program.title,
+        description: program.description,
+        layout: program.layout,
+        singleActionLabel: program.singleActionLabel ?? "Open program",
+        actionsByAge: {
+          all: [
+            {
+              label: program.singleActionLabel ?? "Open program",
+              viewerHref: buildMemberPdfViewerHref({ kind: "guide", file: ROTATIONAL_POWER_FILENAME }),
+              downloadHref: buildGuidePdfApiHref(ROTATIONAL_POWER_FILENAME, true),
+            },
+          ],
+        },
+      };
     }
 
-    const ageGroups: MyResourceTreeItem[] = MY_RESOURCES_AGE_GROUPS.map((age) => {
+    const actionsByAge: MyResourceProgramCardModel["actionsByAge"] = {};
+
+    for (const age of MY_RESOURCES_AGE_GROUPS) {
       if (program.key === "strength") {
-        const phases: MyResourceTreeItem[] = ([1, 2, 3] as const).map((phase) => {
-          const file = buildStrengthPhaseFilename(age.key, phase);
-          return pdfItem({
-            id: `strength-${age.key}-p${phase}`,
-            label: `Phase ${phase}`,
+        actionsByAge[age.key] = buildPhaseActions(buildStrengthPhaseFilename, age.key);
+      } else if (program.key === "speed") {
+        actionsByAge[age.key] = buildPhaseActions(buildSpeedPhaseFilename, age.key);
+      } else {
+        const file = buildMobilityFilename(age.key);
+        actionsByAge[age.key] = [
+          {
+            label: program.singleActionLabel ?? "Open program",
             viewerHref: buildMemberPdfViewerHref({ kind: "workout", file }),
             downloadHref: buildWorkoutPdfApiHref(file, true),
-          });
-        });
-        return groupItem(`strength-${age.key}`, age.label, phases);
+          },
+        ];
       }
+    }
 
-      if (program.key === "speed") {
-        const phases: MyResourceTreeItem[] = ([1, 2, 3] as const).map((phase) => {
-          const file = buildSpeedPhaseFilename(age.key, phase);
-          return pdfItem({
-            id: `speed-${age.key}-p${phase}`,
-            label: `Phase ${phase}`,
-            viewerHref: buildMemberPdfViewerHref({ kind: "workout", file }),
-            downloadHref: buildWorkoutPdfApiHref(file, true),
-          });
-        });
-        return groupItem(`speed-${age.key}`, age.label, phases);
-      }
-
-      const file = buildMobilityFilename(age.key);
-      return pdfItem({
-        id: `mobility-${age.key}`,
-        label: age.label,
-        viewerHref: buildMemberPdfViewerHref({ kind: "workout", file }),
-        downloadHref: buildWorkoutPdfApiHref(file, true),
-      });
-    });
-
-    return groupItem(`program-${program.key}`, program.title, ageGroups);
+    return {
+      key: program.key,
+      title: program.title,
+      description: program.description,
+      layout: program.layout,
+      singleActionLabel: program.singleActionLabel,
+      actionsByAge,
+    };
   });
 
   return {
+    kind: "workout-programs",
     id: "workout-programs",
     title: "Workout Programs",
-    items: programGroups,
+    defaultAgeGroup: preferredAgeGroup ?? MY_RESOURCES_AGE_GROUPS[0]?.key ?? null,
+    programs,
   };
 }
 
@@ -167,6 +192,7 @@ function buildStarterSection(access: AccessUserFields, isAdmin: boolean): MyReso
   }
 
   return {
+    kind: "list",
     id: "four-week-starters",
     title: "4-Week Starters",
     items,
@@ -228,32 +254,31 @@ async function buildPurchasedStarterPdfs(params: {
 }
 
 function buildGuidesSection(access: AccessUserFields, isAdmin: boolean): MyResourceSection | null {
-  const items: MyResourceTreeItem[] = [];
+  const guides: MyResourceGuideRowModel[] = [];
 
   for (const filename of MY_RESOURCES_GUIDE_FILENAMES) {
     if (!isAdmin && !canAccessWorkoutResourceFile(access, filename)) {
       continue;
     }
     const resource = getWorkoutResource(filename);
-    const label = resource?.title ?? filename.replace(/^LCB_/, "").replace(/\.pdf$/, "").replace(/_/g, " ");
-    items.push(
-      pdfItem({
-        id: `guide-${filename}`,
-        label,
-        viewerHref: buildMemberPdfViewerHref({ kind: "guide", file: filename }),
-        downloadHref: buildGuidePdfApiHref(filename, true),
-      }),
-    );
+    const name = resource?.title ?? filename.replace(/^LCB_/, "").replace(/\.pdf$/, "").replace(/_/g, " ");
+    guides.push({
+      id: `guide-${filename}`,
+      name,
+      viewerHref: buildMemberPdfViewerHref({ kind: "guide", file: filename }),
+      downloadHref: buildGuidePdfApiHref(filename, true),
+    });
   }
 
-  if (!items.length) {
+  if (!guides.length) {
     return null;
   }
 
   return {
+    kind: "guides",
     id: "guides",
     title: "Guides",
-    items,
+    guides,
   };
 }
 
@@ -296,6 +321,7 @@ async function buildFixItSection(params: {
   }
 
   return {
+    kind: "list",
     id: "fix-it",
     title: "Fix-It Plans",
     items,
@@ -308,6 +334,7 @@ function buildPlaybookSection(access: AccessUserFields, isAdmin: boolean): MyRes
   }
 
   return {
+    kind: "list",
     id: "playbook",
     title: "The Playbook",
     items: [
@@ -320,6 +347,17 @@ function buildPlaybookSection(access: AccessUserFields, isAdmin: boolean): MyRes
   };
 }
 
+async function resolvePreferredWorkoutAgeGroup(userId: string): Promise<AgeGroupKey | null> {
+  const enrollment = await prisma.programEnrollment.findUnique({
+    where: { userId },
+    select: { ageGroup: true },
+  });
+  if (!enrollment?.ageGroup) {
+    return null;
+  }
+  return PROGRAM_AGE_GROUP_WORKOUT_AGE[enrollment.ageGroup as ProgramAgeGroup] ?? null;
+}
+
 async function mergeStarterPurchasesIntoSection(
   section: MyResourceSection | null,
   purchasedPdfs: MyResourceTreeItem[],
@@ -328,8 +366,10 @@ async function mergeStarterPurchasesIntoSection(
     return null;
   }
 
-  const items = [...(section?.items ?? []), ...purchasedPdfs];
+  const baseItems = section?.kind === "list" ? section.items : [];
+  const items = [...baseItems, ...purchasedPdfs];
   return {
+    kind: "list",
     id: "four-week-starters",
     title: "4-Week Starters",
     items,
@@ -343,10 +383,15 @@ export async function buildMyResourcesViewModel(params: {
   isAdmin: boolean;
 }): Promise<MyResourcesViewModel> {
   const purchasedStarterPdfs = await buildPurchasedStarterPdfs(params);
+  const preferredWorkoutAgeGroup = await resolvePreferredWorkoutAgeGroup(params.userId);
 
   const sections: MyResourceSection[] = [];
 
-  const workoutPrograms = buildFullWorkoutProgramsSection(params.access, params.isAdmin);
+  const workoutPrograms = buildFullWorkoutProgramsSection(
+    params.access,
+    params.isAdmin,
+    preferredWorkoutAgeGroup,
+  );
   if (workoutPrograms) {
     sections.push(workoutPrograms);
   }
@@ -374,9 +419,20 @@ export async function buildMyResourcesViewModel(params: {
     sections.push(playbook);
   }
 
+  const hasAny = sections.some((section) => {
+    if (section.kind === "workout-programs") {
+      return section.programs.length > 0;
+    }
+    if (section.kind === "guides") {
+      return section.guides.length > 0;
+    }
+    return section.items.length > 0;
+  });
+
   return {
     sections,
-    hasAny: sections.some((section) => section.items.length > 0),
+    hasAny,
+    preferredWorkoutAgeGroup,
   };
 }
 

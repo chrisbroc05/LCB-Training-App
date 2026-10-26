@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import MyResourcesPanel from "@/app/resources/MyResourcesPanel";
 import ResourcesHub from "@/app/resources/ResourcesHub";
 import type { MyResourcesTab, MyResourcesViewModel } from "@/lib/my-resources-shared";
@@ -31,16 +31,23 @@ export default function ResourcesTabsShell({
   const setTab = useCallback(
     (tab: MyResourcesTab) => {
       const params = new URLSearchParams(searchParams.toString());
-      if (tab === "browse") {
-        params.delete("tab");
-      } else {
-        params.set("tab", tab);
-      }
-      const query = params.toString();
-      router.replace(query ? `/resources?${query}` : "/resources", { scroll: false });
+      params.set("tab", tab);
+      router.replace(`/resources?${params.toString()}`, { scroll: false });
     },
     [router, searchParams],
   );
+
+  useEffect(() => {
+    if (!isLoggedIn) {
+      return;
+    }
+    if (searchParams.get("tab")) {
+      return;
+    }
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("tab", initialTab);
+    router.replace(`/resources?${params.toString()}`, { scroll: false });
+  }, [isLoggedIn, initialTab, router, searchParams]);
 
   return (
     <div>

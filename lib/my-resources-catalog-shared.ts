@@ -22,12 +22,42 @@ export const MY_RESOURCES_PROGRAMS: {
   key: MyResourcesProgramKey;
   title: string;
   layout: "phases" | "single";
+  description: string;
+  singleActionLabel?: string;
 }[] = [
-  { key: "strength", title: "Strength", layout: "phases" },
-  { key: "speed", title: "Speed and Agility", layout: "phases" },
-  { key: "mobility", title: "Mobility", layout: "single" },
-  { key: "rotational", title: "Rotational Power", layout: "single" },
+  {
+    key: "strength",
+    title: "Strength",
+    layout: "phases",
+    description: "Build athletic strength across a progressive 12-week block.",
+  },
+  {
+    key: "speed",
+    title: "Speed and Agility",
+    layout: "phases",
+    description: "First-step quickness, agility, and game-speed movement.",
+  },
+  {
+    key: "mobility",
+    title: "Mobility",
+    layout: "single",
+    description: "Flexibility and joint range for safer, stronger movement.",
+    singleActionLabel: "Open program",
+  },
+  {
+    key: "rotational",
+    title: "Rotational Power",
+    layout: "single",
+    description: "Rotational power with PVC mechanics and med ball work.",
+    singleActionLabel: "Open program",
+  },
 ];
+
+export const MY_RESOURCES_PHASE_PILL_LABELS: Record<1 | 2 | 3, string> = {
+  1: "Phase 1 - Weeks 1-4",
+  2: "Phase 2 - Weeks 5-8",
+  3: "Phase 3 - Weeks 9-12",
+};
 
 const phaseLabels = ["Phase 1", "Phase 2", "Phase 3"] as const;
 

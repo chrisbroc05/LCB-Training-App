@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import MyResourcesGuides from "@/app/resources/MyResourcesGuides";
+import MyResourcesWorkoutPrograms from "@/app/resources/MyResourcesWorkoutPrograms";
 import type {
   MyResourceGroupItem,
   MyResourcesViewModel,
@@ -18,7 +20,7 @@ function TreeItem({ item, depth }: { item: MyResourceTreeItem; depth: number }) 
       <div style={{ paddingLeft: depth * 12 }} className="py-1">
         <Link
           href={item.href}
-          className="text-sm font-semibold text-[#52B788] underline-offset-2 hover:underline"
+          className="inline-flex min-h-[44px] items-center text-sm font-semibold text-[#52B788] underline-offset-2 hover:underline"
         >
           {item.label}
         </Link>
@@ -34,7 +36,7 @@ function TreeItem({ item, depth }: { item: MyResourceTreeItem; depth: number }) 
       <div style={{ paddingLeft: depth * 12 }} className="py-1">
         <Link
           href={item.viewerHref}
-          className="text-sm font-semibold text-[#52B788] underline-offset-2 hover:underline"
+          className="inline-flex min-h-[44px] items-center text-sm font-semibold text-[#52B788] underline-offset-2 hover:underline"
         >
           {item.label}
         </Link>
@@ -53,7 +55,7 @@ function ExpandableGroup({ item, depth }: { item: MyResourceGroupItem; depth: nu
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
-        className="flex w-full items-center gap-2 text-left text-sm font-semibold text-zinc-100"
+        className="flex min-h-[44px] w-full items-center gap-2 text-left text-sm font-semibold text-zinc-100"
         aria-expanded={open}
       >
         <span className="text-[#52B788]">{open ? "-" : "+"}</span>
@@ -67,6 +69,19 @@ function ExpandableGroup({ item, depth }: { item: MyResourceGroupItem; depth: nu
         </div>
       ) : null}
     </div>
+  );
+}
+
+function ListSection(props: { title: string; items: MyResourceTreeItem[] }) {
+  return (
+    <section className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-5 sm:p-6">
+      <h2 className="text-xl font-semibold text-zinc-100">{props.title}</h2>
+      <div className="mt-4 space-y-1">
+        {props.items.map((item) => (
+          <TreeItem key={item.id} item={item} depth={0} />
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -90,19 +105,17 @@ export default function MyResourcesPanel({ model }: MyResourcesPanelProps) {
 
   return (
     <div className="space-y-8">
-      {model.sections.map((section) => (
-        <section
-          key={section.id}
-          className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-5 sm:p-6"
-        >
-          <h2 className="text-xl font-semibold text-zinc-100">{section.title}</h2>
-          <div className="mt-4 space-y-1">
-            {section.items.map((item) => (
-              <TreeItem key={item.id} item={item} depth={0} />
-            ))}
-          </div>
-        </section>
-      ))}
+      {model.sections.map((section) => {
+        if (section.kind === "workout-programs") {
+          return <MyResourcesWorkoutPrograms key={section.id} section={section} />;
+        }
+        if (section.kind === "guides") {
+          return <MyResourcesGuides key={section.id} section={section} />;
+        }
+        return (
+          <ListSection key={section.id} title={section.title} items={section.items} />
+        );
+      })}
     </div>
   );
 }
