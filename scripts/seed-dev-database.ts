@@ -2,6 +2,7 @@ import "dotenv/config";
 import { hash } from "bcryptjs";
 import { assertSafeDevDatabaseTarget } from "../lib/dev-environment-guard-shared";
 import { hittingVideos } from "../lib/drill-library-videos";
+import { LEGAL_ADULT_AGE, LEGAL_DOCS_VERSION } from "../lib/legal-shared";
 
 const DEV_SEED_PASSWORD = "LcbDevSeed!2026";
 const DEV_EMAIL_DOMAIN = "dev.lcbtraining.test";
@@ -36,9 +37,36 @@ async function main() {
   const adminEmail = (process.env.ADMIN_EMAIL ?? "coach@dev.lcbtraining.test").trim().toLowerCase();
   const passwordHash = await hash(DEV_SEED_PASSWORD, 12);
   const now = new Date();
-  const termsAcceptedAt = now;
-  const termsVersion = "dev-seed-v1";
   const levelExpires = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000);
+
+  function devLegalAccepted(acceptedByName: string, playerAge: number | null) {
+    const isMinor = playerAge != null && playerAge < LEGAL_ADULT_AGE;
+    return {
+      termsVersion: LEGAL_DOCS_VERSION,
+      termsAcceptedAt: now,
+      acceptedByName,
+      acceptedAsParent: isMinor,
+      playerAge,
+      mediaConsent: true,
+      mediaConsentUpdatedAt: now,
+    };
+  }
+
+  function devLegalAwaitingParentConsent(playerAge: number) {
+    return {
+      playerAge,
+      parentConsentEmail: devEmail("parent-consent"),
+      parentConsentName: "Dev Parent",
+      parentConsentConfirmedAt: null,
+      parentConsentEmailSentAt: now,
+      termsVersion: null,
+      termsAcceptedAt: null,
+      acceptedByName: null,
+      acceptedAsParent: false,
+      mediaConsent: false,
+      mediaConsentUpdatedAt: null,
+    };
+  }
 
   console.log("Clearing prior dev seed data...");
   await prisma.resourcePurchase.deleteMany({ where: { email: { endsWith: `@${DEV_EMAIL_DOMAIN}` } } });
@@ -97,6 +125,11 @@ async function main() {
     parentPending?: boolean;
   }) {
     const email = devEmail(params.local);
+    const playerAge = params.playerAge ?? 16;
+    const legal = params.parentPending
+      ? devLegalAwaitingParentConsent(playerAge)
+      : devLegalAccepted(params.name, playerAge);
+
     return prisma.user.create({
       data: {
         email,
@@ -109,13 +142,8 @@ async function main() {
         membershipLevelExpiresAt: params.membershipLevel ? levelExpires : null,
         playbookLegacyAccess: params.playbookLegacyAccess ?? false,
         isTestAccount: true,
-        termsVersion,
-        termsAcceptedAt,
-        acceptedByName: params.name,
-        playerAge: params.playerAge ?? 16,
-        parentConsentEmail: params.parentPending ? devEmail("parent-consent") : null,
-        parentConsentName: params.parentPending ? "Dev Parent" : null,
         emailVerified: now,
+        ...legal,
       },
     });
   }
@@ -130,10 +158,8 @@ async function main() {
       membershipLevel: "ALL_ACCESS",
       membershipLevelExpiresAt: levelExpires,
       isTestAccount: true,
-      termsVersion,
-      termsAcceptedAt,
-      acceptedByName: "Dev Admin",
       emailVerified: now,
+      ...devLegalAccepted("Dev Admin", null),
     },
   });
 
