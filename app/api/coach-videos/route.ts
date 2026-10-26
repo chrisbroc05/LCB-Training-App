@@ -3,7 +3,8 @@ import { authOptions } from "@/lib/auth";
 import { jsonNoStore } from "@/lib/api-no-store";
 import { getUnwatchedCoachVideoCount, listPlayerVideos } from "@/lib/coach-video-server";
 
-export { dynamic, revalidate } from "@/lib/api-no-store";
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export async function GET() {
   const session = await getServerSession(authOptions);

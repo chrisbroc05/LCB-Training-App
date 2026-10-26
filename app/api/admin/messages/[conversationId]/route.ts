@@ -11,7 +11,8 @@ import {
   sendConversationMessage,
 } from "@/lib/direct-messaging-server";
 
-export { dynamic, revalidate } from "@/lib/api-no-store";
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 type RouteContext = {
   params: Promise<{ conversationId: string }>;

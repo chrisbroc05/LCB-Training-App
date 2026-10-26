@@ -184,6 +184,11 @@ async function main() {
     playerAge: 14,
     parentPending: true,
   });
+  const orgTrialUser = await createPlayer({
+    local: "player-org-trial",
+    name: "Org Trial Player",
+    membershipTier: "FREE",
+  });
 
   const programStart = new Date(now.getTime() - 21 * 24 * 60 * 60 * 1000);
   await prisma.programEnrollment.create({
@@ -250,6 +255,15 @@ async function main() {
 
   await prisma.user.update({
     where: { id: allAccessUser.id },
+    data: {
+      organizationId: trialOrg.id,
+      orgTeamId: varsity.id,
+      orgJoinedAt: now,
+    },
+  });
+
+  await prisma.user.update({
+    where: { id: orgTrialUser.id },
     data: {
       organizationId: trialOrg.id,
       orgTeamId: varsity.id,

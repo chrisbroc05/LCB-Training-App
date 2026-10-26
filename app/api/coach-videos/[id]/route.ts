@@ -3,7 +3,8 @@ import { authOptions } from "@/lib/auth";
 import { jsonNoStore } from "@/lib/api-no-store";
 import { getCoachVideoListItemForViewer } from "@/lib/coach-video-server";
 
-export { dynamic, revalidate } from "@/lib/api-no-store";
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 type RouteContext = {
   params: Promise<{ id: string }>;

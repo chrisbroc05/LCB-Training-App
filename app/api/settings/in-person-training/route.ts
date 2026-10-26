@@ -7,7 +7,8 @@ import {
 } from "@/lib/in-person-training-server";
 import { validateInPersonTrainingInput } from "@/lib/in-person-training-shared";
 
-export { dynamic, revalidate } from "@/lib/api-no-store";
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export async function GET() {
   const session = await getServerSession(authOptions);

@@ -13,7 +13,8 @@ import { getMessagingReplyCopy } from "@/lib/access-shared";
 import { requireUnder13ParentUnlockResponse } from "@/lib/legal-under13-guard-server";
 import { prisma } from "@/lib/prisma";
 
-export { dynamic, revalidate } from "@/lib/api-no-store";
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export async function GET() {
   const session = await getServerSession(authOptions);

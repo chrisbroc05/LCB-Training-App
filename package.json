@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "npx --yes tsx scripts/assert-dev-environment.ts && AUTH_TRUST_HOST=true next dev",
+    "dev": "npx --yes tsx scripts/assert-dev-environment.ts && AUTH_TRUST_HOST=true next dev --webpack",
     "dev:phone": "npx --yes tsx scripts/dev-phone.ts",
     "db:seed:dev": "npx --yes tsx scripts/seed-dev-database.ts",
     "db:migrate:dev": "prisma migrate deploy",

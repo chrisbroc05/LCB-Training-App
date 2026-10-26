@@ -12,7 +12,8 @@ import {
   MAX_ADMIN_RESPONSE_VIDEO_BYTES,
 } from "@/lib/submission-video-limits";
 
-export { dynamic, revalidate } from "@/lib/api-no-store";
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 type UploadUrlRequestBody = {
   userId?: string;

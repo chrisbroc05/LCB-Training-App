@@ -67,7 +67,7 @@ async function waitForTunnelUrl(proc: ChildProcess, timeoutMs: number): Promise<
 }
 
 function startNext(extraEnv: Record<string, string>) {
-  return spawn("npx", ["next", "dev", "-p", LOCAL_PORT], {
+  return spawn("npx", ["next", "dev", "--webpack", "-p", LOCAL_PORT], {
     env: { ...process.env, ...extraEnv },
     stdio: ["inherit", "pipe", "pipe"],
   });

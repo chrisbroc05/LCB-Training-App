@@ -16,7 +16,8 @@ import {
   isWaiverSignRateLimited,
 } from "@/lib/waiver-sign-server";
 
-export { dynamic, revalidate } from "@/lib/api-no-store";
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export async function POST(request: Request) {
   try {

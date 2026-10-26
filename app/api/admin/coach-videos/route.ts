@@ -5,7 +5,8 @@ import { jsonNoStore } from "@/lib/api-no-store";
 import { listAdminCoachVideosForUser } from "@/lib/coach-video-server";
 import { sendCoachVideoToPlayer } from "@/lib/coach-video-send";
 
-export { dynamic, revalidate } from "@/lib/api-no-store";
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions);

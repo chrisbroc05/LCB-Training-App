@@ -1,8 +1,9 @@
 import { requireAdminTestingSession } from "@/lib/admin-testing-auth";
-import { jsonNoStore, dynamic, revalidate } from "@/lib/api-no-store";
+import { jsonNoStore } from "@/lib/api-no-store";
 import { getSessionEntryData } from "@/lib/testing-server";
 
-export { dynamic, revalidate };
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 type RouteContext = { params: Promise<{ sessionId: string }> };
 

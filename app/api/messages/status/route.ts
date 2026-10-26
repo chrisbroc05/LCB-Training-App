@@ -7,7 +7,8 @@ import {
   getPlayerUnreadCount,
 } from "@/lib/direct-messaging-server";
 
-export { dynamic, revalidate } from "@/lib/api-no-store";
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export async function GET() {
   const session = await getServerSession(authOptions);

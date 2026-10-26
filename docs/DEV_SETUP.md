@@ -51,7 +51,9 @@ npm run dev
 
 `db:seed:dev` refuses production databases. It prints the dev admin email (from `ADMIN_EMAIL`) and password `LcbDevSeed!2026`.
 
-Test players use `*@dev.lcbtraining.test` with the same password.
+Test players use `*@dev.lcbtraining.test` with the same password. Org trial-only (Free tier on DEVCLUB): `player-org-trial@dev.lcbtraining.test`.
+
+Local dev uses webpack (`next dev --webpack`) to match production builds.
 
 ## 4. Stripe CLI (optional)
 
