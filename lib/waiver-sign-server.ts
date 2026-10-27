@@ -2,9 +2,9 @@ import "server-only";
 
 import type { WaiverSignupType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { LEGAL_DOCS_VERSION } from "@/lib/legal-shared";
 import {
   buildWaiverPlayerFullName,
+  isWaiverSignatureCurrent,
   normalizePersonName,
   WAIVER_SIGN_RATE_LIMIT_PER_HOUR,
   waiverPlayerNameMatches,
@@ -104,15 +104,16 @@ export async function findMatchingWaiverSignatureForUser(userId: string) {
 
   const signatures = await prisma.waiverSignature.findMany({
     where: {
-      version: LEGAL_DOCS_VERSION,
       OR: [{ userId }, { signerEmail: user.email }],
     },
     orderBy: { signedAt: "desc" },
   });
 
   return (
-    signatures.find((signature) =>
-      waiverPlayerNameMatches(signature.playerFirstName, signature.playerLastName, user.name),
+    signatures.find(
+      (signature) =>
+        isWaiverSignatureCurrent(signature.version) &&
+        waiverPlayerNameMatches(signature.playerFirstName, signature.playerLastName, user.name),
     ) ?? null
   );
 }

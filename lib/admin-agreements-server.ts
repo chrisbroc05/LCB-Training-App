@@ -7,13 +7,14 @@ import { formatLegalAgreementRole, formatParentConsentStatus } from "@/lib/legal
 import {
   buildAgreementMergeKey,
   formatAgreementSourceLabels,
-  isAgreementOutdatedVersion,
+  isTermsVersionOutdated,
   type AgreementSource,
   type AgreementSourceFilter,
   type UnifiedAgreementRecord,
 } from "@/lib/admin-agreements-shared";
 import {
   buildWaiverPlayerFullName,
+  isWaiverSignatureOutdated,
   normalizeTeamSlug,
 } from "@/lib/waiver-sign-shared";
 
@@ -97,6 +98,10 @@ type AgreementPartial = {
   emergencyContactPhone: string | null;
   medicalNotes: string | null;
   isOutdatedVersion: boolean;
+  isWaiverOutdated: boolean;
+  isTermsOutdated: boolean;
+  waiverDocumentVersion: string | null;
+  termsDocumentVersion: string | null;
   parentConsentStatus: string | null;
   accountRole: "PLAYER" | "PARENT" | null;
   accountHolderName: string | null;
@@ -133,7 +138,11 @@ function waiverToPartial(row: WaiverRow): AgreementPartial {
     emergencyContactName: row.emergencyContactName,
     emergencyContactPhone: row.emergencyContactPhone,
     medicalNotes: row.medicalNotes,
-    isOutdatedVersion: isAgreementOutdatedVersion(row.version),
+    isWaiverOutdated: isWaiverSignatureOutdated(row.version),
+    isTermsOutdated: false,
+    waiverDocumentVersion: row.version,
+    termsDocumentVersion: null,
+    isOutdatedVersion: isWaiverSignatureOutdated(row.version),
     parentConsentStatus: null,
     accountRole: null,
     accountHolderName: null,
@@ -176,7 +185,11 @@ function appToPartial(row: AppRow): AgreementPartial {
     emergencyContactName: row.emergencyContactName,
     emergencyContactPhone: row.emergencyContactPhone,
     medicalNotes: row.medicalNotes,
-    isOutdatedVersion: isAgreementOutdatedVersion(row.termsVersion),
+    isWaiverOutdated: false,
+    isTermsOutdated: isTermsVersionOutdated(row.termsVersion),
+    waiverDocumentVersion: null,
+    termsDocumentVersion: row.termsVersion,
+    isOutdatedVersion: isTermsVersionOutdated(row.termsVersion),
     parentConsentStatus: formatParentConsentStatus({
       playerAge: row.playerAge,
       parentConsentEmail: row.parentConsentEmail,
@@ -238,7 +251,15 @@ function mergePartials(left: AgreementPartial, right: AgreementPartial): Agreeme
       right.medicalNotes?.trim() ||
       left.medicalNotes?.trim() ||
       null,
-    isOutdatedVersion: left.isOutdatedVersion || right.isOutdatedVersion,
+    isWaiverOutdated: left.isWaiverOutdated || right.isWaiverOutdated,
+    isTermsOutdated: left.isTermsOutdated || right.isTermsOutdated,
+    waiverDocumentVersion: left.waiverDocumentVersion ?? right.waiverDocumentVersion,
+    termsDocumentVersion: left.termsDocumentVersion ?? right.termsDocumentVersion,
+    isOutdatedVersion:
+      left.isWaiverOutdated ||
+      right.isWaiverOutdated ||
+      left.isTermsOutdated ||
+      right.isTermsOutdated,
     parentConsentStatus: primary.parentConsentStatus ?? secondary.parentConsentStatus,
     accountRole: primary.accountRole ?? secondary.accountRole,
     accountHolderName: primary.accountHolderName ?? secondary.accountHolderName,
@@ -277,6 +298,10 @@ function serializeMerged(record: AgreementPartial): UnifiedAgreementRecord {
     emergencyContactPhone: record.emergencyContactPhone,
     medicalNotes: record.medicalNotes,
     isOutdatedVersion: record.isOutdatedVersion,
+    isWaiverOutdated: record.isWaiverOutdated,
+    isTermsOutdated: record.isTermsOutdated,
+    waiverDocumentVersion: record.waiverDocumentVersion,
+    termsDocumentVersion: record.termsDocumentVersion,
     parentConsentStatus: record.parentConsentStatus,
     accountRole: record.accountRole,
     accountHolderName: record.accountHolderName,
@@ -308,13 +333,9 @@ export async function listUnifiedAgreements(filters: UnifiedAgreementListFilters
   const teamSlug = filters.teamSlug;
   const sourceFilter = filters.source ?? "all";
 
-  const waiverWhere = {
-    ...(teamSlug ? { teamSlug } : {}),
-  };
-
   const [waivers, appUsers] = await Promise.all([
     prisma.waiverSignature.findMany({
-      where: waiverWhere,
+      where: {},
       orderBy: { signedAt: "desc" },
       select: {
         id: true,
@@ -486,4 +507,19 @@ export function buildUnifiedAgreementsCsv(records: UnifiedAgreementRecord[]) {
 
 export function resolveTeamSlugFilter(team: string) {
   return team ? normalizeTeamSlug(team) : undefined;
+}
+
+export async function listDistinctWaiverTeamNames() {
+  const rows = await prisma.waiverSignature.findMany({
+    where: {
+      teamName: { not: null },
+    },
+    distinct: ["teamName"],
+    select: { teamName: true },
+    orderBy: { teamName: "asc" },
+  });
+
+  return rows
+    .map((row) => row.teamName?.trim())
+    .filter((name): name is string => Boolean(name));
 }

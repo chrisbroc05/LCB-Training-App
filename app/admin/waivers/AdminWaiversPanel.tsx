@@ -2,14 +2,18 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { formatDateTime } from "@/lib/format-date";
+import { formatDate, formatDateTime } from "@/lib/format-date";
 import {
   AGREEMENT_SOURCE_FILTER_OPTIONS,
+  buildTermsOutdatedTooltip,
+  buildWaiverOutdatedTooltip,
   formatRosterPlayerStatusLabel,
   getRosterPlayerStatuses,
   type AgreementSourceFilter,
   type UnifiedAgreementRecord,
 } from "@/lib/admin-agreements-shared";
+import { LEGAL_DOCS_VERSION } from "@/lib/legal-shared";
+import { WAIVER_VERSION } from "@/lib/waiver-sign-shared";
 import {
   formatWaiverSignupTypeLabel,
   parseRosterNames,
@@ -31,6 +35,9 @@ export default function AdminWaiversPanel() {
   const [rosterText, setRosterText] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [copyMessage, setCopyMessage] = useState("");
+  const [teamOptions, setTeamOptions] = useState<string[]>([]);
+  const [resignBusy, setResignBusy] = useState(false);
+  const [resignMessage, setResignMessage] = useState("");
 
   const loadAgreements = useCallback(async () => {
     setLoading(true);
@@ -50,6 +57,7 @@ export default function AdminWaiversPanel() {
     const response = await fetch(`/api/admin/waivers?${params.toString()}`, { cache: "no-store" });
     const data = (await response.json().catch(() => ({}))) as {
       agreements?: UnifiedAgreementRecord[];
+      teams?: string[];
       error?: string;
     };
 
@@ -61,7 +69,32 @@ export default function AdminWaiversPanel() {
     }
 
     setAgreements(data.agreements ?? []);
+    setTeamOptions(data.teams ?? []);
   }, [teamFilter, search, sourceFilter]);
+
+  const sendResignLink = async (record: UnifiedAgreementRecord) => {
+    if (!record.waiverSignatureId) {
+      setResignMessage("This row is app signup only; use waiver link signing for re-sign.");
+      return;
+    }
+
+    setResignBusy(true);
+    setResignMessage("");
+    const response = await fetch("/api/admin/waivers/send-resign-link", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ waiverSignatureId: record.waiverSignatureId }),
+    });
+    setResignBusy(false);
+
+    if (!response.ok) {
+      const data = (await response.json().catch(() => ({}))) as { error?: string };
+      setResignMessage(data.error ?? "Could not send email.");
+      return;
+    }
+
+    setResignMessage(`Re-sign link emailed to ${record.signerEmail ?? record.email}.`);
+  };
 
   useEffect(() => {
     void loadAgreements();
@@ -160,14 +193,19 @@ export default function AdminWaiversPanel() {
       <section className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-5">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <label className="text-sm text-zinc-300">
-            Filter by team
-            <input
-              type="text"
+            Team
+            <select
               value={teamFilter}
               onChange={(event) => setTeamFilter(event.target.value)}
-              placeholder="Team name"
               className="mt-1 w-full rounded-xl border border-[#2b3650] bg-black px-4 py-3 text-sm text-zinc-100"
-            />
+            >
+              <option value="">All teams</option>
+              {teamOptions.map((team) => (
+                <option key={team} value={team}>
+                  {team}
+                </option>
+              ))}
+            </select>
           </label>
           <label className="text-sm text-zinc-300">
             Source
@@ -189,7 +227,7 @@ export default function AdminWaiversPanel() {
               type="search"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Player, email, signer, team"
+              placeholder="Player, parent email, signer, team..."
               className="mt-1 w-full rounded-xl border border-[#2b3650] bg-black px-4 py-3 text-sm text-zinc-100"
             />
           </label>
@@ -277,9 +315,26 @@ export default function AdminWaiversPanel() {
                       In person
                     </span>
                   ) : null}
-                  {record.isOutdatedVersion ? (
-                    <span className="rounded-full bg-red-500/20 px-2 py-0.5 text-xs font-semibold text-red-300">
-                      Outdated version
+                  {record.isWaiverOutdated ? (
+                    <span
+                      className="cursor-help rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-semibold text-amber-100"
+                      title={buildWaiverOutdatedTooltip({
+                        signedVersion: record.waiverDocumentVersion ?? record.version,
+                        signedAtLabel: formatDate(record.signedAt),
+                      })}
+                    >
+                      Signed earlier version ({formatDate(record.signedAt)})
+                    </span>
+                  ) : null}
+                  {record.isTermsOutdated && !record.isWaiverOutdated ? (
+                    <span
+                      className="cursor-help rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-semibold text-amber-100"
+                      title={buildTermsOutdatedTooltip({
+                        signedVersion: record.termsDocumentVersion ?? record.version,
+                        signedAtLabel: formatDate(record.signedAt),
+                      })}
+                    >
+                      Terms update available
                     </span>
                   ) : null}
                 </div>
@@ -299,7 +354,15 @@ export default function AdminWaiversPanel() {
                 </p>
               </div>
               <div className="text-right text-xs text-zinc-500">
-                <p>{record.version}</p>
+                {record.waiverDocumentVersion ? (
+                  <p>Waiver {record.waiverDocumentVersion}</p>
+                ) : null}
+                {record.termsDocumentVersion ? (
+                  <p>Terms {record.termsDocumentVersion}</p>
+                ) : null}
+                {!record.waiverDocumentVersion && !record.termsDocumentVersion ? (
+                  <p>{record.version}</p>
+                ) : null}
                 <p className="mt-1">{record.mediaConsent ? "Media yes" : "Media no"}</p>
               </div>
             </div>
@@ -415,12 +478,41 @@ export default function AdminWaiversPanel() {
               </div>
             ) : null}
             <div>
-              <dt className="text-zinc-500">Version</dt>
-              <dd>
-                {selected.version}
-                {selected.isOutdatedVersion ? " (outdated)" : ""}
+              <dt className="text-zinc-500">Document versions</dt>
+              <dd className="space-y-1">
+                {selected.waiverDocumentVersion ? (
+                  <p>
+                    Waiver signed: {selected.waiverDocumentVersion} (current {WAIVER_VERSION})
+                    {selected.isWaiverOutdated ? " - earlier waiver version" : ""}
+                  </p>
+                ) : null}
+                {selected.termsDocumentVersion ? (
+                  <p>
+                    Terms signed: {selected.termsDocumentVersion} (current {LEGAL_DOCS_VERSION})
+                    {selected.isTermsOutdated ? " - terms update available" : ""}
+                  </p>
+                ) : null}
+                {!selected.waiverDocumentVersion && !selected.termsDocumentVersion ? (
+                  <p>{selected.version}</p>
+                ) : null}
               </dd>
             </div>
+            {selected.waiverSignatureId ? (
+              <div>
+                <dt className="text-zinc-500">Re-sign</dt>
+                <dd className="space-y-2">
+                  <button
+                    type="button"
+                    disabled={resignBusy}
+                    onClick={() => void sendResignLink(selected)}
+                    className="rounded-full border border-[#52B788] px-4 py-2 text-sm font-semibold text-[#52B788] disabled:opacity-60"
+                  >
+                    Send re-sign link
+                  </button>
+                  {resignMessage ? <p className="text-sm text-zinc-400">{resignMessage}</p> : null}
+                </dd>
+              </div>
+            ) : null}
             <div>
               <dt className="text-zinc-500">Signed at</dt>
               <dd>{formatDateTime(selected.signedAt)}</dd>

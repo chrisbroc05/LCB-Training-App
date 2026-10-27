@@ -1,5 +1,5 @@
 import { LEGAL_DOCS_VERSION } from "@/lib/legal-shared";
-import { normalizePersonName } from "@/lib/waiver-sign-shared";
+import { normalizePersonName, WAIVER_VERSION } from "@/lib/waiver-sign-shared";
 
 export type AgreementSource = "waiver_link" | "app_signup";
 
@@ -51,6 +51,10 @@ export type UnifiedAgreementRecord = {
   emergencyContactPhone: string | null;
   medicalNotes: string | null;
   isOutdatedVersion: boolean;
+  isWaiverOutdated: boolean;
+  isTermsOutdated: boolean;
+  waiverDocumentVersion: string | null;
+  termsDocumentVersion: string | null;
   parentConsentStatus: string | null;
   accountRole: "PLAYER" | "PARENT" | null;
   accountHolderName: string | null;
@@ -77,8 +81,28 @@ export function buildAgreementMergeKey(email: string, playerName: string) {
   return `${normalizePersonName(email)}::${normalizePersonName(playerName)}`;
 }
 
-export function isAgreementOutdatedVersion(version: string | null | undefined) {
+/** App signup Terms / Privacy / combined legal acceptance (not the /sign waiver document version). */
+export function isTermsVersionOutdated(version: string | null | undefined) {
   return Boolean(version && version !== LEGAL_DOCS_VERSION);
+}
+
+export function buildWaiverOutdatedTooltip(params: {
+  signedVersion: string;
+  signedAtLabel: string;
+}) {
+  return `Signed waiver document version ${params.signedVersion} on ${params.signedAtLabel}. Current waiver version is ${WAIVER_VERSION}. This compares the waiver text families signed, not the Terms version (${LEGAL_DOCS_VERSION}).`;
+}
+
+export function buildTermsOutdatedTooltip(params: {
+  signedVersion: string;
+  signedAtLabel: string;
+}) {
+  return `Signed Terms version ${params.signedVersion} on ${params.signedAtLabel}. Current Terms version is ${LEGAL_DOCS_VERSION}.`;
+}
+
+/** @deprecated Use isTermsVersionOutdated or isWaiverSignatureOutdated from waiver-sign-shared. */
+export function isAgreementOutdatedVersion(version: string | null | undefined) {
+  return isTermsVersionOutdated(version);
 }
 
 export function appAgreementMissingInPersonInfo(record: {

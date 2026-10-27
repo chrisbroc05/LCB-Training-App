@@ -3,6 +3,7 @@ import { authOptions } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin";
 import { jsonNoStore } from "@/lib/api-no-store";
 import {
+  listDistinctWaiverTeamNames,
   listUnifiedAgreements,
   resolveTeamSlugFilter,
 } from "@/lib/admin-agreements-server";
@@ -23,14 +24,18 @@ export async function GET(request: Request) {
   const source = (url.searchParams.get("source")?.trim() ?? "all") as AgreementSourceFilter;
   const teamSlug = resolveTeamSlugFilter(team);
 
-  const agreements = await listUnifiedAgreements({
-    teamSlug,
-    search: search || undefined,
-    source,
-  });
+  const [agreements, teams] = await Promise.all([
+    listUnifiedAgreements({
+      teamSlug,
+      search: search || undefined,
+      source,
+    }),
+    listDistinctWaiverTeamNames(),
+  ]);
 
   return jsonNoStore({
     agreements,
+    teams,
     count: agreements.length,
   });
 }

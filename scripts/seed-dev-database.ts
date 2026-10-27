@@ -3,6 +3,7 @@ import { hash } from "bcryptjs";
 import { assertSafeDevDatabaseTarget } from "../lib/dev-environment-guard-shared";
 import { hittingVideos } from "../lib/drill-library-videos";
 import { LEGAL_ADULT_AGE, LEGAL_DOCS_VERSION } from "../lib/legal-shared";
+import { normalizeTeamSlug, WAIVER_VERSION } from "../lib/waiver-sign-shared";
 
 const DEV_SEED_PASSWORD = "LcbDevSeed!2026";
 const DEV_EMAIL_DOMAIN = "dev.lcbtraining.test";
@@ -397,6 +398,99 @@ async function main() {
     },
   });
 
+  console.log("Creating sample waiver signatures...");
+  await prisma.waiverSignature.deleteMany({
+    where: {
+      signerEmail: {
+        in: [
+          devEmail("waiver-parent-nwt"),
+          devEmail("waiver-parent-old"),
+          devEmail("waiver-parent-private"),
+        ],
+      },
+    },
+  });
+
+  const nwtTeam = "NWT/Rage16U White";
+  const signedRecent = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+  const signedOlder = new Date(now.getTime() - 120 * 24 * 60 * 60 * 1000);
+
+  await prisma.waiverSignature.createMany({
+    data: [
+      {
+        playerFirstName: "Jordan",
+        playerLastName: "Reyes",
+        playerAge: 15,
+        teamName: nwtTeam,
+        teamSlug: normalizeTeamSlug(nwtTeam),
+        signupType: "TEAM_TRAINING",
+        signerFullName: "Maria Reyes",
+        signerEmail: devEmail("waiver-parent-nwt"),
+        signerPhone: "555-0100",
+        emergencyContactName: "Maria Reyes",
+        emergencyContactPhone: "555-0100",
+        medicalNotes: null,
+        mediaConsent: true,
+        typedSignature: "Maria Reyes",
+        version: WAIVER_VERSION,
+        signedAt: signedRecent,
+        ip: "127.0.0.1",
+      },
+      {
+        playerFirstName: "Casey",
+        playerLastName: "Nguyen",
+        playerAge: 13,
+        teamName: nwtTeam,
+        teamSlug: normalizeTeamSlug(nwtTeam),
+        signupType: "TEAM_TRAINING",
+        signerFullName: "Maria Reyes",
+        signerEmail: devEmail("waiver-parent-nwt"),
+        emergencyContactName: "Maria Reyes",
+        emergencyContactPhone: "555-0100",
+        mediaConsent: false,
+        typedSignature: "Maria Reyes",
+        version: WAIVER_VERSION,
+        signedAt: signedRecent,
+        ip: "127.0.0.1",
+        submissionBatchId: "dev-seed-nwt-batch",
+      },
+      {
+        playerFirstName: "Sam",
+        playerLastName: "OldVersion",
+        playerAge: 12,
+        teamName: "Dev Crushers 12U",
+        teamSlug: normalizeTeamSlug("Dev Crushers 12U"),
+        signupType: "TEAM_TRAINING",
+        signerFullName: "Pat OldVersion",
+        signerEmail: devEmail("waiver-parent-old"),
+        emergencyContactName: "Pat OldVersion",
+        emergencyContactPhone: "555-0102",
+        mediaConsent: true,
+        typedSignature: "Pat OldVersion",
+        version: "2026-03-01",
+        signedAt: signedOlder,
+        ip: "127.0.0.1",
+      },
+      {
+        playerFirstName: "Riley",
+        playerLastName: "Private",
+        playerAge: 17,
+        teamName: null,
+        teamSlug: null,
+        signupType: "PRIVATE_LESSONS",
+        signerFullName: "Riley Private",
+        signerEmail: devEmail("waiver-parent-private"),
+        emergencyContactName: "Riley Private",
+        emergencyContactPhone: "555-0103",
+        mediaConsent: true,
+        typedSignature: "Riley Private",
+        version: "2026-10-21",
+        signedAt: signedRecent,
+        ip: "127.0.0.1",
+      },
+    ],
+  });
+
   console.log("Creating leads, quiz attempts, purchases...");
   const lead = await prisma.lead.create({
     data: {
@@ -435,6 +529,7 @@ async function main() {
   console.log(`Admin login: ${adminEmail} / ${DEV_SEED_PASSWORD}`);
   console.log(`Test players: *@${DEV_EMAIL_DOMAIN} / ${DEV_SEED_PASSWORD}`);
   console.log("Org join code: DEVCLUB (Test Club trial org)");
+  console.log(`Waiver admin samples: search "NWT", "rage", or "16u" for ${nwtTeam}`);
 }
 
 main()

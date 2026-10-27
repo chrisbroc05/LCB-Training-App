@@ -1,4 +1,27 @@
-import { LEGAL_DOCS_VERSION, LEGAL_PAGE_PATHS } from "@/lib/legal-shared";
+import { LEGAL_PAGE_PATHS } from "@/lib/legal-shared";
+
+/** Bumps only when /sign waiver summary or full waiver page text changes (not Terms-only updates). */
+export const WAIVER_VERSION = "2026-09-29";
+
+/**
+ * Waiver rows historically stored LEGAL_DOCS_VERSION at sign time. These legal bumps did not change waiver text.
+ */
+export const WAIVER_VERSION_EQUIVALENT_TO_CURRENT = ["2026-10-21"] as const;
+
+export function isWaiverSignatureOutdated(version: string | null | undefined) {
+  const normalized = version?.trim();
+  if (!normalized) {
+    return false;
+  }
+  if (normalized === WAIVER_VERSION) {
+    return false;
+  }
+  return !(WAIVER_VERSION_EQUIVALENT_TO_CURRENT as readonly string[]).includes(normalized);
+}
+
+export function isWaiverSignatureCurrent(version: string | null | undefined) {
+  return !isWaiverSignatureOutdated(version);
+}
 
 export type WaiverSignupType =
   | "PRIVATE_LESSONS"
@@ -291,7 +314,7 @@ export function parseWaiverSignPayload(values: WaiverSignFormValues, teamLocked:
     emergencyContactPhone: values.emergencyContactPhone.trim(),
     mediaConsent: values.mediaConsent,
     typedSignature: values.typedSignature.trim(),
-    version: LEGAL_DOCS_VERSION,
+    version: WAIVER_VERSION,
   };
 
   return {
