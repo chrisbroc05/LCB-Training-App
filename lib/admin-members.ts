@@ -295,6 +295,17 @@ export const adminMemberDetailSelect = {
   coachingSubmissionPeriod: true,
   eliteRolloverCredits: true,
   stripeSubscriptionId: true,
+  stripeCustomerId: true,
+  membershipSubscription: {
+    select: {
+      level: true,
+      status: true,
+      currentPeriodEnd: true,
+      cancelAtPeriodEnd: true,
+      pendingLevel: true,
+      startedAt: true,
+    },
+  },
   termsVersion: true,
   termsAcceptedAt: true,
   acceptedByName: true,
@@ -371,6 +382,15 @@ export const adminMemberDetailSelect = {
 type AdminMemberDetailRecord = AdminMemberListRecord & {
   adminNotes: string | null;
   stripeSubscriptionId: string | null;
+  stripeCustomerId: string | null;
+  membershipSubscription: {
+    level: "CORE" | "PLUS" | "ALL_ACCESS";
+    status: string;
+    currentPeriodEnd: Date;
+    cancelAtPeriodEnd: boolean;
+    pendingLevel: "CORE" | "PLUS" | "ALL_ACCESS" | null;
+    startedAt: Date;
+  } | null;
   termsVersion: string | null;
   termsAcceptedAt: Date | null;
   acceptedByName: string | null;
@@ -457,6 +477,17 @@ export function serializeAdminMemberDetail(user: AdminMemberDetailRecord) {
     },
     inPersonTraining: serializeInPersonTrainingInfo(user),
     hasStripeSubscription: Boolean(user.stripeSubscriptionId),
+    membershipSubscription: user.membershipSubscription
+      ? {
+          level: user.membershipSubscription.level,
+          status: user.membershipSubscription.status,
+          currentPeriodEnd: user.membershipSubscription.currentPeriodEnd.toISOString(),
+          cancelAtPeriodEnd: user.membershipSubscription.cancelAtPeriodEnd,
+          pendingLevel: user.membershipSubscription.pendingLevel,
+          startedAt: user.membershipSubscription.startedAt.toISOString(),
+        }
+      : null,
+    stripeCustomerId: user.stripeCustomerId,
     memberProfile: serializeMemberProfile(user),
     coachingSubmissions: [
       ...user.swingAnalysisSubmissions.map((submission) => ({

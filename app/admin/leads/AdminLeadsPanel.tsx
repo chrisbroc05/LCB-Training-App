@@ -57,9 +57,20 @@ type QuizDashboard = {
   }>;
 };
 
+type SubscriptionPaymentRow = {
+  id: string;
+  userId: string | null;
+  level: string | null;
+  amountCents: number;
+  currency: string;
+  paidAt: string;
+  stripeInvoiceId: string;
+};
+
 type AdminLeadsPanelProps = {
   leads: LeadRow[];
   purchases: PurchaseRow[];
+  subscriptionPayments?: SubscriptionPaymentRow[];
   quizDashboard?: QuizDashboard;
   view?: "leads" | "sales" | "combined";
 };
@@ -100,6 +111,7 @@ function formatResourceFunnel(lead: LeadRow, purchasedSlugs: Set<string>) {
 export default function AdminLeadsPanel({
   leads,
   purchases,
+  subscriptionPayments = [],
   quizDashboard,
   view = "combined",
 }: AdminLeadsPanelProps) {
@@ -295,6 +307,38 @@ export default function AdminLeadsPanel({
       </section>
       ) : null}
       </>
+      ) : null}
+
+      {showSales && view === "sales" && subscriptionPayments.length > 0 ? (
+      <section className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
+        <h2 className="text-lg font-semibold text-zinc-100">Membership subscription payments</h2>
+        <div className="admin-table-wrap mt-4">
+          <table className="min-w-full text-left text-sm text-zinc-300">
+            <thead className="text-xs uppercase text-zinc-500">
+              <tr>
+                <th className="px-2 py-2">Level</th>
+                <th className="px-2 py-2">Amount</th>
+                <th className="px-2 py-2">Paid</th>
+                <th className="px-2 py-2">Invoice</th>
+              </tr>
+            </thead>
+            <tbody>
+              {subscriptionPayments.map((row) => (
+                <tr key={row.id} className="border-t border-[#18243a]">
+                  <td className="px-2 py-2">{row.level ?? "-"}</td>
+                  <td className="px-2 py-2">
+                    ${(row.amountCents / 100).toFixed(2)} {row.currency.toUpperCase()}
+                  </td>
+                  <td className="px-2 py-2 whitespace-nowrap">
+                    {new Date(row.paidAt).toLocaleDateString()}
+                  </td>
+                  <td className="px-2 py-2 font-mono text-xs">{row.stripeInvoiceId.slice(0, 18)}...</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
       ) : null}
 
       {showSales && view === "sales" ? (

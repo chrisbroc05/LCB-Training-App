@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import UpgradePlaybookSection from "@/app/upgrade/UpgradePlaybookSection";
 import UpgradePricingSection from "@/app/upgrade/UpgradePricingSection";
+import UpgradeMembershipLevelsSection from "@/app/upgrade/UpgradeMembershipLevelsSection";
 import { authOptions } from "@/lib/auth";
 import { isTwelveWeekProgramMember, type DatabaseTier } from "@/lib/membership";
 import { prisma } from "@/lib/prisma";
@@ -14,17 +15,16 @@ type UpgradePageProps = {
 
 export default async function UpgradePage({ searchParams }: UpgradePageProps) {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    redirect("/auth?mode=login");
-  }
+  const membershipTier = session?.user?.id
+    ? ((
+        await prisma.user.findUnique({
+          where: { id: session.user.id },
+          select: { membershipTier: true },
+        })
+      )?.membershipTier ?? "FREE")
+    : null;
 
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { membershipTier: true },
-  });
-  const membershipTier = (user?.membershipTier ?? "FREE") as DatabaseTier;
-
-  if (isTwelveWeekProgramMember(membershipTier)) {
+  if (membershipTier && isTwelveWeekProgramMember(membershipTier as DatabaseTier)) {
     return (
       <div className="mx-auto w-full max-w-3xl px-4 py-16 sm:px-6 sm:py-24">
         <section className="rounded-3xl border border-[#52B788]/40 bg-[#0b1324]/80 p-8 text-center sm:p-10">
@@ -86,6 +86,7 @@ export default async function UpgradePage({ searchParams }: UpgradePageProps) {
         )}
       </section>
 
+      <UpgradeMembershipLevelsSection />
       <UpgradePricingSection />
       <UpgradePlaybookSection />
 

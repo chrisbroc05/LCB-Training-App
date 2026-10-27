@@ -213,3 +213,12 @@ export function formatOptionalDate(
   const formatted = formatLongDate(value);
   return formatted || fallback;
 }
+
+/** Billing / plan dates: fixed en-US + America/Chicago for SSR and client parity. */
+export function formatMembershipBillingDate(
+  value: Date | string | null | undefined,
+  fallback = "Not available",
+): string {
+  const formatted = formatDateWithYear(value);
+  return formatted || fallback;
+}

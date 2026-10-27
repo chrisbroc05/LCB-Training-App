@@ -26,6 +26,7 @@ import SignupWizard from "@/components/SignupWizard";
 import { postCheckout } from "@/lib/checkout-client";
 import { submitSignupRequest } from "@/lib/signup-client";
 import type { SignupRequestPayload } from "@/lib/signup-shared";
+import { isMembershipLevelKey, type MembershipLevelKey } from "@/lib/membership-levels-shared";
 
 type AuthMode = "login" | "signup";
 
@@ -35,6 +36,18 @@ export default function AuthPage() {
       <AuthContent />
     </Suspense>
   );
+}
+
+async function startMembershipLevelCheckout(
+  level: MembershipLevelKey,
+): Promise<{ url?: string; error?: string }> {
+  try {
+    return await postCheckout("/api/stripe/checkout/membership-level", { level });
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Unable to start checkout.",
+    };
+  }
 }
 
 async function startMembershipCheckout(
@@ -88,12 +101,17 @@ function AuthContent() {
   const isFreeSwingFlow = isFreeSwingAuthFlow(tierQueryParam, authRedirectParam);
   const isProgramFlow = isProgramSignupFlow(tierQueryParam, authRedirectParam);
   const isPlaybookFlow = isPlaybookSignupFlow(tierQueryParam, authRedirectParam);
+  const levelQuery = searchParams.get("level")?.toUpperCase() ?? "";
+  const isMembershipFlow =
+    searchParams.get("checkout") === "membership" && isMembershipLevelKey(levelQuery);
+  const membershipCheckoutLevel = isMembershipFlow ? (levelQuery as MembershipLevelKey) : null;
   const shouldStartOnSignup =
     modeQuery === "login"
       ? false
       : modeQuery === "signup" ||
         Boolean(preselectedTierFromQuery) ||
         isProgramFlow ||
+        isMembershipFlow ||
         (isPlaybookFlow && modeQuery !== "login");
   const [authMode, setAuthMode] = useState<AuthMode>(shouldStartOnSignup ? "signup" : "login");
   const checkoutStatus = searchParams.get("checkout");
@@ -123,10 +141,16 @@ function AuthContent() {
       return;
     }
 
-    if (modeQuery === "signup" || preselectedTierFromQuery || isProgramFlow || isPlaybookFlow) {
+    if (
+      modeQuery === "signup" ||
+      preselectedTierFromQuery ||
+      isProgramFlow ||
+      isPlaybookFlow ||
+      isMembershipFlow
+    ) {
       setAuthMode("signup");
     }
-  }, [modeQuery, preselectedTierFromQuery, isProgramFlow, isPlaybookFlow]);
+  }, [modeQuery, preselectedTierFromQuery, isProgramFlow, isPlaybookFlow, isMembershipFlow]);
 
   useEffect(() => {
     if (prefillEmailParam && !loginEmail) {
@@ -251,6 +275,16 @@ function AuthContent() {
       path?: string;
     };
 
+    if (membershipCheckoutLevel) {
+      const checkoutData = await startMembershipLevelCheckout(membershipCheckoutLevel);
+      if (checkoutData.url) {
+        window.location.href = checkoutData.url;
+        return;
+      }
+      setLoginError(checkoutData.error ?? "Unable to start checkout.");
+      return;
+    }
+
     window.location.href = destinationPayload.path ?? postAuthPath;
   };
 
@@ -303,6 +337,7 @@ function AuthContent() {
       selectedMembershipTier: membershipTierForSignup,
       signupSource,
       orgJoinCode,
+      pendingMembershipLevel: membershipCheckoutLevel ?? undefined,
     });
 
     if (!response.ok) {
@@ -328,6 +363,19 @@ function AuthContent() {
       setSignupLoading(false);
       markPendingCoachingWelcome();
       window.location.href = "/coaching-submissions";
+      return;
+    }
+
+    if (membershipCheckoutLevel) {
+      const checkoutData = await startMembershipLevelCheckout(membershipCheckoutLevel);
+      if (checkoutData.url) {
+        setSignupLoading(false);
+        window.location.href = checkoutData.url;
+        return;
+      }
+
+      setSignupLoading(false);
+      window.location.href = "/upgrade/complete-checkout";
       return;
     }
 

@@ -6,17 +6,20 @@ import { useCallback, useEffect } from "react";
 import MyResourcesPanel from "@/app/resources/MyResourcesPanel";
 import ResourcesHub from "@/app/resources/ResourcesHub";
 import type { MyResourcesTab, MyResourcesViewModel } from "@/lib/my-resources-shared";
+import type { ResourcesHubMemberContext } from "@/lib/resources-hub-member-shared";
 
 type ResourcesTabsShellProps = {
   isLoggedIn: boolean;
   initialTab: MyResourcesTab;
   myResources: MyResourcesViewModel | null;
+  hubMemberContext: ResourcesHubMemberContext | null;
 };
 
 export default function ResourcesTabsShell({
   isLoggedIn,
   initialTab,
   myResources,
+  hubMemberContext,
 }: ResourcesTabsShellProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -81,7 +84,11 @@ export default function ResourcesTabsShell({
       {activeTab === "mine" && isLoggedIn && myResources ? (
         <MyResourcesPanel model={myResources} />
       ) : (
-        <ResourcesHub isLoggedIn={isLoggedIn} />
+        <ResourcesHub
+          isLoggedIn={isLoggedIn}
+          memberOverrides={hubMemberContext?.overrides}
+          memberSwingCard={hubMemberContext?.swingCard}
+        />
       )}
 
       {isLoggedIn && activeTab === "mine" ? (

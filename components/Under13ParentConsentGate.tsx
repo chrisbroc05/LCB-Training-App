@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { isLegalPublicPath } from "@/lib/legal-shared";
+import { MEMBERSHIP_COMPLETE_CHECKOUT_PATH } from "@/lib/membership-checkout-intent-shared";
 
 type Under13LockStatus = {
   needsAcceptance?: boolean;
@@ -55,6 +56,14 @@ export default function Under13ParentConsentGate() {
       if (!data.needsUnder13ParentLock) {
         setShowEmailEditor(false);
         clearPolling();
+        void fetch("/api/auth/post-login-redirect")
+          .then((response) => response.json())
+          .then((payload: { path?: string }) => {
+            if (payload.path === MEMBERSHIP_COMPLETE_CHECKOUT_PATH) {
+              window.location.href = MEMBERSHIP_COMPLETE_CHECKOUT_PATH;
+            }
+          })
+          .catch(() => undefined);
       }
     };
 

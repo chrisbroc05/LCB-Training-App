@@ -16,6 +16,15 @@ import {
   sendRemoteSessionPurchaseConfirmationEmail,
 } from "@/lib/notifications";
 import { processStripeChargeRefund } from "@/lib/stripe-refund-server";
+import {
+  applyMembershipSubscriptionFromStripe,
+  claimStripeWebhookEvent,
+  handleMembershipInvoicePaymentFailed,
+  recordMembershipSubscriptionInvoice,
+} from "@/lib/membership-subscription-server";
+import { isPhase2MembershipPriceId } from "@/lib/stripe-membership-prices-server";
+import { parseMembershipLevelFromMetadata } from "@/lib/membership-subscription-shared";
+import { getInvoiceLinePriceId } from "@/lib/stripe-invoice-shared";
 
 function mapPriceIdToTier(priceId?: string | null) {
   if (!priceId) {
@@ -79,6 +88,11 @@ export async function POST(request: Request) {
     event = getStripe().webhooks.constructEvent(payload, stripeSignature, webhookSecret);
   } catch {
     return NextResponse.json({ error: "Invalid Stripe signature." }, { status: 400 });
+  }
+
+  const shouldProcess = await claimStripeWebhookEvent(event.id, event.type);
+  if (!shouldProcess) {
+    return NextResponse.json({ received: true, duplicate: true });
   }
 
   if (event.type === "checkout.session.completed") {
@@ -159,18 +173,42 @@ export async function POST(request: Request) {
         await ensureProgramEnrollmentForUser(userId);
         void sendCoachNewProgramPlayerPushForUser(userId);
       } else if (checkoutSession.mode === "subscription") {
-        await prisma.user.updateMany({
-          where: { id: userId },
-          data: {
-            membershipTier,
-            pendingCheckoutTier: null,
-            subscriptionStatus: "ACTIVE",
-            stripeCustomerId,
-            stripeSubscriptionId,
-            subscriptionCancelAtPeriodEnd: false,
-          },
-        });
-
+        const checkoutKind = checkoutSession.metadata?.checkoutKind;
+        const membershipLevel = parseMembershipLevelFromMetadata(
+          checkoutSession.metadata?.membershipLevel,
+        );
+        if (checkoutKind === "membership_level" && membershipLevel && userId) {
+          await prisma.user.updateMany({
+            where: { id: userId },
+            data: {
+              pendingCheckoutLevel: null,
+              stripeCustomerId,
+            },
+          });
+          if (stripeSubscriptionId) {
+            const stripeSubscription = await getStripe().subscriptions.retrieve(stripeSubscriptionId);
+            await applyMembershipSubscriptionFromStripe({
+              userId,
+              subscription: stripeSubscription,
+              organizationId: checkoutSession.metadata?.organizationId ?? null,
+              orgJoinedAtSnapshot: checkoutSession.metadata?.orgJoinedAt
+                ? new Date(checkoutSession.metadata.orgJoinedAt)
+                : null,
+            });
+          }
+        } else {
+          await prisma.user.updateMany({
+            where: { id: userId },
+            data: {
+              membershipTier,
+              pendingCheckoutTier: null,
+              subscriptionStatus: "ACTIVE",
+              stripeCustomerId,
+              stripeSubscriptionId,
+              subscriptionCancelAtPeriodEnd: false,
+            },
+          });
+        }
       }
     }
 
@@ -309,6 +347,31 @@ export async function POST(request: Request) {
       typeof subscription.customer === "string" ? subscription.customer : undefined;
     const stripeSubscriptionId = subscription.id;
     const stripePriceId = subscription.items.data[0]?.price.id;
+    if (isPhase2MembershipPriceId(stripePriceId)) {
+      const userIdMeta = subscription.metadata?.userId?.trim();
+      let userId = userIdMeta || null;
+      if (!userId) {
+        const linked = await prisma.user.findFirst({
+          where: {
+            OR: [
+              { stripeSubscriptionId: subscription.id },
+              ...(stripeCustomerId ? [{ stripeCustomerId }] : []),
+            ],
+          },
+          select: { id: true },
+        });
+        userId = linked?.id ?? null;
+      }
+      if (userId) {
+        await applyMembershipSubscriptionFromStripe({
+          userId,
+          subscription,
+          forceDeleted: event.type === "customer.subscription.deleted",
+        });
+      }
+      return NextResponse.json({ received: true });
+    }
+
     const mappedTier = mapPriceIdToTier(stripePriceId);
     const currentPeriodEnd = getSubscriptionPeriodEnd(subscription);
     const cancelAtPeriodEnd = subscription.cancel_at_period_end;
@@ -376,6 +439,30 @@ export async function POST(request: Request) {
     }
   }
 
+  if (event.type === "invoice.paid") {
+    const invoice = event.data.object as Stripe.Invoice;
+    const stripeSubscriptionId =
+      typeof (invoice as { subscription?: unknown }).subscription === "string"
+        ? ((invoice as { subscription?: string }).subscription ?? null)
+        : null;
+    const linePriceId = getInvoiceLinePriceId(invoice.lines?.data[0]);
+    if (isPhase2MembershipPriceId(linePriceId) || stripeSubscriptionId) {
+      await recordMembershipSubscriptionInvoice({ invoice, subscriptionId: stripeSubscriptionId });
+      if (stripeSubscriptionId) {
+        const subRow = await prisma.membershipSubscription.findFirst({
+          where: { stripeSubscriptionId },
+        });
+        if (subRow) {
+          const stripeSubscription = await getStripe().subscriptions.retrieve(stripeSubscriptionId);
+          await applyMembershipSubscriptionFromStripe({
+            userId: subRow.userId,
+            subscription: stripeSubscription,
+          });
+        }
+      }
+    }
+  }
+
   if (event.type === "invoice.payment_failed") {
     const invoice = event.data.object as Stripe.Invoice;
     const stripeCustomerId = typeof invoice.customer === "string" ? invoice.customer : null;
@@ -383,6 +470,11 @@ export async function POST(request: Request) {
       typeof (invoice as { subscription?: unknown }).subscription === "string"
         ? ((invoice as { subscription?: string }).subscription ?? null)
         : null;
+
+    const linePriceId = getInvoiceLinePriceId(invoice.lines?.data[0]);
+    if (isPhase2MembershipPriceId(linePriceId) && stripeSubscriptionId) {
+      await handleMembershipInvoicePaymentFailed({ invoice, subscriptionId: stripeSubscriptionId });
+    }
 
     if (stripeCustomerId || stripeSubscriptionId) {
       const user = await prisma.user.findFirst({

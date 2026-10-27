@@ -42,12 +42,23 @@ type AuthPageHrefOptions = {
   billing?: string | null;
   checkout?: string | null;
   intent?: string | null;
+  level?: string | null;
+  orgCode?: string | null;
   searchParams?: Pick<URLSearchParams, "get">;
 };
 
 export function buildAuthPageHref(options: AuthPageHrefOptions) {
   const params = new URLSearchParams();
-  const keys = ["tier", "redirect", "callbackUrl", "billing", "checkout", "intent"] as const;
+  const keys = [
+    "tier",
+    "redirect",
+    "callbackUrl",
+    "billing",
+    "checkout",
+    "intent",
+    "level",
+    "orgCode",
+  ] as const;
 
   if (options.mode) {
     params.set("mode", options.mode);

@@ -16,6 +16,7 @@ import {
 import { sendNewMemberNotification } from "@/lib/notifications";
 import { isTestAccountEmail } from "@/lib/test-account-shared";
 import type { SignupRequestPayload } from "@/lib/signup-shared";
+import { isMembershipLevelKey } from "@/lib/membership-levels-shared";
 import { joinOrganizationForUser } from "@/lib/org-server";
 import {
   applyMatchingWaiverAcceptanceToUser,
@@ -27,6 +28,7 @@ type SignupBody = SignupRequestPayload & {
   selectedMembershipTier?: string;
   signupSource?: string;
   orgJoinCode?: string;
+  pendingMembershipLevel?: string;
 };
 
 export async function POST(request: Request) {
@@ -144,6 +146,8 @@ export async function POST(request: Request) {
     const hashedPassword = await hash(password, 12);
     const acceptedAt = new Date();
     const legacyName = combinePlayerName(playerFirstName, playerLastName);
+    const pendingLevelRaw = body.pendingMembershipLevel?.trim().toUpperCase() ?? "";
+    const pendingCheckoutLevel = isMembershipLevelKey(pendingLevelRaw) ? pendingLevelRaw : undefined;
 
     const { linkLeadToUserByEmail } = await import("@/lib/leads-server");
 
@@ -169,6 +173,7 @@ export async function POST(request: Request) {
         mediaConsent: Boolean(body.legalAcceptance.mediaConsent),
         mediaConsentUpdatedAt: acceptedAt,
         isTestAccount: isTestAccountEmail(email),
+        ...(pendingCheckoutLevel ? { pendingCheckoutLevel } : {}),
       },
       select: {
         id: true,

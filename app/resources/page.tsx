@@ -6,6 +6,7 @@ import { authOptions } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin";
 import { toAccessUserFields, userAccessSelect } from "@/lib/access-server";
 import { buildMyResourcesViewModel } from "@/lib/my-resources-server";
+import { loadResourcesHubMemberContext } from "@/lib/resources-hub-member-server";
 import { parseResourcesTabParam } from "@/lib/my-resources-shared";
 import {
   RESOURCES_PAGE_DESCRIPTION,
@@ -52,9 +53,11 @@ export default async function ResourcesPage({ searchParams }: PageProps) {
   const tabFromUrl = readTabParam(params);
 
   let myResources = null;
+  let hubMemberContext = null;
   let initialTab = tabFromUrl;
 
   if (session?.user?.id) {
+    hubMemberContext = await loadResourcesHubMemberContext(session.user.id);
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: userAccessSelect,
@@ -96,6 +99,7 @@ export default async function ResourcesPage({ searchParams }: PageProps) {
             isLoggedIn={isLoggedIn}
             initialTab={initialTab}
             myResources={myResources}
+            hubMemberContext={hubMemberContext}
           />
         </Suspense>
       </div>

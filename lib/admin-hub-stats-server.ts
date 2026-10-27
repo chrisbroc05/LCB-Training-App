@@ -201,6 +201,13 @@ export async function loadBusinessHubCards(now = new Date()): Promise<AdminSecti
       statLabel: "Sales today",
     },
     {
+      href: ADMIN_ROUTES.business.waitlist,
+      title: "All-Access waitlist",
+      description: "Families waiting when the program cap is full.",
+      statValue: "List",
+      statLabel: "Waitlist",
+    },
+    {
       href: ADMIN_ROUTES.business.grants,
       title: "Product grants",
       description: "Manual product and program access grants.",

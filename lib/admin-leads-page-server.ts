@@ -19,18 +19,33 @@ export async function loadAdminLeadsPageData() {
     },
   });
 
-  const purchaseRows = await prisma.resourcePurchase.findMany({
-    orderBy: { createdAt: "desc" },
-    take: 200,
-    select: {
-      id: true,
-      email: true,
-      resourceSlug: true,
-      amountCents: true,
-      createdAt: true,
-      stripeSessionId: true,
-    },
-  });
+  const [purchaseRows, subscriptionPaymentRows] = await Promise.all([
+    prisma.resourcePurchase.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 200,
+      select: {
+        id: true,
+        email: true,
+        resourceSlug: true,
+        amountCents: true,
+        createdAt: true,
+        stripeSessionId: true,
+      },
+    }),
+    prisma.membershipSubscriptionPayment.findMany({
+      orderBy: { paidAt: "desc" },
+      take: 200,
+      select: {
+        id: true,
+        userId: true,
+        level: true,
+        amountCents: true,
+        currency: true,
+        paidAt: true,
+        stripeInvoiceId: true,
+      },
+    }),
+  ]);
 
   const leads = leadRows.map((lead) => ({
     ...lead,
@@ -47,7 +62,12 @@ export async function loadAdminLeadsPageData() {
     createdAt: purchase.createdAt.toISOString(),
   }));
 
+  const subscriptionPayments = subscriptionPaymentRows.map((row: (typeof subscriptionPaymentRows)[number]) => ({
+    ...row,
+    paidAt: row.paidAt.toISOString(),
+  }));
+
   const quizDashboard = await loadQuizAdminDashboard();
 
-  return { leads, purchases, quizDashboard };
+  return { leads, purchases, subscriptionPayments, quizDashboard };
 }

@@ -17,6 +17,7 @@ import {
 } from "@/lib/twelve-week-program";
 import { toVimeoEmbedUrl } from "@/lib/vimeo";
 import TestimonialsSection from "@/components/TestimonialsSection";
+import PublicMembershipLevelsSection from "@/app/components/PublicMembershipLevelsSection";
 
 const physicalTrainingPillars = [
   {
@@ -259,6 +260,10 @@ export default async function Home() {
             </article>
           </div>
         </section>
+
+        <div className="mx-auto w-full max-w-6xl px-4 pb-16 sm:px-6">
+          <PublicMembershipLevelsSection />
+        </div>
       </div>
 
     </>

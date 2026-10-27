@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect } from "react";
 import { getOrgTrialIncludesLine } from "@/lib/org-trial-copy-shared";
 
@@ -71,6 +72,12 @@ export default function OrgTrialDetailsModal({
           <p className="mt-3 text-sm text-zinc-400">Trial ends on {endLabel} (Chicago time).</p>
         ) : null}
         {teamName ? <p className="mt-2 text-xs text-zinc-500">Team: {teamName}</p> : null}
+        <Link
+          href="/upgrade"
+          className="mt-5 inline-flex w-full items-center justify-center rounded-full bg-[#22c55e] px-4 py-2.5 text-sm font-semibold text-black transition hover:bg-[#35db72]"
+        >
+          Keep going
+        </Link>
       </div>
     </div>
   );

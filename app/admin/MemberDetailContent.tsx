@@ -52,6 +52,15 @@ export type MemberDetail = {
   };
   inPersonTraining: InPersonTrainingInfo;
   hasStripeSubscription: boolean;
+  stripeCustomerId: string | null;
+  membershipSubscription: {
+    level: MembershipLevelKey;
+    status: string;
+    currentPeriodEnd: string;
+    cancelAtPeriodEnd: boolean;
+    pendingLevel: MembershipLevelKey | null;
+    startedAt: string;
+  } | null;
   memberProfile: {
     hasProfile: boolean;
     position: string | null;
@@ -249,10 +258,31 @@ export default function MemberDetailContent({
             {detail.monthlySubmissionsRemaining}
           </p>
         ) : null}
-        {detail.hasStripeSubscription ? (
-          <p className="mt-2 text-yellow-100">
-            This member currently has a Stripe subscription on file.
-          </p>
+        {detail.membershipSubscription ? (
+          <div className="mt-3 rounded-lg border border-[#2b3650] bg-black/20 p-3 text-sm">
+            <p className="font-semibold text-zinc-100">Membership subscription</p>
+            <p className="mt-1">
+              Level: {detail.membershipSubscription.level} | Status:{" "}
+              {detail.membershipSubscription.status}
+            </p>
+            <p className="mt-1">
+              Next billing: {formatOptionalDate(detail.membershipSubscription.currentPeriodEnd)}
+            </p>
+            {detail.stripeCustomerId ? (
+              <p className="mt-2">
+                <a
+                  href={`https://dashboard.stripe.com/test/customers/${detail.stripeCustomerId}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[#52B788] underline"
+                >
+                  Open in Stripe
+                </a>
+              </p>
+            ) : null}
+          </div>
+        ) : detail.hasStripeSubscription ? (
+          <p className="mt-2 text-yellow-100">Legacy Stripe subscription on file.</p>
         ) : null}
       </div>
 

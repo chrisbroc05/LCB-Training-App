@@ -5,6 +5,7 @@ export async function submitSignupRequest(
     selectedMembershipTier?: string;
     signupSource?: string;
     orgJoinCode?: string;
+    pendingMembershipLevel?: string;
   },
 ) {
   const response = await fetch("/api/auth/signup", {

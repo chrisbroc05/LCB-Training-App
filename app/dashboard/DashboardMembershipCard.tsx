@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { formatOptionalDate } from "@/lib/format-date";
+import { formatMembershipBillingDate } from "@/lib/format-date";
 type DashboardMembershipCardProps = {
   planLabel: string;
   isPaidMember: boolean;
@@ -29,7 +29,7 @@ export default function DashboardMembershipCard({
           {isManualMembership ? (
             <p>Billing: Manual</p>
           ) : (
-            <p>Next billing date: {formatOptionalDate(subscriptionCurrentPeriodEnd)}</p>
+            <p>Next billing date: {formatMembershipBillingDate(subscriptionCurrentPeriodEnd)}</p>
           )}
           {!isManualMembership && subscriptionCancelAtPeriodEnd ? (
             <p className="text-yellow-100">

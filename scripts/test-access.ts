@@ -151,8 +151,8 @@ const fixed85 = getProgramDay({ startDate: start, planMode: "FIXED_12_WEEK" }, p
 assert.equal(fixed85.isComplete, true);
 
 console.log("test-access: public marketing gate");
-assert.equal(PUBLIC_MEMBERSHIP_LEVELS_ENABLED, false);
-assert.match(getUpgradeLabelForLevel("PLUS"), /Upgrade for more access/);
+assert.equal(PUBLIC_MEMBERSHIP_LEVELS_ENABLED, true);
+assert.match(getUpgradeLabelForLevel("PLUS"), /Available with Plus/);
 
 console.log("test-access: org trial");
 const trialStart = trialStartInstantFromDateInput("2026-10-23");

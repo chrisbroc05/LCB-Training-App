@@ -49,6 +49,7 @@ enum SubscriptionStatus {
   ACTIVE
   CANCEL_AT_PERIOD_END
   CANCELED
+  PAST_DUE
 }
 
 enum MentalGameTopic {
@@ -201,6 +202,7 @@ model User {
   twelveWeekProgramStartedAt DateTime?
   twelveWeekProgramEndsAt    DateTime?
   pendingCheckoutTier    MembershipTier?
+  pendingCheckoutLevel   MembershipLevel?
   subscriptionStatus     SubscriptionStatus     @default(ACTIVE)
   stripeCustomerId       String?                @unique
   stripeSubscriptionId   String?                @unique
@@ -272,6 +274,7 @@ model User {
   organization           Organization?          @relation(fields: [organizationId], references: [id], onDelete: SetNull)
   orgTeam                OrgTeam?               @relation(fields: [orgTeamId], references: [id], onDelete: SetNull)
   fixItGrants            UserFixItGrant[]
+  membershipSubscription MembershipSubscription?
 
   @@index([organizationId])
   @@index([orgTeamId])
@@ -308,6 +311,7 @@ model Organization {
   teams              OrgTeam[]
   weeklyFocuses      OrgWeeklyFocus[]
   members            User[]
+  membershipSubscriptions MembershipSubscription[]
 }
 
 model OrgCode {
@@ -1104,5 +1108,70 @@ model DrillLibraryCatalog {
   vimeoId        String   @id
   isStarterDrill Boolean  @default(false)
   updatedAt      DateTime @updatedAt
+}
+
+model MembershipSubscription {
+  id                   String             @id @default(cuid())
+  userId               String             @unique
+  stripeCustomerId     String
+  stripeSubscriptionId String             @unique
+  stripePriceId        String?
+  stripeScheduleId     String?
+  level                MembershipLevel
+  status               SubscriptionStatus
+  currentPeriodEnd     DateTime
+  cancelAtPeriodEnd    Boolean            @default(false)
+  pendingLevel         MembershipLevel?
+  startedAt            DateTime
+  organizationId       String?
+  orgJoinedAtSnapshot  DateTime?
+  pastDueGraceEndsAt   DateTime?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  user                 User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization         Organization?      @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  payments             MembershipSubscriptionPayment[]
+
+  @@index([organizationId])
+  @@index([status, level])
+}
+
+model MembershipSubscriptionPayment {
+  id                       String                  @id @default(cuid())
+  stripeInvoiceId          String                  @unique
+  membershipSubscriptionId String?
+  userId                   String?
+  level                    MembershipLevel?
+  amountCents              Int
+  currency                 String                  @default("usd")
+  paidAt                   DateTime
+  createdAt                DateTime                @default(now())
+  membershipSubscription   MembershipSubscription? @relation(fields: [membershipSubscriptionId], references: [id], onDelete: SetNull)
+
+  @@index([userId, paidAt(sort: Desc)])
+  @@index([membershipSubscriptionId])
+}
+
+model StripeWebhookEvent {
+  stripeEventId String   @id
+  type          String
+  processedAt   DateTime @default(now())
+}
+
+model AllAccessWaitlistEntry {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  note      String?
+  userId    String?
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@index([createdAt(sort: Desc)])
+}
+
+model PlatformCoachingSettings {
+  id                  String @id @default("default")
+  allAccessProgramCap Int    @default(25)
 }
 

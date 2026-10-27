@@ -18,6 +18,8 @@ import PWAInstallHint from "@/components/PWAInstallHint";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 import LegalAgreementGate from "@/components/LegalAgreementGate";
 import OrgTeamReselectBanner from "@/app/components/OrgTeamReselectBanner";
+import MembershipPaymentPastDueBanner from "@/app/components/MembershipPaymentPastDueBanner";
+import { loadMembershipPaymentBanner } from "@/lib/membership-payment-banner-server";
 import Under13ParentConsentGate from "@/components/Under13ParentConsentGate";
 import "./globals.css";
 
@@ -58,7 +60,9 @@ export default async function RootLayout({
   let hasMemberDownloadsAccess = false;
   let hasProgramEnrollment = false;
   let orgTrialHeader: OrgTrialHeaderSummary | null = null;
+  let membershipPaymentBanner: { graceEndsLabel: string } | null = null;
   if (session?.user?.id) {
+    membershipPaymentBanner = await loadMembershipPaymentBanner(session.user.id);
     const layoutAccess = await loadLoggedInLayoutAccess(session.user.id);
     membershipTier = layoutAccess.membershipTier;
     currentPlanLabel = layoutAccess.currentPlanLabel;
@@ -102,6 +106,9 @@ export default async function RootLayout({
       </head>
       <body className="min-h-full flex flex-col bg-black text-zinc-100">
         {session?.user?.id ? <OrgTeamReselectBanner userId={session.user.id} /> : null}
+        {membershipPaymentBanner ? (
+          <MembershipPaymentPastDueBanner graceEndsLabel={membershipPaymentBanner.graceEndsLabel} />
+        ) : null}
         <AppSplashScreen />
         <SiteShell
           isLoggedIn={Boolean(session?.user)}

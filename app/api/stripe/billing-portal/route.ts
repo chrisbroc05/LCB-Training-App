@@ -27,7 +27,15 @@ export async function POST() {
     return NextResponse.json({ error: "User not found." }, { status: 404 });
   }
 
-  if (user.membershipTier !== "MEMORABLE" && user.membershipTier !== "ELITE") {
+  const membershipSub = await prisma.membershipSubscription.findUnique({
+    where: { userId: session.user.id },
+    select: { id: true },
+  });
+
+  const legacySubscriptionTier =
+    user.membershipTier === "MEMORABLE" || user.membershipTier === "ELITE";
+
+  if (!membershipSub && !legacySubscriptionTier) {
     return NextResponse.json(
       { error: "Billing management is available for active subscription members only." },
       { status: 403 },

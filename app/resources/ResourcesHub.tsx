@@ -8,17 +8,28 @@ import {
   postResourceLeadAction,
   readLeadIdFromCookie,
 } from "@/lib/resources-lead-client";
+import ResourceMemberSwingCard from "@/app/resources/ResourceMemberSwingCard";
 import {
   getResourceDefinition,
   getResourcesForHub,
   type ResourceDefinition,
 } from "@/lib/resources-shared";
+import type {
+  ResourceHubMemberOverride,
+  ResourceHubMemberSwingCard,
+} from "@/lib/resources-hub-member-shared";
 
 type ResourcesHubProps = {
   isLoggedIn: boolean;
+  memberOverrides?: Record<string, ResourceHubMemberOverride>;
+  memberSwingCard?: ResourceHubMemberSwingCard | null;
 };
 
-export default function ResourcesHub({ isLoggedIn }: ResourcesHubProps) {
+export default function ResourcesHub({
+  isLoggedIn,
+  memberOverrides = {},
+  memberSwingCard = null,
+}: ResourcesHubProps) {
   const [leadResource, setLeadResource] = useState<ResourceDefinition | null>(null);
   const [busySlug, setBusySlug] = useState<string | null>(null);
   const cards = getResourcesForHub();
@@ -60,15 +71,30 @@ export default function ResourcesHub({ isLoggedIn }: ResourcesHubProps) {
   return (
     <>
       <div className="grid gap-4 sm:grid-cols-2">
-        {cards.map((resource, index) => (
-          <div
-            key={resource.slug}
-            id={index === workoutStartersIndex ? "workout-starters" : undefined}
-            className={`scroll-mt-24 ${busySlug === resource.slug ? "opacity-70" : ""}`}
-          >
-            <ResourceCard resource={resource} onAction={handleAction} />
-          </div>
-        ))}
+        {cards.map((resource, index) => {
+          if (resource.slug === "free-swing-analysis" && memberSwingCard) {
+            return (
+              <div key={resource.slug} className="scroll-mt-24">
+                <ResourceMemberSwingCard card={memberSwingCard} />
+              </div>
+            );
+          }
+
+          const memberOverride = memberOverrides[resource.slug];
+          return (
+            <div
+              key={resource.slug}
+              id={index === workoutStartersIndex ? "workout-starters" : undefined}
+              className={`scroll-mt-24 ${busySlug === resource.slug ? "opacity-70" : ""}`}
+            >
+              <ResourceCard
+                resource={resource}
+                onAction={handleAction}
+                memberOverride={memberOverride}
+              />
+            </div>
+          );
+        })}
       </div>
 
       {bookCallResource ? (

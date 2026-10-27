@@ -3,6 +3,11 @@
  */
 
 import type { EffectiveAccessLevel } from "@/lib/access-shared";
+import type { MembershipLevelKey } from "@/lib/membership-levels-shared";
+import {
+  getUpgradeLabelForLevel,
+  isPublicMembershipLevelsEnabled,
+} from "@/lib/membership-levels-shared";
 import { PLAYBOOK_NAME } from "@/lib/playbook-branding";
 
 function isCoreBand(effective: EffectiveAccessLevel): boolean {
@@ -27,12 +32,16 @@ export const PLAYBOOK_BUYER_LOCKED_DRILL_MESSAGE = `Unlocks with the 12-Week Pro
 export function getLockedContentMessage(
   effective: EffectiveAccessLevel,
   _surface: "drill" | "workout" | "playbook" | "guide",
+  requiredLevel?: MembershipLevelKey,
 ): string {
   if (effective === "FREE" || effective === "PLAYBOOK") {
     return PLAYBOOK_BUYER_LOCKED_DRILL_MESSAGE;
   }
 
   if (isCoreBand(effective) || isLevelMember(effective)) {
+    if (isPublicMembershipLevelsEnabled() && requiredLevel) {
+      return getUpgradeLabelForLevel(requiredLevel);
+    }
     return HIGHER_MEMBERSHIP_LOCKED_MESSAGE;
   }
 

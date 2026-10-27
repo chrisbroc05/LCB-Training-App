@@ -2,6 +2,10 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import BillingSection from "@/app/settings/BillingSection";
+import MyPlanSection from "@/app/settings/MyPlanSection";
+import type { MembershipLevelKey } from "@/lib/membership-levels-shared";
+import { formatMembershipSubscriptionStatusLabel } from "@/lib/membership-change-shared";
+import { expirePastDueMembershipGraceForUser } from "@/lib/membership-subscription-grace-server";
 import DeleteAccountSection from "@/app/settings/DeleteAccountSection";
 import NotificationPreferencesSection from "@/app/settings/NotificationPreferencesSection";
 import ProgramEmailSettingsSection from "@/app/settings/ProgramEmailSettingsSection";
@@ -21,7 +25,7 @@ import { type DatabaseTier } from "@/lib/membership";
 import { toAccessUserFields, userAccessSelect } from "@/lib/access-server";
 import { formatMemberPlanLabel } from "@/lib/member-plan-labels-shared";
 import { prisma } from "@/lib/prisma";
-import { formatOptionalDate } from "@/lib/format-date";
+import { formatMembershipBillingDate, formatOptionalDateTime } from "@/lib/format-date";
 import { serializeInPersonTrainingInfo } from "@/lib/in-person-training-shared";
 import { getStripe } from "@/lib/stripe";
 
@@ -98,6 +102,12 @@ export default async function SettingsPage() {
     redirect("/auth");
   }
 
+  await expirePastDueMembershipGraceForUser(session.user.id);
+
+  const membershipSub = await prisma.membershipSubscription.findUnique({
+    where: { userId: session.user.id },
+  });
+
   const membershipTier = user.membershipTier as DatabaseTier;
   const currentPlanLabel = formatMemberPlanLabel(toAccessUserFields(user));
   const stripeBillingDate = await getStripeBillingDate({
@@ -105,6 +115,17 @@ export default async function SettingsPage() {
     stripeCustomerId: user.stripeCustomerId,
   });
   const nextBillingDate = stripeBillingDate ?? user.subscriptionCurrentPeriodEnd;
+  const membershipNextBillingLabel = membershipSub
+    ? formatMembershipBillingDate(membershipSub.currentPeriodEnd)
+    : "";
+  const membershipStatusLabel = membershipSub
+    ? formatMembershipSubscriptionStatusLabel({
+        status: membershipSub.status,
+        cancelAtPeriodEnd: membershipSub.cancelAtPeriodEnd,
+        pendingLevel: (membershipSub.pendingLevel as MembershipLevelKey | null) ?? null,
+        nextBillingLabel: membershipNextBillingLabel,
+      })
+    : "";
 
   return (
     <div className="mx-auto w-full max-w-4xl px-4 py-10 sm:px-6 sm:py-14 md:py-20">
@@ -122,7 +143,7 @@ export default async function SettingsPage() {
         <WorkoutEquipmentSection />
         <LegalSettingsSection
           termsVersion={user.termsVersion}
-          termsAcceptedAt={user.termsAcceptedAt?.toISOString() ?? null}
+          termsAcceptedLabel={formatOptionalDateTime(user.termsAcceptedAt)}
           acceptedByName={user.acceptedByName}
           acceptedAsParent={user.acceptedAsParent}
           mediaConsent={user.mediaConsent}
@@ -130,16 +151,33 @@ export default async function SettingsPage() {
         <InPersonTrainingSection initialInfo={serializeInPersonTrainingInfo(user)} />
         <OrgTeamSection />
         <SecuritySection />
-        <BillingSection
-          currentPlanLabel={currentPlanLabel}
-          membershipTier={membershipTier}
-          subscriptionStatus={user.subscriptionStatus}
-          nextBillingDate={formatOptionalDate(nextBillingDate)}
-          isCancelScheduled={user.subscriptionCancelAtPeriodEnd}
-          hasSubscription={Boolean(user.stripeSubscriptionId)}
-          stripeCustomerId={user.stripeCustomerId}
-          stripeSubscriptionId={user.stripeSubscriptionId}
-        />
+        {membershipSub ? (
+          <MyPlanSection
+            level={membershipSub.level as MembershipLevelKey}
+            status={membershipSub.status}
+            statusLabel={membershipStatusLabel}
+            nextBillingLabel={membershipNextBillingLabel}
+            cancelAtPeriodEnd={membershipSub.cancelAtPeriodEnd}
+            pendingLevel={(membershipSub.pendingLevel as MembershipLevelKey | null) ?? null}
+            pendingLevelEffectiveLabel={
+              membershipSub.pendingLevel
+                ? formatMembershipBillingDate(membershipSub.currentPeriodEnd)
+                : null
+            }
+          />
+        ) : null}
+        {!membershipSub ? (
+          <BillingSection
+            currentPlanLabel={currentPlanLabel}
+            membershipTier={membershipTier}
+            subscriptionStatus={user.subscriptionStatus}
+            nextBillingDate={formatMembershipBillingDate(nextBillingDate)}
+            isCancelScheduled={user.subscriptionCancelAtPeriodEnd}
+            hasSubscription={Boolean(user.stripeSubscriptionId)}
+            stripeCustomerId={user.stripeCustomerId}
+            stripeSubscriptionId={user.stripeSubscriptionId}
+          />
+        ) : null}
         <DeleteAccountSection userEmail={user.email} userName={user.name ?? ""} />
       </div>
     </div>

@@ -6,7 +6,7 @@
  */
 
 /** When false, visitors never see Core / Plus / All-Access prices or signup (Phase 2 + Stripe). */
-export const PUBLIC_MEMBERSHIP_LEVELS_ENABLED = false;
+export const PUBLIC_MEMBERSHIP_LEVELS_ENABLED = true;
 
 export const PUBLIC_MEMBERSHIP_UPGRADE_GENERIC_LABEL =
   "Upgrade for more access in the app.";

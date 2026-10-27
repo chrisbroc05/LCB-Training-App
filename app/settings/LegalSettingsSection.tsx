@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useState } from "react";
 import SettingsCard from "@/app/settings/SettingsCard";
 import { settingsLabelClass } from "@/app/settings/settings-styles";
-import { formatDateTime } from "@/lib/format-date";
 import {
   formatLegalAgreementRole,
   formatMediaConsentLabel,
@@ -13,7 +12,7 @@ import {
 
 type LegalSettingsSectionProps = {
   termsVersion: string | null;
-  termsAcceptedAt: string | null;
+  termsAcceptedLabel: string;
   acceptedByName: string | null;
   acceptedAsParent: boolean;
   mediaConsent: boolean;
@@ -21,7 +20,7 @@ type LegalSettingsSectionProps = {
 
 export default function LegalSettingsSection({
   termsVersion,
-  termsAcceptedAt,
+  termsAcceptedLabel,
   acceptedByName,
   acceptedAsParent,
   mediaConsent: initialMediaConsent,
@@ -64,7 +63,9 @@ export default function LegalSettingsSection({
         <p>
           <span className={settingsLabelClass}>Terms accepted:</span>{" "}
           {termsVersion ?? "Not yet accepted"}
-          {termsAcceptedAt ? ` on ${formatDateTime(termsAcceptedAt)}` : ""}
+          {termsAcceptedLabel && termsAcceptedLabel !== "Not available"
+            ? ` on ${termsAcceptedLabel}`
+            : ""}
         </p>
         {acceptedByName ? (
           <p>
