@@ -18,7 +18,7 @@ import {
   getSubscriptionPeriodEnd,
 } from "@/lib/membership-subscription-server";
 import { getMembershipLevelStripePriceId } from "@/lib/stripe-membership-prices-server";
-import { clearMembershipSubscriptionCancellation } from "@/lib/stripe-membership-lifecycle-server";
+import { undoUserScheduledSubscriptionCancellation } from "@/lib/stripe-membership-lifecycle-server";
 import Stripe from "stripe";
 
 export async function upgradeMembershipLevel(userId: string, targetLevel: MembershipLevelKey) {
@@ -100,8 +100,6 @@ export async function upgradeMembershipLevel(userId: string, targetLevel: Member
     },
   });
 
-  await clearMembershipSubscriptionCancellation(updated.id);
-
   await applyMembershipSubscriptionFromStripe({
     userId,
     subscription: updated,
@@ -170,8 +168,6 @@ export async function scheduleMembershipDowngrade(userId: string, targetLevel: M
     ],
   });
 
-  await clearMembershipSubscriptionCancellation(sub.stripeSubscriptionId);
-
   await prisma.membershipSubscription.update({
     where: { userId },
     data: {
@@ -210,10 +206,10 @@ export async function releaseScheduledMembershipDowngrade(userId: string) {
     },
   });
 
-  const cleared = await clearMembershipSubscriptionCancellation(sub.stripeSubscriptionId);
+  const stripeSub = await stripe.subscriptions.retrieve(sub.stripeSubscriptionId);
   await applyMembershipSubscriptionFromStripe({
     userId,
-    subscription: cleared,
+    subscription: stripeSub,
     previousLevel: sub.level as MembershipLevelKey,
   });
 }
@@ -236,7 +232,7 @@ export async function resumeMembershipAfterScheduledCancel(userId: string) {
     }
   }
 
-  const updated = await clearMembershipSubscriptionCancellation(sub.stripeSubscriptionId);
+  const updated = await undoUserScheduledSubscriptionCancellation(sub.stripeSubscriptionId);
 
   await prisma.membershipSubscription.update({
     where: { userId },

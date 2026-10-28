@@ -4,13 +4,6 @@
 
 export const MEMBERSHIP_SUBSCRIPTION_BILLING_MODE = { type: "classic" as const };
 
-export function buildClearMembershipCancellationUpdate() {
-  return {
-    cancel_at_period_end: false as const,
-    cancel_at: null as null,
-  };
-}
-
 export type MembershipPlanLifecycleAction =
   | "signup"
   | "upgrade"
