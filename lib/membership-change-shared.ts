@@ -158,6 +158,9 @@ export function formatMembershipSubscriptionStatusLabel(
   if (input.status === "PAST_DUE") {
     return "Payment issue";
   }
+  if (input.status === "EXPIRED") {
+    return "Access ended";
+  }
   if (input.status === "CANCELED" || input.status === "NONE") {
     return "Canceled";
   }

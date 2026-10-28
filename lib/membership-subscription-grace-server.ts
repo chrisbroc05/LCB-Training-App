@@ -1,6 +1,10 @@
 import "server-only";
 
+import type { SubscriptionStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import {
+  buildMembershipSubscriptionGraceExpiryUpdate,
+} from "@/lib/membership-subscription-shared";
 import { syncUserDenormalizedFromSubscription } from "@/lib/membership-subscription-server";
 
 export async function expirePastDueMembershipGraceForUser(userId: string, now = new Date()) {
@@ -12,17 +16,22 @@ export async function expirePastDueMembershipGraceForUser(userId: string, now = 
     return false;
   }
 
-  await prisma.membershipSubscription.delete({ where: { userId } }).catch(() => null);
+  const expiryUpdate = buildMembershipSubscriptionGraceExpiryUpdate(sub.pastDueGraceEndsAt, now);
+
+  const updated = await prisma.membershipSubscription.update({
+    where: { userId },
+    data: expiryUpdate,
+  });
 
   await syncUserDenormalizedFromSubscription(userId, {
-    level: sub.level,
-    status: "CANCELED",
-    currentPeriodEnd: sub.currentPeriodEnd,
+    level: updated.level,
+    status: updated.status as SubscriptionStatus,
+    currentPeriodEnd: updated.currentPeriodEnd,
     cancelAtPeriodEnd: false,
-    stripeCustomerId: sub.stripeCustomerId,
-    stripeSubscriptionId: sub.stripeSubscriptionId,
-    stripePriceId: sub.stripePriceId,
-    pastDueGraceEndsAt: null,
+    stripeCustomerId: updated.stripeCustomerId,
+    stripeSubscriptionId: updated.stripeSubscriptionId,
+    stripePriceId: updated.stripePriceId,
+    pastDueGraceEndsAt: updated.pastDueGraceEndsAt,
   });
 
   return true;

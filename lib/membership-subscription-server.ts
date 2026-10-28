@@ -275,6 +275,13 @@ export async function applyMembershipSubscriptionFromStripe(params: {
     stripeScheduleId = null;
   }
 
+  let accessEndedAt: Date | null = existing?.accessEndedAt ?? null;
+  if (status === "ACTIVE" || status === "PAST_DUE" || status === "CANCEL_AT_PERIOD_END") {
+    accessEndedAt = null;
+  } else if (status === "CANCELED") {
+    accessEndedAt = accessEndedAt ?? now;
+  }
+
   const record = await prisma.membershipSubscription.upsert({
     where: { userId: params.userId },
     create: {
@@ -292,6 +299,7 @@ export async function applyMembershipSubscriptionFromStripe(params: {
       organizationId: orgId,
       orgJoinedAtSnapshot: orgJoinedAt,
       pastDueGraceEndsAt,
+      accessEndedAt,
     },
     update: {
       stripeCustomerId,
@@ -305,12 +313,12 @@ export async function applyMembershipSubscriptionFromStripe(params: {
       organizationId: orgId,
       orgJoinedAtSnapshot: orgJoinedAt,
       pastDueGraceEndsAt,
+      accessEndedAt,
     },
   });
 
   if (status === "CANCELED") {
     await endAllAccessProgramIfNeeded(params.userId, record.level as MembershipLevelKey);
-    await prisma.membershipSubscription.delete({ where: { userId: params.userId } }).catch(() => null);
     await syncUserDenormalizedFromSubscription(params.userId, {
       level: record.level,
       status: "CANCELED",
@@ -321,7 +329,7 @@ export async function applyMembershipSubscriptionFromStripe(params: {
       stripePriceId,
       pastDueGraceEndsAt: null,
     });
-    return null;
+    return record;
   }
 
   await syncUserDenormalizedFromSubscription(params.userId, {

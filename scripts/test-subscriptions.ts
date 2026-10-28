@@ -5,6 +5,8 @@ import {
   isMembershipLevelUpgrade,
   parseMembershipLevelFromMetadata,
   subscriptionStatusGrantsAccess,
+  buildMembershipSubscriptionGraceExpiryUpdate,
+  membershipRestoresAccessAfterStripeInvoicePaid,
   MEMBERSHIP_SUBSCRIPTION_GRACE_DAYS,
 } from "../lib/membership-subscription-shared";
 import { mapStripePriceIdToMembershipLevel } from "../lib/stripe-membership-prices-shared";
@@ -79,6 +81,47 @@ function testAccessGrants() {
   );
 }
 
+function testGraceExpiryKeepsSubscriptionRow() {
+  const graceEnd = new Date("2026-11-03T12:00:00.000Z");
+  const endedAt = new Date("2026-11-03T12:00:01.000Z");
+  const update = buildMembershipSubscriptionGraceExpiryUpdate(graceEnd, endedAt);
+  assert.equal(update.status, "EXPIRED");
+  assert.equal(update.pastDueGraceEndsAt.toISOString(), graceEnd.toISOString());
+  assert.equal(update.accessEndedAt.toISOString(), endedAt.toISOString());
+  assert.equal(
+    subscriptionStatusGrantsAccess("EXPIRED", {
+      currentPeriodEnd: new Date("2027-01-01T00:00:00.000Z"),
+      pastDueGraceEndsAt: graceEnd,
+    }),
+    false,
+  );
+}
+
+function testInvoicePaidRestoresAccessAfterGraceExpired() {
+  const future = new Date(Date.now() + 86400000);
+  assert.equal(
+    membershipRestoresAccessAfterStripeInvoicePaid({
+      stripeStatus: "active",
+      currentPeriodEnd: future,
+    }),
+    true,
+  );
+  assert.equal(
+    membershipRestoresAccessAfterStripeInvoicePaid({
+      stripeStatus: "past_due",
+      currentPeriodEnd: future,
+    }),
+    false,
+  );
+  assert.equal(
+    subscriptionStatusGrantsAccess("EXPIRED", {
+      currentPeriodEnd: future,
+      pastDueGraceEndsAt: null,
+    }),
+    false,
+  );
+}
+
 function testGraceStatusMapping() {
   const graceEnd = new Date(Date.now() + MEMBERSHIP_SUBSCRIPTION_GRACE_DAYS * 86400000);
   assert.equal(
@@ -104,6 +147,8 @@ testPriceMapping();
 testLevelCompare();
 testMetadataParse();
 testAccessGrants();
+testGraceExpiryKeepsSubscriptionRow();
+testInvoicePaidRestoresAccessAfterGraceExpired();
 testGraceStatusMapping();
 testDuplicateWebhookIdempotencyConcept();
 
@@ -248,6 +293,15 @@ function testFriendlyStatusLabels() {
       nextBillingLabel: "Nov 27, 2026",
     }),
     "Payment issue",
+  );
+  assert.equal(
+    formatMembershipSubscriptionStatusLabel({
+      status: "EXPIRED",
+      cancelAtPeriodEnd: false,
+      pendingLevel: null,
+      nextBillingLabel: "Nov 27, 2026",
+    }),
+    "Access ended",
   );
 }
 

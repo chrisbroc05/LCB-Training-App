@@ -49,7 +49,7 @@ export function mapStripeSubscriptionStatus(params: {
   deleted: boolean;
   pastDueGraceEndsAt: Date | null;
   now?: Date;
-}): "NONE" | "ACTIVE" | "CANCEL_AT_PERIOD_END" | "CANCELED" | "PAST_DUE" {
+}): "NONE" | "ACTIVE" | "CANCEL_AT_PERIOD_END" | "CANCELED" | "PAST_DUE" | "EXPIRED" {
   if (
     params.deleted ||
     params.stripeStatus === "canceled" ||
@@ -98,4 +98,43 @@ export function subscriptionStatusGrantsAccess(
     return false;
   }
   return false;
+}
+
+/** App-only: grace ended, access dropped; Stripe subscription row may still exist (e.g. past_due). */
+export function buildMembershipSubscriptionGraceExpiryUpdate(
+  pastDueGraceEndsAt: Date,
+  accessEndedAt: Date,
+): {
+  status: "EXPIRED";
+  accessEndedAt: Date;
+  pastDueGraceEndsAt: Date;
+} {
+  return {
+    status: "EXPIRED",
+    accessEndedAt,
+    pastDueGraceEndsAt,
+  };
+}
+
+/** After invoice.paid + subscription sync, Stripe active/trialing restores in-app access. */
+export function membershipRestoresAccessAfterStripeInvoicePaid(params: {
+  stripeStatus: string;
+  currentPeriodEnd: Date;
+  now?: Date;
+}): boolean {
+  if (params.stripeStatus !== "active" && params.stripeStatus !== "trialing") {
+    return false;
+  }
+  const mapped = mapStripeSubscriptionStatus({
+    stripeStatus: params.stripeStatus,
+    cancelAtPeriodEnd: false,
+    deleted: false,
+    pastDueGraceEndsAt: null,
+    now: params.now,
+  });
+  return subscriptionStatusGrantsAccess(mapped, {
+    currentPeriodEnd: params.currentPeriodEnd,
+    pastDueGraceEndsAt: null,
+    now: params.now,
+  });
 }
