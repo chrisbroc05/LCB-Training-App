@@ -1,0 +1,95 @@
+---
+description: Local dev workflow — typecheck, pre-push checks, Stripe listen + dev server
+alwaysApply: true
+---
+
+# LCB Training Web — agent workflow
+
+Work in `lcb-training-web/` unless the task says otherwise.
+
+## After any code change
+
+Before telling the user the task is done:
+
+1. Run `npm run check:ascii` from `lcb-training-web/` (valid UTF-8 + ASCII-only in scanned source).
+2. Run `npm run typecheck`.
+3. Fix any errors; re-run until both pass.
+4. Do not claim completion if either step failed or was skipped.
+
+Source under `app/`, `lib/`, `components/`, `scripts/`, and `content/` must be ASCII-only UTF-8: straight quotes and apostrophes, `-` not em/en dashes, `...` not ellipsis. Do not paste smart punctuation from user copy into code.
+
+`npm run dev` runs `predev` (`check:ascii`) automatically. `next dev` does not replace typecheck; API routes and server code must pass `tsc --noEmit`.
+
+## Before any push
+
+Run the full gate from `lcb-training-web/` in order:
+
+1. `npm run check:ascii`
+2. `npm run typecheck`
+3. Every `test:*` script in `package.json` (all must pass):
+
+```bash
+npm run test:program-schedule && \
+npm run test:program-send-windows && \
+npm run test:daily-plan && \
+npm run test:strength-extra-work && \
+npm run test:quiz && \
+npm run test:coach-daily-summary-business && \
+npm run test:program-stats && \
+npm run test:program-task-completion && \
+npm run test:coaching-submissions && \
+npm run test:written-report-parse && \
+npm run test:written-report-line && \
+npm run test:player-evaluation-pdf && \
+npm run test:player-evaluation-cta && \
+npm run test:reports-queue && \
+npm run test:admin-sent-reports && \
+npm run test:coaching-submission-confirmation && \
+npm run test:playbook-entitlements && \
+npm run test:access && \
+npm run test:org-weekly-focus && \
+npm run test:drill-focus-grants && \
+npm run test:org-trial-dashboard && \
+npm run test:resources && \
+npm run test:resource-download-gate && \
+npm run test:fix-it-plans && \
+npm run test:video-poster-capture && \
+npm run test:my-resources && \
+npm run test:dev-environment-guard && \
+npm run test:subscriptions
+```
+
+4. `npm run build` (production build; includes `check:ascii` and `prisma generate`).
+
+Only push when the user explicitly asks. Never push if any step failed.
+
+## Local Stripe + dev server
+
+When (re)starting local setup or after the user asks:
+
+1. Stop existing `stripe listen` and `next dev` if needed.
+2. Start Stripe CLI (from `lcb-training-web/`):
+
+```bash
+stripe listen \
+  --events checkout.session.completed,customer.subscription.created,customer.subscription.updated,customer.subscription.deleted,invoice.paid,invoice.payment_failed,charge.refunded \
+  --forward-to localhost:3000/api/webhooks/stripe
+```
+
+Do not use `--all-thin`.
+
+3. Copy the CLI `whsec_...` into `.env` as `STRIPE_WEBHOOK_SECRET` if it changed; restart dev if `.env` was updated.
+4. Run `npm run dev` in a separate process.
+5. Confirm both are ready, `STRIPE_WEBHOOK_SECRET` matches the running `stripe listen` secret, and `http://localhost:3000` returns 200 without compile errors.
+
+See `docs/STRIPE_LOCAL_WEBHOOKS.md` and `docs/DEV_SETUP.md` for details.
+
+## Database migrations (local / dev)
+
+Apply schema migrations only via:
+
+```bash
+npm run db:migrate:dev
+```
+
+(from `lcb-training-web/`, with dev `.env` loaded). Do **not** run `npx prisma migrate deploy` or `npm run prisma:deploy` directly in agent workflows; use the npm script so the same guardrails and docs apply. Never migrate against production unless the user explicitly requests production ops.

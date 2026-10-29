@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "npm run check:ascii",
     "dev": "npx --yes tsx scripts/assert-dev-environment.ts && AUTH_TRUST_HOST=true next dev --webpack",
     "dev:phone": "npx --yes tsx scripts/dev-phone.ts",
     "db:seed:dev": "npx --yes tsx scripts/seed-dev-database.ts",
@@ -11,6 +12,7 @@
     "build": "npm run check:ascii && prisma generate && NODE_OPTIONS=--max-old-space-size=8192 next build --webpack",
     "start": "next start",
     "lint": "eslint",
+    "typecheck": "tsc --noEmit",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
@@ -43,6 +45,7 @@
     "test:my-resources": "npx --yes tsx scripts/test-my-resources-entitlements.ts",
     "test:dev-environment-guard": "npx --yes tsx scripts/test-dev-environment-guard.ts",
     "test:subscriptions": "npx --yes tsx scripts/test-subscriptions.ts",
+    "test:membership-welcome-emails": "npx --yes tsx scripts/test-membership-welcome-emails.ts",
     "build:fix-it-pdfs": "python3 scripts/build-fix-it-pdfs.py",
     "build:starter-pdfs": "npx --yes tsx scripts/export-workout-programs-json.ts && python3 scripts/build-starter-pdfs.py",
     "export:app-highlight": "npx --yes tsx scripts/export-app-highlight-local.ts && python3 marketing/build_app_highlight_pdf.py",

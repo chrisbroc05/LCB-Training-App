@@ -23,6 +23,7 @@ import {
 import { getProgramDay, PROGRAM_DAY_COUNT } from "@/lib/program-schedule";
 import { defaultProgramPlanMode } from "@/lib/program-plan-mode-shared";
 import { prisma } from "@/lib/prisma";
+import { createOrFindOnUniqueViolation } from "@/lib/prisma-get-or-create-shared";
 
 type EnrollmentWithUser = ProgramEnrollment & {
   user: Pick<User, "id" | "name" | "email"> & Parameters<typeof toAccessUserFields>[0];
@@ -141,31 +142,29 @@ export async function getEnrollmentForUser(userId: string) {
 }
 
 export async function getOrCreateConversationForEnrollment(enrollmentId: string) {
-  const existing = await prisma.conversation.findUnique({
-    where: { enrollmentId },
-  });
-
+  const load = () => prisma.conversation.findUnique({ where: { enrollmentId } });
+  const existing = await load();
   if (existing) {
     return existing;
   }
 
-  return prisma.conversation.create({
-    data: { enrollmentId },
-  });
+  return createOrFindOnUniqueViolation(
+    () => prisma.conversation.create({ data: { enrollmentId } }),
+    load,
+  );
 }
 
 export async function getOrCreateConversationForUser(userId: string) {
-  const existing = await prisma.conversation.findUnique({
-    where: { userId },
-  });
-
+  const load = () => prisma.conversation.findUnique({ where: { userId } });
+  const existing = await load();
   if (existing) {
     return existing;
   }
 
-  return prisma.conversation.create({
-    data: { userId },
-  });
+  return createOrFindOnUniqueViolation(
+    () => prisma.conversation.create({ data: { userId } }),
+    load,
+  );
 }
 
 export async function resolvePlayerConversation(userId: string) {

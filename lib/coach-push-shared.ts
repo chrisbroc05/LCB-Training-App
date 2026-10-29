@@ -18,6 +18,17 @@ export function getCoachSubmissionTypeLabel(tab: CoachSubmissionTab) {
   return tab === "swing" ? "Swing analysis" : "Mental game";
 }
 
+export function coachNewProgramPlayerPushTitle(params: {
+  playerName: string;
+  playerEmail: string;
+  allAccess?: boolean;
+}) {
+  const name = params.playerName.trim() || params.playerEmail;
+  return params.allAccess
+    ? `New All-Access player: ${name}`
+    : `New 12-week player: ${name}`;
+}
+
 import type { CoachDailySummaryBusiness } from "@/lib/coach-daily-summary-business-shared";
 
 function snapshotBusinessHasContent(business: CoachDailySummaryBusiness | null | undefined) {

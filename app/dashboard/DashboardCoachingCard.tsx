@@ -1,16 +1,22 @@
 import Link from "next/link";
 import FreeMemberWhileYouWaitCards from "@/app/components/FreeMemberWhileYouWaitCards";
 import KeepBuildingSwingCard from "@/app/components/KeepBuildingSwingCard";
-import CoachingSubmissionQuota from "@/app/CoachingSubmissionQuota";
+import CoachingAllowanceList from "@/app/dashboard/CoachingAllowanceList";
 import type { KeepBuildingCoachingContext } from "@/lib/coaching-keep-building-shared";
-import type { CoachingSubmissionAvailability, CoachingSubmissionUserFields } from "@/lib/coaching-submissions";
-import { resolveEffectiveLevel } from "@/lib/access-shared";
+import type { CoachingSubmissionAvailability, CoachingSubmissionUserFields } from "@/lib/coaching-submissions-shared";
+import {
+  coachingAllowanceLinesCanSubmitAny,
+  listCoachingAllowanceLines,
+} from "@/lib/coaching-allowance-lines-shared";
+import { resolveEffectiveLevel, type AccessUserFields } from "@/lib/access-shared";
 import { formatAssessmentCallDateTime } from "@/lib/assessment-call";
 import { COACH_CALENDLY_URL } from "@/lib/coach-calendly-shared";
 import { canAccessCoachingNav, type DatabaseTier } from "@/lib/membership";
+import { isPublicMembershipLevelsEnabled } from "@/lib/membership-levels-shared";
 
 type DashboardCoachingCardProps = {
   membershipTier: DatabaseTier;
+  access: AccessUserFields;
   coachingUser: CoachingSubmissionUserFields | null;
   coachingAvailability: CoachingSubmissionAvailability | null;
   freeSubmissionUsed: boolean;
@@ -21,6 +27,7 @@ type DashboardCoachingCardProps = {
 
 export default function DashboardCoachingCard({
   membershipTier,
+  access,
   coachingUser,
   coachingAvailability,
   freeSubmissionUsed,
@@ -32,16 +39,20 @@ export default function DashboardCoachingCard({
     return <KeepBuildingSwingCard context={keepBuildingCoaching} />;
   }
 
-  if (membershipTier === "BASIC") {
-    const canSubmit = coachingAvailability?.canSubmit ?? false;
+  const coachingFields = coachingUser ? { ...access, ...coachingUser } : null;
+  const allowanceLines = coachingFields ? listCoachingAllowanceLines(coachingFields) : [];
+  const canSubmitFromLines = coachingAllowanceLinesCanSubmitAny(allowanceLines);
+  const canSubmit =
+    canSubmitFromLines || Boolean(coachingAvailability?.canSubmit && allowanceLines.length === 0);
+
+  if (coachingFields && allowanceLines.length > 0) {
     return (
       <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
         <h2 className="text-lg font-semibold text-zinc-100">Coaching Submissions</h2>
-        {coachingAvailability ? (
-          <div className="mt-3">
-            {coachingUser ? <CoachingSubmissionQuota user={coachingUser} /> : null}
-          </div>
+        {allowanceLines.length >= 2 ? (
+          <p className="mt-2 text-xs text-zinc-500">You have two ways to get feedback from me:</p>
         ) : null}
+        <CoachingAllowanceList user={coachingFields} />
         {canSubmit ? (
           <Link
             href="/coaching-submissions"
@@ -65,11 +76,6 @@ export default function DashboardCoachingCard({
     return (
       <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
         <h2 className="text-lg font-semibold text-zinc-100">Coaching Submissions</h2>
-        {coachingAvailability ? (
-          <div className="mt-3">
-            {coachingUser ? <CoachingSubmissionQuota user={coachingUser} /> : null}
-          </div>
-        ) : null}
         {coachingAvailability && coachingAvailability.canSubmit ? (
           <Link
             href="/coaching-submissions"
@@ -89,7 +95,7 @@ export default function DashboardCoachingCard({
     );
   }
 
-  const effective = coachingUser ? resolveEffectiveLevel(coachingUser) : "FREE";
+  const effective = coachingUser ? resolveEffectiveLevel({ ...access, ...coachingUser }) : "FREE";
 
   if (effective === "FREE" && membershipTier === "FREE") {
     return (
@@ -113,15 +119,7 @@ export default function DashboardCoachingCard({
               {!freeSubmissionUsed ? "Available" : "Used"}
             </span>
           </div>
-          {coachingAvailability && !freeSubmissionUsed ? (
-            <div className="mt-3">
-              {coachingUser ? <CoachingSubmissionQuota user={coachingUser} /> : null}
-            </div>
-          ) : !freeSubmissionUsed ? (
-            <p className="mt-3 text-sm text-zinc-300">
-              Free members can submit one coaching submission.
-            </p>
-          ) : null}
+          {coachingFields ? <CoachingAllowanceList user={coachingFields} /> : null}
           {!freeSubmissionUsed ? (
             <Link
               href="/coaching-submissions"
@@ -135,8 +133,8 @@ export default function DashboardCoachingCard({
                 Your submission has been sent. Coach Broc will be in touch within a few days.
               </p>
               <p className="mt-3 text-sm text-zinc-300">
-                Want unlimited coaching submissions and personal feedback? Join the 12-Week Coaching
-                Program.
+                Want more coaching support? See the 12-Week Coaching Program
+                {isPublicMembershipLevelsEnabled() ? " or membership levels" : ""}.
               </p>
               <div className="mt-6 space-y-4">
                 <p className="text-sm font-medium text-zinc-200">
@@ -151,9 +149,7 @@ export default function DashboardCoachingCard({
         {assessmentCallBooked && assessmentCallDate ? (
           <article className="rounded-2xl border border-[#22c55e]/40 bg-[#0A1628] p-4 sm:p-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 className="text-lg font-semibold text-zinc-100">
-                Your Call is Scheduled
-              </h2>
+              <h2 className="text-lg font-semibold text-zinc-100">Your Call is Scheduled</h2>
               <span className="rounded-full border border-[#22c55e]/40 bg-[#22c55e]/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#9df3bd]">
                 Scheduled
               </span>
@@ -193,8 +189,8 @@ export default function DashboardCoachingCard({
     <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
       <h2 className="text-lg font-semibold text-zinc-100">Coaching Submissions</h2>
       <p className="mt-3 text-sm text-zinc-300">
-        Join the 12-Week Coaching Program for unlimited coaching submissions and personal feedback
-        from Coach Broc.
+        Join the 12-Week Coaching Program for a daily plan, weekly video breakdowns, and direct
+        messaging with Coach Broc.
       </p>
       <Link
         href="/program"

@@ -15,6 +15,7 @@ type QuickReportListItem = {
   createdAt: string;
   userEmail: string;
   reviewTrack: string;
+  poolLabel: string | null;
   levelLabel: string;
   organizationName: string | null;
   teamName: string | null;
@@ -163,7 +164,7 @@ export default function AdminReportsPendingPanel(props: { initialSelectedId?: st
                   <p className="text-sm font-semibold text-zinc-100">{item.playerName}</p>
                   <p className="mt-1 text-xs text-zinc-400">{formatDateTime(item.createdAt)}</p>
                   <p className="mt-2 text-xs text-zinc-300">
-                    {item.levelLabel}
+                    {item.poolLabel ?? item.levelLabel}
                     {item.organizationName ? ` | ${item.organizationName}` : ""}
                     {item.teamName ? ` | ${item.teamName}` : ""}
                   </p>

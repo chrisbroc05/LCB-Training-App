@@ -256,6 +256,12 @@ body {
   color: #52b788;
 }
 
+.membership-payment-past-due-banner {
+  padding-left: max(1rem, env(safe-area-inset-left));
+  padding-right: max(1rem, env(safe-area-inset-right));
+  flex-shrink: 0;
+}
+
 @media (max-width: 767px) {
   .mobile-app-main {
     padding-top: calc(64px + env(safe-area-inset-top));

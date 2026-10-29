@@ -10,6 +10,7 @@ import {
 type PlaybookPurchasePageProps = {
   isLoggedIn: boolean;
   autoStartCheckout: boolean;
+  showCorePlusUpsell?: boolean;
 };
 
 function CheckIcon() {
@@ -34,6 +35,7 @@ function CheckIcon() {
 export default function PlaybookPurchasePage({
   isLoggedIn,
   autoStartCheckout,
+  showCorePlusUpsell = false,
 }: PlaybookPurchasePageProps) {
   return (
     <div className="mx-auto w-full max-w-4xl px-4 py-12 sm:px-6 sm:py-16 md:py-20">
@@ -72,7 +74,11 @@ export default function PlaybookPurchasePage({
         </div>
 
         <div className="mt-10">
-          <PlaybookCheckoutSection isLoggedIn={isLoggedIn} autoStartCheckout={autoStartCheckout} />
+          <PlaybookCheckoutSection
+            isLoggedIn={isLoggedIn}
+            autoStartCheckout={autoStartCheckout}
+            showCorePlusUpsell={showCorePlusUpsell}
+          />
         </div>
       </section>
     </div>

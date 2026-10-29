@@ -72,7 +72,7 @@ export const goalCheckinRequiredMessage =
   "Monthly goal check-ins are available with the 12-Week Coaching Program.";
 
 export const freeSubmissionUsedUpgradeMessage =
-  "Your one free submission has already been used. Join the 12-Week Coaching Program for unlimited submissions and full coaching support.";
+  "Your one free submission has already been used. Join the 12-Week Coaching Program for a daily plan, weekly video breakdowns, and full coaching support.";
 
 export function getCoachingResponseTimeLabel(_tier: DatabaseTier) {
   return "a few days";

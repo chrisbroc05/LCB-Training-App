@@ -22,6 +22,7 @@ import { parseReflectionNote, SATURDAY_REFLECTION_FIELDS } from "@/lib/program-c
 import { PROGRAM_PHASE_LABELS } from "@/lib/program-content";
 import { BRAND_SECONDARY_TAGLINE } from "@/lib/brand-copy";
 import { formatProgramStartLabel, parseProgramDateKey } from "@/lib/program-schedule";
+import { TWELVE_WEEK_KICKOFF_AND_CHECKINS_SHORT } from "@/lib/twelve-week-program-copy-shared";
 
 const CARD =
   "mobile-card rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-5 shadow-sm";
@@ -142,6 +143,7 @@ type ProgramTodayPayload = {
   isBeforeStart: boolean;
   isComplete: boolean;
   isRestDay: boolean;
+  kickoffBookingUrl?: string;
   canAccessPlaybook: boolean;
   canCompleteTasks: boolean;
   isViewingYesterday: boolean;
@@ -922,6 +924,7 @@ export default function ProgramTodayView() {
 
   return (
     <div className="space-y-3">
+      {!payload.isBeforeStart ? (
       <section className={`${CARD} border-[#2b3650]`}>
         <div>
           <p className="text-xl font-bold text-zinc-100">{payload.headerLabel}</p>
@@ -945,6 +948,7 @@ export default function ProgramTodayView() {
           />
         </div>
       </section>
+      ) : null}
 
       <ProgramPushPrompt />
 
@@ -1045,18 +1049,44 @@ export default function ProgramTodayView() {
         <>
           <section className={CARD}>
             <h3 className="text-xl font-semibold text-zinc-100">
-              Your program starts {startLabel}.
+              Your plan starts {startLabel}.
             </h3>
-            <p className="mt-2 text-sm text-zinc-400">Preview of your first day:</p>
+            <p className="mt-3 text-sm font-medium text-zinc-200">Here&apos;s how to get ready:</p>
+            <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-zinc-300">
+              <li>
+                {TWELVE_WEEK_KICKOFF_AND_CHECKINS_SHORT}.{" "}
+                {payload.kickoffBookingUrl ? (
+                  <a
+                    href={payload.kickoffBookingUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-semibold text-[#52B788] hover:text-[#9df3bd]"
+                  >
+                    Book your kickoff call
+                  </a>
+                ) : null}
+              </li>
+              <li>
+                Send Coach Broc a first swing video so he knows your game before day one.{" "}
+                <Link href="/coaching-submissions" className="font-semibold text-[#52B788] hover:text-[#9df3bd]">
+                  Submit a swing video
+                </Link>
+              </li>
+            </ul>
           </section>
-          <div className="space-y-3 opacity-90">
-            {payload.previewTasks.map((task) => (
-              <article key={task.key} className={CARD}>
-                <h3 className="text-lg font-semibold text-zinc-100">{task.title}</h3>
-                <p className="mt-2 text-[28px] font-bold text-zinc-100">{task.target}</p>
-              </article>
-            ))}
-          </div>
+          {payload.previewTasks.length > 0 ? (
+            <>
+              <p className="px-1 text-sm text-zinc-400">Preview of your first training day:</p>
+              <div className="space-y-3 opacity-90">
+                {payload.previewTasks.map((task) => (
+                  <article key={task.key} className={CARD}>
+                    <h3 className="text-lg font-semibold text-zinc-100">{task.title}</h3>
+                    <p className="mt-2 text-[28px] font-bold text-zinc-100">{task.target}</p>
+                  </article>
+                ))}
+              </div>
+            </>
+          ) : null}
         </>
       ) : null}
 

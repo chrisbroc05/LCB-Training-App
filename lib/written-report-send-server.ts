@@ -27,6 +27,7 @@ import {
 } from "@/lib/written-report-drill-grants-shared";
 import { mergeOrgIntoAccessFields, userOrgAccessSelect } from "@/lib/org-server";
 import { formatEffectiveAccessLabel } from "@/lib/access-shared";
+import { formatCoachingReviewTrackAdminLabel } from "@/lib/coaching-review-track-display-shared";
 import type { DatabaseTier } from "@/lib/membership";
 import type { ReportRecommendedFixItSlug } from "@/lib/player-evaluation-cta-shared";
 
@@ -331,12 +332,14 @@ export function serializeAdminQuickReportRow(submission: {
   };
 }) {
   const accessFields = mergeOrgIntoAccessFields(submission.user);
+  const poolLabel = formatCoachingReviewTrackAdminLabel(submission.reviewTrack);
   return {
     id: submission.id,
     playerName: submission.playerName,
     createdAt: submission.createdAt.toISOString(),
     userEmail: submission.userEmail,
     reviewTrack: submission.reviewTrack,
+    poolLabel,
     levelLabel: formatEffectiveAccessLabel(accessFields),
     organizationName: submission.user.organization?.name ?? null,
     teamName: submission.user.orgTeam?.name ?? submission.user.currentTeam ?? null,

@@ -6,7 +6,9 @@ import MobileCoachingStatusCard from "@/app/dashboard/MobileCoachingStatusCard";
 import MonthlyGoalProgressCard from "@/app/dashboard/MonthlyGoalProgressCard";
 import type { CoachingSubmissionUserFields } from "@/lib/coaching-submissions-shared";
 import type { KeepBuildingCoachingContext } from "@/lib/coaching-keep-building-shared";
-import { canAccessCoachingNav, isTwelveWeekProgramMember, type DatabaseTier } from "@/lib/membership";
+import { canAccessCoachingNav, type DatabaseTier } from "@/lib/membership";
+import { MEMBERSHIP_LEVELS } from "@/lib/membership-levels-shared";
+import type { AccessUserFields } from "@/lib/access-shared";
 import InPersonEmergencyReminderCard from "@/components/InPersonEmergencyReminderCard";
 import OrgTrialDashboardCard from "@/app/dashboard/OrgTrialDashboardCard";
 import OrgWeeklyFocusCard from "@/app/dashboard/OrgWeeklyFocusCard";
@@ -20,6 +22,7 @@ type UnreadResponseNotification = {
 type MobileDashboardViewProps = {
   userId: string;
   membershipTier: DatabaseTier;
+  access: AccessUserFields;
   coachingUser: CoachingSubmissionUserFields | null;
   currentMonthGoalCheckin: {
     goals: Array<{
@@ -40,6 +43,8 @@ type MobileDashboardViewProps = {
   calendlyBookingUrl: string;
   showProgramSetupBanner: boolean;
   hasProgramEnrollmentRow: boolean;
+  isPersonalProgramMember: boolean;
+  isAllAccessProgramMember: boolean;
   showInPersonEmergencyReminder: boolean;
   keepBuildingCoaching: KeepBuildingCoachingContext | null;
 };
@@ -47,6 +52,7 @@ type MobileDashboardViewProps = {
 export default function MobileDashboardView({
   userId,
   membershipTier,
+  access,
   coachingUser,
   currentMonthGoalCheckin,
   checkoutStatus,
@@ -58,10 +64,12 @@ export default function MobileDashboardView({
   calendlyBookingUrl,
   showProgramSetupBanner,
   hasProgramEnrollmentRow,
+  isPersonalProgramMember,
+  isAllAccessProgramMember,
   showInPersonEmergencyReminder,
   keepBuildingCoaching,
 }: MobileDashboardViewProps) {
-  const isEnrolled = isTwelveWeekProgramMember(membershipTier);
+  const isEnrolled = isPersonalProgramMember;
 
   return (
     <div className="mobile-card-stack px-4 pb-4 pt-4 md:hidden">
@@ -73,10 +81,20 @@ export default function MobileDashboardView({
 
       {checkoutStatus === "success" &&
       checkoutProduct !== "playbook" &&
-      isEnrolled ? (
+      isEnrolled &&
+      !isAllAccessProgramMember ? (
         <article className="mobile-card border-[#22c55e]/40 bg-[#22c55e]/10 text-sm text-[#bafccf]">
           Payment successful. Your 12-Week Coaching Program is active and your dashboard access has
           been updated.
+        </article>
+      ) : null}
+
+      {checkoutStatus === "success" &&
+      checkoutProduct !== "playbook" &&
+      isAllAccessProgramMember ? (
+        <article className="mobile-card border-[#22c55e]/40 bg-[#22c55e]/10 text-sm text-[#bafccf]">
+          Payment successful. {MEMBERSHIP_LEVELS.ALL_ACCESS.displayName} is active. Finish program
+          setup to unlock Today and your daily plan.
         </article>
       ) : null}
 
@@ -145,11 +163,9 @@ export default function MobileDashboardView({
             </div>
           ) : null}
 
-          {membershipTier === "FREE" || membershipTier === "BASIC" ? (
-            <div className="[&_section]:mt-0 [&_section]:rounded-2xl [&_section]:border [&_section]:border-[#18243a] [&_section]:p-4">
-              <DashboardUpgradeSection membershipTier={membershipTier} />
-            </div>
-          ) : null}
+          <div className="[&_section]:mt-0 [&_section]:rounded-2xl [&_section]:border [&_section]:border-[#18243a] [&_section]:p-4">
+            <DashboardUpgradeSection membershipTier={membershipTier} access={access} />
+          </div>
         </>
       )}
     </div>

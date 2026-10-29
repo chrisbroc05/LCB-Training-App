@@ -2,7 +2,12 @@ import Link from "next/link";
 import { canAccessPlaybook } from "@/lib/membership";
 import { toAccessUserFields, userAccessSelect } from "@/lib/access-server";
 import { emptyAccessUserRow } from "@/lib/empty-access-user-shared";
-import { PUBLIC_MEMBERSHIP_UPGRADE_GENERIC_LABEL } from "@/lib/membership-levels-shared";
+import {
+  isPublicMembershipLevelsEnabled,
+  PUBLIC_MEMBERSHIP_UPGRADE_GENERIC_LABEL,
+} from "@/lib/membership-levels-shared";
+import { shouldShowPlaybookCorePlusUpsell } from "@/lib/playbook-core-upsell-shared";
+import PlaybookCoreMemberUnlockActions from "@/app/playbook/PlaybookCoreMemberUnlockActions";
 import { ensurePlaybookProgress, serializePlaybookProgress } from "@/lib/playbook";
 import { prisma } from "@/lib/prisma";
 
@@ -37,11 +42,25 @@ export default async function DashboardPlaybookProgressCard({
       access.membershipLevelExpiresAt,
     )
   ) {
+    if (shouldShowPlaybookCorePlusUpsell(access.membershipLevel)) {
+      return (
+        <article className={articleClassName}>
+          <h2 className="text-lg font-semibold text-zinc-100 sm:text-xl">The Next Level Playbook</h2>
+          <p className="mt-2 text-sm text-zinc-400">
+            Plus includes the Playbook, or buy it once on its own.
+          </p>
+          <PlaybookCoreMemberUnlockActions layout="card" />
+        </article>
+      );
+    }
+
     return (
       <article className={articleClassName}>
         <h2 className="text-lg font-semibold text-zinc-100 sm:text-xl">The Next Level Playbook</h2>
         <p className="mt-2 text-sm text-zinc-400">
-          {PUBLIC_MEMBERSHIP_UPGRADE_GENERIC_LABEL} The Playbook is included with Plus and above.
+          {isPublicMembershipLevelsEnabled()
+            ? `${PUBLIC_MEMBERSHIP_UPGRADE_GENERIC_LABEL} The Playbook is included with Plus and above.`
+            : `${PUBLIC_MEMBERSHIP_UPGRADE_GENERIC_LABEL} Buy the Playbook once or join the 12-Week Program for full access.`}
         </p>
         <Link
           href="/playbook"

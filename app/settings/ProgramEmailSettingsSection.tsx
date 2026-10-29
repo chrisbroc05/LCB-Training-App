@@ -20,6 +20,8 @@ type ProgramEmailSettings = {
   parentEmailsEnabled: boolean;
 };
 
+type ProgramPlanMode = "FIXED_12_WEEK" | "OPEN_ENDED";
+
 export default function ProgramEmailSettingsSection() {
   const [settings, setSettings] = useState<ProgramEmailSettings | null>(null);
   const [accountEmail, setAccountEmail] = useState("");
@@ -30,6 +32,7 @@ export default function ProgramEmailSettingsSection() {
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [showSection, setShowSection] = useState(false);
+  const [planMode, setPlanMode] = useState<ProgramPlanMode>("FIXED_12_WEEK");
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -48,7 +51,7 @@ export default function ProgramEmailSettingsSection() {
       }
 
       const data = (await response.json()) as {
-        enrollment?: ProgramEmailSettings;
+        enrollment?: ProgramEmailSettings & { planMode?: ProgramPlanMode };
         accountEmail?: string;
       };
       if (!data.enrollment) {
@@ -56,6 +59,7 @@ export default function ProgramEmailSettingsSection() {
       }
 
       setShowSection(true);
+      setPlanMode(data.enrollment.planMode === "OPEN_ENDED" ? "OPEN_ENDED" : "FIXED_12_WEEK");
       setSettings(data.enrollment);
       setAccountEmail(data.accountEmail ?? "");
       setSecondName(data.enrollment.parentName ?? "");
@@ -102,10 +106,13 @@ export default function ProgramEmailSettingsSection() {
     return null;
   }
 
+  const programEmailTitle =
+    planMode === "OPEN_ENDED" ? "All-Access program emails" : "12-Week Program emails";
+
   return (
     <SettingsCard
       id="program-emails"
-      title="12-Week Program emails"
+      title={programEmailTitle}
       description="Control daily routine emails and your second email contact."
     >
       {isLoading ? <p className={settingsMutedTextClass}>Loading...</p> : null}

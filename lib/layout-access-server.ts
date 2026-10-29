@@ -2,7 +2,9 @@ import "server-only";
 
 import {
   canAccessDrillLibraryBrowse,
+  canMessageCoach,
   canViewPlaybook,
+  hasPersonalProgramDashboard,
   resolveEffectiveLevel,
 } from "@/lib/access-shared";
 import { mergeOrgIntoAccessFields } from "@/lib/org-server";
@@ -25,6 +27,7 @@ export type LoggedInLayoutAccess = {
   hasPlaybookAccess: boolean;
   hasMemberDownloadsAccess: boolean;
   hasProgramEnrollment: boolean;
+  hasCoachingAccess: boolean;
   isOrgTrial: boolean;
   orgTrialHeader: OrgTrialHeaderSummary | null;
 };
@@ -68,7 +71,7 @@ export async function loadLoggedInLayoutAccess(userId: string): Promise<LoggedIn
       });
 
   let hasProgramEnrollment = false;
-  if (access.membershipTier === "TWELVE_WEEK") {
+  if (hasPersonalProgramDashboard(access)) {
     const enrollment = await prisma.programEnrollment.findUnique({
       where: { userId },
       select: { id: true },
@@ -93,6 +96,7 @@ export async function loadLoggedInLayoutAccess(userId: string): Promise<LoggedIn
     hasPlaybookAccess: canViewPlaybook(access),
     hasMemberDownloadsAccess: canAccessMemberDownloadsPage(access.membershipTier),
     hasProgramEnrollment,
+    hasCoachingAccess: canMessageCoach(access),
     isOrgTrial,
     orgTrialHeader,
   };

@@ -13,11 +13,25 @@ import {
   validateAcceptedByName,
   validateParentConsentEmail,
 } from "@/lib/legal-shared";
+import {
+  applyMinorLegalParentConsentRecords,
+  sendMinorLegalParentConsentEmailIfNeeded,
+} from "@/lib/legal-server";
 import { sendNewMemberNotification } from "@/lib/notifications";
 import { isTestAccountEmail } from "@/lib/test-account-shared";
 import type { SignupRequestPayload } from "@/lib/signup-shared";
 import { isMembershipLevelKey } from "@/lib/membership-levels-shared";
+import {
+  formatSignupCheckoutLabelForCoachNotification,
+  shouldSendFreeWelcomeAtSignup,
+} from "@/lib/membership-welcome-email-shared";
 import { joinOrganizationForUser } from "@/lib/org-server";
+import {
+  isPrismaTransientError,
+  isPrismaUniqueViolation,
+  withPrismaRetryOnce,
+} from "@/lib/prisma-retry-shared";
+import { runSignupBackgroundTask } from "@/lib/signup-post-create-server";
 import {
   applyMatchingWaiverAcceptanceToUser,
   linkWaiverSignaturesToUser,
@@ -134,10 +148,12 @@ export async function POST(request: Request) {
       }
     }
 
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-      select: { id: true },
-    });
+    const existingUser = await withPrismaRetryOnce(() =>
+      prisma.user.findUnique({
+        where: { email },
+        select: { id: true },
+      }),
+    );
 
     if (existingUser) {
       return NextResponse.json({ error: "An account with this email already exists." }, { status: 409 });
@@ -148,100 +164,116 @@ export async function POST(request: Request) {
     const legacyName = combinePlayerName(playerFirstName, playerLastName);
     const pendingLevelRaw = body.pendingMembershipLevel?.trim().toUpperCase() ?? "";
     const pendingCheckoutLevel = isMembershipLevelKey(pendingLevelRaw) ? pendingLevelRaw : undefined;
+    const signupSource = body.signupSource?.trim() ?? "";
 
-    const { linkLeadToUserByEmail } = await import("@/lib/leads-server");
+    const createdUser = await withPrismaRetryOnce(() =>
+      prisma.user.create({
+        data: {
+          name: legacyName,
+          accountRole: body.accountRole,
+          accountHolderName: body.accountRole === "PARENT" ? accountHolderName : null,
+          playerFirstName,
+          playerLastName,
+          email,
+          password: hashedPassword,
+          membershipTier: "FREE",
+          signupDate: new Date(),
+          termsVersion: LEGAL_DOCS_VERSION,
+          termsAcceptedAt: acceptedAt,
+          acceptedByName,
+          acceptedAsParent: body.legalAcceptance.acceptedAsParent,
+          playerAge,
+          parentConsentName,
+          parentConsentEmail,
+          parentConsentConfirmedAt,
+          mediaConsent: Boolean(body.legalAcceptance.mediaConsent),
+          mediaConsentUpdatedAt: acceptedAt,
+          isTestAccount: isTestAccountEmail(email),
+          ...(pendingCheckoutLevel ? { pendingCheckoutLevel } : {}),
+        },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          membershipTier: true,
+        },
+      }),
+    );
 
-    const createdUser = await prisma.user.create({
-      data: {
-        name: legacyName,
-        accountRole: body.accountRole,
-        accountHolderName: body.accountRole === "PARENT" ? accountHolderName : null,
-        playerFirstName,
-        playerLastName,
-        email,
-        password: hashedPassword,
-        membershipTier: "FREE",
-        signupDate: new Date(),
-        termsVersion: LEGAL_DOCS_VERSION,
-        termsAcceptedAt: acceptedAt,
-        acceptedByName,
-        acceptedAsParent: body.legalAcceptance.acceptedAsParent,
-        playerAge,
-        parentConsentName,
-        parentConsentEmail,
-        parentConsentConfirmedAt,
-        mediaConsent: Boolean(body.legalAcceptance.mediaConsent),
-        mediaConsentUpdatedAt: acceptedAt,
-        isTestAccount: isTestAccountEmail(email),
-        ...(pendingCheckoutLevel ? { pendingCheckoutLevel } : {}),
-      },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        membershipTier: true,
-      },
-    });
-
-    try {
-      await linkLeadToUserByEmail(createdUser.id, email);
-    } catch (error) {
-      console.error("Failed to link lead record to new user", error);
-    }
-
-    try {
-      await linkWaiverSignaturesToUser(createdUser.id, email);
-      await applyMatchingWaiverAcceptanceToUser(createdUser.id);
-    } catch (error) {
-      console.error("Failed to link waiver signatures to new user", error);
-    }
+    await linkWaiverSignaturesToUser(createdUser.id, email);
+    await applyMatchingWaiverAcceptanceToUser(createdUser.id);
 
     const orgJoinCode = body.orgJoinCode?.trim();
     if (orgJoinCode) {
-      try {
-        await joinOrganizationForUser({ userId: createdUser.id, codeRaw: orgJoinCode });
-      } catch (error) {
-        console.error("Failed to join organization during signup", error);
-      }
+      await joinOrganizationForUser({ userId: createdUser.id, codeRaw: orgJoinCode });
     }
 
-    const shouldSendParentConsentEmail =
+    const needsMinorParentConsentRecords =
       parentConsentName &&
       parentConsentEmail &&
       (body.accountRole === "PLAYER" ? isMinorPlayerAge(playerAge) : isUnder13PlayerAge(playerAge));
 
-    if (shouldSendParentConsentEmail) {
-      try {
-        const { finalizeMinorLegalAcceptanceSideEffects } = await import("@/lib/legal-server");
-        await finalizeMinorLegalAcceptanceSideEffects(createdUser.id);
-      } catch (error) {
-        console.error("Failed to send parent consent email for new signup", error);
-      }
+    if (needsMinorParentConsentRecords) {
+      await applyMinorLegalParentConsentRecords(createdUser.id);
     }
 
-    try {
+    const userId = createdUser.id;
+
+    runSignupBackgroundTask(userId, "linkLeadToUserByEmail", async () => {
+      const { linkLeadToUserByEmail } = await import("@/lib/leads-server");
+      await linkLeadToUserByEmail(userId, email);
+    });
+
+    if (needsMinorParentConsentRecords) {
+      runSignupBackgroundTask(userId, "sendMinorLegalParentConsentEmailIfNeeded", async () => {
+        await sendMinorLegalParentConsentEmailIfNeeded(userId);
+      });
+    }
+
+    runSignupBackgroundTask(userId, "sendNewMemberNotification", async () => {
       await sendNewMemberNotification({
         userEmail: email,
-        membershipTier: membershipTierForNotification,
+        checkoutLabel: formatSignupCheckoutLabelForCoachNotification({
+          pendingCheckoutLevel,
+          signupSource,
+          selectedMembershipTier: membershipTierForNotification,
+        }),
       });
-    } catch (error) {
-      console.error("Failed to send new member notification", error);
-    }
+    });
 
-    try {
-      const recipient = await loadUserMarketingRecipient(createdUser.id);
-      if (recipient) {
-        await sendMarketingEmail({
-          recipient,
-          type: "WELCOME",
-        });
-      }
-    } catch (error) {
-      console.error("Failed to send welcome email", error);
+    if (
+      shouldSendFreeWelcomeAtSignup({
+        pendingCheckoutLevel,
+        signupSource,
+        selectedMembershipTier: membershipTierForNotification,
+      })
+    ) {
+      runSignupBackgroundTask(userId, "sendWelcomeEmail", async () => {
+        const recipient = await loadUserMarketingRecipient(userId);
+        if (recipient) {
+          await sendMarketingEmail({
+            recipient,
+            type: "WELCOME",
+          });
+        }
+      });
     }
 
     return NextResponse.json({ success: true }, { status: 201 });
-  } catch {
+  } catch (error) {
+    console.error("Signup failed", error);
+    if (isPrismaUniqueViolation(error)) {
+      return NextResponse.json(
+        { error: "An account with this email already exists." },
+        { status: 409 },
+      );
+    }
+    if (isPrismaTransientError(error)) {
+      return NextResponse.json(
+        { error: "The database is waking up. Please try again in a few seconds." },
+        { status: 503 },
+      );
+    }
     return NextResponse.json({ error: "Unable to create account right now." }, { status: 500 });
   }
 }

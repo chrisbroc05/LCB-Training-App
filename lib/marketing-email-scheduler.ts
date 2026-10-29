@@ -175,6 +175,12 @@ export async function sendTestMarketingEmail(params: {
   toEmail: string;
   userId?: string;
 }) {
+  if (params.type === "MEMBERSHIP_LEVEL_WELCOME") {
+    throw new Error(
+      "Membership level welcome emails are transactional and are not sent through the marketing pipeline.",
+    );
+  }
+
   let recipient: MarketingEmailRecipient;
 
   if (params.userId) {

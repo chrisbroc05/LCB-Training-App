@@ -17,7 +17,7 @@ export function formatReviewAllowanceDisplay(
 
   if (allowance.kind === "unlimited") {
     return {
-      headline: "Unlimited coaching submissions included with your program.",
+      headline: "Coaching submissions are included with your 12-week program.",
       detail: null,
     };
   }

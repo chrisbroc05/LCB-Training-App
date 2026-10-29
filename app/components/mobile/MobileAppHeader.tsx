@@ -6,6 +6,7 @@ import type { OrgTrialHeaderSummary } from "@/lib/layout-access-server";
 
 type MobileAppHeaderProps = {
   membershipTier: DatabaseTier;
+  hasProgramEnrollment?: boolean;
   userDisplayName: string;
   userEmail?: string | null;
   orgTrialHeader?: OrgTrialHeaderSummary | null;
@@ -14,6 +15,7 @@ type MobileAppHeaderProps = {
 
 export default function MobileAppHeader({
   membershipTier,
+  hasProgramEnrollment = false,
   userDisplayName,
   userEmail,
   orgTrialHeader = null,
@@ -24,6 +26,7 @@ export default function MobileAppHeader({
       <div className="mobile-app-header-inner app-header-bar">
         <AppHeaderBar
           membershipTier={membershipTier}
+          hasProgramEnrollment={hasProgramEnrollment}
           userDisplayName={userDisplayName}
           userEmail={userEmail}
           orgTrialHeader={orgTrialHeader}

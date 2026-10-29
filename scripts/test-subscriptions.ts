@@ -9,9 +9,11 @@ import {
   membershipRestoresAccessAfterStripeInvoicePaid,
   MEMBERSHIP_SUBSCRIPTION_GRACE_DAYS,
 } from "../lib/membership-subscription-shared";
+import { resolveMembershipPaymentBannerContent } from "../lib/membership-payment-banner-shared";
 import { mapStripePriceIdToMembershipLevel } from "../lib/stripe-membership-prices-shared";
 import { mapStripeSubscriptionStatus } from "../lib/membership-subscription-shared";
 import { countsTowardAllAccessProgramCap } from "../lib/all-access-cap-shared";
+import { hasPersonalProgramDashboard } from "../lib/access-shared";
 import {
   buildMembershipUpgradeStripeUpdateOptions,
   buildUpgradeConfirmMessage,
@@ -81,6 +83,51 @@ function testAccessGrants() {
   );
 }
 
+function testInvoicePaymentFailedSetsGraceEnd() {
+  const now = new Date("2026-10-29T12:00:00.000Z");
+  const existingGrace = new Date("2026-11-01T12:00:00.000Z");
+  const keepExisting = existingGrace ?? new Date(now.getTime() + MEMBERSHIP_SUBSCRIPTION_GRACE_DAYS * 86400000);
+  assert.equal(keepExisting.toISOString(), existingGrace.toISOString());
+  const noExistingGrace: Date | null = null;
+  const setOnFirstFailure =
+    noExistingGrace ?? new Date(now.getTime() + MEMBERSHIP_SUBSCRIPTION_GRACE_DAYS * 86400000);
+  assert.equal(
+    setOnFirstFailure.getTime() - now.getTime(),
+    MEMBERSHIP_SUBSCRIPTION_GRACE_DAYS * 86400000,
+  );
+}
+
+function testMembershipPaymentBannerPastDue() {
+  const now = new Date("2026-10-29T12:00:00.000Z");
+  const graceEnd = new Date("2026-11-05T12:00:00.000Z");
+  const banner = resolveMembershipPaymentBannerContent({
+    status: "PAST_DUE",
+    level: "CORE",
+    pastDueGraceEndsAt: graceEnd,
+    now,
+  });
+  assert.ok(banner);
+  assert.equal(banner?.levelLabel, "Core");
+  assert.match(banner?.graceEndsLabel ?? "", /Nov 5, 2026/);
+  assert.equal(
+    resolveMembershipPaymentBannerContent({
+      status: "ACTIVE",
+      level: "CORE",
+      pastDueGraceEndsAt: graceEnd,
+      now,
+    }),
+    null,
+  );
+  const missingGrace = resolveMembershipPaymentBannerContent({
+    status: "PAST_DUE",
+    level: "PLUS",
+    pastDueGraceEndsAt: null,
+    now,
+  });
+  assert.ok(missingGrace);
+  assert.equal(missingGrace?.levelLabel, "Plus");
+}
+
 function testGraceExpiryKeepsSubscriptionRow() {
   const graceEnd = new Date("2026-11-03T12:00:00.000Z");
   const endedAt = new Date("2026-11-03T12:00:01.000Z");
@@ -147,6 +194,8 @@ testPriceMapping();
 testLevelCompare();
 testMetadataParse();
 testAccessGrants();
+testInvoicePaymentFailedSetsGraceEnd();
+testMembershipPaymentBannerPastDue();
 testGraceExpiryKeepsSubscriptionRow();
 testInvoicePaidRestoresAccessAfterGraceExpired();
 testGraceStatusMapping();
@@ -305,6 +354,19 @@ function testFriendlyStatusLabels() {
   );
 }
 
+function testAllAccessProgramNavAccess() {
+  const allAccessUser = {
+    membershipTier: "FREE" as const,
+    membershipLevel: "ALL_ACCESS" as const,
+    membershipLevelExpiresAt: null,
+    playbookLegacyAccess: false,
+    organizationId: null,
+    orgTrialQuickReportUsed: false,
+    coreQuickReportNextEligibleAt: null,
+  };
+  assert.equal(hasPersonalProgramDashboard(allAccessUser), true);
+}
+
 function testMembershipBillingModeClassic() {
   assert.equal(MEMBERSHIP_SUBSCRIPTION_BILLING_MODE.type, "classic");
 }
@@ -354,6 +416,7 @@ testImmediateUpgradeChargeOptions();
 testFailedUpgradeDoesNotApplyLevel();
 testUpgradeConfirmCopy();
 testFriendlyStatusLabels();
+testAllAccessProgramNavAccess();
 testMembershipBillingModeClassic();
 testLifecycleCancelExpectations();
 

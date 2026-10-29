@@ -5,6 +5,7 @@ import { isAdminEmail } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
 import { getFreeSwingAnalysisResponseMode } from "@/lib/free-swing-analysis-response-server";
 import { getReportsQueueReviewTracks } from "@/lib/reports-queue-shared";
+import { formatCoachingReviewTrackAdminLabel } from "@/lib/coaching-review-track-display-shared";
 
 type SubmissionType = "swing" | "mental";
 
@@ -28,6 +29,7 @@ export async function GET(request: Request) {
         userEmail: true,
         status: true,
         memberVimeoLink: true,
+        reviewTrack: true,
         user: { select: { programEnrollment: { select: { id: true } } } },
       },
     });
@@ -43,6 +45,7 @@ export async function GET(request: Request) {
         enrollmentId: submission.user.programEnrollment?.id ?? null,
         badgeStatus: submission.status === "PENDING" ? "PENDING" : "RESPONDED",
         hasMemberVimeoLink: Boolean(submission.memberVimeoLink),
+        poolLabel: formatCoachingReviewTrackAdminLabel(submission.reviewTrack),
       })),
     });
   }
@@ -65,6 +68,7 @@ export async function GET(request: Request) {
       userEmail: true,
       status: true,
       memberVimeoLink: true,
+      reviewTrack: true,
       user: { select: { programEnrollment: { select: { id: true } } } },
     },
   });
@@ -79,6 +83,7 @@ export async function GET(request: Request) {
       enrollmentId: submission.user.programEnrollment?.id ?? null,
       badgeStatus: submission.status === "PENDING" ? "PENDING" : "RESPONDED",
       hasMemberVimeoLink: Boolean(submission.memberVimeoLink),
+      poolLabel: formatCoachingReviewTrackAdminLabel(submission.reviewTrack),
     })),
   });
 }

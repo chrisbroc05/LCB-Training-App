@@ -36,6 +36,7 @@ export default function LoggedInSiteHeader({
         <div className="app-header-bar app-header-bar-desktop">
           <AppHeaderBar
             membershipTier={membershipTier}
+            hasProgramEnrollment={hasProgramEnrollment}
             userDisplayName={userDisplayName}
             userEmail={userEmail}
             orgTrialHeader={orgTrialHeader}

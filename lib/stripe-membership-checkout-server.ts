@@ -1,14 +1,17 @@
 import "server-only";
 
 import type { MembershipLevelKey } from "@/lib/membership-levels-shared";
-import { isMembershipLevelKey } from "@/lib/membership-levels-shared";
+import {
+  isMembershipLevelKey,
+  isPublicMembershipLevelsEnabled,
+} from "@/lib/membership-levels-shared";
 import { prisma } from "@/lib/prisma";
 import { getStripe } from "@/lib/stripe";
 import {
   isAllAccessCheckoutAvailable,
   resolveOrgAttributionForCheckout,
 } from "@/lib/membership-subscription-server";
-import { getMembershipLevelStripePriceId } from "@/lib/stripe-membership-prices-server";
+import { resolveMembershipLevelStripePriceId } from "@/lib/stripe-membership-prices-server";
 import { MEMBERSHIP_SUBSCRIPTION_BILLING_MODE } from "@/lib/stripe-membership-lifecycle-shared";
 
 function getBaseUrl(request: Request) {
@@ -34,6 +37,10 @@ export async function createMembershipLevelCheckoutSession(params: {
     throw new Error("Invalid membership level.");
   }
 
+  if (!isPublicMembershipLevelsEnabled()) {
+    throw new Error("MEMBERSHIP_LEVELS_COMING_SOON");
+  }
+
   if (params.level === "ALL_ACCESS") {
     const available = await isAllAccessCheckoutAvailable();
     if (!available) {
@@ -51,7 +58,10 @@ export async function createMembershipLevelCheckoutSession(params: {
     select: { stripeCustomerId: true },
   });
 
-  const priceId = getMembershipLevelStripePriceId(params.level);
+  const priceId = resolveMembershipLevelStripePriceId(params.level);
+  if (!priceId) {
+    throw new Error("MEMBERSHIP_PRICE_NOT_CONFIGURED");
+  }
   const baseUrl = getBaseUrl(params.request);
   const stripe = getStripe();
 
@@ -76,13 +86,18 @@ export async function createMembershipLevelCheckoutSession(params: {
     metadata.orgJoinedAt = org.orgJoinedAt.toISOString();
   }
 
+  const checkoutSuccessPath =
+    params.level === "ALL_ACCESS"
+      ? `${baseUrl}/program/start?checkout=membership-success`
+      : `${baseUrl}/settings?checkout=membership-success`;
+
   const session = await stripe.checkout.sessions.create({
     mode: "subscription",
     ...(customerId
       ? { customer: customerId }
       : { customer_email: params.email }),
     line_items: [{ price: priceId, quantity: 1 }],
-    success_url: `${baseUrl}/settings?checkout=membership-success`,
+    success_url: checkoutSuccessPath,
     cancel_url: `${baseUrl}/upgrade?checkout=cancelled`,
     client_reference_id: params.userId,
     metadata,

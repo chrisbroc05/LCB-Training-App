@@ -15,6 +15,7 @@ import { getMentalSubmissionConfirmationVariant } from "@/lib/coaching-submissio
 import { freeSubmissionUsedUpgradeMessage } from "@/lib/membership";
 import { mergeOrgIntoAccessFields, userOrgAccessSelect } from "@/lib/org-server";
 import { prisma } from "@/lib/prisma";
+import { canSubmitMindsetCoachingRequest } from "@/lib/coaching-submission-pool-shared";
 
 export default async function MentalGamePage() {
   const session = await getServerSession(authOptions);
@@ -28,10 +29,10 @@ export default async function MentalGamePage() {
   }
 
   const lockReason = getCoachingSubmissionLockReason(userFields);
-
   const availability = getCoachingSubmissionAvailability(userFields);
+  const effective = resolveEffectiveLevel(userFields);
 
-  if (lockReason === "playbook-used") {
+  if (lockReason === "playbook-used" && effective === "PLAYBOOK") {
     return (
       <LockedFeaturePanel
         title="Coaching Submissions"
@@ -67,8 +68,16 @@ export default async function MentalGamePage() {
     );
   }
 
-  if (!availability.canSubmit) {
-    redirect("/upgrade");
+  if (!canSubmitMindsetCoachingRequest(userFields)) {
+    return (
+      <LockedFeaturePanel
+        title="Coaching Submissions"
+        description="Submit what you are dealing with mentally so your coach can send support and adjustments."
+        message={PLAYBOOK_SUBMISSIONS_EXHAUSTED_MESSAGE}
+        upgradeLabel="View the 12-Week Program"
+        upgradeHref="/program"
+      />
+    );
   }
 
   const accessUser = await prisma.user.findUnique({

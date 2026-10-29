@@ -177,7 +177,7 @@ export function buildResourceHubMemberSwingCard(
   if (allowance.kind === "unlimited") {
     return {
       title: "Coaching submissions",
-      description: "Unlimited swing and mindset submissions are included with your program.",
+      description: "Swing and mindset submissions with personal feedback are included with your program.",
       includedLabel,
       buttonLabel: "Go to submissions",
       href,

@@ -159,6 +159,8 @@ enum TestBetterIs {
 
 enum MarketingEmailType {
   WELCOME
+  MEMBERSHIP_LEVEL_WELCOME
+  TWELVE_WEEK_PROGRAM_WELCOME
   FREE_SUBMISSION_REMINDER
   FOLLOWUP_DRILLS_DAY_2
   FOLLOWUP_OTHER_SIX_DAY_4
@@ -856,6 +858,7 @@ model MentalGameSubmission {
   videoPath                  String?
   submittedVideoPosterR2Key  String?
   responsePreference MentalGameResponsePreference
+  reviewTrack        CoachingReviewTrack?
   status             MentalGameSubmissionStatus   @default(PENDING)
   responseText       String?
   responseVideoUrl   String?

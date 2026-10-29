@@ -13,8 +13,8 @@ export default function DashboardEnrolledSubmissionCard({
     >
       <h2 className="text-lg font-semibold text-zinc-100 sm:text-xl">Coaching Submissions</h2>
       <p className="mt-2 text-sm text-zinc-300">
-        Submit a swing video or mindset request for personal feedback from Coach Broc. Your program
-        includes unlimited submissions.
+        Submit a swing video or mindset request for personal feedback from Coach Broc as part of your
+        12-week program.
       </p>
       <Link
         href="/coaching-submissions"

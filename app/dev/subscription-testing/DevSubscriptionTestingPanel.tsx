@@ -139,6 +139,12 @@ export default function DevSubscriptionTestingPanel() {
   };
 
   const subscription = selected?.subscription;
+  const canSimulateFailedRenewal =
+    subscription != null &&
+    (subscription.status === "ACTIVE" ||
+      subscription.status === "CANCEL_AT_PERIOD_END" ||
+      subscription.status === "PAST_DUE");
+  const canExpireGrace = subscription?.status === "PAST_DUE";
 
   return (
     <div className="mt-8 space-y-6">
@@ -241,7 +247,7 @@ export default function DevSubscriptionTestingPanel() {
           <div className="flex flex-wrap gap-3">
             <button
               type="button"
-              disabled={busy || subscription.status !== "PAST_DUE"}
+              disabled={busy || !canSimulateFailedRenewal}
               onClick={() => void run("simulate_payment_failed")}
               className="rounded-full bg-amber-600 px-4 py-2 text-sm font-semibold text-black disabled:opacity-50"
             >
@@ -249,7 +255,7 @@ export default function DevSubscriptionTestingPanel() {
             </button>
             <button
               type="button"
-              disabled={busy || subscription.status !== "PAST_DUE"}
+              disabled={busy || !canExpireGrace}
               onClick={() => void run("expire_grace")}
               className="rounded-full border border-[#52B788] px-4 py-2 text-sm font-semibold text-[#52B788] disabled:opacity-50"
             >
@@ -257,7 +263,7 @@ export default function DevSubscriptionTestingPanel() {
             </button>
             <button
               type="button"
-              disabled={busy || searchLoading}
+              disabled={busy}
               onClick={() => void selectPlayer(selected)}
               className="rounded-full border border-[#2b3650] px-4 py-2 text-sm font-semibold text-zinc-300 disabled:opacity-50"
             >

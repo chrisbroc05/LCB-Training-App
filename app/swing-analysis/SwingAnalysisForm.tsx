@@ -31,18 +31,27 @@ import {
   type PresignedSwingUploadResponse,
 } from "@/lib/swing-submission-upload-client";
 import type { SwingSubmissionConfirmationVariant } from "@/lib/coaching-submission-confirmation-shared";
-import { useState } from "react";
+import SwingAllowanceChoice from "@/app/coaching-submissions/SwingAllowanceChoice";
+import type {
+  CoachingAllowancePickerOption,
+  CoachingAllowancePoolId,
+} from "@/lib/coaching-submission-pool-shared";
+import { useMemo, useState } from "react";
 
 type SwingAnalysisFormProps = {
   confirmationVariant: SwingSubmissionConfirmationVariant;
-  showResponsePreference?: boolean;
+  defaultHideResponsePreference?: boolean;
   weeklyFocusTitle?: string | null;
+  swingAllowanceOptions: CoachingAllowancePickerOption[];
+  requiresSwingAllowanceChoice: boolean;
 };
 
 export default function SwingAnalysisForm({
   confirmationVariant,
-  showResponsePreference = true,
+  defaultHideResponsePreference = false,
   weeklyFocusTitle = null,
+  swingAllowanceOptions,
+  requiresSwingAllowanceChoice,
 }: SwingAnalysisFormProps) {
   const [playerName, setPlayerName] = useState("");
   const [videoFileName, setVideoFileName] = useState("");
@@ -62,6 +71,20 @@ export default function SwingAnalysisForm({
   const [submitError, setSubmitError] = useState("");
   const [submittedNotes, setSubmittedNotes] = useState("");
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
+  const [selectedAllowancePool, setSelectedAllowancePool] = useState<CoachingAllowancePoolId | null>(
+    null,
+  );
+
+  const resolvedAllowancePool = useMemo(() => {
+    if (requiresSwingAllowanceChoice) {
+      return selectedAllowancePool;
+    }
+    const only = swingAllowanceOptions.find((option) => option.canSubmit);
+    return only?.poolId ?? null;
+  }, [requiresSwingAllowanceChoice, selectedAllowancePool, swingAllowanceOptions]);
+
+  const showResponsePreference =
+    resolvedAllowancePool === "playbook-lifetime" || !defaultHideResponsePreference;
 
   const submitButtonLabel = (() => {
     if (!isSubmitting) {
@@ -87,6 +110,16 @@ export default function SwingAnalysisForm({
 
     if (!playerName.trim()) {
       setSubmitError("Please provide the player name.");
+      return;
+    }
+
+    if (requiresSwingAllowanceChoice && !selectedAllowancePool) {
+      setSubmitError("Choose what you want from Coach Broc before submitting.");
+      return;
+    }
+
+    if (!resolvedAllowancePool) {
+      setSubmitError("No coaching allowance is available for this submission.");
       return;
     }
 
@@ -193,6 +226,7 @@ export default function SwingAnalysisForm({
           videoUrl: videoUrl.trim() || undefined,
           r2Key,
           submittedVideoPosterR2Key,
+          coachingAllowancePool: requiresSwingAllowanceChoice ? resolvedAllowancePool : undefined,
         }),
       });
 
@@ -216,6 +250,7 @@ export default function SwingAnalysisForm({
       setLookAtFocus(null);
       setNotes("");
       setResponsePreference("VIDEO_RESPONSE");
+      setSelectedAllowancePool(null);
     } catch {
       setSubmitError(SUBMISSION_VIDEO_UPLOAD_FAILED_MESSAGE);
     } finally {
@@ -228,6 +263,14 @@ export default function SwingAnalysisForm({
   return (
     <>
       <form className="mt-6 space-y-5 sm:mt-8" onSubmit={handleSubmit}>
+        {requiresSwingAllowanceChoice ? (
+          <SwingAllowanceChoice
+            options={swingAllowanceOptions}
+            selectedPoolId={selectedAllowancePool}
+            onSelect={setSelectedAllowancePool}
+          />
+        ) : null}
+
         <label className="block">
           <span className="text-sm text-zinc-300">Player name</span>
           <input

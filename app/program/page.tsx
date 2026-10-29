@@ -6,6 +6,8 @@ import ChicagolandBundleCallout from "@/components/ChicagolandBundleCallout";
 import TestimonialsSection from "@/components/TestimonialsSection";
 import { authOptions } from "@/lib/auth";
 import { isTwelveWeekProgramMember, type DatabaseTier } from "@/lib/membership";
+import { toAccessUserFields, userAccessSelect } from "@/lib/access-server";
+import { canAccessProgramDashboard } from "@/lib/program-access-shared";
 import { prisma } from "@/lib/prisma";
 import { FREE_SWING_AUTH_URL } from "@/lib/free-swing-flow";
 import { PLAYBOOK_PROGRAM_INCLUDED_DESCRIPTION } from "@/lib/playbook-branding";
@@ -43,16 +45,18 @@ export default async function ProgramPage({ searchParams }: ProgramPageProps) {
   const resolvedSearchParams = searchParams ? await searchParams : {};
   const autoStartCheckout = resolvedSearchParams.startCheckout === "1";
   let hasTwelveWeekProgram = false;
+  let hasPersonalProgram = false;
 
   if (session?.user?.id) {
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { membershipTier: true },
+      select: userAccessSelect,
     });
     const membershipTier = (user?.membershipTier ?? "FREE") as DatabaseTier;
     hasTwelveWeekProgram = isTwelveWeekProgramMember(membershipTier);
+    hasPersonalProgram = Boolean(user && canAccessProgramDashboard(toAccessUserFields(user)));
 
-    if (autoStartCheckout && hasTwelveWeekProgram) {
+    if (hasPersonalProgram || (autoStartCheckout && hasTwelveWeekProgram)) {
       const enrollment = await prisma.programEnrollment.findUnique({
         where: { userId: session.user.id },
         select: { onboardingCompletedAt: true },

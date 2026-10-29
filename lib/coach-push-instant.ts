@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import {
   buildAdminCoachingReportsUrl,
   buildAdminSubmissionUrl,
+  coachNewProgramPlayerPushTitle,
   getCoachSubmissionTypeLabel,
   type CoachSubmissionTab,
 } from "@/lib/coach-push-shared";
@@ -42,15 +43,16 @@ export async function sendCoachNewProgramPlayerPush(params: {
   enrollmentId: string;
   playerName: string;
   playerEmail: string;
+  allAccess?: boolean;
 }) {
-  const name = params.playerName.trim() || params.playerEmail;
+  const title = coachNewProgramPlayerPushTitle(params);
 
   return sendCoachAlertPushSafe({
     type: "COACH_NEW_PROGRAM_PLAYER",
     dedupeKey: `coach:COACH_NEW_PROGRAM_PLAYER:${params.enrollmentId}`,
     settingKey: "newProgramPlayersEnabled",
     message: {
-      title: `New 12-week player: ${name}`,
+      title,
       body: "Open their program page in admin.",
       url: `/admin/coaching/program/${params.enrollmentId}`,
     },
@@ -82,6 +84,7 @@ export async function sendCoachNewProgramPlayerPushForUser(userId: string) {
     select: {
       name: true,
       email: true,
+      membershipLevel: true,
       isTestAccount: true,
       programEnrollment: {
         select: { id: true },
@@ -101,5 +104,6 @@ export async function sendCoachNewProgramPlayerPushForUser(userId: string) {
     enrollmentId: user.programEnrollment.id,
     playerName: user.name ?? "",
     playerEmail: user.email,
+    allAccess: user.membershipLevel === "ALL_ACCESS",
   });
 }

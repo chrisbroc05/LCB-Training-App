@@ -20,6 +20,10 @@ import { loadCurrentOrgWeeklyFocusForUser } from "@/lib/org-weekly-focus-server"
 import { prisma } from "@/lib/prisma";
 import { loadKeepBuildingCoachingContextForUser } from "@/lib/coaching-keep-building-server";
 import KeepBuildingSwingCard from "@/app/components/KeepBuildingSwingCard";
+import {
+  listSwingCoachingAllowanceFormOptions,
+  requiresSwingAllowanceFormChoice,
+} from "@/lib/coaching-submission-pool-shared";
 
 export default async function SwingAnalysisPage() {
   const session = await getServerSession(authOptions);
@@ -34,8 +38,9 @@ export default async function SwingAnalysisPage() {
 
   const availability = await getCoachingSubmissionAvailabilityForUser(session.user.id);
   const lockReason = availability?.lockReason ?? null;
+  const effective = resolveEffectiveLevel(userFields);
 
-  if (lockReason === "playbook-used") {
+  if (lockReason === "playbook-used" && effective === "PLAYBOOK") {
     return (
       <LockedFeaturePanel
         title="Coaching Submissions"
@@ -83,7 +88,10 @@ export default async function SwingAnalysisPage() {
     );
   }
 
-  if (!availability?.canSubmit) {
+  const swingOptions = listSwingCoachingAllowanceFormOptions(userFields);
+  const hasSubmittableSwing = swingOptions.some((option) => option.canSubmit);
+
+  if (!hasSubmittableSwing) {
     const keepBuilding = await loadKeepBuildingCoachingContextForUser(session.user.id);
     if (keepBuilding) {
       return (
@@ -116,8 +124,9 @@ export default async function SwingAnalysisPage() {
   const accessFields = accessUser ? mergeOrgIntoAccessFields(accessUser) : null;
   const effectiveLevel = accessFields ? resolveEffectiveLevel(accessFields) : "FREE";
   const confirmationVariant = getSwingSubmissionConfirmationVariant(effectiveLevel);
-  const showResponsePreference = !shouldHideSwingResponsePreference(effectiveLevel);
   const weeklyFocus = await loadCurrentOrgWeeklyFocusForUser(session.user.id);
+  const requiresAllowanceChoice = requiresSwingAllowanceFormChoice(userFields);
+  const defaultHideResponsePreference = shouldHideSwingResponsePreference(effectiveLevel);
 
   return (
     <div className="mx-auto w-full max-w-4xl px-4 py-10 sm:px-6 sm:py-14 md:py-20">
@@ -133,8 +142,10 @@ export default async function SwingAnalysisPage() {
         <CoachingSubmissionQuota user={userFields} />
         <SwingAnalysisForm
           confirmationVariant={confirmationVariant}
-          showResponsePreference={showResponsePreference}
+          defaultHideResponsePreference={defaultHideResponsePreference}
           weeklyFocusTitle={weeklyFocus?.title ?? null}
+          swingAllowanceOptions={swingOptions}
+          requiresSwingAllowanceChoice={requiresAllowanceChoice}
         />
       </section>
     </div>

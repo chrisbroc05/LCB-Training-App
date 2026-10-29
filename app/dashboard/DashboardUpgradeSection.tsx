@@ -1,18 +1,31 @@
-"use client";
-
 import Link from "next/link";
 import { COACH_CALENDLY_URL } from "@/lib/coach-calendly-shared";
-import { TWELVE_WEEK_KICKOFF_AND_CHECKINS_SHORT } from "@/lib/twelve-week-program-copy-shared";
+import type { AccessUserFields } from "@/lib/access-shared";
 import type { DatabaseTier } from "@/lib/membership";
+import {
+  getDashboardLevelUpSuggestion,
+  shouldShowTwelveWeekDashboardUpsell,
+  TWELVE_WEEK_DASHBOARD_UPSELL_COPY,
+  TWELVE_WEEK_DASHBOARD_UPSELL_PRICE,
+} from "@/lib/dashboard-upgrade-copy-shared";
 
 type DashboardUpgradeSectionProps = {
   membershipTier: DatabaseTier;
+  access: AccessUserFields;
 };
 
 export default function DashboardUpgradeSection({
   membershipTier,
+  access,
 }: DashboardUpgradeSectionProps) {
-  if (membershipTier !== "FREE" && membershipTier !== "BASIC") {
+  const showTwelveWeek = shouldShowTwelveWeekDashboardUpsell(access);
+  const levelSuggestion = getDashboardLevelUpSuggestion(access);
+
+  if (!showTwelveWeek && !levelSuggestion && membershipTier !== "FREE") {
+    return null;
+  }
+
+  if (membershipTier !== "FREE" && membershipTier !== "BASIC" && !levelSuggestion && !showTwelveWeek) {
     return null;
   }
 
@@ -22,25 +35,41 @@ export default function DashboardUpgradeSection({
         <h2 className="text-2xl font-semibold leading-tight text-zinc-100 sm:text-3xl">
           Ready to Level Up?
         </h2>
-        <p className="mt-2 text-zinc-300">
-          Join the 12-Week Coaching Program for unlimited submissions, full Playbook access, and{" "}
-          {TWELVE_WEEK_KICKOFF_AND_CHECKINS_SHORT}.
-        </p>
+        {levelSuggestion ? (
+          <p className="mt-2 text-zinc-300">{levelSuggestion.body}</p>
+        ) : (
+          <p className="mt-2 text-zinc-300">
+            {TWELVE_WEEK_DASHBOARD_UPSELL_COPY} {TWELVE_WEEK_DASHBOARD_UPSELL_PRICE}
+          </p>
+        )}
       </div>
 
-      <article className="mx-auto mt-8 max-w-xl rounded-2xl border border-[#52B788]/40 bg-[#0b1324]/80 p-5 sm:p-6">
-        <h3 className="text-xl font-semibold text-zinc-100">12-Week Coaching Program</h3>
-        <p className="mt-3 text-sm text-zinc-300">
-          Unlimited submissions, full Playbook access, workout programs, and{" "}
-          {TWELVE_WEEK_KICKOFF_AND_CHECKINS_SHORT}.
-        </p>
-        <Link
-          href="/program"
-          className="mt-5 inline-flex w-full items-center justify-center rounded-full bg-[#22c55e] px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-[#35db72]"
-        >
-          Explore the Program
-        </Link>
-      </article>
+      {levelSuggestion ? (
+        <article className="mx-auto mt-8 max-w-xl rounded-2xl border border-[#52B788]/40 bg-[#0b1324]/80 p-5 sm:p-6">
+          <h3 className="text-xl font-semibold text-zinc-100">{levelSuggestion.title}</h3>
+          <Link
+            href={levelSuggestion.href}
+            className="mt-5 inline-flex w-full items-center justify-center rounded-full bg-[#22c55e] px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-[#35db72]"
+          >
+            {levelSuggestion.buttonLabel}
+          </Link>
+        </article>
+      ) : null}
+
+      {showTwelveWeek ? (
+        <article className="mx-auto mt-8 max-w-xl rounded-2xl border border-[#52B788]/40 bg-[#0b1324]/80 p-5 sm:p-6">
+          <h3 className="text-xl font-semibold text-zinc-100">12-Week Coaching Program</h3>
+          <p className="mt-3 text-sm text-zinc-300">
+            {TWELVE_WEEK_DASHBOARD_UPSELL_COPY} {TWELVE_WEEK_DASHBOARD_UPSELL_PRICE}
+          </p>
+          <Link
+            href="/program"
+            className="mt-5 inline-flex w-full items-center justify-center rounded-full bg-[#22c55e] px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-[#35db72]"
+          >
+            Explore the Program
+          </Link>
+        </article>
+      ) : null}
 
       {membershipTier === "FREE" ? (
         <article className="mx-auto mt-8 max-w-xl rounded-2xl border border-[#22c55e]/40 bg-[#22c55e]/10 p-5 sm:p-6">

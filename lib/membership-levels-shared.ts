@@ -1,18 +1,27 @@
 /**
  * Display names, prices (display only), and copy for membership levels (client-safe).
  *
- * Phase 2: set PUBLIC_MEMBERSHIP_LEVELS_ENABLED to true and add
- * PublicMembershipLevelsSection to the landing or upgrade page to show the grid.
+ * Set PUBLIC_MEMBERSHIP_LEVELS_ENABLED=true (and NEXT_PUBLIC_MEMBERSHIP_LEVELS_ENABLED=true
+ * for client bundles) when Core / Plus / All-Access checkout is live.
  */
-
-/** When false, visitors never see Core / Plus / All-Access prices or signup (Phase 2 + Stripe). */
-export const PUBLIC_MEMBERSHIP_LEVELS_ENABLED = true;
 
 export const PUBLIC_MEMBERSHIP_UPGRADE_GENERIC_LABEL =
   "Upgrade for more access in the app.";
 
+export const MEMBERSHIP_LEVELS_COMING_SOON_MESSAGE =
+  "Monthly membership levels are coming soon. The 12-Week Program and Playbook are available now.";
+
+function readPublicMembershipLevelsEnabledEnv(): string | undefined {
+  return (
+    process.env.NEXT_PUBLIC_MEMBERSHIP_LEVELS_ENABLED ??
+    process.env.PUBLIC_MEMBERSHIP_LEVELS_ENABLED
+  )?.trim();
+}
+
+/** When false, visitors never see Core / Plus / All-Access prices or checkout. Default false. */
 export function isPublicMembershipLevelsEnabled(): boolean {
-  return PUBLIC_MEMBERSHIP_LEVELS_ENABLED;
+  const raw = readPublicMembershipLevelsEnabledEnv();
+  return raw === "true" || raw === "1";
 }
 
 export const MEMBERSHIP_LEVEL_KEYS = ["CORE", "PLUS", "ALL_ACCESS"] as const;
@@ -63,15 +72,15 @@ export function formatMembershipLevelLabel(key: MembershipLevelKey): string {
 }
 
 export function getUpgradeLabelForLevel(requiredLevel: MembershipLevelKey): string {
-  if (!PUBLIC_MEMBERSHIP_LEVELS_ENABLED) {
+  if (!isPublicMembershipLevelsEnabled()) {
     return PUBLIC_MEMBERSHIP_UPGRADE_GENERIC_LABEL;
   }
   return `Available with ${MEMBERSHIP_LEVELS[requiredLevel].displayName}`;
 }
 
-/** Levels safe to render on marketing pages (empty until Phase 2). */
+/** Levels safe to render on marketing pages (empty until membership launch). */
 export function listPublicMembershipLevelDefinitions(): MembershipLevelDefinition[] {
-  if (!PUBLIC_MEMBERSHIP_LEVELS_ENABLED) {
+  if (!isPublicMembershipLevelsEnabled()) {
     return [];
   }
   return MEMBERSHIP_LEVEL_KEYS.map((key) => MEMBERSHIP_LEVELS[key]);

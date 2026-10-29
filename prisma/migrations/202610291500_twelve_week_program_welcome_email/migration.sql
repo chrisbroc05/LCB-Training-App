@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "MarketingEmailType" ADD VALUE 'TWELVE_WEEK_PROGRAM_WELCOME';

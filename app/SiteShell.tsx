@@ -7,6 +7,7 @@ import MobileAppHeader from "@/app/components/mobile/MobileAppHeader";
 import MobileBottomNav from "@/app/components/mobile/MobileBottomNav";
 import MobilePageTransition from "@/app/components/mobile/MobilePageTransition";
 import { MobileAppProvider } from "@/app/components/mobile/MobileAppProvider";
+import MembershipPaymentPastDueBannerLoader from "@/app/components/MembershipPaymentPastDueBannerLoader";
 import MessageChatBubble from "@/components/MessageChatBubble";
 import PublicPageShell from "@/components/PublicPageShell";
 import { shouldUseMobileAppChrome } from "@/lib/mobile-ui";
@@ -55,6 +56,8 @@ export default function SiteShell({
   const isHomePage = pathname === "/";
   const useMobileChrome = shouldUseMobileAppChrome(isLoggedIn, pathname);
   const onAdminRoute = pathname.startsWith("/admin");
+  const showMembershipPaymentBanner =
+    isLoggedIn && !isStandaloneLanding && !isCompactPublic;
 
   if (isStandaloneLanding || isCompactPublic) {
     if (isCompactPublic) {
@@ -73,6 +76,7 @@ export default function SiteShell({
       {useMobileChrome ? (
         <MobileAppHeader
           membershipTier={membershipTier}
+          hasProgramEnrollment={hasProgramEnrollment}
           userDisplayName={userDisplayName}
           userEmail={userEmail}
           orgTrialHeader={orgTrialHeader}
@@ -84,6 +88,9 @@ export default function SiteShell({
         {isHomePage ? <LandingHeader isLoggedIn={isLoggedIn} /> : header}
       </div>
       <main className={useMobileChrome ? "mobile-app-main flex-1 md:pb-0 md:pt-0" : "flex-1"}>
+        {showMembershipPaymentBanner ? (
+          <MembershipPaymentPastDueBannerLoader enabled={showMembershipPaymentBanner} />
+        ) : null}
         {useMobileChrome ? <MobilePageTransition>{children}</MobilePageTransition> : children}
       </main>
       {useMobileChrome && !onAdminRoute ? (
@@ -105,6 +112,7 @@ export default function SiteShell({
         membershipTier={membershipTier}
         currentPlanLabel={currentPlanLabel}
         hasPlaybookAccess={hasPlaybookAccess}
+        hasProgramEnrollment={hasProgramEnrollment}
       >
         {shell}
       </MobileAppProvider>

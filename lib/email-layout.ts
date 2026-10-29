@@ -1,4 +1,5 @@
 import { selectEmailTestimonials, type Testimonial } from "@/lib/testimonials";
+import { TWELVE_WEEK_PROGRAM_UPSELL_SENTENCE } from "@/lib/twelve-week-program-copy-shared";
 
 export type EmailTestimonialOptions = {
   maxCount?: number;
@@ -115,9 +116,9 @@ export function buildEmailProgramPitchHtml(params: {
   const introParagraph =
     params.variant === "confirmation"
       ? `<p style="margin:0 0 12px 0; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:1.7; color:#0A1628;">Lessons are one day a week. What happens the other six?</p>
-      <p style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:1.7; color:#0A1628;">My 12-Week Program puts me in your corner every day: a daily routine built for you, coaching on your swing and mindset when you need it, and a kickoff call with me and a parent, plus check-ins when you need them.</p>`
+      <p style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:1.7; color:#0A1628;">My 12-Week Program puts me in your corner every day: ${TWELVE_WEEK_PROGRAM_UPSELL_SENTENCE}</p>`
       : `<p style="margin:0 0 12px 0; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:1.7; color:#0A1628;">You just got one breakdown. Imagine having me in your corner every day.</p>
-      <p style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:1.7; color:#0A1628;">The 12-Week Program gives you a daily routine built for you, coaching on your swing and mindset when you need it, and a kickoff call with me and a parent, plus check-ins when you need them. Lessons are one day a week. This is what happens the other six.</p>`;
+      <p style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:1.7; color:#0A1628;">The 12-Week Program: ${TWELVE_WEEK_PROGRAM_UPSELL_SENTENCE} Lessons are one day a week. This is what happens the other six.</p>`;
 
   return `${buildEmailSectionLabel("THE OTHER SIX DAYS")}
       ${introParagraph}
@@ -130,8 +131,8 @@ export function buildEmailProgramPitchText(params: {
 }) {
   const body =
     params.variant === "confirmation"
-      ? "Lessons are one day a week. What happens the other six?\nMy 12-Week Program puts me in your corner every day: a daily routine built for you, coaching on your swing and mindset when you need it, and a kickoff call with me and a parent, plus check-ins when you need them."
-      : "You just got one breakdown. Imagine having me in your corner every day.\nThe 12-Week Program gives you a daily routine built for you, coaching on your swing and mindset when you need it, and a kickoff call with me and a parent, plus check-ins when you need them. Lessons are one day a week. This is what happens the other six.";
+      ? `Lessons are one day a week. What happens the other six?\nMy 12-Week Program puts me in your corner every day: ${TWELVE_WEEK_PROGRAM_UPSELL_SENTENCE}`
+      : `You just got one breakdown. Imagine having me in your corner every day.\nThe 12-Week Program: ${TWELVE_WEEK_PROGRAM_UPSELL_SENTENCE} Lessons are one day a week. This is what happens the other six.`;
 
   return `\n\nTHE OTHER SIX DAYS\n${body}\nSee the 12-Week Program: ${params.programUrl}`;
 }

@@ -9,6 +9,8 @@ import {
 
 export const MARKETING_EMAIL_TYPES = [
   "WELCOME",
+  "MEMBERSHIP_LEVEL_WELCOME",
+  "TWELVE_WEEK_PROGRAM_WELCOME",
   "FREE_SUBMISSION_REMINDER",
   "FOLLOWUP_DRILLS_DAY_2",
   "FOLLOWUP_OTHER_SIX_DAY_4",
@@ -20,6 +22,10 @@ export type MarketingEmailTypeValue = (typeof MARKETING_EMAIL_TYPES)[number];
 
 export const MARKETING_EMAIL_LABELS: Record<MarketingEmailTypeValue, string> = {
   WELCOME: "Welcome (signup)",
+  MEMBERSHIP_LEVEL_WELCOME:
+    "Welcome (paid membership activation; transactional - dedupe log only, not scheduler)",
+  TWELVE_WEEK_PROGRAM_WELCOME:
+    "Welcome (12-Week program purchase; transactional - dedupe log only, not scheduler)",
   FREE_SUBMISSION_REMINDER: "Free breakdown waiting (day 2 signup)",
   FOLLOWUP_DRILLS_DAY_2: "Follow-up day 2: Did you try the drills?",
   FOLLOWUP_OTHER_SIX_DAY_4: "Follow-up day 4: The other six days",

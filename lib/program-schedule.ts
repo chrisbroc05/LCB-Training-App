@@ -156,6 +156,49 @@ export function getProgramDayNumberForDate(startDate: Date, dateKey: string) {
   return diffChicagoCalendarDays(startKey, dateKey) + 1;
 }
 
+export function getRawProgramDayNumberForDate(startDate: Date, dateKey: string) {
+  return getProgramDayNumberForDate(startDate, dateKey);
+}
+
+/** Calendar program day for task generation (cycles for OPEN_ENDED). */
+export function getProgramDayNumberForEnrollmentDate(
+  enrollment: EnrollmentForSchedule,
+  dateKey: string,
+) {
+  if (!enrollment.startDate) {
+    return 0;
+  }
+
+  const raw = getProgramDayNumberForDate(enrollment.startDate, dateKey);
+  if (raw <= 0) {
+    return 0;
+  }
+
+  const planMode = enrollment.planMode ?? defaultProgramPlanMode();
+  if (planMode === "OPEN_ENDED") {
+    return getCycleProgramDay(raw);
+  }
+
+  return raw;
+}
+
+export function isProgramCalendarDayAfterFixedEnd(
+  enrollment: EnrollmentForSchedule,
+  dateKey: string,
+) {
+  if (!enrollment.startDate) {
+    return false;
+  }
+
+  const planMode = enrollment.planMode ?? defaultProgramPlanMode();
+  if (planMode === "OPEN_ENDED") {
+    return false;
+  }
+
+  const raw = getProgramDayNumberForDate(enrollment.startDate, dateKey);
+  return raw > PROGRAM_DAY_COUNT;
+}
+
 export function isDateBeforeEnrollmentStart(startDate: Date, dateKey: string) {
   const startKey = formatProgramStartDateKey(startDate);
   return diffChicagoCalendarDays(startKey, dateKey) < 0;
@@ -231,7 +274,7 @@ export function formatProgramStartLabel(startDate: Date, now = new Date()) {
   }).format(labelDate);
 }
 
-function buildProgramDayInfo(params: {
+export function buildProgramDayInfo(params: {
   startDate: Date;
   programDay: number;
   isBeforeStart: boolean;

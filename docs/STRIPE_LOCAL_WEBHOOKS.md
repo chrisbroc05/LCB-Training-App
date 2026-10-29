@@ -51,7 +51,7 @@ Our app Checkout always succeeds with `4242`. To test **renewal** failure you ne
 
 1. Subscribe with `4242` via `/upgrade` (keep `stripe listen` running).
 2. Open **http://localhost:3000/dev/subscription-testing** as admin, search for the player by email, and select them.
-3. Click **Simulate failed renewal** (Stripe failing PM + renewal invoice, then sync from `past_due`) -> `PAST_DUE`, site-wide amber banner, Settings -> My plan warning, access still on for 7 days.
+3. Click **Simulate failed renewal** (failing default PM + `billing_cycle_anchor: now` renewal, then sync from Stripe `past_due`) -> `PAST_DUE`, site-wide amber banner, Settings -> My plan warning, access still on for 7 days.
 4. Check **App status**, **Grace ends**, and **Stripe subscription status** on the dev page, then click **Expire grace now** -> membership level cleared (base tier); banner gone.
 
 This matches webhook + grace logic without waiting for a billing period.

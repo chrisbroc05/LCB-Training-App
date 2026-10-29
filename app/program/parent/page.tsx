@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import ProgramParentForm from "@/app/program/parent/ProgramParentForm";
 import { authOptions } from "@/lib/auth";
+import { assertUserCanAccessProgram } from "@/lib/program-membership-gate-server";
 import { prisma } from "@/lib/prisma";
 
 export default async function ProgramParentPage() {
@@ -10,12 +11,8 @@ export default async function ProgramParentPage() {
     redirect("/auth?redirect=%2Fprogram%2Fparent");
   }
 
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { membershipTier: true },
-  });
-
-  if (!user || user.membershipTier !== "TWELVE_WEEK") {
+  const accessResult = await assertUserCanAccessProgram(session.user.id);
+  if (!accessResult) {
     redirect("/program");
   }
 

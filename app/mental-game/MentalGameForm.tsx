@@ -62,7 +62,6 @@ export default function MentalGameForm({ confirmationVariant }: MentalGameFormPr
     if (video) {
       formData.set("video", video);
     }
-
     setIsSubmitting(true);
     const response = await fetch("/api/mental-game/submit", {
       method: "POST",

@@ -18,6 +18,8 @@ import {
   ensureProgramEnrollmentForUser,
 } from "@/lib/program-enrollment";
 import { sendCoachNewProgramPlayerPushForUser } from "@/lib/coach-push-instant";
+import { sendMembershipLevelWelcomeIfNeeded } from "@/lib/membership-welcome-email-server";
+import { shouldSendMembershipLevelWelcomeOnSubscriptionChange } from "@/lib/membership-welcome-email-shared";
 import { getInvoiceLinePriceId } from "@/lib/stripe-invoice-shared";
 
 export function getSubscriptionPeriodEnd(subscription: Stripe.Subscription): Date | null {
@@ -344,12 +346,39 @@ export async function applyMembershipSubscriptionFromStripe(params: {
   });
 
   const prev = params.previousLevel ?? (existing?.level as MembershipLevelKey | null) ?? null;
-  if (subscriptionStatusGrantsAccess(record.status, {
+  const grantsAccessNow = subscriptionStatusGrantsAccess(record.status, {
     now,
     currentPeriodEnd: record.currentPeriodEnd,
     pastDueGraceEndsAt: record.pastDueGraceEndsAt,
-  })) {
-    await activateAllAccessIfNeeded(params.userId, record.level as MembershipLevelKey, prev);
+  });
+  const hadAccessBefore = existing
+    ? subscriptionStatusGrantsAccess(existing.status, {
+        now,
+        currentPeriodEnd: existing.currentPeriodEnd,
+        pastDueGraceEndsAt: existing.pastDueGraceEndsAt,
+      })
+    : false;
+  const activeLevel = record.level as MembershipLevelKey;
+
+  if (grantsAccessNow) {
+    await activateAllAccessIfNeeded(params.userId, activeLevel, prev);
+    if (
+      shouldSendMembershipLevelWelcomeOnSubscriptionChange({
+        hadAccessBefore,
+        previousLevel: prev,
+        activeLevel,
+      })
+    ) {
+      void sendMembershipLevelWelcomeIfNeeded({
+        userId: params.userId,
+        level: activeLevel,
+      }).catch((error) => {
+        console.error(
+          `Membership welcome email failed userId=${params.userId} level=${activeLevel}`,
+          error,
+        );
+      });
+    }
   }
 
   if (record.cancelAtPeriodEnd && record.level === "ALL_ACCESS") {

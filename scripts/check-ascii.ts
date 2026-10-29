@@ -33,6 +33,28 @@ function walk(dir: string, out: string[]) {
   }
 }
 
+function findInvalidUtf8Detail(raw: Buffer): string | null {
+  if (raw.includes(0)) {
+    const i = raw.indexOf(0);
+    return `contains null byte at offset ${i}`;
+  }
+
+  try {
+    new TextDecoder("utf-8", { fatal: true }).decode(raw);
+    return null;
+  } catch {
+    for (let end = 1; end <= raw.length; end += 1) {
+      try {
+        new TextDecoder("utf-8", { fatal: true }).decode(raw.subarray(0, end));
+      } catch {
+        const byte = raw[end - 1]!;
+        return `invalid UTF-8 at byte ${end - 1} (0x${byte.toString(16).padStart(2, "0")})`;
+      }
+    }
+    return "invalid UTF-8";
+  }
+}
+
 function checkFile(absPath: string): Issue[] {
   const rel = relative(ROOT, absPath);
   const ext = absPath.includes(".") ? absPath.slice(absPath.lastIndexOf(".")) : "";
@@ -47,30 +69,12 @@ function checkFile(absPath: string): Issue[] {
     return [{ file: rel, kind: "invalid_utf8", detail: "could not read file" }];
   }
 
-  let text: string;
-  try {
-    text = raw.toString("utf8");
-  } catch {
-    return [{ file: rel, kind: "invalid_utf8", detail: "invalid UTF-8" }];
+  const utf8Issue = findInvalidUtf8Detail(raw);
+  if (utf8Issue) {
+    return [{ file: rel, kind: "invalid_utf8", detail: utf8Issue }];
   }
 
-  if (raw.includes(0)) {
-    return [{ file: rel, kind: "invalid_utf8", detail: "contains null bytes" }];
-  }
-
-  try {
-    Buffer.from(text, "utf8").toString("utf8");
-  } catch {
-    return [{ file: rel, kind: "invalid_utf8", detail: "invalid UTF-8" }];
-  }
-
-  const decoded = new TextDecoder("utf-8", { fatal: true });
-  try {
-    decoded.decode(raw);
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    return [{ file: rel, kind: "invalid_utf8", detail: msg }];
-  }
+  const text = new TextDecoder("utf-8").decode(raw);
 
   const nonAscii: number[] = [];
   for (let i = 0; i < text.length; i += 1) {

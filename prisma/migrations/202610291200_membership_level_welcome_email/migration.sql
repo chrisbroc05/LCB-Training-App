@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "MarketingEmailType" ADD VALUE 'MEMBERSHIP_LEVEL_WELCOME';

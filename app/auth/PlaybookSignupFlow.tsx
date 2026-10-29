@@ -5,7 +5,7 @@ import Link from "next/link";
 import SignupWizard from "@/components/SignupWizard";
 import type { SignupRequestPayload } from "@/lib/signup-shared";
 import { TWELVE_WEEK_PROGRAM_NAME } from "@/lib/twelve-week-program";
-import { TWELVE_WEEK_KICKOFF_AND_CHECKINS_SHORT } from "@/lib/twelve-week-program-copy-shared";
+import { TWELVE_WEEK_PROGRAM_UPSELL_SENTENCE } from "@/lib/twelve-week-program-copy-shared";
 import {
   getPlaybookResumeCheckoutButtonLabel,
   getPlaybookSignupButtonLabel,
@@ -162,8 +162,7 @@ export default function PlaybookSignupFlow({
                 Want full coaching support?
               </h2>
               <p className="mt-2 text-sm text-zinc-500">
-                The {TWELVE_WEEK_PROGRAM_NAME} includes unlimited submissions, full Playbook access,
-                and {TWELVE_WEEK_KICKOFF_AND_CHECKINS_SHORT}.
+                The {TWELVE_WEEK_PROGRAM_NAME}: {TWELVE_WEEK_PROGRAM_UPSELL_SENTENCE}
               </p>
               <Link
                 href="/program"

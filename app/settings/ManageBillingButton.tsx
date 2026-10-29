@@ -1,9 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import { settingsErrorMessageClass, settingsSecondaryButtonClass } from "@/app/settings/settings-styles";
+import {
+  settingsErrorMessageClass,
+  settingsPrimaryButtonClass,
+  settingsSecondaryButtonClass,
+} from "@/app/settings/settings-styles";
 
-export default function ManageBillingButton() {
+type ManageBillingButtonProps = {
+  label?: string;
+  variant?: "primary" | "secondary";
+};
+
+export default function ManageBillingButton({
+  label = "Manage Billing",
+  variant = "secondary",
+}: ManageBillingButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -33,9 +45,9 @@ export default function ManageBillingButton() {
         type="button"
         onClick={() => void handleClick()}
         disabled={isLoading}
-        className={settingsSecondaryButtonClass}
+        className={variant === "primary" ? settingsPrimaryButtonClass : settingsSecondaryButtonClass}
       >
-        {isLoading ? "Opening..." : "Manage Billing"}
+        {isLoading ? "Opening..." : label}
       </button>
       {errorMessage ? <p className={`mt-3 ${settingsErrorMessageClass}`}>{errorMessage}</p> : null}
     </div>

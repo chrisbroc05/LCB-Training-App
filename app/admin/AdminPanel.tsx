@@ -49,6 +49,7 @@ type SubmissionListItem = {
   enrollmentId?: string | null;
   badgeStatus: "PENDING" | "RESPONDED";
   hasMemberVimeoLink?: boolean;
+  poolLabel?: string | null;
 };
 
 type MemberProfileSummary = {
@@ -730,6 +731,9 @@ export default function AdminPanel({ mode = "full" }: AdminPanelProps) {
               {tab === "mental" && item.topic && (
                 <p className="mt-1 text-xs uppercase tracking-wide text-zinc-400">{item.topic}</p>
               )}
+              {item.poolLabel ? (
+                <p className="mt-1 text-xs font-medium text-[#9df3bd]">{item.poolLabel}</p>
+              ) : null}
               <p className="mt-2 text-xs text-zinc-400">{item.userEmail}</p>
               <p className="mt-1 text-xs text-zinc-500">
                 {formatDateTime(item.createdAt)}

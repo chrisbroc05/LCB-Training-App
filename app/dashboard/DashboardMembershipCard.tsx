@@ -1,5 +1,9 @@
 import Link from "next/link";
 import { formatMembershipBillingDate } from "@/lib/format-date";
+import { formatMembershipSubscriptionStatusLabel } from "@/lib/membership-change-shared";
+import type { MembershipLevelKey } from "@/lib/membership-levels-shared";
+import type { SubscriptionStatus } from "@prisma/client";
+
 type DashboardMembershipCardProps = {
   planLabel: string;
   isPaidMember: boolean;
@@ -7,6 +11,13 @@ type DashboardMembershipCardProps = {
   isManualMembership: boolean;
   subscriptionCurrentPeriodEnd: Date | null;
   subscriptionCancelAtPeriodEnd: boolean;
+  phase2Membership?: {
+    level: MembershipLevelKey;
+    status: SubscriptionStatus;
+    cancelAtPeriodEnd: boolean;
+    pendingLevel: MembershipLevelKey | null;
+    currentPeriodEnd: Date;
+  } | null;
 };
 
 export default function DashboardMembershipCard({
@@ -16,7 +27,21 @@ export default function DashboardMembershipCard({
   isManualMembership,
   subscriptionCurrentPeriodEnd,
   subscriptionCancelAtPeriodEnd,
+  phase2Membership,
 }: DashboardMembershipCardProps) {
+  const nextBillingLabel = phase2Membership
+    ? formatMembershipBillingDate(phase2Membership.currentPeriodEnd)
+    : formatMembershipBillingDate(subscriptionCurrentPeriodEnd);
+
+  const statusLabel = phase2Membership
+    ? formatMembershipSubscriptionStatusLabel({
+        status: phase2Membership.status,
+        cancelAtPeriodEnd: phase2Membership.cancelAtPeriodEnd,
+        pendingLevel: phase2Membership.pendingLevel,
+        nextBillingLabel,
+      })
+    : null;
+
   return (
     <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
       <h2 className="text-lg font-semibold text-zinc-100">Membership</h2>
@@ -26,16 +51,23 @@ export default function DashboardMembershipCard({
 
       {isPaidMember ? (
         <div className="mt-3 space-y-1 text-sm text-zinc-300">
-          {isManualMembership ? (
+          {phase2Membership ? (
+            <>
+              <p>Status: {statusLabel}</p>
+              <p>Next billing date: {nextBillingLabel}</p>
+            </>
+          ) : isManualMembership ? (
             <p>Billing: Manual</p>
           ) : (
-            <p>Next billing date: {formatMembershipBillingDate(subscriptionCurrentPeriodEnd)}</p>
+            <>
+              <p>Next billing date: {nextBillingLabel}</p>
+              {subscriptionCancelAtPeriodEnd ? (
+                <p className="text-yellow-100">
+                  Your subscription is set to cancel at the end of the current billing period.
+                </p>
+              ) : null}
+            </>
           )}
-          {!isManualMembership && subscriptionCancelAtPeriodEnd ? (
-            <p className="text-yellow-100">
-              Your subscription is set to cancel at the end of the current billing period.
-            </p>
-          ) : null}
         </div>
       ) : (
         <p className="mt-3 text-sm text-zinc-300">

@@ -1,5 +1,6 @@
 import { PLAYBOOK_CHAPTERS } from "@/lib/playbook-content";
 import { prisma } from "@/lib/prisma";
+import { createOrFindOnUniqueViolation } from "@/lib/prisma-get-or-create-shared";
 
 export type PlaybookChapterStatus = "not_started" | "in_progress" | "complete";
 
@@ -14,28 +15,38 @@ const progressInclude = {
   },
 };
 
-export async function ensurePlaybookProgress(userId: string) {
-  const existing = await prisma.playbookProgress.findUnique({
-    where: { userId },
-    include: progressInclude,
-  });
+function playbookProgressCreateData(userId: string) {
+  return {
+    userId,
+    chapters: {
+      create: PLAYBOOK_CHAPTERS.map((chapter) => ({
+        chapterNumber: chapter.number,
+        chapterTitle: chapter.title,
+      })),
+    },
+  };
+}
 
+export async function ensurePlaybookProgress(userId: string) {
+  const load = () =>
+    prisma.playbookProgress.findUnique({
+      where: { userId },
+      include: progressInclude,
+    });
+
+  const existing = await load();
   if (existing) {
     return existing;
   }
 
-  return prisma.playbookProgress.create({
-    data: {
-      userId,
-      chapters: {
-        create: PLAYBOOK_CHAPTERS.map((chapter) => ({
-          chapterNumber: chapter.number,
-          chapterTitle: chapter.title,
-        })),
-      },
-    },
-    include: progressInclude,
-  });
+  return createOrFindOnUniqueViolation(
+    () =>
+      prisma.playbookProgress.create({
+        data: playbookProgressCreateData(userId),
+        include: progressInclude,
+      }),
+    load,
+  );
 }
 
 export function getChapterStatus(

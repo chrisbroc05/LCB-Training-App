@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { TWELVE_WEEK_PROGRAM_NAME } from "@/lib/twelve-week-program";
-import { TWELVE_WEEK_KICKOFF_AND_CHECKINS_SHORT } from "@/lib/twelve-week-program-copy-shared";
+import { TWELVE_WEEK_KICKOFF_AND_CHECKINS_SHORT, TWELVE_WEEK_PROGRAM_UPSELL_SENTENCE } from "@/lib/twelve-week-program-copy-shared";
 import { formatScheduledCallDateTime } from "@/lib/assessment-call";
 import { formatOptionalDate } from "@/lib/format-date";
 
@@ -39,8 +39,8 @@ export default function DashboardTwelveWeekProgramCard({
       </div>
 
       <p className="mt-4 text-sm leading-relaxed text-zinc-300">
-        Your program includes full Playbook access, unlimited coaching submissions, workout
-        programs, and {TWELVE_WEEK_KICKOFF_AND_CHECKINS_SHORT}.
+        {TWELVE_WEEK_PROGRAM_UPSELL_SENTENCE} Your program also includes full Playbook access and
+        workout programs, with {TWELVE_WEEK_KICKOFF_AND_CHECKINS_SHORT}.
       </p>
 
       {hasScheduledCall ? (

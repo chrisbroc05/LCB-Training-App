@@ -251,11 +251,17 @@ export default function MyPlanSection({
         <p className={`mt-1 ${settingsMutedTextClass}`}>Status: {statusLabel}</p>
 
         {status === "PAST_DUE" ? (
-          <p className={`mt-3 ${settingsWarningTextClass}`}>
-            Your last payment did not go through. Update your card within 7 days to keep access.
-          </p>
+          <>
+            <div className="mt-4">
+              <ManageBillingButton label="Update card" variant="primary" />
+            </div>
+            <p className={`mt-3 ${settingsWarningTextClass}`}>
+              Your last payment did not go through. Update your card within 7 days to keep access.
+            </p>
+          </>
         ) : null}
 
+        {status !== "PAST_DUE" ? (
         <div className="mt-5 flex flex-wrap gap-2">
           {LEVEL_ORDER.filter((key) => key !== level).map((key) => {
             const rank = LEVEL_ORDER.indexOf(key) - LEVEL_ORDER.indexOf(level);
@@ -273,6 +279,7 @@ export default function MyPlanSection({
             );
           })}
         </div>
+        ) : null}
 
         {!cancelAtPeriodEnd && !pendingLevel ? (
           <button
@@ -285,9 +292,11 @@ export default function MyPlanSection({
           </button>
         ) : null}
 
-        <div className="mt-4">
-          <ManageBillingButton />
-        </div>
+        {status !== "PAST_DUE" ? (
+          <div className="mt-4">
+            <ManageBillingButton />
+          </div>
+        ) : null}
 
         {errorMessage ? <p className="mt-3 text-sm text-red-300">{errorMessage}</p> : null}
       </SettingsCard>

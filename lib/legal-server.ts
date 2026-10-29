@@ -615,19 +615,13 @@ export async function loadUnconfirmedMinorParentSummaries(now = new Date()) {
   return users.map((user) => user.name?.trim() || user.email);
 }
 
-export async function finalizeMinorLegalAcceptanceSideEffects(userId: string) {
+export async function applyMinorLegalParentConsentRecords(userId: string) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
-      id: true,
-      name: true,
-      email: true,
       playerAge: true,
-      acceptedByName: true,
-      termsAcceptedAt: true,
       parentConsentName: true,
       parentConsentEmail: true,
-      parentConsentEmailSentAt: true,
     },
   });
 
@@ -644,13 +638,41 @@ export async function finalizeMinorLegalAcceptanceSideEffects(userId: string) {
     parentConsentName: user.parentConsentName.trim(),
     parentConsentEmail: user.parentConsentEmail.trim().toLowerCase(),
   });
+}
 
-  if (!user.parentConsentEmailSentAt) {
-    await maybeSendParentConsentEmail({
-      ...user,
-      parentConsentEmail: user.parentConsentEmail.trim().toLowerCase(),
-    });
+export async function sendMinorLegalParentConsentEmailIfNeeded(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      playerAge: true,
+      acceptedByName: true,
+      termsAcceptedAt: true,
+      parentConsentEmail: true,
+      parentConsentEmailSentAt: true,
+    },
+  });
+
+  if (
+    !user ||
+    !isMinorPlayerAge(user.playerAge) ||
+    !user.parentConsentEmail?.trim() ||
+    user.parentConsentEmailSentAt
+  ) {
+    return;
   }
+
+  await maybeSendParentConsentEmail({
+    ...user,
+    parentConsentEmail: user.parentConsentEmail.trim().toLowerCase(),
+  });
+}
+
+export async function finalizeMinorLegalAcceptanceSideEffects(userId: string) {
+  await applyMinorLegalParentConsentRecords(userId);
+  await sendMinorLegalParentConsentEmailIfNeeded(userId);
 }
 
 export async function sendDueParentConsentReminders(now = new Date()) {

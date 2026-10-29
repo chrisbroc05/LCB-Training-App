@@ -68,11 +68,21 @@ async function getStripeBillingDate(params: {
   }
 }
 
-export default async function SettingsPage() {
+type SettingsPageProps = {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
+
+export default async function SettingsPage({ searchParams }: SettingsPageProps) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     redirect("/auth");
   }
+
+  const resolvedSearchParams = searchParams ? await searchParams : {};
+  const checkoutParam = resolvedSearchParams.checkout;
+  const membershipCheckoutSuccess =
+    checkoutParam === "membership-success" ||
+    (Array.isArray(checkoutParam) && checkoutParam.includes("membership-success"));
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
@@ -100,6 +110,17 @@ export default async function SettingsPage() {
 
   if (!user) {
     redirect("/auth");
+  }
+
+  if (membershipCheckoutSuccess && user.membershipLevel === "ALL_ACCESS") {
+    const enrollment = await prisma.programEnrollment.findUnique({
+      where: { userId: session.user.id },
+      select: { onboardingCompletedAt: true },
+    });
+    if (!enrollment?.onboardingCompletedAt) {
+      redirect("/program/start?checkout=membership-success");
+    }
+    redirect("/dashboard/today");
   }
 
   await expirePastDueMembershipGraceForUser(session.user.id);

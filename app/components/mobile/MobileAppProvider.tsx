@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
 import MobileBottomSheet from "@/app/components/mobile/MobileBottomSheet";
-import { isTwelveWeekProgramMember, type DatabaseTier } from "@/lib/membership";
+import type { DatabaseTier } from "@/lib/membership";
 import { PUBLIC_MEMBERSHIP_UPGRADE_GENERIC_LABEL } from "@/lib/membership-levels-shared";
 import { PLAYBOOK_NAME } from "@/lib/playbook-branding";
 
@@ -19,6 +19,7 @@ type MobileAppProviderProps = {
   membershipTier: DatabaseTier;
   currentPlanLabel: string;
   hasPlaybookAccess: boolean;
+  hasProgramEnrollment?: boolean;
 };
 
 export function MobileAppProvider({
@@ -26,20 +27,21 @@ export function MobileAppProvider({
   membershipTier,
   currentPlanLabel,
   hasPlaybookAccess,
+  hasProgramEnrollment = false,
 }: MobileAppProviderProps) {
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [upgradeMessage, setUpgradeMessage] = useState<string | null>(null);
 
   const openUpgradeSheet = useCallback(
     (message?: string) => {
-      if (isTwelveWeekProgramMember(membershipTier)) {
+      if (hasProgramEnrollment) {
         return;
       }
 
       setUpgradeMessage(message ?? null);
       setUpgradeOpen(true);
     },
-    [membershipTier],
+    [hasProgramEnrollment],
   );
 
   const closeUpgradeSheet = useCallback(() => {
@@ -62,7 +64,7 @@ export function MobileAppProvider({
   return (
     <MobileAppContext.Provider value={value}>
       {children}
-      {!isTwelveWeekProgramMember(membershipTier) ? (
+      {!hasProgramEnrollment ? (
         <MobileBottomSheet
           open={upgradeOpen}
           onClose={closeUpgradeSheet}

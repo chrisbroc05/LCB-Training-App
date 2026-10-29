@@ -14,7 +14,7 @@ export function getTwelveWeekProgramCheckInCalendlyUrl() {
 
 export const twelveWeekProgramIncludes = [
   "Full access to The Next Level Playbook content library",
-  "Unlimited swing and mental game submissions with personal feedback from Coach Broc",
+  "Coaching on your swing and mindset with personal feedback from Coach Broc",
   "Downloadable workout programs and training resources",
   TWELVE_WEEK_KICKOFF_AND_CHECKINS_LINE,
   "Weekly goal setting and progress check-ins to keep you on track",
@@ -23,7 +23,7 @@ export const twelveWeekProgramIncludes = [
 
 export const twelveWeekProgramLandingHighlights = [
   "The complete Playbook content library",
-  "Unlimited swing and mental game submissions with personal feedback",
+  "Coaching on your swing and mindset with personal feedback",
   "Downloadable workout programs",
   TWELVE_WEEK_KICKOFF_AND_CHECKINS_LINE,
   "Weekly goal setting and progress check-ins to keep you on track",

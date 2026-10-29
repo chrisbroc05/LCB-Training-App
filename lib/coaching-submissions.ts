@@ -12,11 +12,17 @@ import {
   getCoachingSubmissionAvailability,
   getCoachingSubmissionLockReason,
   getCoachingSubmissionPeriodKey,
+  getPlaybookSubmissionAllowance,
   canSubmitCoachingForms,
 } from "@/lib/coaching-submissions-shared";
 import type { FreeSwingAnalysisResponseMode } from "@/lib/free-swing-analysis-response-shared";
 import { getFreeSwingAnalysisResponseMode } from "@/lib/free-swing-analysis-response-server";
 import { getReportsQueueReviewTracks } from "@/lib/reports-queue-shared";
+import {
+  isPoolEligibleNow,
+  poolIdToReviewTrack,
+  type CoachingAllowancePoolId,
+} from "@/lib/coaching-submission-pool-shared";
 
 export {
   FREE_LIFETIME_SUBMISSION_LIMIT,
@@ -188,10 +194,109 @@ type CoachingSubmissionTransactionClient = Pick<
   "user" | "swingAnalysisSubmission" | "mentalGameSubmission"
 >;
 
+async function consumeFromRequestedPool(
+  tx: CoachingSubmissionTransactionClient,
+  userId: string,
+  syncedUser: CoachingSubmissionUserFields,
+  poolId: CoachingAllowancePoolId,
+  periodSync: {
+    coachingSubmissionPeriod: string | null;
+    coachingSubmissionsUsedThisMonth: number;
+    eliteRolloverCredits: number;
+  },
+  freeSwingMode: FreeSwingAnalysisResponseMode,
+  availability: CoachingSubmissionAvailability,
+) {
+  if (!isPoolEligibleNow(syncedUser, poolId)) {
+    return { ok: false as const, availability, membershipTier: syncedUser.membershipTier };
+  }
+
+  const reviewTrack = poolIdToReviewTrack(poolId);
+
+  if (poolId === "playbook-lifetime") {
+    await tx.user.update({
+      where: { id: userId },
+      data: {
+        ...periodSync,
+        playbookSubmissionsUsed: syncedUser.playbookSubmissionsUsed + 1,
+      },
+    });
+    return {
+      ok: true as const,
+      availability,
+      membershipTier: syncedUser.membershipTier,
+      reviewTrack: "PLAYBOOK" as CoachingReviewTrack,
+    };
+  }
+
+  if (poolId === "core-six-week" || poolId === "org-trial") {
+    await tx.user.update({ where: { id: userId }, data: periodSync });
+    return {
+      ok: true as const,
+      availability,
+      membershipTier: syncedUser.membershipTier,
+      reviewTrack,
+    };
+  }
+
+  if (poolId === "plus-monthly" || poolId === "legacy-monthly") {
+    const useMonthlyAllowance =
+      syncedUser.membershipTier !== "ELITE" ||
+      syncedUser.coachingSubmissionsUsedThisMonth < ELITE_MONTHLY_LIMIT;
+
+    await tx.user.update({
+      where: { id: userId },
+      data: {
+        ...periodSync,
+        coachingSubmissionsUsedThisMonth: useMonthlyAllowance
+          ? syncedUser.coachingSubmissionsUsedThisMonth + 1
+          : syncedUser.coachingSubmissionsUsedThisMonth,
+        eliteRolloverCredits:
+          syncedUser.membershipTier === "ELITE" && !useMonthlyAllowance
+            ? syncedUser.eliteRolloverCredits - 1
+            : syncedUser.eliteRolloverCredits,
+      },
+    });
+    return {
+      ok: true as const,
+      availability,
+      membershipTier: syncedUser.membershipTier,
+      reviewTrack: "IN_DEPTH_MONTHLY" as CoachingReviewTrack,
+    };
+  }
+
+  if (poolId === "program") {
+    await tx.user.update({ where: { id: userId }, data: periodSync });
+    return {
+      ok: true as const,
+      availability,
+      membershipTier: syncedUser.membershipTier,
+      reviewTrack: "PROGRAM" as CoachingReviewTrack,
+    };
+  }
+
+  if (poolId === "free-once") {
+    await tx.user.update({ where: { id: userId }, data: periodSync });
+    const freeTrack: CoachingReviewTrack | null =
+      freeSwingMode === "WRITTEN_REPORT" ? "FREE_ONCE" : null;
+    return {
+      ok: true as const,
+      availability,
+      membershipTier: syncedUser.membershipTier,
+      reviewTrack: freeTrack,
+    };
+  }
+
+  return { ok: false as const, availability, membershipTier: syncedUser.membershipTier };
+}
+
 export async function consumeCoachingSubmission(
   tx: CoachingSubmissionTransactionClient,
   userId: string,
-  options?: { freeSwingAnalysisResponseMode?: FreeSwingAnalysisResponseMode },
+  options?: {
+    freeSwingAnalysisResponseMode?: FreeSwingAnalysisResponseMode;
+    requestedPool?: CoachingAllowancePoolId;
+  },
 ) {
   const freeSwingMode =
     options?.freeSwingAnalysisResponseMode ?? (await getFreeSwingAnalysisResponseMode());
@@ -225,12 +330,25 @@ export async function consumeCoachingSubmission(
     return { ok: false as const, availability, membershipTier: syncedUser.membershipTier };
   }
 
-  const effective = resolveEffectiveLevel(syncedUser);
   const periodSync = {
     coachingSubmissionPeriod: syncedUser.coachingSubmissionPeriod,
     coachingSubmissionsUsedThisMonth: syncedUser.coachingSubmissionsUsedThisMonth,
     eliteRolloverCredits: syncedUser.eliteRolloverCredits,
   };
+
+  if (options?.requestedPool) {
+    return consumeFromRequestedPool(
+      tx,
+      userId,
+      syncedUser,
+      options.requestedPool,
+      periodSync,
+      freeSwingMode,
+      availability,
+    );
+  }
+
+  const effective = resolveEffectiveLevel(syncedUser);
 
   if (effective === "TWELVE_WEEK" || effective === "ALL_ACCESS") {
     await tx.user.update({ where: { id: userId }, data: periodSync });
@@ -260,13 +378,38 @@ export async function consumeCoachingSubmission(
   }
 
   if (effective === "CORE") {
-    await tx.user.update({ where: { id: userId }, data: periodSync });
-    return {
-      ok: true as const,
-      availability,
-      membershipTier: syncedUser.membershipTier,
-      reviewTrack: "QUICK_SIX_WEEK" as CoachingReviewTrack,
-    };
+    const nextEligible = syncedUser.coreQuickReportNextEligibleAt
+      ? new Date(syncedUser.coreQuickReportNextEligibleAt)
+      : null;
+    const coreCanSubmit = !nextEligible || nextEligible.getTime() <= Date.now();
+    if (coreCanSubmit) {
+      await tx.user.update({ where: { id: userId }, data: periodSync });
+      return {
+        ok: true as const,
+        availability,
+        membershipTier: syncedUser.membershipTier,
+        reviewTrack: "QUICK_SIX_WEEK" as CoachingReviewTrack,
+      };
+    }
+    if (syncedUser.membershipTier === "BASIC") {
+      const playbook = getPlaybookSubmissionAllowance(syncedUser);
+      if (playbook?.canSubmit) {
+        await tx.user.update({
+          where: { id: userId },
+          data: {
+            ...periodSync,
+            playbookSubmissionsUsed: syncedUser.playbookSubmissionsUsed + 1,
+          },
+        });
+        return {
+          ok: true as const,
+          availability,
+          membershipTier: syncedUser.membershipTier,
+          reviewTrack: "PLAYBOOK" as CoachingReviewTrack,
+        };
+      }
+    }
+    return { ok: false as const, availability, membershipTier: syncedUser.membershipTier };
   }
 
   if (effective === "ORG_TRIAL") {

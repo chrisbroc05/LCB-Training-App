@@ -4,7 +4,7 @@ import {
   TWELVE_WEEK_PROGRAM_NAME,
   TWELVE_WEEK_PROGRAM_PRICE_LABEL,
 } from "@/lib/twelve-week-program";
-import { TWELVE_WEEK_KICKOFF_AND_CHECKINS_SHORT } from "@/lib/twelve-week-program-copy-shared";
+import { TWELVE_WEEK_PROGRAM_UPSELL_SENTENCE } from "@/lib/twelve-week-program-copy-shared";
 
 export default function UpgradePricingSection() {
   return (
@@ -16,8 +16,8 @@ export default function UpgradePricingSection() {
         </h2>
         <p className="mt-2 text-xl font-bold text-[#98b144]">{TWELVE_WEEK_PROGRAM_PRICE_LABEL} one-time</p>
         <p className="mt-4 text-sm leading-relaxed text-zinc-300 sm:text-base">
-          Unlimited coaching submissions, full Playbook access, workout programs,{" "}
-          {TWELVE_WEEK_KICKOFF_AND_CHECKINS_SHORT}, and a structured 12-week daily training plan.
+          {TWELVE_WEEK_PROGRAM_UPSELL_SENTENCE} {TWELVE_WEEK_PROGRAM_PRICE_LABEL} one-time, plus a
+          structured 12-week daily training plan, full Playbook access, and workout programs.
         </p>
         <ul className="mt-4 space-y-2 text-sm text-zinc-200">
           <li className="flex items-start gap-2">

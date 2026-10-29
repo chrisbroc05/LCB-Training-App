@@ -2,12 +2,18 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import ProgramStatsView from "@/app/program/stats/ProgramStatsView";
 import { authOptions } from "@/lib/auth";
+import { assertUserCanAccessProgram } from "@/lib/program-membership-gate-server";
 import { prisma } from "@/lib/prisma";
 
 export default async function ProgramStatsPage() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     redirect("/auth");
+  }
+
+  const accessResult = await assertUserCanAccessProgram(session.user.id);
+  if (!accessResult) {
+    redirect("/program");
   }
 
   const enrollment = await prisma.programEnrollment.findUnique({

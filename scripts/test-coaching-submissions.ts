@@ -5,6 +5,7 @@ import {
 } from "../lib/coaching-submissions-shared";
 import { PLAYBOOK_LIFETIME_SUBMISSION_LIMIT_LEGACY } from "../lib/playbook-entitlements-shared";
 import { getReportsQueueReviewTracks } from "../lib/reports-queue-shared";
+import { listCoachingAllowanceLines } from "../lib/coaching-allowance-lines-shared";
 
 function baseFields(
   overrides: Partial<Parameters<typeof getCoachingSubmissionAvailability>[0]> = {},
@@ -93,6 +94,23 @@ function testReportsQueueTracksDefaultVideo() {
   assert.deepEqual(tracks, ["QUICK_SIX_WEEK", "ORG_TRIAL_QUICK"]);
 }
 
+function testCorePlusPlaybookAllowanceLines() {
+  const user = baseFields({
+    membershipTier: "BASIC",
+    membershipLevel: "CORE",
+    membershipLevelExpiresAt: new Date("2099-01-01"),
+    playbookSubmissionsUsed: 0,
+    coreQuickReportNextEligibleAt: null,
+  });
+  const lines = listCoachingAllowanceLines(user);
+  assert.equal(lines.length, 2);
+  assert.equal(lines[0]?.id, "core-six-week");
+  assert.match(lines[0]?.label ?? "", /Core/);
+  assert.equal(lines[1]?.id, "playbook-lifetime");
+  assert.match(lines[1]?.detail ?? "", /1 left/);
+  assert.match(lines[1]?.label ?? "", /Playbook/);
+}
+
 function testTwelveWeekUnlimited() {
   const availability = getCoachingSubmissionAvailability(
     baseFields({
@@ -111,6 +129,7 @@ function main() {
   testPlaybookTierIgnoresFreeFlag();
   testPendingQuickReportLock();
   testReportsQueueTracksDefaultVideo();
+  testCorePlusPlaybookAllowanceLines();
   testTwelveWeekUnlimited();
   console.log("test-coaching-submissions: all passed");
 }

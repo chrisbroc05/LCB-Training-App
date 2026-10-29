@@ -155,6 +155,29 @@ function applyPendingQuickReportLock(
   };
 }
 
+export function getPlaybookSubmissionAllowance(
+  user: CoachingSubmissionUserFields,
+  now = new Date(),
+): { canSubmit: boolean; remaining: number; limit: number } | null {
+  if (user.membershipTier !== "BASIC") {
+    return null;
+  }
+  const used = Math.max(0, user.playbookSubmissionsUsed);
+  const lifetimeLimit =
+    getPlaybookLifetimeSubmissionLimit({
+      membershipTier: user.membershipTier,
+      playbookLegacyAccess: user.playbookLegacyAccess,
+      membershipLevel: user.membershipLevel,
+      membershipLevelExpiresAt: user.membershipLevelExpiresAt,
+    }) ?? PLAYBOOK_LIFETIME_SUBMISSION_LIMIT_NEW;
+  const remaining = Math.max(0, lifetimeLimit - used);
+  return {
+    canSubmit: remaining > 0,
+    remaining,
+    limit: lifetimeLimit,
+  };
+}
+
 export function getCoachingSubmissionAvailability(
   user: CoachingSubmissionUserFields,
   now = new Date(),
@@ -185,11 +208,13 @@ export function getCoachingSubmissionAvailability(
 
   if (effective === "CORE") {
     const nextEligible = parseWhen(syncedUser.coreQuickReportNextEligibleAt);
-    const canSubmit = !nextEligible || nextEligible.getTime() <= now.getTime();
+    const coreCanSubmit = !nextEligible || nextEligible.getTime() <= now.getTime();
+    const playbook = getPlaybookSubmissionAllowance(syncedUser, now);
+    const canSubmit = coreCanSubmit || Boolean(playbook?.canSubmit);
     return finalize({
       canSubmit,
       lockReason: canSubmit ? null : "monthly-limit",
-      remaining: canSubmit ? 1 : 0,
+      remaining: coreCanSubmit ? 1 : 0,
       lifetimeLimit: null,
       monthlyRemaining: null,
       rolloverCredits: null,
@@ -228,19 +253,13 @@ export function getCoachingSubmissionAvailability(
     });
   }
 
-  if (syncedUser.membershipTier === "BASIC") {
-    const used = Math.max(0, syncedUser.playbookSubmissionsUsed);
-    const lifetimeLimit =
-      getPlaybookLifetimeSubmissionLimit({
-        membershipTier: syncedUser.membershipTier,
-        playbookLegacyAccess: syncedUser.playbookLegacyAccess,
-        membershipLevel: syncedUser.membershipLevel,
-        membershipLevelExpiresAt: syncedUser.membershipLevelExpiresAt,
-      }) ?? PLAYBOOK_LIFETIME_SUBMISSION_LIMIT_NEW;
-    const remaining = Math.max(0, lifetimeLimit - used);
+  if (syncedUser.membershipTier === "BASIC" && effective === "PLAYBOOK") {
+    const playbook = getPlaybookSubmissionAllowance(syncedUser, now);
+    const remaining = playbook?.remaining ?? 0;
+    const lifetimeLimit = playbook?.limit ?? PLAYBOOK_LIFETIME_SUBMISSION_LIMIT_NEW;
     return finalize({
-      canSubmit: remaining > 0,
-      lockReason: remaining > 0 ? null : "playbook-used",
+      canSubmit: Boolean(playbook?.canSubmit),
+      lockReason: playbook?.canSubmit ? null : "playbook-used",
       remaining,
       lifetimeLimit,
       monthlyRemaining: null,

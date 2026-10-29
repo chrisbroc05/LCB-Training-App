@@ -9,6 +9,7 @@ import {
   hasFullDrillLibraryAccess,
   hasPlaybookWorkoutProgramDownloads,
 } from "../lib/playbook-entitlements-shared";
+import { buildPlaybookPurchaseWelcomeSummary } from "../lib/playbook-dashboard-copy-shared";
 
 function testNewBasicEntitlements() {
   const user = {
@@ -56,9 +57,31 @@ function testLegacyBasicEntitlements() {
   assert.equal(canAccessWorkoutResourceFile(user, "LCB_Rotational_Sample.pdf"), true);
 }
 
+function testPlaybookWelcomeCopy() {
+  const newBuyer = {
+    membershipTier: "BASIC" as const,
+    playbookLegacyAccess: false,
+    membershipLevel: null,
+    membershipLevelExpiresAt: null,
+  };
+  const summary = buildPlaybookPurchaseWelcomeSummary(newBuyer);
+  assert.match(summary, /1 lifetime coaching submission/);
+  assert.match(summary, /starter drills/);
+  assert.doesNotMatch(summary, /2 lifetime/);
+  assert.doesNotMatch(summary, /full drill library/);
+
+  const legacy = buildPlaybookPurchaseWelcomeSummary({
+    ...newBuyer,
+    playbookLegacyAccess: true,
+  });
+  assert.match(legacy, /2 lifetime coaching submissions/);
+  assert.match(legacy, /full drill library/);
+}
+
 function main() {
   testNewBasicEntitlements();
   testLegacyBasicEntitlements();
+  testPlaybookWelcomeCopy();
   console.log("test-playbook-entitlements: all passed");
 }
 

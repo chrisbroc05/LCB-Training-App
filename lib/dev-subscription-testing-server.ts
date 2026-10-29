@@ -65,8 +65,7 @@ async function attachPaymentMethodToCustomer(
   }
 }
 
-/** Prefer core3's existing 0341 card; otherwise attach Stripe's chargeCustomerFail test PM. */
-async function ensureDefaultFailingPaymentMethod(stripe: Stripe, customerId: string): Promise<string> {
+async function resolveFailingPaymentMethodId(stripe: Stripe, customerId: string): Promise<string> {
   const listed = await stripe.paymentMethods.list({
     customer: customerId,
     type: "card",
@@ -74,35 +73,50 @@ async function ensureDefaultFailingPaymentMethod(stripe: Stripe, customerId: str
   });
   const existingDecline = listed.data.find((pm) => pm.card?.last4 === "0341");
   if (existingDecline) {
-    await stripe.customers.update(customerId, {
-      invoice_settings: { default_payment_method: existingDecline.id },
-    });
     return existingDecline.id;
   }
 
-  let paymentMethodId = STRIPE_FAIL_PAYMENT_METHOD;
   try {
     await attachPaymentMethodToCustomer(stripe, STRIPE_FAIL_PAYMENT_METHOD, customerId);
+    return STRIPE_FAIL_PAYMENT_METHOD;
   } catch {
     const created = await stripe.paymentMethods.create({
       type: "card",
       card: { token: STRIPE_FAIL_CARD_TOKEN },
     });
     await attachPaymentMethodToCustomer(stripe, created.id, customerId);
-    paymentMethodId = created.id;
+    return created.id;
   }
+}
+
+/** Customer invoice_settings + subscription default_payment_method for renewal attempts. */
+async function ensureFailingPaymentDefaults(
+  stripe: Stripe,
+  customerId: string,
+  subscriptionId: string,
+): Promise<string> {
+  const paymentMethodId = await resolveFailingPaymentMethodId(stripe, customerId);
 
   await stripe.customers.update(customerId, {
     invoice_settings: { default_payment_method: paymentMethodId },
   });
+
+  await stripe.subscriptions.update(subscriptionId, {
+    default_payment_method: paymentMethodId,
+  });
+
   return paymentMethodId;
 }
 
 /**
- * Dev-only: failed renewal via Stripe (failing PM + invoice pay), then sync from Stripe.
- * Matches invoice.payment_failed + customer.subscription.updated with status past_due.
+ * Dev-only: trigger a real subscription renewal invoice (billing cycle anchor now),
+ * let payment fail, sync past_due from Stripe.
  */
 export async function simulateMembershipRenewalPaymentFailed(userId: string) {
+  if (process.env.NODE_ENV !== "development") {
+    throw new Error("Dev subscription simulate is only available in development.");
+  }
+
   const sub = await prisma.membershipSubscription.findUnique({ where: { userId } });
   if (!sub) {
     throw new Error("No MembershipSubscription row for this user.");
@@ -112,21 +126,26 @@ export async function simulateMembershipRenewalPaymentFailed(userId: string) {
   }
 
   const stripe = getStripe();
-  await ensureDefaultFailingPaymentMethod(stripe, sub.stripeCustomerId);
+  const failingPaymentMethodId = await ensureFailingPaymentDefaults(
+    stripe,
+    sub.stripeCustomerId,
+    sub.stripeSubscriptionId,
+  );
 
-  let invoice = await stripe.invoices.create({
-    customer: sub.stripeCustomerId,
-    subscription: sub.stripeSubscriptionId,
+  await stripe.subscriptions.update(sub.stripeSubscriptionId, {
+    default_payment_method: failingPaymentMethodId,
+    billing_cycle_anchor: "now",
+    proration_behavior: "none",
+    payment_behavior: "allow_incomplete",
   });
-  invoice = await stripe.invoices.finalizeInvoice(invoice.id);
-
-  try {
-    await stripe.invoices.pay(invoice.id);
-  } catch {
-    /* expected when the default payment method declines */
-  }
 
   const stripeSub = await stripe.subscriptions.retrieve(sub.stripeSubscriptionId);
+  if (stripeSub.status !== "past_due" && stripeSub.status !== "unpaid") {
+    throw new Error(
+      `Expected Stripe subscription past_due after renewal attempt; got ${stripeSub.status}.`,
+    );
+  }
+
   await applyMembershipSubscriptionFromStripe({
     userId,
     subscription: stripeSub,

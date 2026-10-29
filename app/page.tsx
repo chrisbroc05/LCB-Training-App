@@ -18,6 +18,9 @@ import {
 import { toVimeoEmbedUrl } from "@/lib/vimeo";
 import TestimonialsSection from "@/components/TestimonialsSection";
 import PublicMembershipLevelsSection from "@/app/components/PublicMembershipLevelsSection";
+import PlaybookCoreMemberUnlockActions from "@/app/playbook/PlaybookCoreMemberUnlockActions";
+import { prisma } from "@/lib/prisma";
+import { shouldShowPlaybookCorePlusUpsell } from "@/lib/playbook-core-upsell-shared";
 
 const physicalTrainingPillars = [
   {
@@ -94,6 +97,15 @@ function CheckIcon() {
 export default async function Home() {
   const session = await getServerSession(authOptions);
   const isLoggedIn = Boolean(session?.user);
+  const membershipLevel = session?.user?.id
+    ? (
+        await prisma.user.findUnique({
+          where: { id: session.user.id },
+          select: { membershipLevel: true },
+        })
+      )?.membershipLevel ?? null
+    : null;
+  const showPlaybookCoreUpsell = shouldShowPlaybookCorePlusUpsell(membershipLevel);
 
   return (
     <>
@@ -238,12 +250,16 @@ export default async function Home() {
               <p className="mt-2 text-sm leading-relaxed text-zinc-400">
                 {PLAYBOOK_STANDALONE_DESCRIPTION}
               </p>
-              <Link
-                href="/playbook"
-                className="mt-4 inline-flex items-center justify-center rounded-full border border-[#52B788]/60 px-4 py-2 text-sm font-semibold text-[#52B788] transition hover:bg-[#52B788]/10"
-              >
-                Unlock The Playbook
-              </Link>
+              {showPlaybookCoreUpsell ? (
+                <PlaybookCoreMemberUnlockActions layout="card" />
+              ) : (
+                <Link
+                  href="/playbook"
+                  className="mt-4 inline-flex items-center justify-center rounded-full border border-[#52B788]/60 px-4 py-2 text-sm font-semibold text-[#52B788] transition hover:bg-[#52B788]/10"
+                >
+                  Unlock The Playbook
+                </Link>
+              )}
             </article>
             <article className="rounded-xl border border-[#2b3650] bg-[#0A1628]/60 p-5">
               <h3 className="text-base font-semibold text-zinc-200">Remote Session</h3>

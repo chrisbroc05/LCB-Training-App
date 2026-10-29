@@ -7,10 +7,12 @@ import SignupWizard from "@/components/SignupWizard";
 import { postCheckout } from "@/lib/checkout-client";
 import { submitSignupRequest } from "@/lib/signup-client";
 import type { SignupRequestPayload } from "@/lib/signup-shared";
+import PlaybookCoreMemberUnlockActions from "@/app/playbook/PlaybookCoreMemberUnlockActions";
 
 type PlaybookCheckoutSectionProps = {
   isLoggedIn: boolean;
   autoStartCheckout: boolean;
+  showCorePlusUpsell?: boolean;
 };
 
 const buttonClassName =
@@ -19,6 +21,7 @@ const buttonClassName =
 function PlaybookCheckoutSectionContent({
   isLoggedIn,
   autoStartCheckout,
+  showCorePlusUpsell = false,
 }: PlaybookCheckoutSectionProps) {
   const searchParams = useSearchParams();
   const [showAccountForm, setShowAccountForm] = useState(false);
@@ -55,13 +58,13 @@ function PlaybookCheckoutSectionContent({
   };
 
   useEffect(() => {
-    if (!autoStartCheckout || !isLoggedIn || checkoutLoading) {
+    if (showCorePlusUpsell || !autoStartCheckout || !isLoggedIn || checkoutLoading) {
       return;
     }
 
     void startCheckout();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoStartCheckout, isLoggedIn]);
+  }, [autoStartCheckout, isLoggedIn, showCorePlusUpsell]);
 
   const handleSignup = async (payload: SignupRequestPayload) => {
     setAuthLoading(true);
@@ -115,6 +118,19 @@ function PlaybookCheckoutSectionContent({
 
     window.location.href = "/playbook?startCheckout=1";
   };
+
+  if (isLoggedIn && showCorePlusUpsell) {
+    return (
+      <div className="space-y-3">
+        <PlaybookCoreMemberUnlockActions layout="stacked" />
+        {searchParams.get("checkout") === "cancelled" ? (
+          <p className="text-sm text-zinc-400">
+            Checkout was cancelled. You can try again whenever you are ready.
+          </p>
+        ) : null}
+      </div>
+    );
+  }
 
   if (isLoggedIn) {
     return (

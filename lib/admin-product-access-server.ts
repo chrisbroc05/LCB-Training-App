@@ -143,6 +143,7 @@ async function grantPlaybook(
   if (!skipEmail) {
     const firstName = user.name?.trim().split(/\s+/)[0] || "there";
     await sendPlaybookPurchaseConfirmationEmail({
+      userId,
       toEmail: user.email,
       firstName,
     });

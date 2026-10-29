@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import {
-  PUBLIC_MEMBERSHIP_LEVELS_ENABLED,
+  isPublicMembershipLevelsEnabled,
   getUpgradeLabelForLevel,
 } from "../lib/membership-levels-shared";
 import {
@@ -13,8 +13,10 @@ import {
   getReviewAllowance,
   getWorkoutAccessMode,
   hasFullDrillLibraryAccess,
+  hasPersonalProgramDashboard,
   resolveEffectiveLevel,
 } from "../lib/access-shared";
+import { canAccessProgramDashboard } from "../lib/program-access-shared";
 import { getCoachingQuotaDisplayCopy } from "../lib/coaching-quota-display-shared";
 import { formatAdminMemberPlanLabel } from "../lib/member-plan-labels-shared";
 import { userHasInactiveOrgTeamAssignment } from "../lib/org-team-shared";
@@ -23,8 +25,18 @@ import {
   trialEndInstantFromDateInput,
   trialStartInstantFromDateInput,
 } from "../lib/org-trial-dates-shared";
-import { getProgramDay, getCycleProgramDay, PROGRAM_DAY_COUNT } from "../lib/program-schedule";
-import { parseProgramDateKey } from "../lib/program-schedule";
+import {
+  getProgramDay,
+  getCycleProgramDay,
+  getProgramDayNumberForEnrollmentDate,
+  isProgramCalendarDayAfterFixedEnd,
+  PROGRAM_DAY_COUNT,
+  parseProgramDateKey,
+} from "../lib/program-schedule";
+import {
+  isPrismaTransientError,
+  isPrismaUniqueViolation,
+} from "../lib/prisma-retry-shared";
 import { toPlaybookEntitlementFields } from "../lib/playbook-entitlements-shared";
 
 function fields(
@@ -92,6 +104,13 @@ assert.equal(
 );
 assert.equal(hasFullDrillLibraryAccess(fields("FREE", { level: "PLUS" })), true);
 
+console.log("test-access: personal program dashboard");
+assert.equal(hasPersonalProgramDashboard(fields("TWELVE_WEEK")), true);
+assert.equal(hasPersonalProgramDashboard(fields("FREE", { level: "ALL_ACCESS" })), true);
+assert.equal(hasPersonalProgramDashboard(fields("FREE", { level: "PLUS" })), false);
+assert.equal(canAccessProgramDashboard(fields("FREE", { level: "ALL_ACCESS" })), true);
+assert.equal(canAccessProgramDashboard(fields("FREE", { level: "CORE" })), false);
+
 console.log("test-access: messaging");
 assert.equal(canMessageCoach(fields("FREE", { level: "CORE" })), false);
 assert.equal(canMessageCoach(fields("FREE", { level: "PLUS" })), true);
@@ -150,9 +169,35 @@ assert.equal(getCycleProgramDay(PROGRAM_DAY_COUNT), PROGRAM_DAY_COUNT);
 const fixed85 = getProgramDay({ startDate: start, planMode: "FIXED_12_WEEK" }, parseProgramDateKey("2026-03-30"));
 assert.equal(fixed85.isComplete, true);
 
+assert.equal(
+  getProgramDayNumberForEnrollmentDate(
+    { startDate: start, planMode: "OPEN_ENDED" },
+    "2026-03-30",
+  ),
+  getCycleProgramDay(85),
+);
+assert.equal(
+  isProgramCalendarDayAfterFixedEnd({ startDate: start, planMode: "OPEN_ENDED" }, "2027-01-01"),
+  false,
+);
+assert.equal(
+  isProgramCalendarDayAfterFixedEnd({ startDate: start, planMode: "FIXED_12_WEEK" }, "2026-04-01"),
+  true,
+);
+
+console.log("test-access: prisma retry helpers");
+assert.equal(isPrismaTransientError({ code: "P2024" }), true);
+assert.equal(isPrismaTransientError({ message: "Operation has timed out" }), true);
+assert.equal(isPrismaUniqueViolation({ code: "P2002" }), true);
+
 console.log("test-access: public marketing gate");
-assert.equal(PUBLIC_MEMBERSHIP_LEVELS_ENABLED, true);
+assert.equal(isPublicMembershipLevelsEnabled(), false);
+assert.equal(getUpgradeLabelForLevel("PLUS"), "Upgrade for more access in the app.");
+process.env.PUBLIC_MEMBERSHIP_LEVELS_ENABLED = "true";
+assert.equal(isPublicMembershipLevelsEnabled(), true);
 assert.match(getUpgradeLabelForLevel("PLUS"), /Available with Plus/);
+delete process.env.PUBLIC_MEMBERSHIP_LEVELS_ENABLED;
+delete process.env.NEXT_PUBLIC_MEMBERSHIP_LEVELS_ENABLED;
 
 console.log("test-access: org trial");
 const trialStart = trialStartInstantFromDateInput("2026-10-23");

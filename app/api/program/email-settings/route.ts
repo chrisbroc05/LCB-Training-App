@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { serializeProgramEnrollment } from "@/lib/program-enrollment";
+import { assertUserCanAccessProgram } from "@/lib/program-membership-gate-server";
 import { validateSecondEmail } from "@/lib/second-email-shared";
 import { prisma } from "@/lib/prisma";
 
@@ -9,6 +10,11 @@ export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const accessResult = await assertUserCanAccessProgram(session.user.id);
+  if (!accessResult) {
+    return NextResponse.json({ error: "Program access required." }, { status: 403 });
   }
 
   const user = await prisma.user.findUnique({
@@ -36,14 +42,15 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { membershipTier: true, email: true },
-  });
-
-  if (!user || user.membershipTier !== "TWELVE_WEEK") {
+  const accessResult = await assertUserCanAccessProgram(session.user.id);
+  if (!accessResult) {
     return NextResponse.json({ error: "Program access required." }, { status: 403 });
   }
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { email: true },
+  });
 
   const existing = await prisma.programEnrollment.findUnique({
     where: { userId: session.user.id },
@@ -97,7 +104,7 @@ export async function PATCH(request: Request) {
     } else if (typeof body.parentEmail === "string") {
       const validated = validateSecondEmail({
         secondEmail: body.parentEmail,
-        accountEmail: user.email,
+        accountEmail: user?.email ?? session.user.email ?? "",
       });
       if (!validated.ok) {
         return NextResponse.json({ error: validated.error }, { status: 400 });

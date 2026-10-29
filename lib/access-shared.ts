@@ -111,7 +111,7 @@ function parseExpiry(value: Date | string | null | undefined): Date | null {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
-function activeMembershipLevel(user: AccessUserFields, now = new Date()): MembershipLevelKey | null {
+export function activeMembershipLevel(user: AccessUserFields, now = new Date()): MembershipLevelKey | null {
   if (!user.membershipLevel) {
     return null;
   }
@@ -208,14 +208,20 @@ export function canViewDrill(context: DrillViewAccessContext, drillId: string, n
 
 export function canViewPlaybook(user: AccessUserFields, now = new Date()): boolean {
   const effective = resolveEffectiveLevel(user, now);
-  return (
+  if (
     effective === "TWELVE_WEEK" ||
     effective === "ALL_ACCESS" ||
     effective === "PLUS" ||
     effective === "PLAYBOOK" ||
     effective === "LEGACY_ELITE" ||
     effective === "LEGACY_MEMORABLE"
-  );
+  ) {
+    return true;
+  }
+  if (user.membershipTier === "BASIC" && activeMembershipLevel(user, now)) {
+    return true;
+  }
+  return false;
 }
 
 export type WorkoutAccessMode = "starter_in_app" | "full_programs" | "none";

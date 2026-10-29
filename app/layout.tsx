@@ -3,7 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { canAccessCoachingNav, type DatabaseTier } from "@/lib/membership";
+import { type DatabaseTier } from "@/lib/membership";
 import { isAdminEmail } from "@/lib/admin";
 import {
   loadLoggedInLayoutAccess,
@@ -18,8 +18,6 @@ import PWAInstallHint from "@/components/PWAInstallHint";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 import LegalAgreementGate from "@/components/LegalAgreementGate";
 import OrgTeamReselectBanner from "@/app/components/OrgTeamReselectBanner";
-import MembershipPaymentPastDueBanner from "@/app/components/MembershipPaymentPastDueBanner";
-import { loadMembershipPaymentBanner } from "@/lib/membership-payment-banner-server";
 import Under13ParentConsentGate from "@/components/Under13ParentConsentGate";
 import "./globals.css";
 
@@ -59,10 +57,9 @@ export default async function RootLayout({
   let hasPlaybookAccess = false;
   let hasMemberDownloadsAccess = false;
   let hasProgramEnrollment = false;
+  let hasCoachingAccess = false;
   let orgTrialHeader: OrgTrialHeaderSummary | null = null;
-  let membershipPaymentBanner: { graceEndsLabel: string } | null = null;
   if (session?.user?.id) {
-    membershipPaymentBanner = await loadMembershipPaymentBanner(session.user.id);
     const layoutAccess = await loadLoggedInLayoutAccess(session.user.id);
     membershipTier = layoutAccess.membershipTier;
     currentPlanLabel = layoutAccess.currentPlanLabel;
@@ -70,10 +67,9 @@ export default async function RootLayout({
     hasPlaybookAccess = layoutAccess.hasPlaybookAccess;
     hasMemberDownloadsAccess = layoutAccess.hasMemberDownloadsAccess;
     hasProgramEnrollment = layoutAccess.hasProgramEnrollment;
+    hasCoachingAccess = layoutAccess.hasCoachingAccess;
     orgTrialHeader = layoutAccess.orgTrialHeader;
   }
-
-  const hasCoachingAccess = canAccessCoachingNav(membershipTier);
   const hasAdminAccess = isAdminEmail(session?.user?.email);
 
   return (
@@ -106,9 +102,6 @@ export default async function RootLayout({
       </head>
       <body className="min-h-full flex flex-col bg-black text-zinc-100">
         {session?.user?.id ? <OrgTeamReselectBanner userId={session.user.id} /> : null}
-        {membershipPaymentBanner ? (
-          <MembershipPaymentPastDueBanner graceEndsLabel={membershipPaymentBanner.graceEndsLabel} />
-        ) : null}
         <AppSplashScreen />
         <SiteShell
           isLoggedIn={Boolean(session?.user)}

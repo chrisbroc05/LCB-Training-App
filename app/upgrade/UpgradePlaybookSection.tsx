@@ -1,13 +1,29 @@
+import { getServerSession } from "next-auth";
 import UpgradeActions from "@/app/upgrade/UpgradeActions";
+import PlaybookCoreMemberUnlockActions from "@/app/playbook/PlaybookCoreMemberUnlockActions";
+import { authOptions } from "@/lib/auth";
 import {
   PLAYBOOK_NAME,
   PLAYBOOK_PURCHASE_PRICE_SUBTITLE,
 } from "@/lib/playbook-branding";
 import { membershipTiers } from "@/lib/membership";
+import { prisma } from "@/lib/prisma";
+import { shouldShowPlaybookCorePlusUpsell } from "@/lib/playbook-core-upsell-shared";
 
 const playbookTier = membershipTiers.find((tier) => tier.key === "basic")!;
 
-export default function UpgradePlaybookSection() {
+export default async function UpgradePlaybookSection() {
+  const session = await getServerSession(authOptions);
+  const membershipLevel = session?.user?.id
+    ? (
+        await prisma.user.findUnique({
+          where: { id: session.user.id },
+          select: { membershipLevel: true },
+        })
+      )?.membershipLevel ?? null
+    : null;
+  const showCorePlusUpsell = shouldShowPlaybookCorePlusUpsell(membershipLevel);
+
   return (
     <section className="mt-8">
       <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-5 sm:p-6">
@@ -26,7 +42,11 @@ export default function UpgradePlaybookSection() {
             </li>
           ))}
         </ul>
-        <UpgradeActions tier="BASIC" />
+        {showCorePlusUpsell ? (
+          <PlaybookCoreMemberUnlockActions layout="stacked" afterPlusUpgradeRedirect="/upgrade" />
+        ) : (
+          <UpgradeActions tier="BASIC" />
+        )}
       </article>
     </section>
   );

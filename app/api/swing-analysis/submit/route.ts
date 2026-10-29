@@ -6,8 +6,13 @@ import type { DatabaseTier } from "@/lib/membership";
 import { formatEffectiveAccessLabel, resolveEffectiveLevel } from "@/lib/access-shared";
 import {
   consumeCoachingSubmission,
+  ensureCoachingSubmissionPeriod,
   getCoachingSubmissionLimitError,
 } from "@/lib/coaching-submissions";
+import {
+  coachingPoolParamsFromValidation,
+  resolveCoachingSubmissionPoolContext,
+} from "@/lib/coaching-submission-pool-server";
 import {
   getSwingSubmissionConfirmationVariant,
   shouldHideSwingResponsePreference,
@@ -47,6 +52,7 @@ type SwingSubmitRequestBody = {
   videoUrl?: string;
   r2Key?: string;
   submittedVideoPosterR2Key?: string;
+  coachingAllowancePool?: string;
 };
 
 async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
@@ -79,6 +85,8 @@ function parseSubmitRequestBody(body: unknown): SwingSubmitRequestBody | null {
       typeof record.submittedVideoPosterR2Key === "string"
         ? record.submittedVideoPosterR2Key
         : undefined,
+    coachingAllowancePool:
+      typeof record.coachingAllowancePool === "string" ? record.coachingAllowancePool : undefined,
   };
 }
 
@@ -194,8 +202,23 @@ export async function POST(request: Request) {
       ? resolveEffectiveLevel(mergeOrgIntoAccessFields(accessUser))
       : "FREE";
 
+    const coachingUserFields = await ensureCoachingSubmissionPeriod(userId);
+    if (!coachingUserFields) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const poolContext = resolveCoachingSubmissionPoolContext(
+      coachingUserFields,
+      body?.coachingAllowancePool,
+      "swing",
+    );
+    if (!poolContext.validation.ok) {
+      return NextResponse.json({ error: poolContext.validation.error }, { status: 400 });
+    }
+    const poolParams = coachingPoolParamsFromValidation(coachingUserFields, "swing", poolContext.validation);
+
     let normalizedResponsePreference = responsePreference;
-    if (shouldHideSwingResponsePreference(effectiveLevel)) {
+    const usingPlaybookPool = poolParams.requestedPool === "playbook-lifetime";
+    if (shouldHideSwingResponsePreference(effectiveLevel) && !usingPlaybookPool) {
       normalizedResponsePreference = "WRITTEN_RESPONSE";
     }
 
@@ -212,6 +235,7 @@ export async function POST(request: Request) {
       prisma.$transaction(async (tx) => {
         const consumed = await consumeCoachingSubmission(tx, userId, {
           freeSwingAnalysisResponseMode,
+          requestedPool: poolParams.requestedPool,
         });
         if (!consumed.ok) {
           return {

@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { TWELVE_WEEK_PROGRAM_NAME } from "@/lib/twelve-week-program";
-import { TWELVE_WEEK_KICKOFF_AND_CHECKINS_SHORT } from "@/lib/twelve-week-program-copy-shared";
+import { TWELVE_WEEK_PROGRAM_NAME, TWELVE_WEEK_PROGRAM_PRICE_LABEL } from "@/lib/twelve-week-program";
+import { TWELVE_WEEK_PROGRAM_UPSELL_SENTENCE } from "@/lib/twelve-week-program-copy-shared";
 
 type FreeMemberWhileYouWaitCardsProps = {
   programHref?: string;
@@ -18,8 +18,7 @@ export default function FreeMemberWhileYouWaitCards({
       <article className="flex h-full flex-col rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-5 sm:p-6">
         <h3 className="text-lg font-semibold text-zinc-100">{TWELVE_WEEK_PROGRAM_NAME}</h3>
         <p className="mt-3 flex-1 text-sm leading-relaxed text-zinc-300">
-          Get unlimited coaching submissions, full Playbook access, workout programs, and{" "}
-          {TWELVE_WEEK_KICKOFF_AND_CHECKINS_SHORT}.
+          {TWELVE_WEEK_PROGRAM_UPSELL_SENTENCE} {TWELVE_WEEK_PROGRAM_PRICE_LABEL}.
         </p>
         <Link
           href={programHref}

@@ -18,6 +18,7 @@ import type { ProgramFocusArea, ProgramEquipmentOption } from "@/lib/program-enr
 import { computeProgramStreak } from "@/lib/program-streak-shared";
 import {
   addChicagoCalendarDays,
+  buildProgramDayInfo,
   formatProgramStartDateKey,
   getChicagoMondayStart,
   getChicagoSundayStart,
@@ -26,8 +27,9 @@ import {
   getDateForProgramDay,
   getFirstSundayOnOrAfterStart,
   getProgramDay,
-  getProgramDayNumberForDate,
+  getProgramDayNumberForEnrollmentDate,
   getProgramEndDateKey,
+  isProgramCalendarDayAfterFixedEnd,
   getProgramDayStartProgramDay,
   getWeekdayLabelForProgramDay,
   getWeekdayNameForProgramDay,
@@ -55,7 +57,9 @@ import {
   markTaskFeedbackSeenForProgramDay,
 } from "@/lib/task-feedback-server";
 import { resolveTaskTitle } from "@/lib/admin-program-player";
+import { getCalendlyBookingUrl } from "@/lib/calendly-booking";
 import { prisma } from "@/lib/prisma";
+import { defaultProgramPlanMode } from "@/lib/program-plan-mode-shared";
 
 export type ProgramTaskCompletionRecord = {
   taskKey: string;
@@ -131,11 +135,23 @@ export function toEnrollmentPlanInput(enrollment: {
 }
 
 export function buildProgramDayInfoForProgramDay(
-  enrollment: { startDate: Date | null; planMode?: import("@/lib/program-plan-mode-shared").ProgramPlanMode | null },
+  enrollment: {
+    startDate: Date | null;
+    planMode?: import("@/lib/program-plan-mode-shared").ProgramPlanMode | null;
+  },
   programDay: number,
 ): ProgramDayInfo {
   if (!enrollment.startDate || programDay <= 0) {
     return getProgramDay(enrollment);
+  }
+
+  if ((enrollment.planMode ?? defaultProgramPlanMode()) === "OPEN_ENDED") {
+    return buildProgramDayInfo({
+      startDate: enrollment.startDate,
+      programDay,
+      isBeforeStart: false,
+      isComplete: false,
+    });
   }
 
   const target = getDateForProgramDay(enrollment.startDate, programDay);
@@ -224,14 +240,16 @@ export async function buildProgramTodayPayload(params: {
   now?: Date;
 }) {
   const now = params.now ?? new Date();
-  const todayInfo = getProgramDay(
-    { startDate: params.enrollment.startDate, planMode: params.enrollment.planMode },
-    now,
-  );
+  const enrollmentSchedule = {
+    startDate: params.enrollment.startDate,
+    planMode: params.enrollment.planMode,
+  };
+  const planMode = params.enrollment.planMode ?? defaultProgramPlanMode();
+  const todayInfo = getProgramDay(enrollmentSchedule, now);
   const viewedProgramDay = params.viewedProgramDay ?? todayInfo.programDay;
   const viewedDayInfo =
     viewedProgramDay > 0
-      ? buildProgramDayInfoForProgramDay({ startDate: params.enrollment.startDate }, viewedProgramDay)
+      ? buildProgramDayInfoForProgramDay(enrollmentSchedule, viewedProgramDay)
       : todayInfo;
 
   const planInput = toEnrollmentPlanInput(params.enrollment);
@@ -252,7 +270,7 @@ export async function buildProgramTodayPayload(params: {
   const previewDayInfo =
     todayInfo.isBeforeStart && params.enrollment.startDate
       ? buildProgramDayInfoForProgramDay(
-          { startDate: params.enrollment.startDate },
+          enrollmentSchedule,
           getProgramDayStartProgramDay(params.enrollment.startDate),
         )
       : null;
@@ -385,10 +403,7 @@ export async function buildProgramTodayPayload(params: {
   const completedWorkDays = new Set<number>();
   if (planInput && params.enrollment.startDate) {
     for (let day = 1; day <= Math.min(todayInfo.programDay, PROGRAM_DAY_COUNT); day += 1) {
-      const dayInfo = buildProgramDayInfoForProgramDay(
-        { startDate: params.enrollment.startDate },
-        day,
-      );
+      const dayInfo = buildProgramDayInfoForProgramDay(enrollmentSchedule, day);
 
       if (dayInfo.isBeforeStart || dayInfo.dayOfWeek === 7) {
         continue;
@@ -442,7 +457,8 @@ export async function buildProgramTodayPayload(params: {
   const calendarMonday = getChicagoMondayStart(now);
   const calendarMondayKey = formatProgramStartDateKey(calendarMonday);
   const todayKey = getChicagoTodayDateKey(now);
-  const endDateKey = startDate ? getProgramEndDateKey(startDate) : null;
+  const endDateKey =
+    startDate && planMode !== "OPEN_ENDED" ? getProgramEndDateKey(startDate) : null;
   const weekProgramDays: number[] = [];
 
   for (let offset = 0; offset < 7; offset += 1) {
@@ -452,7 +468,7 @@ export async function buildProgramTodayPayload(params: {
       !isDateBeforeEnrollmentStart(startDate, dateKey) &&
       (!endDateKey || dateKey <= endDateKey)
     ) {
-      const programDay = getProgramDayNumberForDate(startDate, dateKey);
+      const programDay = getProgramDayNumberForEnrollmentDate(enrollmentSchedule, dateKey);
       if (programDay >= 1 && programDay <= PROGRAM_DAY_COUNT) {
         weekProgramDays.push(programDay);
       }
@@ -477,10 +493,10 @@ export async function buildProgramTodayPayload(params: {
     const isToday = dateKey === todayKey;
 
     const isBeforeStart = startDate ? isDateBeforeEnrollmentStart(startDate, dateKey) : true;
-    const isAfterEnd = Boolean(endDateKey && dateKey > endDateKey);
+    const isAfterEnd = isProgramCalendarDayAfterFixedEnd(enrollmentSchedule, dateKey);
     const programDay =
       startDate && !isBeforeStart && !isAfterEnd
-        ? getProgramDayNumberForDate(startDate, dateKey)
+        ? getProgramDayNumberForEnrollmentDate(enrollmentSchedule, dateKey)
         : 0;
 
     if (isBeforeStart || isAfterEnd || programDay > PROGRAM_DAY_COUNT || programDay <= 0) {
@@ -498,10 +514,7 @@ export async function buildProgramTodayPayload(params: {
       continue;
     }
 
-    const dayInfo = buildProgramDayInfoForProgramDay(
-      { startDate: params.enrollment.startDate },
-      programDay,
-    );
+    const dayInfo = buildProgramDayInfoForProgramDay(enrollmentSchedule, programDay);
 
     const editable =
       yesterdayInfo.programDay > 0 &&
@@ -663,7 +676,8 @@ export async function buildProgramTodayPayload(params: {
           )
         : "",
     isBeforeStart: todayInfo.isBeforeStart,
-    isComplete: todayInfo.isComplete,
+    isComplete: todayInfo.isComplete && planMode !== "OPEN_ENDED",
+    kickoffBookingUrl: getCalendlyBookingUrl(),
     isRestDay: viewedDayInfo.dayOfWeek === 7,
     canCompleteTasks,
     isViewingYesterday:

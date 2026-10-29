@@ -41,6 +41,18 @@ function getNotificationRecipient() {
   return notificationEmail;
 }
 
+export async function sendCoachNotificationEmail(params: {
+  subject: string;
+  text: string;
+}) {
+  await sendNotificationEmail({
+    from: process.env.NOTIFICATION_EMAIL,
+    to: getNotificationRecipient(),
+    subject: params.subject,
+    text: params.text,
+  });
+}
+
 function isHttpUrl(value: string) {
   return /^https?:\/\//i.test(value.trim());
 }
@@ -134,13 +146,12 @@ function buildSubmissionNotificationHtml(params: {
 
 export async function sendNewMemberNotification(params: {
   userEmail: string;
-  membershipTier: DatabaseTier;
+  checkoutLabel?: string;
 }) {
-  await sendNotificationEmail({
-    from: process.env.NOTIFICATION_EMAIL,
-    to: getNotificationRecipient(),
+  const checkout = params.checkoutLabel?.trim() || "Free";
+  await sendCoachNotificationEmail({
     subject: "New Member Signed Up",
-    text: `A new member signed up.\n\nEmail: ${params.userEmail}\nMembership Tier: ${params.membershipTier}`,
+    text: `A new member signed up.\n\nEmail: ${params.userEmail}\nCheckout: ${checkout}`,
   });
 }
 
@@ -955,6 +966,7 @@ export async function sendAccountDeletionRequestNotification(params: {
 }
 
 export async function sendPlaybookPurchaseConfirmationEmail(params: {
+  userId: string;
   toEmail: string;
   firstName: string;
 }) {
@@ -999,14 +1011,32 @@ LCB Training`;
       )}" style="color:#2D6A4F;">${escapeHtml(drillLibraryUrl)}</a></p>`,
   });
 
+  const fromEmail = process.env.NOTIFICATION_EMAIL;
+  if (!fromEmail) {
+    throw new Error("NOTIFICATION_EMAIL is required for Playbook purchase confirmation emails.");
+  }
+
   await sendNotificationEmail({
-    from: process.env.NOTIFICATION_EMAIL,
+    from: fromEmail,
     to: params.toEmail,
     replyTo: EMAIL_REPLY_TO,
     subject,
     text,
     html,
   });
+
+  const { resolveParentCopyEmail } = await import("@/lib/parent-copy-email-server");
+  const parentEmail = await resolveParentCopyEmail(params.userId);
+  if (parentEmail) {
+    await sendNotificationEmail({
+      from: fromEmail,
+      to: parentEmail,
+      replyTo: EMAIL_REPLY_TO,
+      subject,
+      text,
+      html,
+    });
+  }
 }
 
 export async function sendRemoteSessionPurchaseConfirmationEmail(params: {

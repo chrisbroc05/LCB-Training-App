@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { isMembershipLevelKey } from "@/lib/membership-levels-shared";
+import {
+  isMembershipLevelKey,
+  isPublicMembershipLevelsEnabled,
+  MEMBERSHIP_LEVELS_COMING_SOON_MESSAGE,
+} from "@/lib/membership-levels-shared";
 import { requireCurrentTermsForCheckout } from "@/lib/legal-checkout-server";
 import { createMembershipLevelCheckoutSession } from "@/lib/stripe-membership-checkout-server";
 
@@ -20,6 +24,13 @@ export async function POST(request: Request) {
     const termsError = await requireCurrentTermsForCheckout(session.user.id);
     if (termsError) {
       return termsError;
+    }
+
+    if (!isPublicMembershipLevelsEnabled()) {
+      return NextResponse.json(
+        { error: MEMBERSHIP_LEVELS_COMING_SOON_MESSAGE, code: "MEMBERSHIP_LEVELS_COMING_SOON" },
+        { status: 503 },
+      );
     }
 
     const body = (await request.json()) as Body;
@@ -43,6 +54,21 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: "All-Access is full right now. Join the waitlist instead.", code: "ALL_ACCESS_CAP_FULL" },
         { status: 409 },
+      );
+    }
+    if (message === "MEMBERSHIP_LEVELS_COMING_SOON") {
+      return NextResponse.json(
+        { error: MEMBERSHIP_LEVELS_COMING_SOON_MESSAGE, code: "MEMBERSHIP_LEVELS_COMING_SOON" },
+        { status: 503 },
+      );
+    }
+    if (message === "MEMBERSHIP_PRICE_NOT_CONFIGURED" || message.startsWith("MEMBERSHIP_PRICE_NOT_CONFIGURED:")) {
+      return NextResponse.json(
+        {
+          error: "Membership checkout is not available right now. Please try again later.",
+          code: "MEMBERSHIP_PRICE_NOT_CONFIGURED",
+        },
+        { status: 503 },
       );
     }
     if (message.includes("organization") || message.includes("Organization")) {

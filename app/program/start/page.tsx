@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import ProgramStartWizard from "@/app/program/start/ProgramStartWizard";
 import { authOptions } from "@/lib/auth";
+import { toAccessUserFields, userAccessSelect } from "@/lib/access-server";
+import { canAccessProgramDashboard } from "@/lib/program-access-shared";
 import { ensureProgramEnrollmentForUser, serializeProgramEnrollment } from "@/lib/program-enrollment";
 import { serializeInPersonTrainingInfo } from "@/lib/in-person-training-shared";
 import { prisma } from "@/lib/prisma";
@@ -28,7 +30,7 @@ export default async function ProgramStartPage({ searchParams }: ProgramStartPag
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
     select: {
-      membershipTier: true,
+      ...userAccessSelect,
       name: true,
       email: true,
       acceptedAsParent: true,
@@ -41,7 +43,7 @@ export default async function ProgramStartPage({ searchParams }: ProgramStartPag
     },
   });
 
-  if (!user || user.membershipTier !== "TWELVE_WEEK") {
+  if (!user || !canAccessProgramDashboard(toAccessUserFields(user))) {
     redirect("/program");
   }
 
@@ -58,7 +60,9 @@ export default async function ProgramStartPage({ searchParams }: ProgramStartPag
   }
 
   const resolvedSearchParams = searchParams ? await searchParams : {};
-  const checkoutSuccess = resolvedSearchParams.checkout === "success";
+  const checkoutParam = resolvedSearchParams.checkout;
+  const checkoutSuccess =
+    checkoutParam === "success" || checkoutParam === "membership-success";
 
   return (
     <ProgramStartWizard

@@ -32,6 +32,7 @@ import {
 import {
   canAccessDrillLibraryBrowse,
   canDownloadWorkoutPdfs,
+  canMessageCoach,
   canViewPlaybook,
   getWorkoutAccessMode,
   resolveEffectiveLevel,
@@ -39,7 +40,12 @@ import {
 } from "@/lib/access-shared";
 import { toAccessUserFields, userAccessSelect } from "@/lib/access-server";
 import { formatMemberPlanLabel } from "@/lib/member-plan-labels-shared";
+import { canAccessProgramDashboard } from "@/lib/program-access-shared";
 import { shouldShowProgramSetupBanner } from "@/lib/program-setup-shared";
+import { MEMBERSHIP_LEVELS, formatMembershipLevelLabel, type MembershipLevelKey } from "@/lib/membership-levels-shared";
+import { buildPlaybookPurchaseWelcomeSummary } from "@/lib/playbook-dashboard-copy-shared";
+import { activeMembershipLevel } from "@/lib/access-shared";
+import { getPlaybookLifetimeSubmissionLimit } from "@/lib/playbook-entitlements-shared";
 import { needsInPersonEmergencyContactReminder } from "@/lib/in-person-training-shared";
 import InPersonEmergencyReminderCard from "@/components/InPersonEmergencyReminderCard";
 type DashboardPageProps = {
@@ -103,7 +109,11 @@ function getQuickLinks(access: AccessUserFields, hasFreeSubmissionRemaining: boo
     });
   }
 
-  if (membershipTier === "TWELVE_WEEK" || membershipTier === "MEMORABLE" || membershipTier === "ELITE") {
+  if (
+    canMessageCoach(access) ||
+    membershipTier === "MEMORABLE" ||
+    membershipTier === "ELITE"
+  ) {
     links.push({
       href: "/coaching-submissions",
       label: "Coaching Submissions",
@@ -124,11 +134,25 @@ function getQuickLinks(access: AccessUserFields, hasFreeSubmissionRemaining: boo
     });
   }
 
-  if (membershipTier === "BASIC") {
+  const phase2Level = activeMembershipLevel(access);
+  if (phase2Level === "CORE" || phase2Level === "PLUS") {
     links.push({
       href: "/coaching-submissions",
       label: "Coaching Submissions",
-      description: "Use your 2 lifetime Playbook submissions for swing video or mindset support.",
+      description:
+        membershipTier === "BASIC"
+          ? "Swing reports and Playbook submissions are separate pools."
+          : "Submit swing videos or mindset requests for coach feedback.",
+    });
+  } else if (membershipTier === "BASIC") {
+    const limit = getPlaybookLifetimeSubmissionLimit(access);
+    links.push({
+      href: "/coaching-submissions",
+      label: "Coaching Submissions",
+      description:
+        limit != null
+          ? `Use your ${limit} lifetime Playbook submission${limit === 1 ? "" : "s"} for swing video or mindset support.`
+          : "Use your Playbook coaching submissions for swing video or mindset support.",
     });
   }
 
@@ -207,10 +231,19 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const membershipTier = userRecord.membershipTier as DatabaseTier;
   const access = toAccessUserFields(userRecord);
   const effectiveLevel = resolveEffectiveLevel(access);
+  const isPersonalProgramMember = canAccessProgramDashboard(access);
   const coachingFields = await ensureCoachingSubmissionPeriod(session.user.id);
   const coachingAvailability = await getCoachingSubmissionAvailabilityForUser(session.user.id);
   const freeSubmissionUsed = userRecord.freeSubmissionUsed;
+  const membershipSub = await prisma.membershipSubscription.findUnique({
+    where: { userId: session.user.id },
+  });
   const membershipLabel = formatMemberPlanLabel(access);
+  const membershipCardLabel = membershipSub
+    ? formatMembershipLevelLabel(membershipSub.level as MembershipLevelKey)
+    : membershipLabel;
+  const phase2Level = activeMembershipLevel(access);
+  const playbookWelcomeSummary = buildPlaybookPurchaseWelcomeSummary(access);
   const calendlyBookingUrl = getCalendlyBookingUrl();
   const firstName = getFirstName(userRecord.name, session.user.email);
   const quickLinks = getQuickLinks(access, effectiveLevel === "FREE" && !freeSubmissionUsed);
@@ -220,9 +253,10 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     membershipTier,
     userRecord.stripeSubscriptionId,
   );
-  const currentMonthGoalCheckin = canAccessCoachingNav(membershipTier)
-    ? await getCurrentMonthGoalCheckin(session.user.id)
-    : null;
+  const currentMonthGoalCheckin =
+    canMessageCoach(access) || canAccessCoachingNav(membershipTier)
+      ? await getCurrentMonthGoalCheckin(session.user.id)
+      : null;
 
   const unreadResponse = await prisma.notification.findFirst({
     where: {
@@ -238,8 +272,9 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     },
   });
 
-  const pendingSubmissions = canAccessCoachingNav(membershipTier)
-    ? await Promise.all([
+  const pendingSubmissions =
+    canMessageCoach(access) || canAccessCoachingNav(membershipTier)
+      ? await Promise.all([
         prisma.swingAnalysisSubmission.findMany({
           where: {
             userId: session.user.id,
@@ -277,13 +312,12 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       })
     : [];
 
-  const programEnrollment =
-    membershipTier === "TWELVE_WEEK"
-      ? await prisma.programEnrollment.findUnique({
-          where: { userId: session.user.id },
-          select: { onboardingCompletedAt: true },
-        })
-      : null;
+  const programEnrollment = isPersonalProgramMember
+    ? await prisma.programEnrollment.findUnique({
+        where: { userId: session.user.id },
+        select: { onboardingCompletedAt: true },
+      })
+    : null;
   const hasProgramEnrollmentRow = Boolean(programEnrollment);
   const showProgramSetupBanner = shouldShowProgramSetupBanner(programEnrollment);
   const showInPersonEmergencyReminder = needsInPersonEmergencyContactReminder(userRecord);
@@ -293,8 +327,9 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     keepBuildingCoaching = await loadKeepBuildingCoachingContextForUser(session.user.id);
   }
 
-  const recentResponses = canAccessCoachingNav(membershipTier)
-    ? await Promise.all([
+  const recentResponses =
+    canMessageCoach(access) || canAccessCoachingNav(membershipTier)
+      ? await Promise.all([
         prisma.swingAnalysisSubmission.findMany({
           where: {
             userId: session.user.id,
@@ -339,6 +374,9 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       <MobileDashboardView
         userId={session.user.id}
         membershipTier={membershipTier}
+        access={access}
+        isPersonalProgramMember={isPersonalProgramMember}
+        isAllAccessProgramMember={effectiveLevel === "ALL_ACCESS"}
         coachingUser={coachingFields}
         currentMonthGoalCheckin={currentMonthGoalCheckin}
         checkoutStatus={checkoutStatus}
@@ -356,14 +394,30 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
       <div className="mx-auto hidden w-full max-w-6xl px-4 py-10 sm:px-6 sm:py-14 md:block md:py-20">
       <section className="rounded-3xl border border-[#18243a] bg-[#0b1324]/80 p-5 sm:p-8">
-        {membershipTier === "BASIC" ? (
+        {membershipTier === "BASIC" && phase2Level ? (
+          <>
+            <h1 className="text-2xl font-semibold leading-tight text-zinc-100 sm:text-3xl">
+              Hey {firstName}, your Playbook is unlocked
+            </h1>
+            <p className="mt-2 text-zinc-300">{playbookWelcomeSummary}</p>
+            <p className="mt-2 text-sm text-zinc-400">
+              Your {membershipCardLabel} membership is unchanged. Allowances are listed below.
+            </p>
+          </>
+        ) : membershipTier === "BASIC" ? (
           <>
             <h1 className="text-2xl font-semibold leading-tight text-zinc-100 sm:text-3xl">
               Welcome to The Next Level Playbook. You are all set.
             </h1>
+            <p className="mt-2 text-zinc-300">{playbookWelcomeSummary}</p>
+          </>
+        ) : effectiveLevel === "ALL_ACCESS" ? (
+          <>
+            <h1 className="text-2xl font-semibold leading-tight text-zinc-100 sm:text-3xl">
+              Welcome to {MEMBERSHIP_LEVELS.ALL_ACCESS.displayName}
+            </h1>
             <p className="mt-2 text-zinc-300">
-              Your playbook, drill library, resources, and 2 lifetime coaching submissions are ready
-              whenever you are.
+              Your daily program, playbook, and coaching submissions are ready whenever you are.
             </p>
           </>
         ) : isTwelveWeekProgramMember(membershipTier) ? (
@@ -388,7 +442,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         )}
       </section>
 
-      {membershipTier === "BASIC" ? <DashboardPlaybookWelcomeCard /> : null}
+      {canViewPlaybook(access) ? <DashboardPlaybookWelcomeCard /> : null}
 
       {checkoutStatus === "success" && checkoutProduct === "playbook" && membershipTier === "BASIC" ? (
         <section className="mt-6 rounded-xl border border-[#22c55e]/40 bg-[#22c55e]/10 px-5 py-4 text-sm text-[#bafccf]">
@@ -398,7 +452,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
       {checkoutStatus === "success" &&
       checkoutProduct !== "playbook" &&
-      isTwelveWeekProgramMember(membershipTier) ? (
+      isPersonalProgramMember && effectiveLevel === "TWELVE_WEEK" ? (
         <section className="mt-6 rounded-xl border border-[#22c55e]/40 bg-[#22c55e]/10 px-5 py-4 text-sm text-[#bafccf]">
           Payment successful. Your 12-Week Coaching Program is active and your dashboard access has
           been updated.
@@ -407,7 +461,17 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
       {checkoutStatus === "success" &&
       checkoutProduct !== "playbook" &&
-      !isTwelveWeekProgramMember(membershipTier) &&
+      isPersonalProgramMember &&
+      effectiveLevel === "ALL_ACCESS" ? (
+        <section className="mt-6 rounded-xl border border-[#22c55e]/40 bg-[#22c55e]/10 px-5 py-4 text-sm text-[#bafccf]">
+          Payment successful. {MEMBERSHIP_LEVELS.ALL_ACCESS.displayName} is active. Finish program
+          setup to unlock Today and your daily plan.
+        </section>
+      ) : null}
+
+      {checkoutStatus === "success" &&
+      checkoutProduct !== "playbook" &&
+      !isPersonalProgramMember &&
       membershipTier !== "BASIC" ? (
         <section className="mt-6 rounded-xl border border-[#22c55e]/40 bg-[#22c55e]/10 px-5 py-4 text-sm text-[#bafccf]">
           Payment successful. Your membership is active and your dashboard access has been updated.
@@ -449,16 +513,28 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
             <OrgWeeklyFocusCard userId={session.user.id} />
             <OrgTrialDashboardCard userId={session.user.id} />
             <DashboardMembershipCard
-              planLabel={membershipLabel}
+              planLabel={membershipCardLabel}
               isPaidMember={isPaidMember}
               showUpgradeLink={effectiveLevel === "FREE" || effectiveLevel === "PLAYBOOK"}
               isManualMembership={isManualMembership}
               subscriptionCurrentPeriodEnd={userRecord.subscriptionCurrentPeriodEnd}
               subscriptionCancelAtPeriodEnd={userRecord.subscriptionCancelAtPeriodEnd}
+              phase2Membership={
+                membershipSub
+                  ? {
+                      level: membershipSub.level as MembershipLevelKey,
+                      status: membershipSub.status,
+                      cancelAtPeriodEnd: membershipSub.cancelAtPeriodEnd,
+                      pendingLevel: (membershipSub.pendingLevel as MembershipLevelKey | null) ?? null,
+                      currentPeriodEnd: membershipSub.currentPeriodEnd,
+                    }
+                  : null
+              }
             />
 
             <DashboardCoachingCard
               membershipTier={membershipTier}
+              access={access}
               coachingUser={coachingFields}
               coachingAvailability={coachingAvailability}
               freeSubmissionUsed={freeSubmissionUsed}
@@ -485,7 +561,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         </>
       )}
 
-      {!isTwelveWeekProgramMember(membershipTier) ? (
+      {!isPersonalProgramMember ? (
       <section className="mt-8">
         <h2 className="text-lg font-semibold text-zinc-100 sm:text-xl">Quick Links</h2>
         <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -503,7 +579,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       </section>
       ) : null}
 
-      {!isTwelveWeekProgramMember(membershipTier) && canAccessCoachingNav(membershipTier) ? (
+      {!isPersonalProgramMember && canAccessCoachingNav(membershipTier) ? (
         <section className="mt-8 rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-lg font-semibold text-zinc-100 sm:text-xl">Coaching Submissions</h2>
@@ -570,8 +646,8 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         </section>
       ) : null}
 
-      {!isTwelveWeekProgramMember(membershipTier) ? (
-        <DashboardUpgradeSection membershipTier={membershipTier} />
+      {!isPersonalProgramMember ? (
+        <DashboardUpgradeSection membershipTier={membershipTier} access={access} />
       ) : null}
       </div>
     </>

@@ -5,8 +5,13 @@ import { authOptions } from "@/lib/auth";
 import type { DatabaseTier } from "@/lib/membership";
 import {
   consumeCoachingSubmission,
+  ensureCoachingSubmissionPeriod,
   getCoachingSubmissionLimitError,
 } from "@/lib/coaching-submissions";
+import {
+  coachingPoolParamsFromValidation,
+  resolveCoachingSubmissionPoolContext,
+} from "@/lib/coaching-submission-pool-server";
 import { getFreeSwingAnalysisResponseMode } from "@/lib/free-swing-analysis-response-server";
 import { prisma } from "@/lib/prisma";
 import { sendCoachNewSubmissionPush } from "@/lib/coach-push-instant";
@@ -125,10 +130,21 @@ export async function POST(request: Request) {
       videoPath = storedVideo.relativeUrl;
     }
 
+    const coachingUserFields = await ensureCoachingSubmissionPeriod(userId);
+    if (!coachingUserFields) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const poolContext = resolveCoachingSubmissionPoolContext(coachingUserFields, undefined, "mental");
+    if (!poolContext.validation.ok) {
+      return NextResponse.json({ error: poolContext.validation.error }, { status: 400 });
+    }
+    const poolParams = coachingPoolParamsFromValidation(coachingUserFields, "mental", poolContext.validation);
+
     const freeSwingAnalysisResponseMode = await getFreeSwingAnalysisResponseMode();
     const transactionResult = await prisma.$transaction(async (tx) => {
       const consumed = await consumeCoachingSubmission(tx, userId, {
         freeSwingAnalysisResponseMode,
+        requestedPool: poolParams.requestedPool,
       });
       if (!consumed.ok) {
         return {
@@ -148,6 +164,7 @@ export async function POST(request: Request) {
           message: validatedMessage,
           videoPath,
           responsePreference,
+          reviewTrack: consumed.reviewTrack ?? undefined,
           status: "PENDING",
         },
       });

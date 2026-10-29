@@ -1,8 +1,7 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import CoachingSubmissionQuota from "@/app/CoachingSubmissionQuota";
+import CoachingSubmissionsHub from "@/app/coaching-submissions/CoachingSubmissionsHub";
 import FreeSwingWelcomeBanner from "@/app/coaching-submissions/FreeSwingWelcomeBanner";
 import LockedFeaturePanel from "@/app/LockedFeaturePanel";
 import {
@@ -10,15 +9,14 @@ import {
   getCoachingSubmissionAvailability,
   getCoachingSubmissionLockReason,
 } from "@/lib/coaching-submissions";
-import {
-  PLAYBOOK_SUBMISSIONS_EXHAUSTED_MESSAGE,
-} from "@/lib/coaching-submissions";
+import { PLAYBOOK_SUBMISSIONS_EXHAUSTED_MESSAGE } from "@/lib/coaching-submissions";
 import {
   canAccessCoachingNav,
   getCoachingResponseTimeLabel,
   freeSubmissionUsedUpgradeMessage,
-  type DatabaseTier,
 } from "@/lib/membership";
+import { listCoachingAllowanceSummaryOptions } from "@/lib/coaching-submission-pool-shared";
+import { resolveEffectiveLevel } from "@/lib/access-shared";
 
 export default async function CoachingSubmissionsPage() {
   const session = await getServerSession(authOptions);
@@ -34,8 +32,9 @@ export default async function CoachingSubmissionsPage() {
   const membershipTier = userFields.membershipTier;
   const availability = getCoachingSubmissionAvailability(userFields);
   const lockReason = getCoachingSubmissionLockReason(userFields);
+  const effective = resolveEffectiveLevel(userFields);
 
-  if (lockReason === "playbook-used") {
+  if (lockReason === "playbook-used" && effective === "PLAYBOOK") {
     return (
       <LockedFeaturePanel
         title="Coaching Submissions"
@@ -71,59 +70,16 @@ export default async function CoachingSubmissionsPage() {
     );
   }
 
+  const summaryOptions = listCoachingAllowanceSummaryOptions(userFields);
+
   return (
     <div className="mx-auto w-full max-w-4xl px-4 py-10 sm:px-6 sm:py-14 md:py-20">
       <FreeSwingWelcomeBanner />
-      <section className="rounded-3xl border border-[#18243a] bg-[#0b1324]/80 p-5 sm:p-8">
-        <h1 className="text-2xl font-semibold leading-tight text-zinc-100 sm:text-3xl">
-          Coaching Submissions
-        </h1>
-        <p className="mt-2 text-zinc-300">
-          Choose the type of coaching support you need. Coach Broc typically responds within{" "}
-          {getCoachingResponseTimeLabel(membershipTier)}.
-        </p>
-
-        <CoachingSubmissionQuota user={userFields} />
-
-        <div className="mt-6 grid gap-4 sm:grid-cols-2">
-          <article className="rounded-xl border border-[#2b3650] bg-black/30 p-4 sm:p-5">
-            <h2 className="text-lg font-semibold text-zinc-100">Swing Video Feedback</h2>
-            <p className="mt-2 text-sm text-zinc-300">
-              Upload a swing video with context so Coach Broc can provide targeted mechanical
-              feedback.
-            </p>
-            <Link
-              href="/swing-analysis"
-              className="mt-4 inline-flex rounded-full bg-[#22c55e] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[#35db72]"
-            >
-              Submit Swing Video
-            </Link>
-          </article>
-
-          <article className="rounded-xl border border-[#2b3650] bg-black/30 p-4 sm:p-5">
-            <h2 className="text-lg font-semibold text-zinc-100">Mindset Support</h2>
-            <p className="mt-2 text-sm text-zinc-300">
-              Share what you are working through mentally for guidance on confidence, focus, and
-              composure.
-            </p>
-            <Link
-              href="/mental-game"
-              className="mt-4 inline-flex rounded-full border border-[#22c55e]/70 bg-[#22c55e]/10 px-4 py-2 text-sm font-semibold text-[#9df3bd] transition hover:bg-[#22c55e]/20"
-            >
-              Submit Mindset Request
-            </Link>
-          </article>
-        </div>
-
-        {canAccessCoachingNav(membershipTier) || membershipTier === "BASIC" ? (
-          <Link
-            href="/profile"
-            className="mt-6 inline-flex text-sm font-medium text-[#98b144] transition hover:text-[#b5d84f]"
-          >
-            View submission history ?
-          </Link>
-        ) : null}
-      </section>
+      <CoachingSubmissionsHub
+        summaryOptions={summaryOptions}
+        responseTimeLabel={getCoachingResponseTimeLabel(membershipTier)}
+        showHistoryLink={canAccessCoachingNav(membershipTier) || membershipTier === "BASIC"}
+      />
     </div>
   );
 }

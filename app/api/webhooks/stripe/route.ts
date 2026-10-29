@@ -16,6 +16,7 @@ import {
   sendRemoteSessionPurchaseConfirmationEmail,
 } from "@/lib/notifications";
 import { processStripeChargeRefund } from "@/lib/stripe-refund-server";
+import { sendTwelveWeekProgramWelcomeIfNeeded } from "@/lib/membership-welcome-email-server";
 import {
   applyMembershipSubscriptionFromStripe,
   claimStripeWebhookEvent,
@@ -23,6 +24,7 @@ import {
   recordMembershipSubscriptionInvoice,
 } from "@/lib/membership-subscription-server";
 import { isPhase2MembershipPriceId } from "@/lib/stripe-membership-prices-server";
+import { subscriptionStatusGrantsAccess } from "@/lib/membership-subscription-shared";
 import { parseMembershipLevelFromMetadata } from "@/lib/membership-subscription-shared";
 import { getInvoiceLinePriceId } from "@/lib/stripe-invoice-shared";
 
@@ -113,28 +115,64 @@ export async function POST(request: Request) {
       if (checkoutSession.mode === "payment" && membershipTier === "BASIC") {
         const basicBuyer = await prisma.user.findUnique({
           where: { id: userId },
-          select: { email: true, name: true, membershipTier: true },
-        });
-
-        await prisma.user.updateMany({
-          where: { id: userId },
-          data: {
-            membershipTier: "BASIC",
-            pendingCheckoutTier: null,
-            subscriptionStatus: "NONE",
-            stripeCustomerId,
-            stripeSubscriptionId: null,
-            stripePriceId: process.env.STRIPE_BASIC_PRICE_ID ?? null,
-            subscriptionCurrentPeriodEnd: null,
-            subscriptionCancelAtPeriodEnd: false,
-            ...getPlaybookSubmissionResetData(),
+          select: {
+            email: true,
+            name: true,
+            membershipTier: true,
+            membershipSubscription: {
+              select: {
+                status: true,
+                currentPeriodEnd: true,
+                pastDueGraceEndsAt: true,
+              },
+            },
           },
         });
+
+        const now = new Date();
+        const keepPhase2Subscription = Boolean(
+          basicBuyer?.membershipSubscription &&
+            subscriptionStatusGrantsAccess(basicBuyer.membershipSubscription.status, {
+              now,
+              currentPeriodEnd: basicBuyer.membershipSubscription.currentPeriodEnd,
+              pastDueGraceEndsAt: basicBuyer.membershipSubscription.pastDueGraceEndsAt,
+            }),
+        );
+
+        const playbookPurchaseData = {
+          membershipTier: "BASIC" as const,
+          pendingCheckoutTier: null,
+          ...(basicBuyer?.membershipTier === "BASIC" ? {} : getPlaybookSubmissionResetData()),
+        };
+
+        if (keepPhase2Subscription) {
+          await prisma.user.updateMany({
+            where: { id: userId },
+            data: {
+              ...playbookPurchaseData,
+              stripeCustomerId: stripeCustomerId ?? undefined,
+            },
+          });
+        } else {
+          await prisma.user.updateMany({
+            where: { id: userId },
+            data: {
+              ...playbookPurchaseData,
+              subscriptionStatus: "NONE",
+              stripeCustomerId,
+              stripeSubscriptionId: null,
+              stripePriceId: process.env.STRIPE_BASIC_PRICE_ID ?? null,
+              subscriptionCurrentPeriodEnd: null,
+              subscriptionCancelAtPeriodEnd: false,
+            },
+          });
+        }
 
         if (basicBuyer?.email && basicBuyer.membershipTier !== "BASIC") {
           const firstName = basicBuyer.name?.trim().split(/\s+/)[0] || "there";
           try {
             await sendPlaybookPurchaseConfirmationEmail({
+              userId,
               toEmail: basicBuyer.email,
               firstName,
             });
@@ -148,6 +186,7 @@ export async function POST(request: Request) {
           where: { id: userId },
           select: { membershipTier: true },
         });
+        const isNewTwelveWeekPurchase = existingUser?.membershipTier !== "TWELVE_WEEK";
         const tierBeforeProgram =
           existingUser?.membershipTier &&
           existingUser.membershipTier !== "TWELVE_WEEK"
@@ -171,6 +210,13 @@ export async function POST(request: Request) {
           },
         });
         await ensureProgramEnrollmentForUser(userId);
+        if (isNewTwelveWeekPurchase) {
+          try {
+            await sendTwelveWeekProgramWelcomeIfNeeded({ userId });
+          } catch (error) {
+            console.error("Failed to send 12-Week program welcome email", error);
+          }
+        }
         void sendCoachNewProgramPlayerPushForUser(userId);
       } else if (checkoutSession.mode === "subscription") {
         const checkoutKind = checkoutSession.metadata?.checkoutKind;

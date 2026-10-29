@@ -9,10 +9,11 @@ import MobileNotificationBell from "@/app/components/mobile/MobileNotificationBe
 import OrgTrialDetailsModal from "@/app/components/OrgTrialDetailsModal";
 import type { OrgTrialHeaderSummary } from "@/lib/layout-access-server";
 import { getMobileFirstName } from "@/lib/mobile-ui";
-import { isTwelveWeekProgramMember, type DatabaseTier } from "@/lib/membership";
+import { type DatabaseTier } from "@/lib/membership";
 
 type AppHeaderBarProps = {
   membershipTier: DatabaseTier;
+  hasProgramEnrollment?: boolean;
   userDisplayName: string;
   userEmail?: string | null;
   orgTrialHeader?: OrgTrialHeaderSummary | null;
@@ -48,7 +49,8 @@ function getInitial(name: string, email?: string | null) {
 }
 
 export default function AppHeaderBar({
-  membershipTier,
+  membershipTier: _membershipTier,
+  hasProgramEnrollment = false,
   userDisplayName,
   userEmail,
   orgTrialHeader = null,
@@ -59,7 +61,7 @@ export default function AppHeaderBar({
   const [trialModalOpen, setTrialModalOpen] = useState(false);
   const firstName = getMobileFirstName(userDisplayName, userEmail);
   const initial = getInitial(userDisplayName, userEmail);
-  const showProgramPill = isTwelveWeekProgramMember(membershipTier);
+  const showProgramPill = hasProgramEnrollment;
   const showAdminPill = isAdmin && !pathname.startsWith("/admin");
 
   return (

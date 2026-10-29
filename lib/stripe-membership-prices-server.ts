@@ -13,11 +13,22 @@ const LEVEL_PRICE_ENV: Record<MembershipLevelKey, string> = {
   ALL_ACCESS: "STRIPE_PRICE_ALL_ACCESS_MONTHLY",
 };
 
-export function getMembershipLevelStripePriceId(level: MembershipLevelKey): string {
+export function resolveMembershipLevelStripePriceId(level: MembershipLevelKey): string | null {
   const envKey = LEVEL_PRICE_ENV[level];
   const priceId = process.env[envKey]?.trim();
   if (!priceId) {
-    throw new Error(`Missing Stripe price for ${level}. Set ${envKey} in .env.`);
+    console.error(
+      `[stripe-membership-prices] Missing Stripe price for ${level}. Set ${envKey}.`,
+    );
+    return null;
+  }
+  return priceId;
+}
+
+export function getMembershipLevelStripePriceId(level: MembershipLevelKey): string {
+  const priceId = resolveMembershipLevelStripePriceId(level);
+  if (!priceId) {
+    throw new Error(`MEMBERSHIP_PRICE_NOT_CONFIGURED:${level}`);
   }
   return priceId;
 }
