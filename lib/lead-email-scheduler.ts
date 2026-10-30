@@ -3,6 +3,10 @@ import "server-only";
 import { isCompanyMailingAddressConfigured } from "@/lib/marketing-email-guard-server";
 import { isOnOrAfterMarketingEmailsStart } from "@/lib/marketing-emails-start-shared";
 import { getLeadLatestResourceTitle } from "@/lib/leads-server";
+import {
+  leadMarketingEligibleWhere,
+  syncAdminEmailLeadMarketingExclusions,
+} from "@/lib/lead-marketing-server";
 import { sendLeadFreeAccountInviteEmail } from "@/lib/resource-emails-server";
 import { prisma } from "@/lib/prisma";
 
@@ -36,9 +40,11 @@ export async function runLeadEmailScheduler(params?: { now?: Date }): Promise<Le
     return { sent: 0, skipped: 0, errors: [], blockedMissingAddress: true };
   }
 
+  await syncAdminEmailLeadMarketingExclusions();
+
   const candidates = await prisma.lead.findMany({
     where: {
-      unsubscribedAt: null,
+      ...leadMarketingEligibleWhere(),
       userId: null,
     },
     select: {

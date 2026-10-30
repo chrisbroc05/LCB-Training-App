@@ -47,6 +47,7 @@
     "test:subscriptions": "npx --yes tsx scripts/test-subscriptions.ts",
     "test:membership-welcome-emails": "npx --yes tsx scripts/test-membership-welcome-emails.ts",
     "test:lead-capture-shared": "npx --yes tsx scripts/test-lead-capture-shared.ts",
+    "test:lead-marketing-shared": "npx --yes tsx scripts/test-lead-marketing-shared.ts",
     "build:fix-it-pdfs": "python3 scripts/build-fix-it-pdfs.py",
     "build:starter-pdfs": "npx --yes tsx scripts/export-workout-programs-json.ts && python3 scripts/build-starter-pdfs.py",
     "export:app-highlight": "npx --yes tsx scripts/export-app-highlight-local.ts && python3 marketing/build_app_highlight_pdf.py",

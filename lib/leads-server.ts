@@ -2,6 +2,7 @@ import "server-only";
 
 import type { LeadRole } from "@prisma/client";
 import { normalizeLeadEmail } from "@/lib/leads-shared";
+import { buildLeadMarketingAutoExcludeData } from "@/lib/lead-marketing-server";
 import { prisma } from "@/lib/prisma";
 import { getResourceDefinition, type LeadRoleValue } from "@/lib/resources-shared";
 
@@ -47,6 +48,7 @@ export async function upsertLeadForResourceDownload(params: {
   emailProvidedByParent?: boolean;
 }) {
   const email = normalizeLeadEmail(params.email);
+  const marketingAutoExclude = buildLeadMarketingAutoExcludeData(email);
   const existingUser = await prisma.user.findUnique({
     where: { email },
     select: { id: true, name: true, accountRole: true, playerFirstName: true, accountHolderName: true },
@@ -62,12 +64,14 @@ export async function upsertLeadForResourceDownload(params: {
       firstResourceSlug: params.resourceSlug,
       userId: existingUser?.id ?? null,
       emailProvidedByParent: params.emailProvidedByParent ?? false,
+      ...(marketingAutoExclude ?? {}),
     },
     update: {
       firstName: params.firstName.trim(),
       role: toPrismaLeadRole(params.role),
       userId: existingUser?.id ?? undefined,
       ...(params.emailProvidedByParent ? { emailProvidedByParent: true } : {}),
+      ...(marketingAutoExclude ?? {}),
     },
   });
 

@@ -65,14 +65,14 @@ export function buildLegacyLeadFreeAccountInviteEmailContent(params: {
   const signupUrl = params.signupUrl ?? defaultSignupUrl();
   const subject = "Still want a free swing breakdown?";
   const bodyHtml = `<p style="margin:0 0 16px 0; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:1.7; color:#0A1628;">Hi ${escapeHtml(params.firstName)},</p>
-<p style="margin:0 0 16px 0; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:1.7; color:#0A1628;">A while back you grabbed one of my free resources. Since then I've built out the LCB Training app, and every new account gets one free swing breakdown from me.</p>
+<p style="margin:0 0 16px 0; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:1.7; color:#0A1628;">You recently grabbed one of my free resources. Since then I've built out the LCB Training app, and every new account gets one free swing breakdown from me.</p>
 <p style="margin:0 0 16px 0; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:1.7; color:#0A1628;">Create a free account, send me a few swings, and I'll tell you what I see and give you a drill to work on.</p>
 ${buildEmailButton("Create your free account", signupUrl)}
 ${buildLeadUnsubscribeFooterHtml(params.leadId)}`;
 
   const text = `Hi ${params.firstName},
 
-A while back you grabbed one of my free resources. Since then I've built out the LCB Training app, and every new account gets one free swing breakdown from me.
+You recently grabbed one of my free resources. Since then I've built out the LCB Training app, and every new account gets one free swing breakdown from me.
 
 Create a free account, send me a few swings, and I'll tell you what I see and give you a drill to work on.
 

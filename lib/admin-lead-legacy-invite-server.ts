@@ -2,70 +2,104 @@ import "server-only";
 
 import { isCompanyMailingAddressConfigured } from "@/lib/marketing-email-guard-server";
 import { getCompanyMailingAddress } from "@/lib/email-layout";
+import {
+  excludeLeadFromMarketing,
+  leadMarketingEligibleWhere,
+  syncAdminEmailLeadMarketingExclusions,
+} from "@/lib/lead-marketing-server";
+import { LEAD_MARKETING_EXCLUDED_REASON_MANUAL } from "@/lib/lead-marketing-shared";
 import { sendLegacyLeadFreeAccountInviteEmail } from "@/lib/resource-emails-server";
 import { getMarketingEmailsStartAt, isBeforeMarketingEmailsStart } from "@/lib/marketing-emails-start-shared";
 import { prisma } from "@/lib/prisma";
 
 export const LEGACY_LEAD_INVITE_EMAIL_TYPE = "LEGACY_LEAD_FREE_ACCOUNT_INVITE";
 
+export type LegacyLeadInvitePreviewRow = {
+  id: string;
+  email: string;
+  firstName: string;
+  createdAt: string;
+  source: string;
+  marketingExcludedAt: string | null;
+  marketingExcludedReason: string | null;
+};
+
 export type LegacyLeadInvitePreview = {
   eligibleCount: number;
   alreadySentCount: number;
-  sample: Array<{ id: string; email: string; firstName: string; createdAt: string; source: string }>;
+  excludedCount: number;
+  leads: LegacyLeadInvitePreviewRow[];
   blockedMissingAddress: boolean;
   marketingStartAt: string | null;
 };
 
-export async function previewLegacyLeadInviteCampaign(): Promise<LegacyLeadInvitePreview> {
-  const start = getMarketingEmailsStartAt();
-  const mailingAddress = getCompanyMailingAddress();
-  const addressConfigured = isCompanyMailingAddressConfigured();
-
-  const baseWhere = {
-    unsubscribedAt: null,
+function legacyEligibleBaseWhere(start: Date | null) {
+  return {
+    ...leadMarketingEligibleWhere(),
     userId: null,
     ...(start ? { createdAt: { lt: start } } : {}),
   };
+}
 
-  const [eligibleCount, alreadySentCount, sampleLeads] = await Promise.all([
-    prisma.lead.count({
-      where: {
-        ...baseWhere,
-        emailLogs: { none: { type: LEGACY_LEAD_INVITE_EMAIL_TYPE } },
-      },
-    }),
+export async function previewLegacyLeadInviteCampaign(params?: {
+  listLimit?: number;
+}): Promise<LegacyLeadInvitePreview> {
+  await syncAdminEmailLeadMarketingExclusions();
+
+  const start = getMarketingEmailsStartAt();
+  const addressConfigured = isCompanyMailingAddressConfigured();
+  const baseWhere = legacyEligibleBaseWhere(start);
+  const listLimit = Math.min(Math.max(params?.listLimit ?? 50, 1), 200);
+
+  const notSentWhere = {
+    ...baseWhere,
+    emailLogs: { none: { type: LEGACY_LEAD_INVITE_EMAIL_TYPE } },
+  };
+
+  const [eligibleCount, alreadySentCount, excludedCount, listLeads] = await Promise.all([
+    prisma.lead.count({ where: notSentWhere }),
     prisma.lead.count({
       where: {
         ...baseWhere,
         emailLogs: { some: { type: LEGACY_LEAD_INVITE_EMAIL_TYPE } },
       },
     }),
-    prisma.lead.findMany({
+    prisma.lead.count({
       where: {
-        ...baseWhere,
-        emailLogs: { none: { type: LEGACY_LEAD_INVITE_EMAIL_TYPE } },
+        unsubscribedAt: null,
+        userId: null,
+        marketingExcludedAt: { not: null },
+        ...(start ? { createdAt: { lt: start } } : {}),
       },
+    }),
+    prisma.lead.findMany({
+      where: notSentWhere,
       select: {
         id: true,
         email: true,
         firstName: true,
         createdAt: true,
         source: true,
+        marketingExcludedAt: true,
+        marketingExcludedReason: true,
       },
-      orderBy: { createdAt: "desc" },
-      take: 25,
+      orderBy: { createdAt: "asc" },
+      take: listLimit,
     }),
   ]);
 
   return {
     eligibleCount,
     alreadySentCount,
-    sample: sampleLeads.map((lead) => ({
+    excludedCount,
+    leads: listLeads.map((lead) => ({
       id: lead.id,
       email: lead.email,
       firstName: lead.firstName,
       createdAt: lead.createdAt.toISOString(),
       source: lead.source,
+      marketingExcludedAt: lead.marketingExcludedAt?.toISOString() ?? null,
+      marketingExcludedReason: lead.marketingExcludedReason,
     })),
     blockedMissingAddress: !addressConfigured,
     marketingStartAt: start?.toISOString() ?? null,
@@ -78,7 +112,19 @@ export async function countLegacyLeadInviteEligible() {
   return preview.eligibleCount;
 }
 
-export async function sendLegacyLeadInviteCampaign(params: { limit?: number }) {
+export async function excludeLegacyLeadFromMarketing(params: {
+  leadId: string;
+  reason?: string;
+}) {
+  return excludeLeadFromMarketing({
+    leadId: params.leadId,
+    reason: params.reason?.trim() || LEAD_MARKETING_EXCLUDED_REASON_MANUAL,
+  });
+}
+
+export async function sendLegacyLeadInviteCampaign(params: {
+  leadIds: string[];
+}) {
   if (!isCompanyMailingAddressConfigured()) {
     return {
       ok: false as const,
@@ -94,12 +140,27 @@ export async function sendLegacyLeadInviteCampaign(params: { limit?: number }) {
     };
   }
 
-  const limit = Math.min(Math.max(params.limit ?? 50, 1), 200);
+  const uniqueIds = [...new Set(params.leadIds.filter(Boolean))];
+  if (uniqueIds.length === 0) {
+    return {
+      ok: false as const,
+      error: "Select at least one lead to send.",
+    };
+  }
+
+  if (uniqueIds.length > 200) {
+    return {
+      ok: false as const,
+      error: "Send at most 200 leads per batch.",
+    };
+  }
+
+  await syncAdminEmailLeadMarketingExclusions();
+
   const leads = await prisma.lead.findMany({
     where: {
-      unsubscribedAt: null,
-      userId: null,
-      createdAt: { lt: start },
+      id: { in: uniqueIds },
+      ...legacyEligibleBaseWhere(start),
       emailLogs: { none: { type: LEGACY_LEAD_INVITE_EMAIL_TYPE } },
     },
     select: {
@@ -108,15 +169,22 @@ export async function sendLegacyLeadInviteCampaign(params: { limit?: number }) {
       firstName: true,
       createdAt: true,
     },
-    orderBy: { createdAt: "asc" },
-    take: limit,
   });
 
   let sent = 0;
   let skipped = 0;
   const errors: string[] = [];
 
-  for (const lead of leads) {
+  const leadById = new Map(leads.map((lead) => [lead.id, lead]));
+
+  for (const leadId of uniqueIds) {
+    const lead = leadById.get(leadId);
+    if (!lead) {
+      skipped += 1;
+      errors.push(`${leadId}: not eligible (excluded, already sent, or not legacy).`);
+      continue;
+    }
+
     if (!isBeforeMarketingEmailsStart(lead.createdAt)) {
       skipped += 1;
       continue;
