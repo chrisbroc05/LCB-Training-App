@@ -9,6 +9,8 @@ type Body = {
   email?: string;
   role?: LeadRoleValue;
   leadId?: string;
+  playerAge13Plus?: boolean | null;
+  parentEmail?: string | null;
 };
 
 function appendLeadCookie(response: NextResponse, leadId: string) {
@@ -31,6 +33,12 @@ export async function POST(request: Request) {
   } catch (error) {
     if (error instanceof Error && error.message === "MISSING_LEAD_FIELDS") {
       return NextResponse.json({ error: "First name, email, and role are required." }, { status: 400 });
+    }
+    if (error instanceof Error && error.message.startsWith("LEAD_CAPTURE_INVALID:")) {
+      return NextResponse.json(
+        { error: error.message.replace("LEAD_CAPTURE_INVALID:", "") },
+        { status: 400 },
+      );
     }
     if (error instanceof Error && error.message === "TERMS_REQUIRED") {
       return NextResponse.json(

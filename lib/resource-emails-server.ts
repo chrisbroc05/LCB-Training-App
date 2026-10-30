@@ -18,6 +18,11 @@ import {
   buildPurchaseResourceEmailDownloadUrl,
 } from "@/lib/resource-email-download-token";
 import { normalizeLeadEmail } from "@/lib/leads-shared";
+import {
+  buildLegacyLeadFreeAccountInviteEmailContent,
+  buildLeadDay3FreeAccountInviteEmailContent,
+} from "@/lib/lead-free-account-invite-email-shared";
+import { assertCompanyMailingAddressForMarketing } from "@/lib/marketing-email-guard-server";
 import { prisma } from "@/lib/prisma";
 
 const RESOURCE_EMAIL_DOWNLOAD_COPY =
@@ -278,19 +283,15 @@ export async function sendLeadFreeAccountInviteEmail(params: {
   toEmail: string;
   firstName: string;
   leadId: string;
+  resourceTitle?: string | null;
 }) {
-  const signupUrl = `${getPublicAppUrl()}/auth?redirect=${encodeURIComponent("/swing-analysis")}`;
-  const subject = "Create your free LCB account for swing analysis";
-  const bodyHtml = `<p style="margin:0 0 16px 0; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:1.7; color:#0A1628;">Hi ${escapeHtml(params.firstName)},</p>
-<p style="margin:0 0 16px 0; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:1.7; color:#0A1628;">You grabbed one of my free resources recently. When you are ready, create a free account and send me a swing video. I will send back what I see and what to work on.</p>
-${buildEmailButton("Create free account", signupUrl)}
-${buildLeadUnsubscribeFooterHtml(params.leadId)}`;
+  assertCompanyMailingAddressForMarketing();
 
-  const text = `Hi ${params.firstName},
-
-Create a free account and send me a swing video: ${signupUrl}${buildLeadUnsubscribeFooterText(params.leadId)}
-
-${buildEmailFooterText()}`;
+  const content = buildLeadDay3FreeAccountInviteEmailContent({
+    firstName: params.firstName,
+    leadId: params.leadId,
+    resourceTitle: params.resourceTitle,
+  });
 
   const fromEmail = process.env.NOTIFICATION_EMAIL;
   if (!fromEmail) {
@@ -301,8 +302,35 @@ ${buildEmailFooterText()}`;
     from: `"Coach Broc | LCB Training" <${fromEmail}>`,
     to: params.toEmail,
     replyTo: EMAIL_REPLY_TO,
-    subject,
-    html: buildMemberEmailHtml({ title: subject, bodyContentHtml: bodyHtml }),
-    text,
+    subject: content.subject,
+    html: content.html,
+    text: content.text,
+  });
+}
+
+export async function sendLegacyLeadFreeAccountInviteEmail(params: {
+  toEmail: string;
+  firstName: string;
+  leadId: string;
+}) {
+  assertCompanyMailingAddressForMarketing();
+
+  const content = buildLegacyLeadFreeAccountInviteEmailContent({
+    firstName: params.firstName,
+    leadId: params.leadId,
+  });
+
+  const fromEmail = process.env.NOTIFICATION_EMAIL;
+  if (!fromEmail) {
+    throw new Error("NOTIFICATION_EMAIL is required.");
+  }
+
+  await sendNotificationEmail({
+    from: `"Coach Broc | LCB Training" <${fromEmail}>`,
+    to: params.toEmail,
+    replyTo: EMAIL_REPLY_TO,
+    subject: content.subject,
+    html: content.html,
+    text: content.text,
   });
 }

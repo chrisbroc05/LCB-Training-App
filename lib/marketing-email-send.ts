@@ -9,6 +9,8 @@ import {
   type MarketingEmailRecipient,
 } from "@/lib/marketing-email-templates";
 import type { MarketingEmailTypeValue } from "@/lib/marketing-email-shared";
+import { assertCompanyMailingAddressForMarketing } from "@/lib/marketing-email-guard-server";
+import { resolveUserMarketingDeliveryEmail } from "@/lib/marketing-recipient-server";
 import { prisma } from "@/lib/prisma";
 
 export function buildMarketingEmailDedupeKey(params: {
@@ -43,6 +45,13 @@ export async function sendMarketingEmail(params: {
   skipLog?: boolean;
   subjectPrefix?: string;
 }) {
+  assertCompanyMailingAddressForMarketing();
+
+  const delivery = await resolveUserMarketingDeliveryEmail(params.recipient.userId);
+  if (delivery.skipped) {
+    return null;
+  }
+
   const content = buildMarketingEmailContent(params.type, params.recipient, params.submission);
   const subject = params.subjectPrefix
     ? `${params.subjectPrefix}${content.subject}`
@@ -54,7 +63,7 @@ export async function sendMarketingEmail(params: {
 
   await sendNotificationEmail({
     from: `"Coach Broc | LCB Training" <${fromEmail}>`,
-    to: params.recipient.email,
+    to: delivery.toEmail,
     replyTo: EMAIL_REPLY_TO,
     subject,
     html: content.html,
@@ -80,3 +89,5 @@ export async function sendMarketingEmail(params: {
 
   return subject;
 }
+
+export type SendMarketingEmailResult = string | null;

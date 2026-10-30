@@ -16,6 +16,8 @@ export async function postResourceLeadAction(body: {
   email?: string;
   role?: LeadRoleValue;
   leadId?: string;
+  playerAge13Plus?: boolean | null;
+  parentEmail?: string | null;
 }) {
   const response = await fetch("/api/resources/lead-action", {
     method: "POST",

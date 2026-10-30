@@ -1,3 +1,4 @@
+import AdminLegacyLeadInvitePanel from "@/app/admin/business/leads/AdminLegacyLeadInvitePanel";
 import AdminPageHeader from "@/app/admin/AdminPageHeader";
 import AdminLeadsPanel from "@/app/admin/leads/AdminLeadsPanel";
 import { ADMIN_ROUTES } from "@/lib/admin-routes-shared";
@@ -14,6 +15,7 @@ export default async function AdminBusinessLeadsPage() {
         backHref={ADMIN_ROUTES.business.hub}
         backLabel="Business"
       />
+      <AdminLegacyLeadInvitePanel />
       <AdminLeadsPanel leads={leads} purchases={purchases} view="leads" />
     </div>
   );

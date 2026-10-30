@@ -3,7 +3,7 @@ import "server-only";
 import type { LeadRole } from "@prisma/client";
 import { normalizeLeadEmail } from "@/lib/leads-shared";
 import { prisma } from "@/lib/prisma";
-import type { LeadRoleValue } from "@/lib/resources-shared";
+import { getResourceDefinition, type LeadRoleValue } from "@/lib/resources-shared";
 
 export { normalizeLeadEmail };
 
@@ -44,6 +44,7 @@ export async function upsertLeadForResourceDownload(params: {
   role: LeadRoleValue;
   resourceSlug: string;
   source?: string;
+  emailProvidedByParent?: boolean;
 }) {
   const email = normalizeLeadEmail(params.email);
   const existingUser = await prisma.user.findUnique({
@@ -60,11 +61,13 @@ export async function upsertLeadForResourceDownload(params: {
       source: params.source ?? "resources",
       firstResourceSlug: params.resourceSlug,
       userId: existingUser?.id ?? null,
+      emailProvidedByParent: params.emailProvidedByParent ?? false,
     },
     update: {
       firstName: params.firstName.trim(),
       role: toPrismaLeadRole(params.role),
       userId: existingUser?.id ?? undefined,
+      ...(params.emailProvidedByParent ? { emailProvidedByParent: true } : {}),
     },
   });
 
@@ -84,4 +87,16 @@ export async function markLeadAsBuyer(email: string) {
     where: { email: normalized },
     data: { isBuyer: true },
   });
+}
+
+export async function getLeadLatestResourceTitle(leadId: string) {
+  const latest = await prisma.leadResource.findFirst({
+    where: { leadId },
+    orderBy: { createdAt: "desc" },
+    select: { resourceSlug: true },
+  });
+  if (!latest) {
+    return null;
+  }
+  return getResourceDefinition(latest.resourceSlug)?.title ?? null;
 }

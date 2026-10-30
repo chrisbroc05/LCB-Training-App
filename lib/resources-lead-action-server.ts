@@ -3,6 +3,7 @@ import "server-only";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { requireCurrentTermsForCheckout } from "@/lib/legal-checkout-server";
+import { normalizeLeadCaptureInput } from "@/lib/lead-capture-shared";
 import { upsertLeadForResourceDownload, normalizeLeadEmail } from "@/lib/leads-server";
 import { prisma } from "@/lib/prisma";
 import { createResourceDownloadToken } from "@/lib/resource-download-token";
@@ -41,6 +42,8 @@ async function resolveLeadContext(params: {
   firstName?: string;
   email?: string;
   role?: LeadRoleValue;
+  playerAge13Plus?: boolean | null;
+  parentEmail?: string | null;
   resourceSlug: string;
 }) {
   const session = await getServerSession(authOptions);
@@ -91,20 +94,37 @@ async function resolveLeadContext(params: {
     }
   }
 
-  const email = params.email?.trim();
-  const firstName = params.firstName?.trim();
   const role = params.role;
-  if (!email || !firstName || !role) {
+  const firstNameRaw = params.firstName?.trim() ?? "";
+  const emailRaw = params.email?.trim() ?? "";
+  if (!firstNameRaw || !role) {
     throw new Error("MISSING_LEAD_FIELDS");
   }
 
-  const { lead } = await upsertLeadForResourceDownload({
-    email,
-    firstName,
+  const normalized = normalizeLeadCaptureInput({
+    firstName: firstNameRaw,
+    email: emailRaw,
     role,
-    resourceSlug: params.resourceSlug,
+    playerAge13Plus: params.playerAge13Plus,
+    parentEmail: params.parentEmail,
   });
-  return { lead, firstName, email: normalizeLeadEmail(email), userId: null };
+  if (!normalized.ok) {
+    throw new Error(`LEAD_CAPTURE_INVALID:${normalized.error}`);
+  }
+
+  const { lead } = await upsertLeadForResourceDownload({
+    email: normalized.value.email,
+    firstName: normalized.value.firstName,
+    role: normalized.value.role,
+    resourceSlug: params.resourceSlug,
+    emailProvidedByParent: normalized.value.emailProvidedByParent,
+  });
+  return {
+    lead,
+    firstName: normalized.value.firstName,
+    email: normalizeLeadEmail(normalized.value.email),
+    userId: null,
+  };
 }
 
 async function createGuestOrMemberCheckout(params: {
@@ -223,6 +243,8 @@ export async function performResourceLeadAction(
     email?: string;
     role?: LeadRoleValue;
     leadId?: string;
+    playerAge13Plus?: boolean | null;
+    parentEmail?: string | null;
   },
 ): Promise<ResourceLeadActionResult> {
   const resourceSlug = body.resourceSlug?.trim() ?? "";
@@ -236,6 +258,8 @@ export async function performResourceLeadAction(
     firstName: body.firstName,
     email: body.email,
     role: body.role,
+    playerAge13Plus: body.playerAge13Plus,
+    parentEmail: body.parentEmail,
     resourceSlug,
   });
 

@@ -25,6 +25,8 @@ import {
   formatSignupCheckoutLabelForCoachNotification,
   shouldSendFreeWelcomeAtSignup,
 } from "@/lib/membership-welcome-email-shared";
+import { isCompanyMailingAddressConfigured } from "@/lib/marketing-email-guard-server";
+import { isOnOrAfterMarketingEmailsStart } from "@/lib/marketing-emails-start-shared";
 import { joinOrganizationForUser } from "@/lib/org-server";
 import {
   isPrismaTransientError,
@@ -242,6 +244,8 @@ export async function POST(request: Request) {
     });
 
     if (
+      isCompanyMailingAddressConfigured() &&
+      isOnOrAfterMarketingEmailsStart(new Date()) &&
       shouldSendFreeWelcomeAtSignup({
         pendingCheckoutLevel,
         signupSource,

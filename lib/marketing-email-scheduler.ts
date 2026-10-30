@@ -18,6 +18,7 @@ import {
   type FollowupSubmissionContext,
   type MarketingEmailRecipient,
 } from "@/lib/marketing-email-templates";
+import { isCompanyMailingAddressConfigured } from "@/lib/marketing-email-guard-server";
 import {
   hasMarketingEmailBeenSent,
   sendMarketingEmail,
@@ -89,11 +90,15 @@ async function previewOrSend(params: {
     return { sent: false, skipped: false };
   }
 
-  await sendMarketingEmail({
+  const subject = await sendMarketingEmail({
     recipient: params.recipient,
     type: params.type,
     submission: params.submission,
   });
+
+  if (subject === null) {
+    return { sent: false, skipped: true };
+  }
 
   return { sent: true, skipped: false };
 }
@@ -108,6 +113,13 @@ export async function runMarketingEmailScheduler(params?: {
   const errors: string[] = [];
   let sent = 0;
   let skipped = 0;
+
+  if (!dryRun && !isCompanyMailingAddressConfigured()) {
+    console.warn(
+      "[marketing-email-scheduler] COMPANY_MAILING_ADDRESS is not set. Skipping user marketing emails.",
+    );
+    return { dryRun, previews, sent: 0, skipped: 0, errors: [] };
+  }
 
   const reminderCandidates = await loadFreeSubmissionReminderCandidates(now);
   for (const candidate of reminderCandidates) {
@@ -146,7 +158,10 @@ export async function runMarketingEmailScheduler(params?: {
             userId: anchor.userId,
             email: anchor.email,
             firstName: anchor.firstName,
+            accountRole: anchor.accountRole,
+            accountHolderFirstName: anchor.accountHolderFirstName,
             ownsPlaybook: anchor.ownsPlaybook,
+            playbookBreakdownsRemaining: anchor.playbookBreakdownsRemaining,
           },
           type,
           submission: type === "FOLLOWUP_DRILLS_DAY_2" ? anchor.submission : undefined,

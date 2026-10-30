@@ -376,8 +376,9 @@ model Lead {
   isBuyer           Boolean        @default(false)
   userId            String?
   user              User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
-  unsubscribedAt    DateTime?
-  createdAt         DateTime       @default(now())
+  unsubscribedAt       DateTime?
+  emailProvidedByParent Boolean      @default(false)
+  createdAt            DateTime       @default(now())
   resources         LeadResource[]
   emailLogs         LeadEmailLog[]
   quizAttempts      QuizAttempt[]

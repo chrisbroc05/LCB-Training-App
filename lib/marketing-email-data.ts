@@ -6,17 +6,51 @@ import {
   FOLLOWUP_DAY_OFFSETS,
   isMarketingEmailInWindow,
 } from "@/lib/marketing-email-shared";
-import type { FollowupSubmissionContext } from "@/lib/marketing-email-templates";
+import { isOnOrAfterMarketingEmailsStart } from "@/lib/marketing-emails-start-shared";
+import type {
+  FollowupSubmissionContext,
+  MarketingEmailRecipient,
+} from "@/lib/marketing-email-templates";
+import type { AccessUserFields } from "@/lib/access-shared";
+import { getPlaybookSubmissionAllowance } from "@/lib/coaching-submissions-shared";
+import type { DatabaseTier } from "@/lib/membership";
 import { prisma } from "@/lib/prisma";
 
 export type MarketingFollowupAnchor = {
   userId: string;
   email: string;
   firstName: string;
+  accountRole?: "PLAYER" | "PARENT";
+  accountHolderFirstName?: string;
   ownsPlaybook: boolean;
+  playbookBreakdownsRemaining: number | null;
   notifyAnnouncements: boolean;
   submission: FollowupSubmissionContext;
 };
+
+function getPlaybookBreakdownsRemaining(user: {
+  membershipTier: DatabaseTier;
+  playbookSubmissionsUsed: number;
+  playbookLegacyAccess: boolean;
+  membershipLevel: AccessUserFields["membershipLevel"];
+  membershipLevelExpiresAt: Date | null;
+}) {
+  if (user.membershipTier !== "BASIC") {
+    return null;
+  }
+  const allowance = getPlaybookSubmissionAllowance({
+    membershipTier: user.membershipTier,
+    playbookLegacyAccess: user.playbookLegacyAccess,
+    membershipLevel: user.membershipLevel,
+    membershipLevelExpiresAt: user.membershipLevelExpiresAt,
+    freeSubmissionUsed: false,
+    playbookSubmissionsUsed: user.playbookSubmissionsUsed,
+    coachingSubmissionsUsedThisMonth: 0,
+    coachingSubmissionPeriod: null,
+    eliteRolloverCredits: 0,
+  });
+  return allowance?.remaining ?? null;
+}
 
 function getFirstName(user: {
   name: string | null;
@@ -69,6 +103,10 @@ export async function loadMarketingFollowupAnchors(_now = new Date()) {
       accountRole: true,
       accountHolderName: true,
       membershipTier: true,
+      playbookSubmissionsUsed: true,
+      playbookLegacyAccess: true,
+      membershipLevel: true,
+      membershipLevelExpiresAt: true,
       swingAnalysisSubmissions: {
         where: { respondedAt: { not: null } },
         orderBy: { respondedAt: "asc" },
@@ -146,11 +184,18 @@ export async function loadMarketingFollowupAnchors(_now = new Date()) {
       continue;
     }
 
+    if (!isOnOrAfterMarketingEmailsStart(submission.respondedAt)) {
+      continue;
+    }
+
     anchors.push({
       userId: user.id,
       email: user.email,
       firstName: getFirstName(user),
+      accountRole: user.accountRole === "PARENT" ? "PARENT" : "PLAYER",
+      accountHolderFirstName: getAccountHolderFirstName(user.accountHolderName, user.email),
       ownsPlaybook: user.membershipTier === "BASIC",
+      playbookBreakdownsRemaining: getPlaybookBreakdownsRemaining(user),
       notifyAnnouncements: true,
       submission,
     });
@@ -182,7 +227,11 @@ export async function loadFreeSubmissionReminderCandidates(now = new Date()) {
   });
 
   return users
-    .filter((user) => isMarketingEmailInWindow("FREE_SUBMISSION_REMINDER", user.signupDate, now))
+    .filter(
+      (user) =>
+        isOnOrAfterMarketingEmailsStart(user.signupDate) &&
+        isMarketingEmailInWindow("FREE_SUBMISSION_REMINDER", user.signupDate, now),
+    )
     .map((user) => ({
       userId: user.id,
       email: user.email,
@@ -201,7 +250,9 @@ export function getDueFollowupTypes(
   );
 }
 
-export async function loadUserMarketingRecipient(userId: string) {
+export async function loadUserMarketingRecipient(
+  userId: string,
+): Promise<MarketingEmailRecipient | null> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
@@ -212,6 +263,10 @@ export async function loadUserMarketingRecipient(userId: string) {
       accountRole: true,
       accountHolderName: true,
       membershipTier: true,
+      playbookSubmissionsUsed: true,
+      playbookLegacyAccess: true,
+      membershipLevel: true,
+      membershipLevelExpiresAt: true,
       marketingEmailsSuppressed: true,
       isTestAccount: true,
     },
@@ -221,7 +276,7 @@ export async function loadUserMarketingRecipient(userId: string) {
     return null;
   }
 
-  return {
+  const recipient: MarketingEmailRecipient = {
     userId: user.id,
     email: user.email,
     firstName: getFirstName(user),
@@ -230,8 +285,10 @@ export async function loadUserMarketingRecipient(userId: string) {
       name: user.name,
       email: user.email,
     }),
-    accountRole: user.accountRole,
+    accountRole: user.accountRole === "PARENT" ? "PARENT" : "PLAYER",
     accountHolderFirstName: getAccountHolderFirstName(user.accountHolderName, user.email),
-    ownsPlaybook: user.membershipTier === "BASIC" || user.membershipTier === "TWELVE_WEEK",
+    ownsPlaybook: user.membershipTier === "BASIC",
+    playbookBreakdownsRemaining: getPlaybookBreakdownsRemaining(user),
   };
+  return recipient;
 }

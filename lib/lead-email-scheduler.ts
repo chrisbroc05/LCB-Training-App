@@ -1,6 +1,8 @@
 import "server-only";
 
-import { getCompanyMailingAddress } from "@/lib/email-layout";
+import { isCompanyMailingAddressConfigured } from "@/lib/marketing-email-guard-server";
+import { isOnOrAfterMarketingEmailsStart } from "@/lib/marketing-emails-start-shared";
+import { getLeadLatestResourceTitle } from "@/lib/leads-server";
 import { sendLeadFreeAccountInviteEmail } from "@/lib/resource-emails-server";
 import { prisma } from "@/lib/prisma";
 
@@ -27,8 +29,7 @@ export async function runLeadEmailScheduler(params?: { now?: Date }): Promise<Le
   let sent = 0;
   let skipped = 0;
 
-  const mailingAddress = getCompanyMailingAddress();
-  if (!mailingAddress) {
+  if (!isCompanyMailingAddressConfigured()) {
     console.warn(
       "[lead-email-scheduler] COMPANY_MAILING_ADDRESS is not set. Skipping lead follow-up emails.",
     );
@@ -50,6 +51,10 @@ export async function runLeadEmailScheduler(params?: { now?: Date }): Promise<Le
   });
 
   for (const lead of candidates) {
+    if (!isOnOrAfterMarketingEmailsStart(lead.createdAt)) {
+      continue;
+    }
+
     if (!isInInviteWindow(lead.createdAt, now)) {
       continue;
     }
@@ -65,10 +70,12 @@ export async function runLeadEmailScheduler(params?: { now?: Date }): Promise<Le
     }
 
     try {
+      const resourceTitle = await getLeadLatestResourceTitle(lead.id);
       await sendLeadFreeAccountInviteEmail({
         toEmail: lead.email,
         firstName: lead.firstName,
         leadId: lead.id,
+        resourceTitle,
       });
       await prisma.leadEmailLog.create({
         data: {

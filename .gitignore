@@ -24,6 +24,7 @@ docs/samples/.comparison-thumbs/
 /build
 
 # misc
+dev/outbox/
 .DS_Store
 *.pem
 __pycache__/

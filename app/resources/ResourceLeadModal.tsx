@@ -22,10 +22,13 @@ export default function ResourceLeadModal({
 }: ResourceLeadModalProps) {
   const [firstName, setFirstName] = useState("");
   const [email, setEmail] = useState("");
+  const [parentEmail, setParentEmail] = useState("");
   const [role, setRole] = useState<LeadRoleValue>("PLAYER");
+  const [playerAge13Plus, setPlayerAge13Plus] = useState<boolean | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const submitLabel = getResourceLeadSubmitLabel(resource);
+  const playerUnder13 = role === "PLAYER" && playerAge13Plus === false;
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -35,8 +38,10 @@ export default function ResourceLeadModal({
       const result = await postResourceLeadAction({
         resourceSlug: resource.slug,
         firstName,
-        email,
+        email: playerUnder13 ? "" : email,
         role,
+        playerAge13Plus: role === "PLAYER" ? playerAge13Plus : undefined,
+        parentEmail: playerUnder13 ? parentEmail : undefined,
       });
       if (onSuccess) {
         onSuccess(result as ResourceLeadActionResult);
@@ -88,21 +93,13 @@ export default function ResourceLeadModal({
             />
           </label>
           <label className="block text-sm text-zinc-300">
-            Email
-            <input
-              required
-              type="email"
-              autoComplete="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              className="mt-2 w-full rounded-xl border border-[#2b3650] bg-[#0A1628] px-4 py-3.5 text-base text-white"
-            />
-          </label>
-          <label className="block text-sm text-zinc-300">
             I am a:
             <select
               value={role}
-              onChange={(event) => setRole(event.target.value as LeadRoleValue)}
+              onChange={(event) => {
+                setRole(event.target.value as LeadRoleValue);
+                setPlayerAge13Plus(null);
+              }}
               className="mt-2 w-full rounded-xl border border-[#2b3650] bg-[#0A1628] px-4 py-3.5 text-base text-white"
             >
               {LEAD_ROLE_OPTIONS.map((option) => (
@@ -112,9 +109,60 @@ export default function ResourceLeadModal({
               ))}
             </select>
           </label>
-          <p className="text-xs leading-relaxed text-zinc-500">
-            Players under 13: have a parent fill this out.
-          </p>
+          {role === "PLAYER" ? (
+            <fieldset className="space-y-2">
+              <legend className="text-sm text-zinc-300">Are you 13 or older?</legend>
+              <div className="mt-2 flex gap-4">
+                <label className="flex items-center gap-2 text-sm text-zinc-200">
+                  <input
+                    type="radio"
+                    name="playerAge13Plus"
+                    checked={playerAge13Plus === true}
+                    onChange={() => setPlayerAge13Plus(true)}
+                    required={playerAge13Plus === null}
+                  />
+                  Yes
+                </label>
+                <label className="flex items-center gap-2 text-sm text-zinc-200">
+                  <input
+                    type="radio"
+                    name="playerAge13Plus"
+                    checked={playerAge13Plus === false}
+                    onChange={() => setPlayerAge13Plus(false)}
+                  />
+                  No
+                </label>
+              </div>
+            </fieldset>
+          ) : null}
+          {playerUnder13 ? (
+            <label className="block text-sm text-zinc-300">
+              Parent or guardian email
+              <input
+                required
+                type="email"
+                autoComplete="email"
+                value={parentEmail}
+                onChange={(event) => setParentEmail(event.target.value)}
+                className="mt-2 w-full rounded-xl border border-[#2b3650] bg-[#0A1628] px-4 py-3.5 text-base text-white"
+              />
+              <span className="mt-1 block text-xs text-zinc-500">
+                We email your parent, not you. Do not enter a child email here.
+              </span>
+            </label>
+          ) : (
+            <label className="block text-sm text-zinc-300">
+              Email
+              <input
+                required
+                type="email"
+                autoComplete="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                className="mt-2 w-full rounded-xl border border-[#2b3650] bg-[#0A1628] px-4 py-3.5 text-base text-white"
+              />
+            </label>
+          )}
           {error ? <p className="text-sm text-red-400">{error}</p> : null}
           <button
             type="submit"
