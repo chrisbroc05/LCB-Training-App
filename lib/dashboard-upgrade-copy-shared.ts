@@ -49,7 +49,7 @@ export function getDashboardLevelUpSuggestion(
   if (level === "PLUS") {
     return {
       title: `Upgrade to ${MEMBERSHIP_LEVELS.ALL_ACCESS.displayName}`,
-      body: `${MEMBERSHIP_LEVELS.ALL_ACCESS.shortDescription} ${MEMBERSHIP_LEVELS.ALL_ACCESS.priceDisplay}.`,
+      body: MEMBERSHIP_LEVELS.ALL_ACCESS.shortDescription,
       href: "/settings",
       buttonLabel: `Get ${MEMBERSHIP_LEVELS.ALL_ACCESS.displayName}`,
     };

@@ -8,6 +8,9 @@ import { authOptions } from "@/lib/auth";
 import { isTwelveWeekProgramMember, type DatabaseTier } from "@/lib/membership";
 import { prisma } from "@/lib/prisma";
 import { TWELVE_WEEK_PROGRAM_NAME } from "@/lib/twelve-week-program";
+import { fallbackDeferredParentAccountSignupConsent } from "@/lib/legal-server";
+import { clearMembershipCheckoutIntent } from "@/lib/membership-checkout-intent-server";
+import { MEMBERSHIP_CHECKOUT_CANCELED_QUERY } from "@/lib/membership-checkout-intent-shared";
 
 type UpgradePageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -48,6 +51,15 @@ export default async function UpgradePage({ searchParams }: UpgradePageProps) {
 
   const resolvedSearchParams = searchParams ? await searchParams : {};
   const reason = typeof resolvedSearchParams.reason === "string" ? resolvedSearchParams.reason : "";
+  const checkoutParam =
+    typeof resolvedSearchParams.checkout === "string" ? resolvedSearchParams.checkout : "";
+  const checkoutCanceled =
+    checkoutParam === MEMBERSHIP_CHECKOUT_CANCELED_QUERY || checkoutParam === "cancelled";
+
+  if (session?.user?.id && checkoutCanceled) {
+    await clearMembershipCheckoutIntent(session.user.id);
+    await fallbackDeferredParentAccountSignupConsent(session.user.id, "checkout_canceled");
+  }
 
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6 sm:py-14 md:py-20">
@@ -58,6 +70,11 @@ export default async function UpgradePage({ searchParams }: UpgradePageProps) {
         <p className="mt-2 text-zinc-300">
           Lessons are one day a week. The 12-Week Program is what happens the other six.
         </p>
+        {checkoutCanceled ? (
+          <p className="mt-4 rounded-lg border border-[#52B788]/40 bg-[#2D6A4F]/15 px-4 py-3 text-sm text-zinc-100">
+            No worries, you were not charged. Pick a plan whenever you are ready.
+          </p>
+        ) : null}
         {reason === "free-submission-used" && (
           <p className="mt-4 rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-100">
             Your one free submission has been used. Join the 12-Week Coaching Program to continue.

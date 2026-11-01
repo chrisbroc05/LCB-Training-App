@@ -62,6 +62,11 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
       { href: ADMIN_ROUTES.business.hub, label: "Business home", matchPrefix: ADMIN_ROUTES.business.hub },
       { href: ADMIN_ROUTES.business.leads, label: "Leads", matchPrefix: ADMIN_ROUTES.business.leads },
       { href: ADMIN_ROUTES.business.sales, label: "Sales", matchPrefix: ADMIN_ROUTES.business.sales },
+      {
+        href: ADMIN_ROUTES.business.commissions,
+        label: "Commissions",
+        matchPrefix: ADMIN_ROUTES.business.commissions,
+      },
       { href: ADMIN_ROUTES.business.grants, label: "Product grants", matchPrefix: ADMIN_ROUTES.business.grants },
     ],
   },

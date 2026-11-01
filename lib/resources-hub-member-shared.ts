@@ -167,7 +167,7 @@ export function buildResourceHubMemberSwingCard(
       description:
         allowance.canSubmit
           ? "One in-depth review per month is included with Plus. Send video and get detailed feedback."
-          : "You have used your in-depth review for this month. It resets at the start of next month.",
+          : "You have used your in-depth review for this month. Your next monthly review is available at the start of next month.",
       includedLabel,
       buttonLabel: allowance.canSubmit ? "Send for review" : "View submissions",
       href,

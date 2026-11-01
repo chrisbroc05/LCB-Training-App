@@ -18,6 +18,7 @@ import {
   type SignupRequestPayload,
   type SignupWizardStep,
 } from "@/lib/signup-shared";
+import { SIGNUP_EMAIL_EXISTS_FRIENDLY_MESSAGE } from "@/lib/signup-auth-shared";
 
 const inputClassName =
   "mt-2 w-full rounded-lg border border-[#2b3650] bg-black px-4 py-3 text-zinc-100 placeholder:text-zinc-500 focus:border-[#22c55e]";
@@ -201,6 +202,8 @@ export default function SignupWizard({
   };
 
   const displayError = stepError || error || "";
+  const showExistingAccountPrompt =
+    Boolean(loginHref) && error === SIGNUP_EMAIL_EXISTS_FRIENDLY_MESSAGE;
 
   return (
     <div className="space-y-4">
@@ -350,7 +353,19 @@ export default function SignupWizard({
               playerAge: state.playerAge,
             }}
           />
-          {displayError ? <p className="text-sm text-red-300">{displayError}</p> : null}
+          {showExistingAccountPrompt ? (
+            <div className="space-y-3 rounded-xl border border-[#2b3650] bg-black/40 px-4 py-4 text-sm text-zinc-200">
+              <p>{SIGNUP_EMAIL_EXISTS_FRIENDLY_MESSAGE}</p>
+              <Link
+                href={loginHref!}
+                className="inline-flex w-full items-center justify-center rounded-full bg-[#22c55e] px-5 py-3 text-sm font-semibold text-black transition hover:bg-[#35db72]"
+              >
+                Sign in
+              </Link>
+            </div>
+          ) : displayError ? (
+            <p className="text-sm text-red-300">{displayError}</p>
+          ) : null}
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
@@ -361,7 +376,7 @@ export default function SignupWizard({
             </button>
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || showExistingAccountPrompt}
               className="flex-1 rounded-full bg-[#22c55e] px-5 py-3 text-sm font-semibold text-black transition hover:bg-[#35db72] disabled:opacity-60"
             >
               {loading ? "Creating account..." : submitLabel}

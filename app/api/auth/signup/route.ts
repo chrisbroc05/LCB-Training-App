@@ -14,12 +14,17 @@ import {
   validateParentConsentEmail,
 } from "@/lib/legal-shared";
 import {
+  hasPaidSignupCheckoutIntent,
+  PARENT_CONSENT_METHOD_ACCOUNT_SIGNUP,
+} from "@/lib/parent-consent-shared";
+import {
   applyMinorLegalParentConsentRecords,
   sendMinorLegalParentConsentEmailIfNeeded,
 } from "@/lib/legal-server";
 import { sendNewMemberNotification } from "@/lib/notifications";
 import { isTestAccountEmail } from "@/lib/test-account-shared";
 import type { SignupRequestPayload } from "@/lib/signup-shared";
+import { parseMembershipBillingInterval } from "@/lib/membership-billing-shared";
 import { isMembershipLevelKey } from "@/lib/membership-levels-shared";
 import {
   formatSignupCheckoutLabelForCoachNotification,
@@ -45,9 +50,20 @@ type SignupBody = SignupRequestPayload & {
   signupSource?: string;
   orgJoinCode?: string;
   pendingMembershipLevel?: string;
+  pendingMembershipBillingInterval?: string;
 };
 
+async function rollbackFailedSignupUser(userId: string) {
+  try {
+    await prisma.user.delete({ where: { id: userId } });
+  } catch (rollbackError) {
+    console.error(`Signup rollback failed for userId=${userId}`, rollbackError);
+  }
+}
+
 export async function POST(request: Request) {
+  let createdUserId: string | null = null;
+
   try {
     const body = (await request.json()) as SignupBody;
     const email = body.email?.trim().toLowerCase();
@@ -120,11 +136,31 @@ export async function POST(request: Request) {
     let parentConsentName: string | null = null;
     let parentConsentEmail: string | null = null;
     let parentConsentConfirmedAt: Date | null = null;
+    let parentConsentMethod: string | null = null;
+
+    const pendingLevelRawEarly = body.pendingMembershipLevel?.trim().toUpperCase() ?? "";
+    const pendingCheckoutLevelEarly = isMembershipLevelKey(pendingLevelRawEarly)
+      ? pendingLevelRawEarly
+      : undefined;
+    const signupSourceEarly = body.signupSource?.trim() ?? "";
+    const paidCheckoutIntent = hasPaidSignupCheckoutIntent({
+      pendingCheckoutLevel: pendingCheckoutLevelEarly,
+      signupSource: signupSourceEarly,
+      selectedMembershipTier: membershipTierForNotification,
+    });
 
     if (body.accountRole === "PARENT") {
       parentConsentName = accountHolderName;
       parentConsentEmail = email;
-      parentConsentConfirmedAt = isUnder13PlayerAge(playerAge) ? null : new Date();
+      if (isUnder13PlayerAge(playerAge)) {
+        parentConsentConfirmedAt = null;
+        if (paidCheckoutIntent) {
+          parentConsentMethod = PARENT_CONSENT_METHOD_ACCOUNT_SIGNUP;
+        }
+      } else {
+        parentConsentConfirmedAt = new Date();
+        parentConsentMethod = PARENT_CONSENT_METHOD_ACCOUNT_SIGNUP;
+      }
     } else if (isMinorPlayerAge(playerAge)) {
       parentConsentName = body.legalAcceptance?.parentConsentName?.trim() ?? "";
       parentConsentEmail = body.legalAcceptance?.parentConsentEmail?.trim().toLowerCase() ?? "";
@@ -166,6 +202,9 @@ export async function POST(request: Request) {
     const legacyName = combinePlayerName(playerFirstName, playerLastName);
     const pendingLevelRaw = body.pendingMembershipLevel?.trim().toUpperCase() ?? "";
     const pendingCheckoutLevel = isMembershipLevelKey(pendingLevelRaw) ? pendingLevelRaw : undefined;
+    const pendingCheckoutBillingInterval = pendingCheckoutLevel
+      ? parseMembershipBillingInterval(body.pendingMembershipBillingInterval)
+      : undefined;
     const signupSource = body.signupSource?.trim() ?? "";
 
     const createdUser = await withPrismaRetryOnce(() =>
@@ -188,10 +227,17 @@ export async function POST(request: Request) {
           parentConsentName,
           parentConsentEmail,
           parentConsentConfirmedAt,
+          parentConsentMethod,
           mediaConsent: Boolean(body.legalAcceptance.mediaConsent),
           mediaConsentUpdatedAt: acceptedAt,
           isTestAccount: isTestAccountEmail(email),
-          ...(pendingCheckoutLevel ? { pendingCheckoutLevel } : {}),
+          ...(pendingCheckoutLevel
+            ? {
+                pendingCheckoutLevel,
+                pendingCheckoutBillingInterval,
+                pendingCheckoutAt: new Date(),
+              }
+            : {}),
         },
         select: {
           id: true,
@@ -201,6 +247,8 @@ export async function POST(request: Request) {
         },
       }),
     );
+
+    createdUserId = createdUser.id;
 
     await linkWaiverSignaturesToUser(createdUser.id, email);
     await applyMatchingWaiverAcceptanceToUser(createdUser.id);
@@ -226,7 +274,10 @@ export async function POST(request: Request) {
       await linkLeadToUserByEmail(userId, email);
     });
 
-    if (needsMinorParentConsentRecords) {
+    const skipParentConsentEmailAtSignup =
+      body.accountRole === "PARENT" && paidCheckoutIntent && isUnder13PlayerAge(playerAge);
+
+    if (needsMinorParentConsentRecords && !skipParentConsentEmailAtSignup) {
       runSignupBackgroundTask(userId, "sendMinorLegalParentConsentEmailIfNeeded", async () => {
         await sendMinorLegalParentConsentEmailIfNeeded(userId);
       });
@@ -263,9 +314,13 @@ export async function POST(request: Request) {
       });
     }
 
+    createdUserId = null;
     return NextResponse.json({ success: true }, { status: 201 });
   } catch (error) {
     console.error("Signup failed", error);
+    if (createdUserId) {
+      await rollbackFailedSignupUser(createdUserId);
+    }
     if (isPrismaUniqueViolation(error)) {
       return NextResponse.json(
         { error: "An account with this email already exists." },

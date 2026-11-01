@@ -42,8 +42,19 @@ import { toAccessUserFields, userAccessSelect } from "@/lib/access-server";
 import { formatMemberPlanLabel } from "@/lib/member-plan-labels-shared";
 import { canAccessProgramDashboard } from "@/lib/program-access-shared";
 import { shouldShowProgramSetupBanner } from "@/lib/program-setup-shared";
-import { MEMBERSHIP_LEVELS, formatMembershipLevelLabel, type MembershipLevelKey } from "@/lib/membership-levels-shared";
+import {
+  MEMBERSHIP_LEVELS,
+  formatMembershipLevelLabel,
+  isPublicMembershipLevelsEnabled,
+  type MembershipLevelKey,
+} from "@/lib/membership-levels-shared";
 import { buildPlaybookPurchaseWelcomeSummary } from "@/lib/playbook-dashboard-copy-shared";
+import {
+  FOUNDING_PLUS_MONTHLY_DISCOUNT_DISPLAY,
+  isActiveFoundingPlusMonthlyMember,
+} from "@/lib/founding-offer-shared";
+import { loadExtraReviewUiState } from "@/lib/extra-review-server";
+import { mapExtraReviewUiState } from "@/lib/extra-review-ui-shared";
 import { activeMembershipLevel } from "@/lib/access-shared";
 import { getPlaybookLifetimeSubmissionLimit } from "@/lib/playbook-entitlements-shared";
 import { needsInPersonEmergencyContactReminder } from "@/lib/in-person-training-shared";
@@ -178,7 +189,14 @@ function getQuickLinks(access: AccessUserFields, hasFreeSubmissionRemaining: boo
     });
   }
 
-  return links;
+  const seen = new Set<string>();
+  return links.filter((link) => {
+    if (seen.has(link.href)) {
+      return false;
+    }
+    seen.add(link.href);
+    return true;
+  });
 }
 
 export default async function DashboardPage({ searchParams }: DashboardPageProps) {
@@ -237,7 +255,34 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const freeSubmissionUsed = userRecord.freeSubmissionUsed;
   const membershipSub = await prisma.membershipSubscription.findUnique({
     where: { userId: session.user.id },
+    select: {
+      level: true,
+      status: true,
+      cancelAtPeriodEnd: true,
+      pendingLevel: true,
+      currentPeriodEnd: true,
+      billingInterval: true,
+      foundingDiscountEndsAt: true,
+    },
   });
+  const membershipLevelsLive = isPublicMembershipLevelsEnabled();
+  const foundingPriceLine =
+    membershipLevelsLive &&
+    membershipSub &&
+    isActiveFoundingPlusMonthlyMember({
+      level: membershipSub.level,
+      billingInterval: membershipSub.billingInterval,
+      foundingDiscountEndsAt: membershipSub.foundingDiscountEndsAt,
+    })
+      ? FOUNDING_PLUS_MONTHLY_DISCOUNT_DISPLAY
+      : null;
+  const extraReviewDashboard =
+    membershipLevelsLive && effectiveLevel === "PLUS"
+      ? await loadExtraReviewUiState(session.user.id)
+      : null;
+  const extraReviewCardProps = extraReviewDashboard
+    ? mapExtraReviewUiState(extraReviewDashboard)
+    : null;
   const membershipLabel = formatMemberPlanLabel(access);
   const membershipCardLabel = membershipSub
     ? formatMembershipLevelLabel(membershipSub.level as MembershipLevelKey)
@@ -519,6 +564,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
               isManualMembership={isManualMembership}
               subscriptionCurrentPeriodEnd={userRecord.subscriptionCurrentPeriodEnd}
               subscriptionCancelAtPeriodEnd={userRecord.subscriptionCancelAtPeriodEnd}
+              foundingPriceLine={foundingPriceLine}
               phase2Membership={
                 membershipSub
                   ? {
@@ -541,6 +587,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
               assessmentCallBooked={userRecord.assessmentCallBooked}
               assessmentCallDate={userRecord.assessmentCallDate}
               keepBuildingCoaching={keepBuildingCoaching}
+              extraReview={extraReviewCardProps}
             />
           </div>
 

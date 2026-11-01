@@ -23,12 +23,25 @@ import { serializeInPersonTrainingInfo } from "@/lib/in-person-training-shared";
 import { getTwelveWeekProgramEndDate } from "@/lib/twelve-week-program";
 
 import { formatAccountRoleLabel, formatSignedUpBy, getPlayerFullName } from "@/lib/account-shared";
+import { formatCommissionEligibilityLabel } from "@/lib/commission-eligibility-shared";
 import {
   formatAdminMemberPlanLabel,
   formatAdminMembershipLevelExpiry,
 } from "@/lib/member-plan-labels-shared";
 import { mergeOrgIntoAccessFields } from "@/lib/org-server";
 import { formatAdminBaseTierLabel } from "@/lib/member-plan-labels-shared";
+import type { MembershipBillingIntervalKey } from "@/lib/membership-billing-shared";
+import type { MembershipLevelKey } from "@/lib/membership-levels-shared";
+import { formatMembershipLevelLabel } from "@/lib/membership-levels-shared";
+import { formatDateWithYear } from "@/lib/format-date";
+import {
+  buildAdminAnnualMembershipRefundSummary,
+  buildAdminMembershipBillingLine,
+  buildAdminMembershipFoundingDiscountLine,
+  buildAdminMembershipPendingChangeNotices,
+  buildAdminMembershipSubscriptionStatusLabel,
+  buildMembershipSubscriptionEndedLabels,
+} from "@/lib/admin-membership-subscription-shared";
 
 export const adminMemberListSelect = {
   id: true,
@@ -97,6 +110,7 @@ type AdminMemberListRecord = {
     coveredLevel: "CORE" | "PLUS" | "ALL_ACCESS" | null;
     trialStartsAt: Date | null;
     trialEndsAt: Date | null;
+    commissionRate?: number;
   } | null;
   signupDate: Date;
   assessmentCallBooked: boolean;
@@ -272,6 +286,11 @@ export const adminMemberDetailSelect = {
   organizationId: true,
   orgTrialQuickReportUsed: true,
   coreQuickReportNextEligibleAt: true,
+  commissionEligible: true,
+  commissionIneligibleReason: true,
+  commissionEligibleAdminOverride: true,
+  commissionOverrideNote: true,
+  commissionAttributionOrgId: true,
   organization: {
     select: {
       id: true,
@@ -281,6 +300,14 @@ export const adminMemberDetailSelect = {
       coveredLevel: true,
       trialStartsAt: true,
       trialEndsAt: true,
+      commissionRate: true,
+    },
+  },
+  commissionAttributionOrg: {
+    select: {
+      id: true,
+      name: true,
+      commissionRate: true,
     },
   },
   signupDate: true,
@@ -298,12 +325,18 @@ export const adminMemberDetailSelect = {
   stripeCustomerId: true,
   membershipSubscription: {
     select: {
+      id: true,
       level: true,
       status: true,
+      billingInterval: true,
       currentPeriodEnd: true,
       cancelAtPeriodEnd: true,
       pendingLevel: true,
+      pendingBillingInterval: true,
+      foundingDiscountEndsAt: true,
       startedAt: true,
+      accessEndedAt: true,
+      stripeSubscriptionId: true,
     },
   },
   termsVersion: true,
@@ -380,16 +413,32 @@ export const adminMemberDetailSelect = {
 } as const;
 
 type AdminMemberDetailRecord = AdminMemberListRecord & {
+  commissionEligible: boolean;
+  commissionIneligibleReason: string | null;
+  commissionEligibleAdminOverride: boolean;
+  commissionOverrideNote: string | null;
+  commissionAttributionOrgId: string | null;
+  commissionAttributionOrg: {
+    id: string;
+    name: string;
+    commissionRate: number;
+  } | null;
   adminNotes: string | null;
   stripeSubscriptionId: string | null;
   stripeCustomerId: string | null;
   membershipSubscription: {
+    id: string;
     level: "CORE" | "PLUS" | "ALL_ACCESS";
     status: string;
+    billingInterval: "MONTHLY" | "ANNUAL";
     currentPeriodEnd: Date;
     cancelAtPeriodEnd: boolean;
     pendingLevel: "CORE" | "PLUS" | "ALL_ACCESS" | null;
+    pendingBillingInterval: "MONTHLY" | "ANNUAL" | null;
+    foundingDiscountEndsAt: Date | null;
     startedAt: Date;
+    accessEndedAt: Date | null;
+    stripeSubscriptionId: string;
   } | null;
   termsVersion: string | null;
   termsAcceptedAt: Date | null;
@@ -457,11 +506,153 @@ function formatSubmissionStatus(status: string) {
   return "Pending";
 }
 
-export function serializeAdminMemberDetail(user: AdminMemberDetailRecord) {
+function adminMemberDisplayName(user: AdminMemberDetailRecord) {
+  const holder = user.accountHolderName?.trim();
+  if (holder) {
+    return holder;
+  }
+  return getPlayerFullName(user);
+}
+
+type AdminMembershipSubscriptionPaymentRow = {
+  id: string;
+  billingInterval: "MONTHLY" | "ANNUAL" | null;
+  amountPaidCents: number;
+  paidAt: Date;
+  annualRefundEligibleUntil: Date | null;
+  refundedAt: Date | null;
+  invoiceBillingReason?: string | null;
+};
+
+function serializeAdminMembershipSubscription(
+  subscription: NonNullable<AdminMemberDetailRecord["membershipSubscription"]>,
+  user: AdminMemberDetailRecord,
+  payments: AdminMembershipSubscriptionPaymentRow[],
+) {
+  const level = subscription.level as MembershipLevelKey;
+  const billingInterval = subscription.billingInterval as MembershipBillingIntervalKey;
+  const pendingBillingInterval =
+    (subscription.pendingBillingInterval as MembershipBillingIntervalKey | null) ?? null;
+  const pendingLevel = (subscription.pendingLevel as MembershipLevelKey | null) ?? null;
+  const currentPeriodEndLabel = formatDateWithYear(subscription.currentPeriodEnd);
+  const memberDisplayName = adminMemberDisplayName(user);
+  const now = new Date();
+
+  const endedLabels = buildMembershipSubscriptionEndedLabels({
+    status: subscription.status,
+    accessEndedAt: subscription.accessEndedAt,
+    now,
+  });
+
+  const annualRefund = buildAdminAnnualMembershipRefundSummary({
+    subscriptionBillingInterval: billingInterval,
+    subscriptionStatus: subscription.status,
+    accessEndedAt: subscription.accessEndedAt,
+    payments: payments.map((payment) => ({
+      id: payment.id,
+      billingInterval: payment.billingInterval,
+      amountPaidCents: payment.amountPaidCents,
+      paidAt: payment.paidAt,
+      annualRefundEligibleUntil: payment.annualRefundEligibleUntil,
+      refundedAt: payment.refundedAt,
+      invoiceBillingReason: payment.invoiceBillingReason ?? null,
+    })),
+    memberDisplayName,
+    now,
+  });
+
+  return {
+    level,
+    levelLabel: formatMembershipLevelLabel(level),
+    status: subscription.status,
+    statusLabel: buildAdminMembershipSubscriptionStatusLabel({
+      status: subscription.status,
+      cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
+      pendingLevel,
+      currentPeriodEndLabel,
+    }),
+    billingInterval,
+    billingLine: buildAdminMembershipBillingLine({
+      level,
+      billingInterval,
+      foundingDiscountEndsAt: subscription.foundingDiscountEndsAt,
+      now,
+    }),
+    foundingDiscountLine: buildAdminMembershipFoundingDiscountLine({
+      level,
+      billingInterval,
+      foundingDiscountEndsAt: subscription.foundingDiscountEndsAt,
+      now,
+    }),
+    pendingChangeNotices: buildAdminMembershipPendingChangeNotices({
+      level,
+      billingInterval,
+      cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
+      pendingLevel,
+      pendingBillingInterval,
+      currentPeriodEndLabel,
+    }),
+    currentPeriodEnd: subscription.currentPeriodEnd.toISOString(),
+    cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
+    pendingLevel,
+    pendingBillingInterval,
+    startedAt: subscription.startedAt.toISOString(),
+    showNextBilling: endedLabels.showNextBilling,
+    canceledOnLabel: endedLabels.canceledOnLabel,
+    annualRefund: annualRefund
+      ? {
+          canRefund: annualRefund.canRefund,
+          refundWindowLabel: annualRefund.refundWindowLabel,
+          refundLines: annualRefund.refundLines,
+          totalRefundableCents: annualRefund.totalRefundableCents,
+          confirmMessage: annualRefund.confirmMessage,
+        }
+      : null,
+  };
+}
+
+function serializeAdminMemberCommission(user: AdminMemberDetailRecord) {
+  const commissionOrg =
+    user.commissionAttributionOrg && user.commissionAttributionOrg.commissionRate > 0
+      ? user.commissionAttributionOrg
+      : user.organization && (user.organization.commissionRate ?? 0) > 0
+        ? user.organization
+        : null;
+  if (!commissionOrg) {
+    return null;
+  }
+  const effectiveEligible =
+    user.commissionEligibleAdminOverride || user.commissionEligible;
+  const orgId = commissionOrg.id ?? user.commissionAttributionOrgId ?? user.organizationId;
+  const orgName = commissionOrg.name ?? "Organization";
+  if (!orgId) {
+    return null;
+  }
+
+  return {
+    orgId,
+    orgName,
+    commissionEligible: user.commissionEligible,
+    commissionIneligibleReason: user.commissionIneligibleReason,
+    commissionEligibleAdminOverride: user.commissionEligibleAdminOverride,
+    commissionOverrideNote: user.commissionOverrideNote,
+    eligibilityLabel: formatCommissionEligibilityLabel({
+      eligible: effectiveEligible,
+      reason: user.commissionIneligibleReason,
+      adminOverride: user.commissionEligibleAdminOverride,
+    }),
+  };
+}
+
+export function serializeAdminMemberDetail(
+  user: AdminMemberDetailRecord,
+  membershipPayments: AdminMembershipSubscriptionPaymentRow[] = [],
+) {
   const summary = serializeAdminMemberSummary(user);
 
   return {
     ...summary,
+    commission: serializeAdminMemberCommission(user),
     adminNotes: user.adminNotes,
     legalAcceptance: {
       termsVersion: user.termsVersion,
@@ -478,14 +669,11 @@ export function serializeAdminMemberDetail(user: AdminMemberDetailRecord) {
     inPersonTraining: serializeInPersonTrainingInfo(user),
     hasStripeSubscription: Boolean(user.stripeSubscriptionId),
     membershipSubscription: user.membershipSubscription
-      ? {
-          level: user.membershipSubscription.level,
-          status: user.membershipSubscription.status,
-          currentPeriodEnd: user.membershipSubscription.currentPeriodEnd.toISOString(),
-          cancelAtPeriodEnd: user.membershipSubscription.cancelAtPeriodEnd,
-          pendingLevel: user.membershipSubscription.pendingLevel,
-          startedAt: user.membershipSubscription.startedAt.toISOString(),
-        }
+      ? serializeAdminMembershipSubscription(
+          user.membershipSubscription,
+          user,
+          membershipPayments,
+        )
       : null,
     stripeCustomerId: user.stripeCustomerId,
     memberProfile: serializeMemberProfile(user),

@@ -40,6 +40,7 @@ export const ADMIN_ROUTES = {
     leadDetail: (leadId: string) => `/admin/business/leads/${leadId}`,
     sales: "/admin/business/sales",
     waitlist: "/admin/business/waitlist",
+    commissions: "/admin/business/commissions",
     grants: "/admin/business/grants",
   },
   settings: {

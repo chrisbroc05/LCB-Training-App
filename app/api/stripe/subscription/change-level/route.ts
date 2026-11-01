@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { parseMembershipBillingInterval } from "@/lib/membership-billing-shared";
 import { isMembershipLevelKey, type MembershipLevelKey } from "@/lib/membership-levels-shared";
 import {
   buildDowngradeModalContent,
@@ -56,10 +57,12 @@ export async function POST(request: Request) {
       }
       const result = await scheduleMembershipDowngrade(session.user.id, targetRaw);
       const effectiveDateLabel = formatMembershipBillingDate(result.effectiveAt);
+      const billingInterval = parseMembershipBillingInterval(sub.billingInterval);
       const successMessage = buildDowngradeModalContent({
         currentLevel: current as MembershipLevelKey,
         targetLevel: targetRaw,
         effectiveDateLabel,
+        billingInterval,
       }).successMessage;
       return NextResponse.json({ success: true, successMessage, ...result });
     }
@@ -69,10 +72,12 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "Use downgrade for a lower plan." }, { status: 400 });
       }
       await upgradeMembershipLevel(session.user.id, targetRaw);
+      const billingInterval = parseMembershipBillingInterval(sub.billingInterval);
       const successMessage = buildUpgradeModalContent({
         targetLevel: targetRaw,
         amountDueTodayDisplay: "",
         nextBillingLabel: "",
+        billingInterval,
       }).successMessage;
       return NextResponse.json({ success: true, immediate: true, successMessage });
     }

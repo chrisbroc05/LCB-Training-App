@@ -29,11 +29,35 @@ export type AdminOrganizationRecord = {
   trialLockedCopy: string | null;
   commissionRate: number;
   commissionMonths: number;
+  ongoingCommissionRate: number;
+  commissionEndsAt: string | null;
+  foundingOfferEnabled: boolean;
+  foundingOfferDeadline: string | null;
+  foundingOfferMonths: number;
+  foundingMemberCount: number;
+  commissionableFamilies: number;
+  notCommissionableFamilies: number;
   memberCount: number;
   codes: AdminOrganizationCodeRecord[];
   teams: AdminOrganizationTeamRecord[];
-  commissionAttributionCount: number;
 };
+
+export function buildOrgFoundingOfferExplainer(foundingOfferMonths: number): string {
+  const months = Math.max(1, Math.floor(foundingOfferMonths) || 12);
+  return `Families in this club who start Plus monthly by the deadline pay $15/mo for ${months} months, then $20/mo.`;
+}
+
+export function formatAdminCommissionRate(rate: number): string {
+  return `${Math.round(rate * 1000) / 10}%`;
+}
+
+export function buildAdminOrgCommissionsHref(orgId: string): string {
+  return `/admin/business/commissions?orgId=${encodeURIComponent(orgId)}`;
+}
+
+export function isOrgCommissionConfigured(commissionRate: number): boolean {
+  return commissionRate > 0;
+}
 
 export function slugifyOrganizationName(name: string): string {
   return name

@@ -10,8 +10,15 @@ import {
   parseMembershipLevelFromMetadata,
   subscriptionStatusGrantsAccess,
 } from "@/lib/membership-subscription-shared";
+import type { MembershipBillingIntervalKey } from "@/lib/membership-billing-shared";
+import { resolveMembershipInvoicePaymentForPaidInvoice } from "@/lib/membership-invoice-payment-shared";
+import { ensureCommissionLedgerForMembershipPayment } from "@/lib/commission-ledger-server";
+import { syncMembershipPaymentStripeFeeFromInvoice } from "@/lib/membership-payment-stripe-fee-server";
+import { resolveMembershipPaymentUserId } from "@/lib/membership-payment-commission-shared";
 import {
+  mapStripePriceIdToBillingInterval,
   mapStripePriceIdToMembershipLevel,
+  mapStripePriceIdToMembershipPrice,
 } from "@/lib/stripe-membership-prices-server";
 import {
   activateAllAccessMembership,
@@ -20,7 +27,11 @@ import {
 import { sendCoachNewProgramPlayerPushForUser } from "@/lib/coach-push-instant";
 import { sendMembershipLevelWelcomeIfNeeded } from "@/lib/membership-welcome-email-server";
 import { shouldSendMembershipLevelWelcomeOnSubscriptionChange } from "@/lib/membership-welcome-email-shared";
-import { getInvoiceLinePriceId } from "@/lib/stripe-invoice-shared";
+import {
+  getInvoiceLinePriceId,
+  getStripeInvoiceSubscriptionId,
+  mapStripeInvoiceLinesForMembership,
+} from "@/lib/stripe-invoice-shared";
 
 export function getSubscriptionPeriodEnd(subscription: Stripe.Subscription): Date | null {
   const itemPeriodEnds = subscription.items.data
@@ -212,8 +223,18 @@ export async function applyMembershipSubscriptionFromStripe(params: {
   previousLevel?: MembershipLevelKey | null;
   forceDeleted?: boolean;
 }) {
+  const existing = await prisma.membershipSubscription.findUnique({
+    where: { userId: params.userId },
+  });
+
   const stripePriceId = params.subscription.items.data[0]?.price.id ?? null;
-  const levelFromPrice = mapStripePriceIdToMembershipLevel(stripePriceId);
+  const priceMapping = mapStripePriceIdToMembershipPrice(stripePriceId);
+  const levelFromPrice = priceMapping?.level ?? mapStripePriceIdToMembershipLevel(stripePriceId);
+  const billingIntervalFromPrice: MembershipBillingIntervalKey =
+    priceMapping?.interval ??
+    mapStripePriceIdToBillingInterval(stripePriceId) ??
+    (existing?.billingInterval as MembershipBillingIntervalKey | undefined) ??
+    "MONTHLY";
   const levelFromMeta = parseMembershipLevelFromMetadata(
     params.subscription.metadata?.membershipLevel,
   );
@@ -234,10 +255,6 @@ export async function applyMembershipSubscriptionFromStripe(params: {
   if (!currentPeriodEnd) {
     return null;
   }
-
-  const existing = await prisma.membershipSubscription.findUnique({
-    where: { userId: params.userId },
-  });
 
   let pastDueGraceEndsAt = existing?.pastDueGraceEndsAt ?? null;
   const now = new Date();
@@ -284,6 +301,22 @@ export async function applyMembershipSubscriptionFromStripe(params: {
     accessEndedAt = accessEndedAt ?? now;
   }
 
+  let pendingBillingInterval = existing?.pendingBillingInterval ?? null;
+  if (pendingBillingInterval && billingIntervalFromPrice === pendingBillingInterval) {
+    pendingBillingInterval = null;
+  }
+
+  let foundingDiscountEndsAt = existing?.foundingDiscountEndsAt ?? null;
+  const foundingMeta = params.subscription.metadata?.foundingDiscountEndsAt?.trim();
+  if (foundingMeta) {
+    foundingDiscountEndsAt = new Date(foundingMeta);
+  }
+  if (level !== "PLUS" || billingIntervalFromPrice !== "MONTHLY") {
+    foundingDiscountEndsAt = null;
+  } else if (foundingDiscountEndsAt && foundingDiscountEndsAt.getTime() <= now.getTime()) {
+    foundingDiscountEndsAt = null;
+  }
+
   const record = await prisma.membershipSubscription.upsert({
     where: { userId: params.userId },
     create: {
@@ -293,10 +326,13 @@ export async function applyMembershipSubscriptionFromStripe(params: {
       stripePriceId,
       stripeScheduleId,
       level,
+      billingInterval: billingIntervalFromPrice,
       status,
       currentPeriodEnd,
       cancelAtPeriodEnd: params.subscription.cancel_at_period_end,
       pendingLevel,
+      pendingBillingInterval,
+      foundingDiscountEndsAt,
       startedAt: existing?.startedAt ?? new Date(params.subscription.start_date * 1000),
       organizationId: orgId,
       orgJoinedAtSnapshot: orgJoinedAt,
@@ -308,10 +344,13 @@ export async function applyMembershipSubscriptionFromStripe(params: {
       stripeSubscriptionId: params.subscription.id,
       stripePriceId,
       level,
+      billingInterval: billingIntervalFromPrice,
       status,
       currentPeriodEnd,
       cancelAtPeriodEnd: params.subscription.cancel_at_period_end,
       pendingLevel,
+      pendingBillingInterval,
+      foundingDiscountEndsAt,
       organizationId: orgId,
       orgJoinedAtSnapshot: orgJoinedAt,
       pastDueGraceEndsAt,
@@ -385,46 +424,163 @@ export async function applyMembershipSubscriptionFromStripe(params: {
     await ensureProgramEnrollmentForUser(params.userId);
   }
 
+  await syncMembershipSubscriptionPaymentsFromStripe({
+    userId: params.userId,
+    stripeCustomerId: record.stripeCustomerId,
+    stripeSubscriptionId: params.subscription.id,
+    subscriptionBillingInterval: record.billingInterval as MembershipBillingIntervalKey,
+  });
+
   return record;
+}
+
+export async function upsertMembershipSubscriptionPaymentFromInvoice(params: {
+  invoice: Stripe.Invoice;
+  subscriptionId?: string | null;
+}) {
+  const invoiceId = params.invoice.id;
+  if (!invoiceId || params.invoice.status !== "paid") {
+    return { recorded: false as const, reason: "not_paid" as const };
+  }
+
+  const amountPaidCents = params.invoice.amount_paid ?? 0;
+  if (amountPaidCents <= 0) {
+    return { recorded: false as const, reason: "zero_amount" as const };
+  }
+
+  const stripeSubscriptionId =
+    params.subscriptionId ?? getStripeInvoiceSubscriptionId(params.invoice);
+
+  const subRow = stripeSubscriptionId
+    ? await prisma.membershipSubscription.findFirst({
+        where: { stripeSubscriptionId },
+      })
+    : null;
+
+  const subscriptionBillingInterval =
+    (subRow?.billingInterval as MembershipBillingIntervalKey | undefined) ?? null;
+  const invoiceLines = mapStripeInvoiceLinesForMembership(params.invoice.lines?.data);
+  const paidAt = new Date(
+    (params.invoice.status_transitions?.paid_at ?? params.invoice.created) * 1000,
+  );
+
+  const resolved = resolveMembershipInvoicePaymentForPaidInvoice({
+    amountPaid: amountPaidCents,
+    billingReason: params.invoice.billing_reason ?? null,
+    lines: invoiceLines,
+    subscriptionBillingInterval,
+    paidAt,
+  });
+
+  const linePriceId = getInvoiceLinePriceId(params.invoice.lines?.data[0]);
+  const level =
+    resolved.level ??
+    mapStripePriceIdToMembershipLevel(linePriceId) ??
+    (subRow?.level as MembershipLevelKey | undefined) ??
+    null;
+  const billingInterval =
+    resolved.billingInterval ??
+    mapStripePriceIdToBillingInterval(linePriceId) ??
+    subscriptionBillingInterval;
+
+  const stripeCustomerId =
+    typeof params.invoice.customer === "string" ? params.invoice.customer : null;
+  const userFromCustomer = stripeCustomerId
+    ? await prisma.user.findFirst({
+        where: { stripeCustomerId },
+        select: { id: true },
+      })
+    : null;
+
+  const existing = await prisma.membershipSubscriptionPayment.findUnique({
+    where: { stripeInvoiceId: invoiceId },
+  });
+
+  const resolvedUserId = resolveMembershipPaymentUserId({
+    subscriptionUserId: subRow?.userId,
+    stripeCustomerUserId: userFromCustomer?.id,
+    existingPaymentUserId: existing?.userId,
+  });
+
+  const paymentData = {
+    membershipSubscriptionId: subRow?.id ?? existing?.membershipSubscriptionId ?? null,
+    userId: resolvedUserId,
+    level,
+    billingInterval: billingInterval ?? undefined,
+    amountPaidCents,
+    currency: params.invoice.currency ?? "usd",
+    paidAt,
+    annualRefundEligibleUntil: resolved.annualRefundEligibleUntil,
+  };
+
+  let createdNew = false;
+  if (existing) {
+    await prisma.membershipSubscriptionPayment.update({
+      where: { id: existing.id },
+      data: {
+        ...paymentData,
+        membershipSubscriptionId:
+          paymentData.membershipSubscriptionId ?? existing.membershipSubscriptionId,
+        userId: paymentData.userId ?? existing.userId,
+        level: paymentData.level ?? existing.level,
+        billingInterval: paymentData.billingInterval ?? existing.billingInterval,
+      },
+    });
+  } else {
+    await prisma.membershipSubscriptionPayment.create({
+      data: {
+        stripeInvoiceId: invoiceId,
+        ...paymentData,
+      },
+    });
+    createdNew = true;
+  }
+
+  await syncMembershipPaymentStripeFeeFromInvoice({
+    stripeInvoiceId: invoiceId,
+    fallbackAmountPaidCents: amountPaidCents,
+  });
+  await ensureCommissionLedgerForMembershipPayment({ stripeInvoiceId: invoiceId });
+
+  return { recorded: true as const, updated: !createdNew };
 }
 
 export async function recordMembershipSubscriptionInvoice(params: {
   invoice: Stripe.Invoice;
   subscriptionId: string | null;
 }) {
-  const invoiceId = params.invoice.id;
-  if (!invoiceId || params.invoice.status !== "paid") {
+  await upsertMembershipSubscriptionPaymentFromInvoice({
+    invoice: params.invoice,
+    subscriptionId: params.subscriptionId,
+  });
+}
+
+export async function syncMembershipSubscriptionPaymentsFromStripe(params: {
+  userId: string;
+  stripeCustomerId: string | null;
+  stripeSubscriptionId: string;
+  subscriptionBillingInterval: MembershipBillingIntervalKey;
+}) {
+  if (!params.stripeCustomerId) {
     return;
   }
 
-  const existing = await prisma.membershipSubscriptionPayment.findUnique({
-    where: { stripeInvoiceId: invoiceId },
-    select: { id: true },
+  const stripe = await import("@/lib/stripe").then((mod) => mod.getStripe());
+  const invoices = await stripe.invoices.list({
+    customer: params.stripeCustomerId,
+    limit: 24,
   });
-  if (existing) {
-    return;
+
+  for (const invoice of invoices.data) {
+    if (invoice.status !== "paid") {
+      continue;
+    }
+    const subscriptionId = getStripeInvoiceSubscriptionId(invoice);
+    if (subscriptionId !== params.stripeSubscriptionId) {
+      continue;
+    }
+    await upsertMembershipSubscriptionPaymentFromInvoice({ invoice, subscriptionId });
   }
-
-  const subRow = params.subscriptionId
-    ? await prisma.membershipSubscription.findFirst({
-        where: { stripeSubscriptionId: params.subscriptionId },
-      })
-    : null;
-
-  const linePriceId = getInvoiceLinePriceId(params.invoice.lines?.data[0]);
-  const level = mapStripePriceIdToMembershipLevel(linePriceId) ?? subRow?.level ?? null;
-
-  await prisma.membershipSubscriptionPayment.create({
-    data: {
-      stripeInvoiceId: invoiceId,
-      membershipSubscriptionId: subRow?.id ?? null,
-      userId: subRow?.userId ?? null,
-      level,
-      amountCents: params.invoice.amount_paid ?? 0,
-      currency: params.invoice.currency ?? "usd",
-      paidAt: new Date((params.invoice.status_transitions?.paid_at ?? params.invoice.created) * 1000),
-    },
-  });
 }
 
 export async function handleMembershipInvoicePaymentFailed(params: {

@@ -26,6 +26,11 @@ import { toAccessUserFields, userAccessSelect } from "@/lib/access-server";
 import { formatMemberPlanLabel } from "@/lib/member-plan-labels-shared";
 import { prisma } from "@/lib/prisma";
 import { formatMembershipBillingDate, formatOptionalDateTime } from "@/lib/format-date";
+import {
+  buildAdminAnnualMembershipRefundSummary,
+  buildMembershipSubscriptionEndedLabels,
+} from "@/lib/admin-membership-subscription-shared";
+import type { MembershipBillingIntervalKey } from "@/lib/membership-billing-shared";
 import { serializeInPersonTrainingInfo } from "@/lib/in-person-training-shared";
 import { getStripe } from "@/lib/stripe";
 
@@ -139,6 +144,38 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
   const membershipNextBillingLabel = membershipSub
     ? formatMembershipBillingDate(membershipSub.currentPeriodEnd)
     : "";
+  let membershipShowNextBilling = true;
+  let membershipCanceledOnLabel: string | null = null;
+  let membershipRefundLines: string[] = [];
+  if (membershipSub) {
+    const endedLabels = buildMembershipSubscriptionEndedLabels({
+      status: membershipSub.status,
+      accessEndedAt: membershipSub.accessEndedAt,
+    });
+    membershipShowNextBilling = endedLabels.showNextBilling;
+    membershipCanceledOnLabel = endedLabels.canceledOnLabel;
+    if (membershipSub.billingInterval === "ANNUAL") {
+      const membershipPayments = await prisma.membershipSubscriptionPayment.findMany({
+        where: { userId: session.user.id },
+        select: {
+          id: true,
+          billingInterval: true,
+          amountPaidCents: true,
+          paidAt: true,
+          annualRefundEligibleUntil: true,
+          refundedAt: true,
+        },
+      });
+      const refundSummary = buildAdminAnnualMembershipRefundSummary({
+        subscriptionBillingInterval: membershipSub.billingInterval as MembershipBillingIntervalKey,
+        subscriptionStatus: membershipSub.status,
+        accessEndedAt: membershipSub.accessEndedAt,
+        payments: membershipPayments,
+        memberDisplayName: "Member",
+      });
+      membershipRefundLines = refundSummary?.refundLines ?? [];
+    }
+  }
   const membershipStatusLabel = membershipSub
     ? formatMembershipSubscriptionStatusLabel({
         status: membershipSub.status,
@@ -185,6 +222,19 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                 ? formatMembershipBillingDate(membershipSub.currentPeriodEnd)
                 : null
             }
+            billingInterval={membershipSub.billingInterval as "MONTHLY" | "ANNUAL"}
+            pendingBillingInterval={
+              membershipSub.pendingBillingInterval as "MONTHLY" | "ANNUAL" | null
+            }
+            pendingBillingEffectiveLabel={
+              membershipSub.pendingBillingInterval
+                ? formatMembershipBillingDate(membershipSub.currentPeriodEnd)
+                : null
+            }
+            foundingDiscountEndsAt={membershipSub.foundingDiscountEndsAt?.toISOString() ?? null}
+            showNextBilling={membershipShowNextBilling}
+            canceledOnLabel={membershipCanceledOnLabel}
+            refundLines={membershipRefundLines}
           />
         ) : null}
         {!membershipSub ? (

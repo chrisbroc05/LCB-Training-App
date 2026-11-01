@@ -1,18 +1,31 @@
 import Link from "next/link";
+import ExtraReviewCreditBanner from "@/app/components/ExtraReviewCreditBanner";
+import ExtraReviewOffer from "@/app/components/ExtraReviewOffer";
 import type { CoachingAllowancePickerOption } from "@/lib/coaching-submission-pool-shared";
 import { formatCoachingAllowanceSummaryLine } from "@/lib/coaching-submission-pool-shared";
+import type { ExtraReviewUiProps } from "@/lib/extra-review-ui-shared";
+import { formatMonthlyCoachingLimitMessage } from "@/lib/coaching-submissions-shared";
 
 type CoachingSubmissionsHubProps = {
   summaryOptions: CoachingAllowancePickerOption[];
   responseTimeLabel: string;
   showHistoryLink: boolean;
+  extraReview?: ExtraReviewUiProps | null;
+  monthlyReviewUsed?: boolean;
 };
 
 export default function CoachingSubmissionsHub({
   summaryOptions,
   responseTimeLabel,
   showHistoryLink,
+  extraReview = null,
+  monthlyReviewUsed = false,
 }: CoachingSubmissionsHubProps) {
+  const plusMonthlyUsed =
+    monthlyReviewUsed ||
+    summaryOptions.some((option) => option.poolId === "plus-monthly" && !option.canSubmit);
+  const hasUnusedExtraReview = (extraReview?.unusedCredits ?? 0) > 0;
+  const showMonthlyLimitBanner = plusMonthlyUsed && !hasUnusedExtraReview;
   return (
     <section className="rounded-3xl border border-[#18243a] bg-[#0b1324]/80 p-5 sm:p-8">
       <h1 className="text-2xl font-semibold leading-tight text-zinc-100 sm:text-3xl">
@@ -22,6 +35,19 @@ export default function CoachingSubmissionsHub({
         Choose the type of coaching support you need. Coach Broc typically responds within{" "}
         {responseTimeLabel}.
       </p>
+
+      {showMonthlyLimitBanner ? (
+        <div className="mt-6 rounded-xl border border-yellow-500/40 bg-yellow-500/10 p-4 text-sm text-yellow-100">
+          {formatMonthlyCoachingLimitMessage()}
+        </div>
+      ) : null}
+
+      {extraReview ? (
+        <ExtraReviewCreditBanner
+          unusedCredits={extraReview.unusedCredits}
+          nextCreditExpiresAt={extraReview.nextCreditExpiresAt}
+        />
+      ) : null}
 
       {summaryOptions.length > 0 ? (
         <div className="mt-6 rounded-xl border border-[#2b3650] bg-black/30 p-4 sm:p-5">
@@ -34,6 +60,15 @@ export default function CoachingSubmissionsHub({
             ))}
           </ul>
         </div>
+      ) : null}
+
+      {extraReview && plusMonthlyUsed && extraReview.unusedCredits === 0 ? (
+        <ExtraReviewOffer
+          canPurchase={extraReview.canPurchase}
+          unusedCredits={extraReview.unusedCredits}
+          blockReason={extraReview.blockReason}
+          nextPurchaseEligibleAt={extraReview.nextPurchaseEligibleAt}
+        />
       ) : null}
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2">

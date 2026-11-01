@@ -1,21 +1,32 @@
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import CoachingSubmissionQuota from "@/app/CoachingSubmissionQuota";
+import CoachingSubmissionUsageNotice, {
+  buildReviewAllowanceFallbackCopy,
+} from "@/app/components/CoachingSubmissionUsageNotice";
+import { getReviewAllowance } from "@/lib/access-shared";
+import CoachingMonthlyLimitPanel from "@/app/components/CoachingMonthlyLimitPanel";
 import LockedFeaturePanel from "@/app/LockedFeaturePanel";
 import MentalGameForm from "@/app/mental-game/MentalGameForm";
 import {
   ensureCoachingSubmissionPeriod,
   getCoachingSubmissionAvailability,
+  formatMonthlyCoachingLimitMessage,
   getCoachingSubmissionLockReason,
 } from "@/lib/coaching-submissions";
+import { loadExtraReviewUiState } from "@/lib/extra-review-server";
+import { mapExtraReviewUiState } from "@/lib/extra-review-ui-shared";
 import { PLAYBOOK_SUBMISSIONS_EXHAUSTED_MESSAGE } from "@/lib/coaching-submissions";
 import { resolveEffectiveLevel } from "@/lib/access-shared";
+import { isPublicMembershipLevelsEnabled } from "@/lib/membership-levels-shared";
 import { getMentalSubmissionConfirmationVariant } from "@/lib/coaching-submission-confirmation-shared";
 import { freeSubmissionUsedUpgradeMessage } from "@/lib/membership";
 import { mergeOrgIntoAccessFields, userOrgAccessSelect } from "@/lib/org-server";
 import { prisma } from "@/lib/prisma";
-import { canSubmitMindsetCoachingRequest } from "@/lib/coaching-submission-pool-shared";
+import {
+  canSubmitMindsetCoachingRequest,
+  resolveAutoMindsetPoolId,
+} from "@/lib/coaching-submission-pool-shared";
 
 export default async function MentalGamePage() {
   const session = await getServerSession(authOptions);
@@ -56,19 +67,36 @@ export default async function MentalGamePage() {
     );
   }
 
+  const membershipLevelsLive = isPublicMembershipLevelsEnabled();
+  const extraReviewState =
+    membershipLevelsLive && effective === "PLUS"
+      ? await loadExtraReviewUiState(session.user.id)
+      : null;
+  const extraReviewUi = extraReviewState ? mapExtraReviewUiState(extraReviewState) : null;
+  const unusedExtraReviewCredits = extraReviewState?.unusedCredits ?? 0;
+  const allowanceBuildOptions = {
+    unusedExtraReviewCredits,
+  };
+
   if (lockReason === "monthly-limit") {
-    return (
-      <LockedFeaturePanel
-        title="Coaching Submissions"
-        description="Submit what you are dealing with mentally so your coach can send support and adjustments."
-        message={`You have used all coaching submissions for this month. Your count resets on ${availability.resetsOnLabel}.`}
-        upgradeLabel="View Membership"
-        upgradeHref="/settings"
-      />
-    );
+    if (!canSubmitMindsetCoachingRequest(userFields, new Date(), allowanceBuildOptions)) {
+      return (
+        <CoachingMonthlyLimitPanel
+          title="Coaching Submissions"
+          description="Submit what you are dealing with mentally so your coach can send support and adjustments."
+          message={formatMonthlyCoachingLimitMessage()}
+          showExtraReviewOffer={
+            membershipLevelsLive && effective === "PLUS" && unusedExtraReviewCredits === 0
+          }
+          extraReview={extraReviewUi}
+          upgradeLabel="View Membership"
+          upgradeHref="/settings"
+        />
+      );
+    }
   }
 
-  if (!canSubmitMindsetCoachingRequest(userFields)) {
+  if (!canSubmitMindsetCoachingRequest(userFields, new Date(), allowanceBuildOptions)) {
     return (
       <LockedFeaturePanel
         title="Coaching Submissions"
@@ -94,6 +122,10 @@ export default async function MentalGamePage() {
     ? resolveEffectiveLevel(mergeOrgIntoAccessFields(accessUser))
     : "FREE";
   const confirmationVariant = getMentalSubmissionConfirmationVariant(effectiveLevel);
+  const mindsetPoolId = resolveAutoMindsetPoolId(userFields, new Date(), allowanceBuildOptions);
+  const quotaFallbackCopy = buildReviewAllowanceFallbackCopy(getReviewAllowance(userFields), {
+    coreQuickReportNextEligibleAt: userFields.coreQuickReportNextEligibleAt,
+  });
 
   return (
     <div className="mx-auto w-full max-w-4xl px-4 py-10 sm:px-6 sm:py-14 md:py-20">
@@ -105,7 +137,14 @@ export default async function MentalGamePage() {
           Submit what you are dealing with mentally so your coach can send support and adjustments.
         </p>
 
-        <CoachingSubmissionQuota user={userFields} />
+        <CoachingSubmissionUsageNotice
+          poolId={mindsetPoolId}
+          coachingSubmissionPeriod={userFields.coachingSubmissionPeriod}
+          extraReviewUseByIso={
+            extraReviewState?.nextCreditExpiresAt?.toISOString() ?? null
+          }
+          fallbackCopy={quotaFallbackCopy}
+        />
         <MentalGameForm confirmationVariant={confirmationVariant} />
       </section>
     </div>

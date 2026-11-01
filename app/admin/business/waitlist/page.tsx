@@ -1,4 +1,5 @@
 import Link from "next/link";
+import AdminAllAccessCapPanel from "@/app/admin/business/AdminAllAccessCapPanel";
 import AdminPageHeader from "@/app/admin/AdminPageHeader";
 import { ADMIN_ROUTES } from "@/lib/admin-routes-shared";
 import { prisma } from "@/lib/prisma";
@@ -18,10 +19,11 @@ export default async function AdminAllAccessWaitlistPage() {
     <div className="space-y-6">
       <AdminPageHeader
         title="All-Access waitlist"
-        description={`Program cap: ${capUsed} / ${settings.allAccessProgramCap} (All-Access subs + 12-Week players).`}
+        description="All-Access waitlist and platform program cap."
         backHref={ADMIN_ROUTES.business.hub}
         backLabel="Business"
       />
+      <AdminAllAccessCapPanel initialCap={settings.allAccessProgramCap} capUsed={capUsed} />
       <section className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
         <div className="admin-table-wrap">
           <table className="min-w-full text-left text-sm text-zinc-300">

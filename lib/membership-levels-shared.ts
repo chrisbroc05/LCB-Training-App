@@ -59,7 +59,7 @@ export const MEMBERSHIP_LEVELS: Record<MembershipLevelKey, MembershipLevelDefini
     tagline: "Full access to Coach Broc.",
     priceDisplay: "$249/mo",
     shortDescription:
-      "Everything in Plus, recruiting guide, your personal daily plan with no end date, and priority coaching.",
+      "Everything in Plus, plus your own daily plan with no end date, weekly video breakdowns from me, and the Recruiting Guide. $249/mo.",
   },
 };
 

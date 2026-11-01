@@ -208,6 +208,13 @@ export async function loadBusinessHubCards(now = new Date()): Promise<AdminSecti
       statLabel: "Waitlist",
     },
     {
+      href: ADMIN_ROUTES.business.commissions,
+      title: "Commissions",
+      description: "Org commission ledger and payouts.",
+      statValue: "2B",
+      statLabel: "Ledger",
+    },
+    {
       href: ADMIN_ROUTES.business.grants,
       title: "Product grants",
       description: "Manual product and program access grants.",

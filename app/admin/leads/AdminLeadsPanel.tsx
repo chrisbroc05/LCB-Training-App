@@ -61,7 +61,7 @@ type SubscriptionPaymentRow = {
   id: string;
   userId: string | null;
   level: string | null;
-  amountCents: number;
+  amountPaidCents: number;
   currency: string;
   paidAt: string;
   stripeInvoiceId: string;
@@ -327,7 +327,7 @@ export default function AdminLeadsPanel({
                 <tr key={row.id} className="border-t border-[#18243a]">
                   <td className="px-2 py-2">{row.level ?? "-"}</td>
                   <td className="px-2 py-2">
-                    ${(row.amountCents / 100).toFixed(2)} {row.currency.toUpperCase()}
+                    ${(row.amountPaidCents / 100).toFixed(2)} {row.currency.toUpperCase()}
                   </td>
                   <td className="px-2 py-2 whitespace-nowrap">
                     {new Date(row.paidAt).toLocaleDateString()}

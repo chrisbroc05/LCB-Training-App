@@ -58,19 +58,11 @@ export type Under13ParentLockState = {
   playerAge?: number | null;
   parentConsentEmail?: string | null;
   parentConsentConfirmedAt?: Date | string | null;
+  accountRole?: "PLAYER" | "PARENT" | null;
+  parentConsentMethod?: string | null;
 };
 
-export function needsUnder13ParentConfirmationLock(state: Under13ParentLockState) {
-  if (!isUnder13PlayerAge(state.playerAge)) {
-    return false;
-  }
-
-  if (!state.parentConsentEmail?.trim()) {
-    return false;
-  }
-
-  return !state.parentConsentConfirmedAt;
-}
+export { needsUnder13ParentConfirmationLock } from "@/lib/parent-consent-shared";
 
 export const UNDER13_PARENT_LOCK_MAX_RESENDS_PER_DAY = 3;
 

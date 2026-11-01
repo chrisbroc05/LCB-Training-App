@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { coachNewProgramPlayerPushTitle } from "../lib/coach-push-shared";
 import {
+  buildCoachNewPaidMembershipEmailText,
   buildMembershipLevelWelcomeEmail,
   buildTwelveWeekProgramWelcomeEmail,
   formatCheckoutLevelLabelForCoachNotification,
@@ -51,6 +52,15 @@ function main() {
   assert.match(core.html, /Send your swing/);
   assert.doesNotMatch(core.text, /Unsubscribe from marketing/i);
   assert.doesNotMatch(core.html, /marketing\/unsubscribe/i);
+  assert.equal((core.text.match(/Coach Broc/g) ?? []).length, 1);
+  assert.doesNotMatch(core.html, />Coach Broc<\/p>\s*<p[^>]*>LCB Training/);
+
+  const coreAnnual = buildMembershipLevelWelcomeEmail("CORE", {
+    firstName: "Alex",
+    billingInterval: "ANNUAL",
+  });
+  assert.match(coreAnnual.text, /You're billed \$100\/yr/);
+  assert.doesNotMatch(coreAnnual.text, /\$10\/mo/);
 
   assert.equal(
     shouldSendMembershipLevelWelcomeOnSubscriptionChange({
@@ -105,6 +115,23 @@ function main() {
   assert.equal(plus.subject, "Welcome to Plus");
   assert.match(plus.text, /Welcome to Plus/);
   assert.match(plus.text, /\$20\/mo/);
+
+  const plusFounding = buildMembershipLevelWelcomeEmail("PLUS", {
+    firstName: "Sam",
+    billingInterval: "MONTHLY",
+    foundingPlusMonthlyActive: true,
+  });
+  assert.match(plusFounding.text, /\$15\/mo \(founding price\) for your first 12 months, then \$20\/mo/);
+
+  const coachAnnual = buildCoachNewPaidMembershipEmailText({
+    level: "CORE",
+    name: "Alex",
+    email: "alex@example.com",
+    orgName: null,
+    memberAdminUrl: `${appUrl}/admin/members/u1`,
+    billingInterval: "ANNUAL",
+  });
+  assert.match(coachAnnual, /\(\$100\/yr\)/);
 
   const aa = buildMembershipLevelWelcomeEmail("ALL_ACCESS", {
     firstName: "Jordan",

@@ -18,6 +18,8 @@ export function formatCoachingReviewTrackAdminLabel(
       return "Free report";
     case "IN_DEPTH_MONTHLY":
       return "In-depth review";
+    case "EXTRA_REVIEW":
+      return "Extra review";
     case "PROGRAM":
       return "Program submission";
     default:

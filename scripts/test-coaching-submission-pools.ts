@@ -117,6 +117,46 @@ function testMindsetBlockedWhenPlaybookUsed() {
   assert.equal(canSubmitMindsetCoachingRequest(user), false);
 }
 
+function plusMonthlyUsedUser() {
+  return {
+    ...corePlusPlaybookUser({
+      membershipLevel: "PLUS",
+      membershipLevelExpiresAt: new Date("2099-01-01"),
+      coachingSubmissionsUsedThisMonth: 1,
+      coachingSubmissionPeriod: "2026-11",
+      playbookSubmissionsUsed: 1,
+    }),
+    membershipTier: "MEMORABLE" as const,
+  };
+}
+
+function testExtraReviewPoolWhenPlusMonthlyUsed() {
+  const user = plusMonthlyUsedUser();
+  const buildOptions = { unusedExtraReviewCredits: 1 };
+  const options = listSwingCoachingAllowanceFormOptions(user, new Date(), buildOptions);
+  const extra = options.find((option) => option.poolId === "extra-review");
+  assert.ok(extra?.canSubmit);
+  const validation = validateCoachingSubmissionPool(user, "extra-review", "swing", new Date(), buildOptions);
+  assert.equal(validation.ok, true);
+}
+
+function testSingleSubmittableExtraReviewAutoSelectsWithoutPoolParam() {
+  const user = plusMonthlyUsedUser();
+  const buildOptions = { unusedExtraReviewCredits: 1 };
+  assert.equal(requiresSwingAllowanceFormChoice(user, new Date(), buildOptions), false);
+  const validation = validateCoachingSubmissionPool(user, undefined, "swing", new Date(), buildOptions);
+  assert.equal(validation.ok, true);
+  if (validation.ok) {
+    assert.equal(validation.poolId, "extra-review");
+    assert.equal(validation.reviewTrack, "EXTRA_REVIEW");
+  }
+  const mindset = validateCoachingSubmissionPool(user, undefined, "mental", new Date(), buildOptions);
+  assert.equal(mindset.ok, true);
+  if (mindset.ok) {
+    assert.equal(mindset.poolId, "extra-review");
+  }
+}
+
 function main() {
   testSwingFormOptionsCorePlusPlaybook();
   testSummaryIncludesUnavailableCore();
@@ -125,6 +165,8 @@ function main() {
   testRejectIneligiblePool();
   testMindsetAutoPlaybookPool();
   testMindsetBlockedWhenPlaybookUsed();
+  testExtraReviewPoolWhenPlusMonthlyUsed();
+  testSingleSubmittableExtraReviewAutoSelectsWithoutPoolParam();
   console.log("test-coaching-submission-pools: all passed");
 }
 

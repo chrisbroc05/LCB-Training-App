@@ -1,4 +1,7 @@
 import Link from "next/link";
+import ExtraReviewOffer from "@/app/components/ExtraReviewOffer";
+import ExtraReviewCreditBanner from "@/app/components/ExtraReviewCreditBanner";
+import type { ExtraReviewUiProps } from "@/lib/extra-review-ui-shared";
 import FreeMemberWhileYouWaitCards from "@/app/components/FreeMemberWhileYouWaitCards";
 import KeepBuildingSwingCard from "@/app/components/KeepBuildingSwingCard";
 import CoachingAllowanceList from "@/app/dashboard/CoachingAllowanceList";
@@ -23,6 +26,7 @@ type DashboardCoachingCardProps = {
   assessmentCallBooked: boolean;
   assessmentCallDate: Date | null;
   keepBuildingCoaching?: KeepBuildingCoachingContext | null;
+  extraReview?: ExtraReviewUiProps | null;
 };
 
 export default function DashboardCoachingCard({
@@ -34,6 +38,7 @@ export default function DashboardCoachingCard({
   assessmentCallBooked,
   assessmentCallDate,
   keepBuildingCoaching = null,
+  extraReview = null,
 }: DashboardCoachingCardProps) {
   if (keepBuildingCoaching) {
     return <KeepBuildingSwingCard context={keepBuildingCoaching} />;
@@ -61,12 +66,28 @@ export default function DashboardCoachingCard({
             Go to Coaching Submissions
           </Link>
         ) : (
-          <Link
-            href="/program"
-            className="mt-4 inline-flex rounded-full border border-[#2b3650] bg-black/40 px-4 py-2 text-sm font-semibold text-zinc-300 transition hover:border-[#7f9434] hover:text-[#98b144]"
-          >
-            Explore the 12-Week Program
-          </Link>
+          <>
+            {extraReview ? (
+              <ExtraReviewCreditBanner
+                unusedCredits={extraReview.unusedCredits}
+                nextCreditExpiresAt={extraReview.nextCreditExpiresAt}
+              />
+            ) : null}
+            {extraReview && extraReview.unusedCredits === 0 ? (
+              <ExtraReviewOffer
+                canPurchase={extraReview.canPurchase}
+                unusedCredits={extraReview.unusedCredits}
+                blockReason={extraReview.blockReason}
+                nextPurchaseEligibleAt={extraReview.nextPurchaseEligibleAt}
+              />
+            ) : null}
+            <Link
+              href="/program"
+              className="mt-4 inline-flex rounded-full border border-[#2b3650] bg-black/40 px-4 py-2 text-sm font-semibold text-zinc-300 transition hover:border-[#7f9434] hover:text-[#98b144]"
+            >
+              Explore the 12-Week Program
+            </Link>
+          </>
         )}
       </article>
     );
@@ -84,12 +105,28 @@ export default function DashboardCoachingCard({
             Go to Coaching Submissions
           </Link>
         ) : (
-          <Link
-            href="/settings"
-            className="mt-4 inline-flex rounded-full border border-[#2b3650] bg-black/40 px-4 py-2 text-sm font-semibold text-zinc-300 transition hover:border-[#7f9434] hover:text-[#98b144]"
-          >
-            View membership details
-          </Link>
+          <>
+            {extraReview ? (
+              <ExtraReviewCreditBanner
+                unusedCredits={extraReview.unusedCredits}
+                nextCreditExpiresAt={extraReview.nextCreditExpiresAt}
+              />
+            ) : null}
+            {extraReview && extraReview.unusedCredits === 0 ? (
+              <ExtraReviewOffer
+                canPurchase={extraReview.canPurchase}
+                unusedCredits={extraReview.unusedCredits}
+                blockReason={extraReview.blockReason}
+                nextPurchaseEligibleAt={extraReview.nextPurchaseEligibleAt}
+              />
+            ) : null}
+            <Link
+              href="/settings"
+              className="mt-4 inline-flex rounded-full border border-[#2b3650] bg-black/40 px-4 py-2 text-sm font-semibold text-zinc-300 transition hover:border-[#7f9434] hover:text-[#98b144]"
+            >
+              View membership details
+            </Link>
+          </>
         )}
       </article>
     );

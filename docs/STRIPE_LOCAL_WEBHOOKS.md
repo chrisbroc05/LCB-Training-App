@@ -11,6 +11,16 @@
 STRIPE_PRICE_CORE_MONTHLY=price_1UVGepL5cHzuQyqZsraujEIy
 STRIPE_PRICE_PLUS_MONTHLY=price_1UVGfsL5cHzuQyqZIGgawuzY
 STRIPE_PRICE_ALL_ACCESS_MONTHLY=price_1UVGgFL5cHzuQyqZXkM0cgX8
+STRIPE_PRICE_CORE_ANNUAL=price_...
+STRIPE_PRICE_PLUS_ANNUAL=price_...
+STRIPE_PRICE_EXTRA_REVIEW=price_...
+STRIPE_COUPON_FOUNDING_PLUS=coupon_...
+```
+
+Create Phase 2B sandbox objects (annual prices on same Core/Plus products, extra review product, founding coupon):
+
+```bash
+set -a && source .env && set +a && npx tsx scripts/create-sandbox-phase-2b-stripe.ts
 ```
 
 ## Forward webhooks

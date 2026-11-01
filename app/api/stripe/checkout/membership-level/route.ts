@@ -7,10 +7,12 @@ import {
   MEMBERSHIP_LEVELS_COMING_SOON_MESSAGE,
 } from "@/lib/membership-levels-shared";
 import { requireCurrentTermsForCheckout } from "@/lib/legal-checkout-server";
+import { parseMembershipBillingInterval } from "@/lib/membership-billing-shared";
 import { createMembershipLevelCheckoutSession } from "@/lib/stripe-membership-checkout-server";
 
 type Body = {
   level?: string;
+  billingInterval?: string;
   orgJoinCode?: string;
 };
 
@@ -44,6 +46,7 @@ export async function POST(request: Request) {
       userId: session.user.id,
       email: session.user.email,
       level: levelRaw,
+      billingInterval: parseMembershipBillingInterval(body.billingInterval),
       orgJoinCode: body.orgJoinCode,
     });
 

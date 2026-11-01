@@ -166,10 +166,18 @@ export function buildEmailHeaderHtml() {
           </tr>`;
 }
 
-export function buildEmailFooterHtml() {
+export type EmailFooterOptions = {
+  /** Hide the standalone "Coach Broc" line when the body already signed off with Coach Broc. */
+  omitCoachBrocName?: boolean;
+};
+
+export function buildEmailFooterHtml(options: EmailFooterOptions = {}) {
   const appUrl = getPublicAppUrl();
+  const coachBrocLine = options.omitCoachBrocName
+    ? ""
+    : `<p style="margin:0 0 8px 0; font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:1.6; color:#6B7280;">Coach Broc</p>`;
   return `${buildEmailDivider()}
-              <p style="margin:0 0 8px 0; font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:1.6; color:#6B7280;">Coach Broc</p>
+              ${coachBrocLine}
               <p style="margin:0 0 8px 0; font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:1.6; color:#6B7280;">LCB Training | lcbtraining.com</p>
               <p style="margin:0 0 8px 0; font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:1.6; color:#6B7280;">Instagram @lcbtraining | TikTok @cbroc05</p>
               <p style="margin:0 0 8px 0; font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:1.6; color:#6B7280;"><a href="${escapeHtml(`${appUrl}/terms`)}" style="color:#2D6A4F; text-decoration:underline;">Terms of Service</a> | <a href="${escapeHtml(`${appUrl}/privacy`)}" style="color:#2D6A4F; text-decoration:underline;">Privacy Policy</a> | <a href="${escapeHtml(`${appUrl}/waiver`)}" style="color:#2D6A4F; text-decoration:underline;">Waiver</a></p>
@@ -177,10 +185,10 @@ export function buildEmailFooterHtml() {
               ${buildMailingAddressFooterHtml()}`;
 }
 
-export function buildEmailFooterText() {
+export function buildEmailFooterText(options: EmailFooterOptions = {}) {
   const appUrl = getPublicAppUrl();
-  return `Coach Broc
-LCB Training | lcbtraining.com
+  const coachBrocLine = options.omitCoachBrocName ? "" : "Coach Broc\n";
+  return `${coachBrocLine}LCB Training | lcbtraining.com
 Instagram @lcbtraining | TikTok @cbroc05
 Terms of Service: ${appUrl}/terms
 Privacy Policy: ${appUrl}/privacy
@@ -188,7 +196,11 @@ Waiver: ${appUrl}/waiver
 Questions? Just reply to this email.${buildMailingAddressFooterText()}`;
 }
 
-export function buildMemberEmailHtml(params: { title: string; bodyContentHtml: string }) {
+export function buildMemberEmailHtml(params: {
+  title: string;
+  bodyContentHtml: string;
+  footer?: EmailFooterOptions;
+}) {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -207,7 +219,7 @@ export function buildMemberEmailHtml(params: { title: string; bodyContentHtml: s
           <tr>
             <td style="padding:32px 24px; background-color:#FFFFFF; border-radius:0 0 12px 12px;">
               ${params.bodyContentHtml}
-              ${buildEmailFooterHtml()}
+              ${buildEmailFooterHtml(params.footer)}
             </td>
           </tr>
         </table>

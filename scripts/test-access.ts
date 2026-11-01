@@ -191,13 +191,26 @@ assert.equal(isPrismaTransientError({ message: "Operation has timed out" }), tru
 assert.equal(isPrismaUniqueViolation({ code: "P2002" }), true);
 
 console.log("test-access: public marketing gate");
+const env = process.env as Record<string, string | undefined>;
+const savedPublicFlag = env.PUBLIC_MEMBERSHIP_LEVELS_ENABLED;
+const savedNextPublicFlag = env.NEXT_PUBLIC_MEMBERSHIP_LEVELS_ENABLED;
+delete env.PUBLIC_MEMBERSHIP_LEVELS_ENABLED;
+delete env.NEXT_PUBLIC_MEMBERSHIP_LEVELS_ENABLED;
 assert.equal(isPublicMembershipLevelsEnabled(), false);
 assert.equal(getUpgradeLabelForLevel("PLUS"), "Upgrade for more access in the app.");
-process.env.PUBLIC_MEMBERSHIP_LEVELS_ENABLED = "true";
+env.PUBLIC_MEMBERSHIP_LEVELS_ENABLED = "true";
 assert.equal(isPublicMembershipLevelsEnabled(), true);
 assert.match(getUpgradeLabelForLevel("PLUS"), /Available with Plus/);
-delete process.env.PUBLIC_MEMBERSHIP_LEVELS_ENABLED;
-delete process.env.NEXT_PUBLIC_MEMBERSHIP_LEVELS_ENABLED;
+if (savedPublicFlag === undefined) {
+  delete env.PUBLIC_MEMBERSHIP_LEVELS_ENABLED;
+} else {
+  env.PUBLIC_MEMBERSHIP_LEVELS_ENABLED = savedPublicFlag;
+}
+if (savedNextPublicFlag === undefined) {
+  delete env.NEXT_PUBLIC_MEMBERSHIP_LEVELS_ENABLED;
+} else {
+  env.NEXT_PUBLIC_MEMBERSHIP_LEVELS_ENABLED = savedNextPublicFlag;
+}
 
 console.log("test-access: org trial");
 const trialStart = trialStartInstantFromDateInput("2026-10-23");

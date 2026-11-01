@@ -14,10 +14,20 @@ import {
   settingsWarningTextClass,
 } from "@/app/settings/settings-styles";
 import type { PlanChangeModalContent } from "@/lib/membership-change-shared";
-import { buildPendingCancelNotice, buildPendingDowngradeNotice } from "@/lib/membership-change-shared";
+import {
+  buildPendingBillingIntervalNotice,
+  buildPendingCancelNotice,
+  buildPendingDowngradeNotice,
+} from "@/lib/membership-change-shared";
+import {
+  buildAnnualMembershipRefundPolicyMyPlanNote,
+  getMembershipLevelPriceDisplay,
+  membershipLevelSupportsAnnualBilling,
+  type MembershipBillingIntervalKey,
+} from "@/lib/membership-billing-shared";
+import { FOUNDING_PLUS_MONTHLY_DISCOUNT_DISPLAY } from "@/lib/founding-offer-shared";
 import {
   formatMembershipLevelLabel,
-  MEMBERSHIP_LEVELS,
   type MembershipLevelKey,
 } from "@/lib/membership-levels-shared";
 
@@ -31,13 +41,21 @@ type MyPlanSectionProps = {
   cancelAtPeriodEnd: boolean;
   pendingLevel: MembershipLevelKey | null;
   pendingLevelEffectiveLabel: string | null;
+  billingInterval: MembershipBillingIntervalKey;
+  pendingBillingInterval: MembershipBillingIntervalKey | null;
+  pendingBillingEffectiveLabel: string | null;
+  foundingDiscountEndsAt: string | null;
+  showNextBilling: boolean;
+  canceledOnLabel: string | null;
+  refundLines: string[];
 };
 
 const LEVEL_ORDER: MembershipLevelKey[] = ["CORE", "PLUS", "ALL_ACCESS"];
 
 type PendingModalAction =
   | { type: "change"; target: MembershipLevelKey; action: "upgrade" | "downgrade" }
-  | { type: "cancel" };
+  | { type: "cancel" }
+  | { type: "billing_interval"; target: MembershipBillingIntervalKey };
 
 export default function MyPlanSection({
   level,
@@ -47,6 +65,13 @@ export default function MyPlanSection({
   cancelAtPeriodEnd,
   pendingLevel,
   pendingLevelEffectiveLabel,
+  billingInterval,
+  pendingBillingInterval,
+  pendingBillingEffectiveLabel,
+  foundingDiscountEndsAt,
+  showNextBilling,
+  canceledOnLabel,
+  refundLines,
 }: MyPlanSectionProps) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -135,6 +160,25 @@ export default function MyPlanSection({
     setBusy(true);
     setErrorMessage("");
 
+    if (pendingAction.type === "billing_interval") {
+      const response = await fetch("/api/stripe/subscription/change-billing-interval", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ interval: pendingAction.target.toLowerCase() }),
+      });
+      const data = (await response.json().catch(() => ({}))) as {
+        error?: string;
+        successMessage?: string;
+      };
+      setBusy(false);
+      if (!response.ok) {
+        setErrorMessage(data.error ?? "Could not change billing interval.");
+        return;
+      }
+      persistSuccessAndRefresh(data.successMessage ?? modalContent.successMessage);
+      return;
+    }
+
     if (pendingAction.type === "cancel") {
       const response = await fetch("/api/stripe/subscription/cancel-membership", { method: "POST" });
       const data = (await response.json().catch(() => ({}))) as {
@@ -167,7 +211,28 @@ export default function MyPlanSection({
     persistSuccessAndRefresh(data.successMessage ?? modalContent.successMessage);
   };
 
-  const keepCurrentPlan = async (intent: "pending_downgrade" | "scheduled_cancel") => {
+  const openBillingIntervalModal = async (target: MembershipBillingIntervalKey) => {
+    setPreviewLoading(true);
+    setErrorMessage("");
+    const response = await fetch(
+      `/api/stripe/subscription/billing-interval-preview?interval=${target.toLowerCase()}`,
+    );
+    const data = (await response.json().catch(() => ({}))) as PlanChangeModalContent & {
+      error?: string;
+    };
+    setPreviewLoading(false);
+    if (!response.ok) {
+      setErrorMessage(data.error ?? "Could not load billing details.");
+      return;
+    }
+    setModalContent(data);
+    setPendingAction({ type: "billing_interval", target });
+    setModalOpen(true);
+  };
+
+  const keepCurrentPlan = async (
+    intent: "pending_downgrade" | "scheduled_cancel" | "pending_billing_interval",
+  ) => {
     setBusy(true);
     setErrorMessage("");
     const response = await fetch("/api/stripe/subscription/keep-current-plan", {
@@ -199,6 +264,14 @@ export default function MyPlanSection({
   const pendingCancelNotice = cancelAtPeriodEnd
     ? buildPendingCancelNotice({ accessEndsLabel: nextBillingLabel })
     : null;
+
+  const pendingBillingNotice =
+    pendingBillingInterval && pendingBillingEffectiveLabel
+      ? buildPendingBillingIntervalNotice({
+          pendingInterval: pendingBillingInterval,
+          effectiveDateLabel: pendingBillingEffectiveLabel,
+        })
+      : null;
 
   return (
     <>
@@ -240,14 +313,57 @@ export default function MyPlanSection({
           </div>
         ) : null}
 
+        {pendingBillingNotice ? (
+          <div className="mb-5 rounded-xl border border-[#52B788]/50 bg-[#2D6A4F]/15 px-4 py-4">
+            <p className="text-sm font-medium leading-relaxed text-zinc-100">{pendingBillingNotice}</p>
+            {billingInterval === "ANNUAL" && pendingBillingInterval === "MONTHLY" ? (
+              <button
+                type="button"
+                disabled={busy || previewLoading}
+                onClick={() => void keepCurrentPlan("pending_billing_interval")}
+                className="mt-3 min-h-[44px] rounded-full border border-[#52B788] px-4 py-2 text-sm font-semibold text-[#52B788] transition hover:bg-[#52B788]/10 disabled:opacity-60"
+              >
+                Keep annual
+              </button>
+            ) : null}
+          </div>
+        ) : null}
+
         <p className={settingsBodyTextClass}>
           Current level:{" "}
           <span className={settingsAccentTextClass}>{formatMembershipLevelLabel(level)}</span>
         </p>
         <p className={`mt-1 ${settingsMutedTextClass}`}>
-          {MEMBERSHIP_LEVELS[level].priceDisplay} - {MEMBERSHIP_LEVELS[level].shortDescription}
+          Billing: {billingInterval === "ANNUAL" ? "Annual" : "Monthly"} (
+          {getMembershipLevelPriceDisplay(level, billingInterval)})
         </p>
-        <p className={`mt-3 ${settingsMutedTextClass}`}>Next billing date: {nextBillingLabel}</p>
+        {foundingDiscountEndsAt ? (
+          <p className={`mt-2 text-sm text-[#52B788]`}>
+            {FOUNDING_PLUS_MONTHLY_DISCOUNT_DISPLAY} through{" "}
+            {new Date(foundingDiscountEndsAt).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            })}
+            .
+          </p>
+        ) : null}
+        {billingInterval === "ANNUAL" && showNextBilling ? (
+          <p className={`mt-2 text-xs ${settingsMutedTextClass}`}>
+            {buildAnnualMembershipRefundPolicyMyPlanNote({ level })}
+          </p>
+        ) : null}
+        {showNextBilling ? (
+          <p className={`mt-3 ${settingsMutedTextClass}`}>Next billing date: {nextBillingLabel}</p>
+        ) : null}
+        {canceledOnLabel ? (
+          <p className={`mt-3 ${settingsMutedTextClass}`}>{canceledOnLabel}</p>
+        ) : null}
+        {refundLines.map((line) => (
+          <p key={line} className={`mt-1 ${settingsMutedTextClass}`}>
+            {line}
+          </p>
+        ))}
         <p className={`mt-1 ${settingsMutedTextClass}`}>Status: {statusLabel}</p>
 
         {status === "PAST_DUE" ? (
@@ -259,6 +375,31 @@ export default function MyPlanSection({
               Your last payment did not go through. Update your card within 7 days to keep access.
             </p>
           </>
+        ) : null}
+
+        {membershipLevelSupportsAnnualBilling(level) && status !== "PAST_DUE" ? (
+          <div className="mt-4 flex flex-wrap gap-2">
+            {billingInterval === "MONTHLY" && !pendingBillingInterval ? (
+              <button
+                type="button"
+                disabled={busy || previewLoading}
+                onClick={() => void openBillingIntervalModal("ANNUAL")}
+                className={settingsSecondaryButtonClass}
+              >
+                Switch to annual
+              </button>
+            ) : null}
+            {billingInterval === "ANNUAL" && !pendingBillingInterval ? (
+              <button
+                type="button"
+                disabled={busy || previewLoading}
+                onClick={() => void openBillingIntervalModal("MONTHLY")}
+                className={settingsSecondaryButtonClass}
+              >
+                Switch to monthly at period end
+              </button>
+            ) : null}
+          </div>
         ) : null}
 
         {status !== "PAST_DUE" ? (

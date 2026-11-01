@@ -39,7 +39,7 @@ export async function loadAdminLeadsPageData() {
         id: true,
         userId: true,
         level: true,
-        amountCents: true,
+        amountPaidCents: true,
         currency: true,
         paidAt: true,
         stripeInvoiceId: true,

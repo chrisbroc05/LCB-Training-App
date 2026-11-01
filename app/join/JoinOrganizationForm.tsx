@@ -1,7 +1,12 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import {
+  buildOrgJoinAuthSignInHref,
+  buildOrgJoinAuthSignupHref,
+  buildOrgJoinWelcomePath,
+} from "@/lib/org-join-auth-shared";
 
 type JoinTeamOption = {
   id: string;
@@ -13,7 +18,6 @@ type JoinOrganizationFormProps = {
   organizationName: string;
   teams: JoinTeamOption[];
   isLoggedIn: boolean;
-  authRedirect: string;
 };
 
 export default function JoinOrganizationForm({
@@ -21,12 +25,38 @@ export default function JoinOrganizationForm({
   organizationName,
   teams,
   isLoggedIn,
-  authRedirect,
 }: JoinOrganizationFormProps) {
   const router = useRouter();
   const [orgTeamId, setOrgTeamId] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [canJoinAsSignedIn, setCanJoinAsSignedIn] = useState(isLoggedIn);
+
+  useEffect(() => {
+    setCanJoinAsSignedIn(isLoggedIn);
+  }, [isLoggedIn]);
+
+  useEffect(() => {
+    if (isLoggedIn) {
+      return;
+    }
+
+    let cancelled = false;
+    fetch("/api/auth/session", { cache: "no-store" })
+      .then((response) => response.json())
+      .then((session: { user?: { email?: string | null } }) => {
+        if (cancelled || !session.user?.email) {
+          return;
+        }
+        setCanJoinAsSignedIn(true);
+        router.refresh();
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isLoggedIn, router]);
 
   async function handleJoin() {
     setError(null);
@@ -45,8 +75,7 @@ export default function JoinOrganizationForm({
         setError(data.error ?? "Could not join organization.");
         return;
       }
-      router.push(`/join/${encodeURIComponent(code)}/welcome`);
-      router.refresh();
+      window.location.href = buildOrgJoinWelcomePath(code);
     } catch {
       setError("Could not join organization.");
     } finally {
@@ -54,18 +83,24 @@ export default function JoinOrganizationForm({
     }
   }
 
-  if (!isLoggedIn) {
+  if (!canJoinAsSignedIn) {
     return (
       <div className="mt-6 space-y-4">
         <p className="text-sm text-zinc-300">
           Sign in or create an account to join {organizationName}.
         </p>
         <a
-          href={`/auth?redirect=${encodeURIComponent(authRedirect)}&orgCode=${encodeURIComponent(code)}`}
+          href={buildOrgJoinAuthSignupHref(code)}
           className="inline-flex rounded-full bg-[#22c55e] px-5 py-2.5 text-sm font-semibold text-black"
         >
-          Continue to sign in
+          Continue to sign up
         </a>
+        <p className="text-sm text-zinc-400">
+          Already have an account?{" "}
+          <a href={buildOrgJoinAuthSignInHref(code)} className="text-[#52B788] underline">
+            Sign in
+          </a>
+        </p>
       </div>
     );
   }

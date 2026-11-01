@@ -5,12 +5,18 @@ import { isAdminEmail } from "@/lib/admin";
 import {
   expireMembershipGraceNow,
   getDevSubscriptionSnapshot,
+  simulateCommissionPayment13MonthsAfterAttribution,
   simulateMembershipRenewalPaymentFailed,
+  triggerAnnualRenewalReminderCronDev,
 } from "@/lib/dev-subscription-testing-server";
 import { prisma } from "@/lib/prisma";
 
 type Body = {
-  action?: "simulate_payment_failed" | "expire_grace";
+  action?:
+    | "simulate_payment_failed"
+    | "expire_grace"
+    | "simulate_commission_month_13"
+    | "trigger_annual_renewal_reminder";
   userId?: string;
 };
 
@@ -111,6 +117,14 @@ export async function POST(request: Request) {
       await expireMembershipGraceNow(userId);
       const subscription = await getDevSubscriptionSnapshot(userId);
       return NextResponse.json({ success: true, subscription });
+    }
+    if (body.action === "simulate_commission_month_13") {
+      const result = await simulateCommissionPayment13MonthsAfterAttribution(userId);
+      return NextResponse.json({ success: true, ...result });
+    }
+    if (body.action === "trigger_annual_renewal_reminder") {
+      const result = await triggerAnnualRenewalReminderCronDev();
+      return NextResponse.json({ success: true, ...result });
     }
     return NextResponse.json({ error: "Unknown action." }, { status: 400 });
   } catch (error) {

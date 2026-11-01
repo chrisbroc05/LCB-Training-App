@@ -4,9 +4,12 @@ import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 import { getStripe } from "@/lib/stripe";
 import { expirePastDueMembershipGraceForUser } from "@/lib/membership-subscription-grace-server";
+import type { MembershipLevelKey } from "@/lib/membership-levels-shared";
+import { recordCommissionLedgerForMembershipInvoice } from "@/lib/commission-ledger-server";
 import {
   applyMembershipSubscriptionFromStripe,
 } from "@/lib/membership-subscription-server";
+import { runAnnualRenewalReminderEmails } from "@/lib/membership-emails-cron-server";
 
 const STRIPE_FAIL_PAYMENT_METHOD = "pm_card_chargeCustomerFail";
 const STRIPE_FAIL_CARD_TOKEN = "tok_chargeCustomerFail";
@@ -190,4 +193,76 @@ export async function expireMembershipGraceNow(userId: string) {
   }
 
   return { success: true as const };
+}
+
+/** Dev-only: record a synthetic paid invoice 13 months after commission attribution join (5% tier). */
+export async function simulateCommissionPayment13MonthsAfterAttribution(userId: string) {
+  if (process.env.NODE_ENV !== "development") {
+    throw new Error("Dev subscription simulate is only available in development.");
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      commissionAttributionOrgId: true,
+      commissionAttributionJoinedAt: true,
+    },
+  });
+  if (!user?.commissionAttributionOrgId || !user.commissionAttributionJoinedAt) {
+    throw new Error("User has no commission attribution org/join date.");
+  }
+
+  const sub = await prisma.membershipSubscription.findUnique({ where: { userId } });
+  if (!sub) {
+    throw new Error("No MembershipSubscription row for this user.");
+  }
+
+  const paidAt = new Date(user.commissionAttributionJoinedAt);
+  paidAt.setUTCMonth(paidAt.getUTCMonth() + 13);
+  const paymentCents = 2000;
+  const invoiceId = `dev_sim_${userId}_${paidAt.getTime()}`;
+
+  const existing = await prisma.membershipSubscriptionPayment.findUnique({
+    where: { stripeInvoiceId: invoiceId },
+  });
+  if (existing) {
+    throw new Error("Dev commission simulation invoice already recorded for this user.");
+  }
+
+  await prisma.membershipSubscriptionPayment.create({
+    data: {
+      stripeInvoiceId: invoiceId,
+      membershipSubscriptionId: sub.id,
+      userId,
+      level: sub.level,
+      billingInterval: sub.billingInterval,
+      amountPaidCents: paymentCents,
+      processingFeeCents: 0,
+      netCents: paymentCents,
+      commissionFeePending: false,
+      paidAt,
+    },
+  });
+
+  const ledger = await recordCommissionLedgerForMembershipInvoice({
+    userId,
+    stripeInvoiceId: invoiceId,
+    amountPaidCents: paymentCents,
+    processingFeeCents: 0,
+    netCents: paymentCents,
+    commissionFeePending: false,
+    paidAt,
+    level: sub.level as MembershipLevelKey,
+    billingInterval: sub.billingInterval as "MONTHLY" | "ANNUAL",
+  });
+
+  return { paidAt: paidAt.toISOString(), paymentCents, ledger };
+}
+
+/** Dev-only: run annual renewal reminder cron logic (respects dedupe). */
+export async function triggerAnnualRenewalReminderCronDev(params?: { now?: Date }) {
+  if (process.env.NODE_ENV !== "development") {
+    throw new Error("Dev subscription simulate is only available in development.");
+  }
+  return runAnnualRenewalReminderEmails({ now: params?.now, dryRun: false });
 }

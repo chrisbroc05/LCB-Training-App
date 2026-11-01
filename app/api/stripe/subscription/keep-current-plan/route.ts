@@ -2,10 +2,12 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import {
+  buildKeepAnnualBillingSuccessMessage,
   buildKeepCurrentPlanSuccessMessage,
   buildResumeMembershipSuccessMessage,
 } from "@/lib/membership-change-shared";
 import { prisma } from "@/lib/prisma";
+import { cancelScheduledBillingIntervalSwitch } from "@/lib/stripe-membership-interval-server";
 import {
   releaseScheduledMembershipDowngrade,
   resumeMembershipAfterScheduledCancel,
@@ -13,7 +15,7 @@ import {
 import type { MembershipLevelKey } from "@/lib/membership-levels-shared";
 
 type Body = {
-  intent?: "pending_downgrade" | "scheduled_cancel";
+  intent?: "pending_downgrade" | "scheduled_cancel" | "pending_billing_interval";
 };
 
 export async function POST(request: Request) {
@@ -46,6 +48,14 @@ export async function POST(request: Request) {
       return NextResponse.json({
         success: true,
         successMessage: buildKeepCurrentPlanSuccessMessage(currentLevel),
+      });
+    }
+
+    if (body.intent === "pending_billing_interval") {
+      await cancelScheduledBillingIntervalSwitch(session.user.id);
+      return NextResponse.json({
+        success: true,
+        successMessage: buildKeepAnnualBillingSuccessMessage(),
       });
     }
 

@@ -13,6 +13,9 @@ import AdminFixItGrantPanel from "@/app/admin/AdminFixItGrantPanel";
 import AdminProductAccessPanel from "@/app/admin/AdminProductAccessPanel";
 import AdminMemberPlanBadge from "@/app/admin/AdminMemberPlanBadge";
 import AdminMembershipLevelSection from "@/app/admin/AdminMembershipLevelSection";
+import AdminMembershipSubscriptionPanel from "@/app/admin/AdminMembershipSubscriptionPanel";
+import AdminMemberCommissionPanel from "@/app/admin/AdminMemberCommissionPanel";
+import type { MembershipBillingIntervalKey } from "@/lib/membership-billing-shared";
 import type { MembershipLevelKey } from "@/lib/membership-levels-shared";
 import type { MemberProductAccessSummary } from "@/lib/admin-product-access-shared";
 import type { InPersonTrainingInfo } from "@/lib/in-person-training-shared";
@@ -55,11 +58,27 @@ export type MemberDetail = {
   stripeCustomerId: string | null;
   membershipSubscription: {
     level: MembershipLevelKey;
+    levelLabel: string;
     status: string;
+    statusLabel: string;
+    billingInterval: MembershipBillingIntervalKey;
+    billingLine: string;
+    foundingDiscountLine: string | null;
+    pendingChangeNotices: string[];
     currentPeriodEnd: string;
     cancelAtPeriodEnd: boolean;
     pendingLevel: MembershipLevelKey | null;
+    pendingBillingInterval: MembershipBillingIntervalKey | null;
     startedAt: string;
+    showNextBilling: boolean;
+    canceledOnLabel: string | null;
+    annualRefund: {
+      canRefund: boolean;
+      refundWindowLabel: string | null;
+      refundLines: string[];
+      totalRefundableCents: number;
+      confirmMessage: string;
+    } | null;
   } | null;
   memberProfile: {
     hasProfile: boolean;
@@ -102,6 +121,15 @@ export type MemberDetail = {
         sharedAt: string | null;
       }>;
     }>;
+  } | null;
+  commission: {
+    orgId: string;
+    orgName: string;
+    commissionEligible: boolean;
+    commissionIneligibleReason: string | null;
+    commissionEligibleAdminOverride: boolean;
+    commissionOverrideNote: string | null;
+    eligibilityLabel: string;
   } | null;
 };
 
@@ -259,30 +287,18 @@ export default function MemberDetailContent({
           </p>
         ) : null}
         {detail.membershipSubscription ? (
-          <div className="mt-3 rounded-lg border border-[#2b3650] bg-black/20 p-3 text-sm">
-            <p className="font-semibold text-zinc-100">Membership subscription</p>
-            <p className="mt-1">
-              Level: {detail.membershipSubscription.level} | Status:{" "}
-              {detail.membershipSubscription.status}
-            </p>
-            <p className="mt-1">
-              Next billing: {formatOptionalDate(detail.membershipSubscription.currentPeriodEnd)}
-            </p>
-            {detail.stripeCustomerId ? (
-              <p className="mt-2">
-                <a
-                  href={`https://dashboard.stripe.com/test/customers/${detail.stripeCustomerId}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-[#52B788] underline"
-                >
-                  Open in Stripe
-                </a>
-              </p>
-            ) : null}
-          </div>
+          <AdminMembershipSubscriptionPanel detail={detail} onMemberUpdated={onMemberUpdated} />
         ) : detail.hasStripeSubscription ? (
           <p className="mt-2 text-yellow-100">Legacy Stripe subscription on file.</p>
+        ) : null}
+        {detail.commission ? (
+          <div className="mt-4">
+            <AdminMemberCommissionPanel
+              memberId={detail.id}
+              commission={detail.commission}
+              onUpdated={onMemberUpdated}
+            />
+          </div>
         ) : null}
       </div>
 

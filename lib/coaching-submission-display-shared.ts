@@ -4,7 +4,37 @@
 
 import type { ReviewAllowance } from "@/lib/access-shared";
 import { formatDateWithYear } from "@/lib/format-date";
+import type { CoachingAllowancePoolId } from "@/lib/coaching-submission-pool-shared";
 import { getCoachingSubmissionPeriodLabel, getNextCoachingSubmissionResetLabel } from "@/lib/coaching-submissions-shared";
+
+export const SWING_COACHING_FORM_INTRO =
+  "Upload your latest swing video and tell me what's going on so I can give you targeted feedback.";
+
+export function formatCoachingSubmissionUsageNotice(params: {
+  poolId: CoachingAllowancePoolId;
+  coachingSubmissionPeriod?: string | null;
+  extraReviewUseByDate?: Date | string | null;
+}): { headline: string; detail: string | null } | null {
+  if (params.poolId === "extra-review") {
+    const useByLabel = params.extraReviewUseByDate
+      ? formatDateWithYear(params.extraReviewUseByDate)
+      : "the expiration date";
+    return {
+      headline: `This will use your extra review (use by ${useByLabel}).`,
+      detail: null,
+    };
+  }
+
+  if (params.poolId === "plus-monthly" && params.coachingSubmissionPeriod) {
+    const monthLabel = getCoachingSubmissionPeriodLabel(params.coachingSubmissionPeriod);
+    return {
+      headline: `This will use your in-depth review for ${monthLabel}.`,
+      detail: null,
+    };
+  }
+
+  return null;
+}
 
 export function formatReviewAllowanceDisplay(
   allowance: ReviewAllowance,
@@ -31,7 +61,9 @@ export function formatReviewAllowanceDisplay(
         allowance.remaining > 0
           ? "1 in-depth review per month"
           : "You have used your in-depth review for this month.",
-      detail: resetLabel ? `Resets on ${resetLabel}.` : null,
+      detail: resetLabel
+        ? `Your next monthly review is available ${resetLabel}.`
+        : null,
     };
   }
 

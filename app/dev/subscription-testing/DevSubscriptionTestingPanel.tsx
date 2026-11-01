@@ -91,7 +91,13 @@ export default function DevSubscriptionTestingPanel() {
     setSelected(fresh ?? player);
   };
 
-  const run = async (action: "simulate_payment_failed" | "expire_grace") => {
+  const run = async (
+    action:
+      | "simulate_payment_failed"
+      | "expire_grace"
+      | "simulate_commission_month_13"
+      | "trigger_annual_renewal_reminder",
+  ) => {
     if (!selected?.userId) {
       setMessage("Select a player first.");
       return;
@@ -129,12 +135,22 @@ export default function DevSubscriptionTestingPanel() {
           ? `Simulated failed renewal: app status ${sub.status}, grace until ${sub.pastDueGraceEndsAt ?? "n/a"}, Stripe ${sub.stripeStatus ?? "unknown"}.`
           : "Simulated failed renewal.",
       );
-    } else {
+      return;
+    }
+    if (action === "expire_grace") {
       setMessage(
         fresh?.subscription
           ? `Grace expired. Row kept: status ${fresh.subscription.status}, access ended ${fresh.subscription.accessEndedAt ?? "n/a"}.`
           : "Grace expired but could not reload MembershipSubscription row.",
       );
+      return;
+    }
+    if (action === "simulate_commission_month_13") {
+      setMessage("Recorded dev invoice + commission ledger at month 13 (ongoing rate).");
+      return;
+    }
+    if (action === "trigger_annual_renewal_reminder") {
+      setMessage("Ran annual renewal reminder cron (see dev outbox / response).");
     }
   };
 
@@ -260,6 +276,22 @@ export default function DevSubscriptionTestingPanel() {
               className="rounded-full border border-[#52B788] px-4 py-2 text-sm font-semibold text-[#52B788] disabled:opacity-50"
             >
               Expire grace now (drop access)
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void run("simulate_commission_month_13")}
+              className="rounded-full border border-[#2b3650] px-4 py-2 text-sm font-semibold text-zinc-300 disabled:opacity-50"
+            >
+              Simulate payment 13 mo after attribution
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void run("trigger_annual_renewal_reminder")}
+              className="rounded-full border border-[#2b3650] px-4 py-2 text-sm font-semibold text-zinc-300 disabled:opacity-50"
+            >
+              Trigger annual renewal reminder cron
             </button>
             <button
               type="button"

@@ -1,19 +1,21 @@
 import Link from "next/link";
-import { getServerSession } from "next-auth";
+import { redirect } from "next/navigation";
 import JoinOrganizationForm from "@/app/join/JoinOrganizationForm";
-import { authOptions } from "@/lib/auth";
+import { getRequestServerSession } from "@/lib/auth-server-session";
+import { buildOrgJoinWelcomePath } from "@/lib/org-join-auth-shared";
 import { findOrganizationByJoinCode } from "@/lib/org-server";
+import { prisma } from "@/lib/prisma";
 
 type JoinPageProps = {
   params: Promise<{ code: string }>;
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function JoinOrganizationPage({ params }: JoinPageProps) {
   const { code: codeParam } = await params;
-  const session = await getServerSession(authOptions);
+  const session = await getRequestServerSession();
   const match = await findOrganizationByJoinCode(codeParam);
-
-  const authRedirect = `/join/${encodeURIComponent(codeParam)}`;
 
   if (!match) {
     return (
@@ -33,6 +35,16 @@ export default async function JoinOrganizationPage({ params }: JoinPageProps) {
 
   const org = match.organization;
 
+  if (session?.user?.id) {
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { organizationId: true },
+    });
+    if (user?.organizationId === org.id) {
+      redirect(buildOrgJoinWelcomePath(match.code));
+    }
+  }
+
   return (
     <div className="mx-auto w-full max-w-lg px-4 py-16">
       <section className="rounded-3xl border border-[#18243a] bg-[#0b1324]/80 p-8">
@@ -45,7 +57,6 @@ export default async function JoinOrganizationPage({ params }: JoinPageProps) {
           organizationName={org.name}
           teams={org.teams.map((team) => ({ id: team.id, name: team.name }))}
           isLoggedIn={Boolean(session?.user?.id)}
-          authRedirect={authRedirect}
         />
       </section>
     </div>

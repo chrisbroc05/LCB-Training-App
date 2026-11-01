@@ -5,6 +5,7 @@ import PlaybookPurchasePage from "@/app/playbook/PlaybookPurchasePage";
 import { canAccessPlaybook } from "@/lib/membership";
 import { toAccessUserFields, userAccessSelect } from "@/lib/access-server";
 import { emptyAccessUserRow } from "@/lib/empty-access-user-shared";
+import { fallbackDeferredParentAccountSignupConsent } from "@/lib/legal-server";
 import { prisma } from "@/lib/prisma";
 import type { MembershipLevelKey } from "@/lib/membership-levels-shared";
 import { shouldShowPlaybookCorePlusUpsell } from "@/lib/playbook-core-upsell-shared";
@@ -17,10 +18,14 @@ export default async function PlaybookPage({ searchParams }: PlaybookPageProps) 
   const session = await getServerSession(authOptions);
   const resolvedSearchParams = searchParams ? await searchParams : {};
   const autoStartCheckout = resolvedSearchParams.startCheckout === "1";
+  const checkoutCancelled = resolvedSearchParams.checkout === "cancelled";
 
   let membershipLevelForUpsell: string | null = null;
 
   if (session?.user) {
+    if (checkoutCancelled) {
+      await fallbackDeferredParentAccountSignupConsent(session.user.id, "checkout_canceled");
+    }
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: userAccessSelect,

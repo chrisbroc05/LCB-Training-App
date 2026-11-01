@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin";
 import { memberProfileSelect, serializeMemberProfile } from "@/lib/player-profile";
+import { formatCoachingReviewTrackAdminLabel } from "@/lib/coaching-review-track-display-shared";
 import { prisma } from "@/lib/prisma";
 
 type RouteContext = {
@@ -39,6 +40,7 @@ export async function GET(_request: Request, context: RouteContext) {
       submission: {
         ...submissionData,
         badgeStatus: submission.status === "PENDING" ? "PENDING" : "RESPONDED",
+        poolLabel: formatCoachingReviewTrackAdminLabel(submission.reviewTrack),
         memberProfile: serializeMemberProfile(user),
       },
     });
@@ -64,6 +66,7 @@ export async function GET(_request: Request, context: RouteContext) {
       submission: {
         ...submissionData,
         badgeStatus: submission.status === "PENDING" ? "PENDING" : "RESPONDED",
+        poolLabel: formatCoachingReviewTrackAdminLabel(submission.reviewTrack),
         memberProfile: serializeMemberProfile(user),
       },
     });

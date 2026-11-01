@@ -10,6 +10,16 @@ import {
   UNDER13_PARENT_LOCK_MAX_RESENDS_PER_DAY,
   validateParentConsentEmail,
 } from "@/lib/legal-shared";
+import {
+  PARENT_ACCOUNT_SIGNUP_CHECKOUT_DEFERRAL_MS,
+  PARENT_CONSENT_METHOD_ACCOUNT_SIGNUP,
+  PARENT_CONSENT_METHOD_EMAIL_CONFIRM,
+  PARENT_CONSENT_METHOD_PAYMENT,
+  resolveUnder13ParentConsentGateMode,
+  shouldFallbackDeferredParentAccountSignup,
+  type ParentSignupDeferralFallbackReason,
+} from "@/lib/parent-consent-shared";
+import { combinePlayerName } from "@/lib/account-shared";
 import { getChicagoTodayDateKey } from "@/lib/program-schedule";
 import {
   sendParentConsentConfirmEmail,
@@ -77,6 +87,9 @@ async function maybeSendParentConsentEmail(user: {
   id: string;
   name: string | null;
   email: string;
+  accountRole: string;
+  playerFirstName: string | null;
+  playerLastName: string | null;
   acceptedByName: string | null;
   termsAcceptedAt: Date | null;
   parentConsentEmail: string | null;
@@ -86,14 +99,18 @@ async function maybeSendParentConsentEmail(user: {
     return;
   }
 
+  const playerDisplayName =
+    combinePlayerName(user.playerFirstName ?? "", user.playerLastName ?? "") || user.name;
+
   try {
     await sendParentConsentConfirmEmail({
       to: user.parentConsentEmail.trim(),
       userId: user.id,
-      playerName: user.name,
+      playerName: playerDisplayName,
       playerEmail: user.email,
       agreedByName: user.acceptedByName,
       agreedAt: user.termsAcceptedAt,
+      audience: user.accountRole === "PARENT" ? "parent_account_holder" : "third_party_parent",
     });
 
     await prisma.user.update({
@@ -106,6 +123,116 @@ async function maybeSendParentConsentEmail(user: {
   } catch (error) {
     console.error("Failed to send parent consent confirmation email", error);
   }
+}
+
+type ParentConsentLockUserFields = {
+  playerAge: number | null;
+  parentConsentEmail: string | null;
+  parentConsentConfirmedAt: Date | null;
+  accountRole: string;
+  parentConsentMethod: string | null;
+  termsAcceptedAt: Date | null;
+};
+
+function userHasUnder13ParentLock(user: ParentConsentLockUserFields, now?: Date) {
+  return needsUnder13ParentConfirmationLock({
+    playerAge: user.playerAge,
+    parentConsentEmail: user.parentConsentEmail,
+    parentConsentConfirmedAt: user.parentConsentConfirmedAt,
+    accountRole: user.accountRole as "PLAYER" | "PARENT",
+    parentConsentMethod: user.parentConsentMethod,
+    termsAcceptedAt: user.termsAcceptedAt,
+    now,
+  });
+}
+
+const parentConsentFallbackUserSelect = {
+  id: true,
+  email: true,
+  name: true,
+  accountRole: true,
+  playerFirstName: true,
+  playerLastName: true,
+  playerAge: true,
+  acceptedByName: true,
+  termsAcceptedAt: true,
+  parentConsentEmail: true,
+  parentConsentConfirmedAt: true,
+  parentConsentMethod: true,
+  parentConsentEmailSentAt: true,
+} as const;
+
+export async function fallbackDeferredParentAccountSignupConsent(
+  userId: string,
+  reason: ParentSignupDeferralFallbackReason,
+): Promise<{ applied: boolean }> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: parentConsentFallbackUserSelect,
+  });
+
+  if (
+    !user ||
+    !shouldFallbackDeferredParentAccountSignup({
+      accountRole: user.accountRole,
+      parentConsentMethod: user.parentConsentMethod,
+      parentConsentConfirmedAt: user.parentConsentConfirmedAt,
+      termsAcceptedAt: user.termsAcceptedAt,
+      reason,
+    })
+  ) {
+    return { applied: false };
+  }
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { parentConsentMethod: null },
+  });
+
+  if (!user.parentConsentEmailSentAt && user.parentConsentEmail?.trim()) {
+    await maybeSendParentConsentEmail({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      accountRole: user.accountRole,
+      playerFirstName: user.playerFirstName,
+      playerLastName: user.playerLastName,
+      acceptedByName: user.acceptedByName,
+      termsAcceptedAt: user.termsAcceptedAt,
+      parentConsentEmail: user.parentConsentEmail.trim().toLowerCase(),
+      parentConsentEmailSentAt: user.parentConsentEmailSentAt,
+    });
+  }
+
+  return { applied: true };
+}
+
+export async function reconcileDeferredParentAccountSignupConsent(userId: string) {
+  await fallbackDeferredParentAccountSignupConsent(userId, "deferral_expired");
+}
+
+export async function runDeferredParentAccountSignupFallbacks(now = new Date()) {
+  const cutoff = new Date(now.getTime() - PARENT_ACCOUNT_SIGNUP_CHECKOUT_DEFERRAL_MS);
+  const users = await prisma.user.findMany({
+    where: {
+      accountRole: "PARENT",
+      parentConsentMethod: PARENT_CONSENT_METHOD_ACCOUNT_SIGNUP,
+      parentConsentConfirmedAt: null,
+      playerAge: { lt: 13 },
+      termsAcceptedAt: { lte: cutoff },
+    },
+    select: { id: true },
+  });
+
+  let applied = 0;
+  for (const user of users) {
+    const result = await fallbackDeferredParentAccountSignupConsent(user.id, "deferral_expired");
+    if (result.applied) {
+      applied += 1;
+    }
+  }
+
+  return { scanned: users.length, applied };
 }
 
 function getParentConsentResendsRemaining(params: {
@@ -123,12 +250,17 @@ function getParentConsentResendsRemaining(params: {
 }
 
 export async function userNeedsUnder13ParentLock(userId: string) {
+  await reconcileDeferredParentAccountSignupConsent(userId);
+
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
+      accountRole: true,
       playerAge: true,
       parentConsentEmail: true,
       parentConsentConfirmedAt: true,
+      parentConsentMethod: true,
+      termsAcceptedAt: true,
     },
   });
 
@@ -136,11 +268,7 @@ export async function userNeedsUnder13ParentLock(userId: string) {
     return false;
   }
 
-  return needsUnder13ParentConfirmationLock({
-    playerAge: user.playerAge,
-    parentConsentEmail: user.parentConsentEmail,
-    parentConsentConfirmedAt: user.parentConsentConfirmedAt,
-  });
+  return userHasUnder13ParentLock(user);
 }
 
 async function notifyPlayerParentConfirmed(userId: string) {
@@ -186,9 +314,15 @@ async function notifyPlayerParentConfirmed(userId: string) {
 }
 
 export async function getUserLegalStatus(userId: string) {
+  await reconcileDeferredParentAccountSignupConsent(userId);
+
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
+      accountRole: true,
+      playerFirstName: true,
+      playerLastName: true,
+      name: true,
       termsVersion: true,
       termsAcceptedAt: true,
       acceptedByName: true,
@@ -197,6 +331,7 @@ export async function getUserLegalStatus(userId: string) {
       parentConsentName: true,
       parentConsentEmail: true,
       parentConsentConfirmedAt: true,
+      parentConsentMethod: true,
       parentConsentManualResendDayKey: true,
       parentConsentManualResendCount: true,
       mediaConsent: true,
@@ -228,7 +363,15 @@ export async function getUserLegalStatus(userId: string) {
     playerAge: effectivePlayerAge,
     parentConsentEmail: user.parentConsentEmail,
     parentConsentConfirmedAt: user.parentConsentConfirmedAt,
+    accountRole: user.accountRole,
+    parentConsentMethod: user.parentConsentMethod,
+    termsAcceptedAt: user.termsAcceptedAt,
   });
+
+  const playerDisplayName =
+    combinePlayerName(user.playerFirstName ?? "", user.playerLastName ?? "") ||
+    user.name?.trim() ||
+    "your player";
 
   return {
     currentVersion: LEGAL_DOCS_VERSION,
@@ -240,6 +383,11 @@ export async function getUserLegalStatus(userId: string) {
           acceptedAsParent: user.acceptedAsParent,
         }),
     needsUnder13ParentLock,
+    under13ParentConsentGateMode: resolveUnder13ParentConsentGateMode({
+      needsUnder13ParentLock,
+      accountRole: user.accountRole,
+    }),
+    playerDisplayName,
     termsVersion: acceptedViaWaiver ? matchingWaiver?.version ?? user.termsVersion : user.termsVersion,
     termsAcceptedAt: acceptedViaWaiver
       ? matchingWaiver?.signedAt.toISOString() ?? user.termsAcceptedAt?.toISOString() ?? null
@@ -318,6 +466,9 @@ export async function saveLegalAcceptance(userId: string, input: LegalAcceptance
       id: true,
       email: true,
       name: true,
+      accountRole: true,
+      playerFirstName: true,
+      playerLastName: true,
       termsVersion: true,
       termsAcceptedAt: true,
       acceptedByName: true,
@@ -350,6 +501,7 @@ export async function confirmParentConsent(userId: string) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
+      accountRole: true,
       parentConsentEmail: true,
       parentConsentConfirmedAt: true,
       playerAge: true,
@@ -368,14 +520,48 @@ export async function confirmParentConsent(userId: string) {
     where: { id: userId },
     data: {
       parentConsentConfirmedAt: new Date(),
+      parentConsentMethod: PARENT_CONSENT_METHOD_EMAIL_CONFIRM,
     },
   });
 
-  if (isUnder13PlayerAge(user.playerAge)) {
+  if (isUnder13PlayerAge(user.playerAge) && user.accountRole !== "PARENT") {
     await notifyPlayerParentConfirmed(userId);
   }
 
   return { ok: true as const, alreadyConfirmed: false };
+}
+
+export async function confirmParentConsentFromPayment(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      accountRole: true,
+      playerAge: true,
+      parentConsentConfirmedAt: true,
+      parentConsentEmail: true,
+    },
+  });
+
+  if (
+    !user ||
+    user.accountRole !== "PARENT" ||
+    !isUnder13PlayerAge(user.playerAge) ||
+    !user.parentConsentEmail?.trim()
+  ) {
+    return;
+  }
+
+  if (user.parentConsentConfirmedAt) {
+    return;
+  }
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      parentConsentConfirmedAt: new Date(),
+      parentConsentMethod: PARENT_CONSENT_METHOD_PAYMENT,
+    },
+  });
 }
 
 export async function resendParentConsentEmailForUser(userId: string) {
@@ -385,24 +571,21 @@ export async function resendParentConsentEmailForUser(userId: string) {
       id: true,
       name: true,
       email: true,
+      accountRole: true,
+      playerFirstName: true,
+      playerLastName: true,
       playerAge: true,
       acceptedByName: true,
       termsAcceptedAt: true,
       parentConsentEmail: true,
       parentConsentConfirmedAt: true,
+      parentConsentMethod: true,
       parentConsentManualResendDayKey: true,
       parentConsentManualResendCount: true,
     },
   });
 
-  if (
-    !user ||
-    !needsUnder13ParentConfirmationLock({
-      playerAge: user.playerAge,
-      parentConsentEmail: user.parentConsentEmail,
-      parentConsentConfirmedAt: user.parentConsentConfirmedAt,
-    })
-  ) {
+  if (!user || !userHasUnder13ParentLock({ ...user, termsAcceptedAt: user.termsAcceptedAt ?? null })) {
     return { ok: false as const, error: "No pending parent confirmation." };
   }
 
@@ -428,10 +611,12 @@ export async function resendParentConsentEmailForUser(userId: string) {
     await sendParentConsentConfirmEmail({
       to: user.parentConsentEmail.trim(),
       userId: user.id,
-      playerName: user.name,
+      playerName:
+        combinePlayerName(user.playerFirstName ?? "", user.playerLastName ?? "") || user.name,
       playerEmail: user.email,
       agreedByName: user.acceptedByName,
       agreedAt: user.termsAcceptedAt,
+      audience: user.accountRole === "PARENT" ? "parent_account_holder" : "third_party_parent",
     });
   } catch (error) {
     console.error("Failed to resend parent consent confirmation email", error);
@@ -468,22 +653,19 @@ export async function updateParentConsentEmailForUser(userId: string, nextEmail:
       id: true,
       name: true,
       email: true,
+      accountRole: true,
+      playerFirstName: true,
+      playerLastName: true,
       playerAge: true,
       acceptedByName: true,
       termsAcceptedAt: true,
       parentConsentEmail: true,
       parentConsentConfirmedAt: true,
+      parentConsentMethod: true,
     },
   });
 
-  if (
-    !user ||
-    !needsUnder13ParentConfirmationLock({
-      playerAge: user.playerAge,
-      parentConsentEmail: user.parentConsentEmail,
-      parentConsentConfirmedAt: user.parentConsentConfirmedAt,
-    })
-  ) {
+  if (!user || !userHasUnder13ParentLock(user)) {
     return { ok: false as const, error: "No pending parent confirmation." };
   }
 
@@ -523,10 +705,12 @@ export async function updateParentConsentEmailForUser(userId: string, nextEmail:
     await sendParentConsentConfirmEmail({
       to: normalizedEmail,
       userId: user.id,
-      playerName: user.name,
+      playerName:
+        combinePlayerName(user.playerFirstName ?? "", user.playerLastName ?? "") || user.name,
       playerEmail: user.email,
       agreedByName: user.acceptedByName,
       agreedAt: user.termsAcceptedAt,
+      audience: user.accountRole === "PARENT" ? "parent_account_holder" : "third_party_parent",
     });
 
     await prisma.user.update({
@@ -647,11 +831,15 @@ export async function sendMinorLegalParentConsentEmailIfNeeded(userId: string) {
       id: true,
       name: true,
       email: true,
+      accountRole: true,
+      playerFirstName: true,
+      playerLastName: true,
       playerAge: true,
       acceptedByName: true,
       termsAcceptedAt: true,
       parentConsentEmail: true,
       parentConsentEmailSentAt: true,
+      parentConsentMethod: true,
     },
   });
 
@@ -659,7 +847,8 @@ export async function sendMinorLegalParentConsentEmailIfNeeded(userId: string) {
     !user ||
     !isMinorPlayerAge(user.playerAge) ||
     !user.parentConsentEmail?.trim() ||
-    user.parentConsentEmailSentAt
+    user.parentConsentEmailSentAt ||
+    user.parentConsentMethod === PARENT_CONSENT_METHOD_ACCOUNT_SIGNUP
   ) {
     return;
   }
@@ -692,16 +881,25 @@ export async function sendDueParentConsentReminders(now = new Date()) {
       id: true,
       name: true,
       email: true,
+      accountRole: true,
+      playerFirstName: true,
+      playerLastName: true,
       acceptedByName: true,
       termsAcceptedAt: true,
       parentConsentEmail: true,
+      parentConsentMethod: true,
     },
   });
 
   let sent = 0;
 
   for (const user of users) {
-    if (!user.parentConsentEmail?.trim() || !user.termsAcceptedAt || !user.acceptedByName) {
+    if (
+      !user.parentConsentEmail?.trim() ||
+      !user.termsAcceptedAt ||
+      !user.acceptedByName ||
+      user.parentConsentMethod === PARENT_CONSENT_METHOD_ACCOUNT_SIGNUP
+    ) {
       continue;
     }
 
@@ -709,11 +907,13 @@ export async function sendDueParentConsentReminders(now = new Date()) {
       await sendParentConsentConfirmEmail({
         to: user.parentConsentEmail.trim(),
         userId: user.id,
-        playerName: user.name,
+        playerName:
+          combinePlayerName(user.playerFirstName ?? "", user.playerLastName ?? "") || user.name,
         playerEmail: user.email,
         agreedByName: user.acceptedByName,
         agreedAt: user.termsAcceptedAt,
         isReminder: true,
+        audience: user.accountRole === "PARENT" ? "parent_account_holder" : "third_party_parent",
       });
 
       await prisma.user.update({

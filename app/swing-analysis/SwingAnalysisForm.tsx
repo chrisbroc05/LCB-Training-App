@@ -31,11 +31,14 @@ import {
   type PresignedSwingUploadResponse,
 } from "@/lib/swing-submission-upload-client";
 import type { SwingSubmissionConfirmationVariant } from "@/lib/coaching-submission-confirmation-shared";
+import CoachingSubmissionUsageNotice from "@/app/components/CoachingSubmissionUsageNotice";
 import SwingAllowanceChoice from "@/app/coaching-submissions/SwingAllowanceChoice";
+import type { formatReviewAllowanceDisplay } from "@/lib/coaching-submission-display-shared";
 import type {
   CoachingAllowancePickerOption,
   CoachingAllowancePoolId,
 } from "@/lib/coaching-submission-pool-shared";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
 type SwingAnalysisFormProps = {
@@ -44,6 +47,9 @@ type SwingAnalysisFormProps = {
   weeklyFocusTitle?: string | null;
   swingAllowanceOptions: CoachingAllowancePickerOption[];
   requiresSwingAllowanceChoice: boolean;
+  coachingSubmissionPeriod: string | null;
+  extraReviewUseByIso: string | null;
+  quotaFallbackCopy: ReturnType<typeof formatReviewAllowanceDisplay>;
 };
 
 export default function SwingAnalysisForm({
@@ -52,7 +58,11 @@ export default function SwingAnalysisForm({
   weeklyFocusTitle = null,
   swingAllowanceOptions,
   requiresSwingAllowanceChoice,
+  coachingSubmissionPeriod,
+  extraReviewUseByIso,
+  quotaFallbackCopy,
 }: SwingAnalysisFormProps) {
+  const router = useRouter();
   const [playerName, setPlayerName] = useState("");
   const [videoFileName, setVideoFileName] = useState("");
   const [videoFile, setVideoFile] = useState<File | null>(null);
@@ -71,6 +81,7 @@ export default function SwingAnalysisForm({
   const [submitError, setSubmitError] = useState("");
   const [submittedNotes, setSubmittedNotes] = useState("");
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
+  const [submissionComplete, setSubmissionComplete] = useState(false);
   const [selectedAllowancePool, setSelectedAllowancePool] = useState<CoachingAllowancePoolId | null>(
     null,
   );
@@ -79,8 +90,11 @@ export default function SwingAnalysisForm({
     if (requiresSwingAllowanceChoice) {
       return selectedAllowancePool;
     }
-    const only = swingAllowanceOptions.find((option) => option.canSubmit);
-    return only?.poolId ?? null;
+    const submittable = swingAllowanceOptions.filter((option) => option.canSubmit);
+    if (submittable.length === 1) {
+      return submittable[0]!.poolId;
+    }
+    return null;
   }, [requiresSwingAllowanceChoice, selectedAllowancePool, swingAllowanceOptions]);
 
   const showResponsePreference =
@@ -102,8 +116,22 @@ export default function SwingAnalysisForm({
     return "Submitting...";
   })();
 
+  const finishAfterSubmit = () => {
+    setSubmissionComplete(true);
+    setShowConfirmationModal(true);
+    window.history.replaceState(null, "", "/coaching-submissions?submitted=swing");
+  };
+
+  const closeConfirmation = () => {
+    setShowConfirmationModal(false);
+    router.replace("/coaching-submissions");
+  };
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (submissionComplete) {
+      return;
+    }
     setSubmitError("");
     setUploadProgress(null);
     setVideoUploadProcessing(false);
@@ -226,7 +254,7 @@ export default function SwingAnalysisForm({
           videoUrl: videoUrl.trim() || undefined,
           r2Key,
           submittedVideoPosterR2Key,
-          coachingAllowancePool: requiresSwingAllowanceChoice ? resolvedAllowancePool : undefined,
+          coachingAllowancePool: resolvedAllowancePool ?? undefined,
         }),
       });
 
@@ -239,7 +267,7 @@ export default function SwingAnalysisForm({
       }
 
       setSubmittedNotes(trimmedNotes);
-      setShowConfirmationModal(true);
+      finishAfterSubmit();
       setPlayerName("");
       setVideoFileName("");
       setVideoFile(null);
@@ -260,8 +288,30 @@ export default function SwingAnalysisForm({
     }
   };
 
+  if (submissionComplete && !showConfirmationModal) {
+    return (
+      <p className="mt-6 text-sm text-zinc-300">
+        Your submission was received.{" "}
+        <button
+          type="button"
+          onClick={() => router.replace("/coaching-submissions")}
+          className="font-semibold text-[#52B788] underline-offset-2 hover:underline"
+        >
+          Back to Coaching Submissions
+        </button>
+      </p>
+    );
+  }
+
   return (
     <>
+      <CoachingSubmissionUsageNotice
+        poolId={resolvedAllowancePool}
+        coachingSubmissionPeriod={coachingSubmissionPeriod}
+        extraReviewUseByIso={extraReviewUseByIso}
+        fallbackCopy={quotaFallbackCopy}
+      />
+
       <form className="mt-6 space-y-5 sm:mt-8" onSubmit={handleSubmit}>
         {requiresSwingAllowanceChoice ? (
           <SwingAllowanceChoice
@@ -434,7 +484,7 @@ export default function SwingAnalysisForm({
 
         <button
           type="submit"
-          disabled={isSubmitting}
+          disabled={isSubmitting || submissionComplete}
           className="w-full rounded-full bg-[#22c55e] px-6 py-3 font-semibold text-black transition hover:bg-[#35db72] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
         >
           {submitButtonLabel}
@@ -444,7 +494,7 @@ export default function SwingAnalysisForm({
       {showConfirmationModal ? (
         <ResponsiveOverlay
           open={showConfirmationModal}
-          onClose={() => setShowConfirmationModal(false)}
+          onClose={closeConfirmation}
           ariaLabel="Submission confirmation"
           desktopClassName="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
           desktopPanelClassName="w-[94vw] max-w-2xl overflow-y-auto rounded-2xl border border-[#18243a] bg-[#0b1324] p-0 shadow-2xl sm:max-w-3xl"
@@ -460,7 +510,7 @@ export default function SwingAnalysisForm({
                 </p>
               </div>
             }
-            onClose={() => setShowConfirmationModal(false)}
+            onClose={closeConfirmation}
           />
         </ResponsiveOverlay>
       ) : null}

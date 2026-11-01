@@ -1,34 +1,46 @@
 import "server-only";
 
+import type { MembershipBillingIntervalKey } from "@/lib/membership-billing-shared";
 import type { MembershipLevelKey } from "@/lib/membership-levels-shared";
 
 export {
   isPhase2MembershipPriceId,
+  mapStripePriceIdToBillingInterval,
   mapStripePriceIdToMembershipLevel,
+  mapStripePriceIdToMembershipPrice,
+  resolveMembershipPriceEnvKey,
 } from "@/lib/stripe-membership-prices-shared";
 
-const LEVEL_PRICE_ENV: Record<MembershipLevelKey, string> = {
-  CORE: "STRIPE_PRICE_CORE_MONTHLY",
-  PLUS: "STRIPE_PRICE_PLUS_MONTHLY",
-  ALL_ACCESS: "STRIPE_PRICE_ALL_ACCESS_MONTHLY",
-};
+import { resolveMembershipPriceEnvKey } from "@/lib/stripe-membership-prices-shared";
 
-export function resolveMembershipLevelStripePriceId(level: MembershipLevelKey): string | null {
-  const envKey = LEVEL_PRICE_ENV[level];
+export function resolveMembershipLevelStripePriceId(
+  level: MembershipLevelKey,
+  interval: MembershipBillingIntervalKey = "MONTHLY",
+): string | null {
+  const envKey = resolveMembershipPriceEnvKey(level, interval);
+  if (!envKey) {
+    console.error(
+      `[stripe-membership-prices] No price env for ${level} ${interval}.`,
+    );
+    return null;
+  }
   const priceId = process.env[envKey]?.trim();
   if (!priceId) {
     console.error(
-      `[stripe-membership-prices] Missing Stripe price for ${level}. Set ${envKey}.`,
+      `[stripe-membership-prices] Missing Stripe price for ${level} ${interval}. Set ${envKey}.`,
     );
     return null;
   }
   return priceId;
 }
 
-export function getMembershipLevelStripePriceId(level: MembershipLevelKey): string {
-  const priceId = resolveMembershipLevelStripePriceId(level);
+export function getMembershipLevelStripePriceId(
+  level: MembershipLevelKey,
+  interval: MembershipBillingIntervalKey = "MONTHLY",
+): string {
+  const priceId = resolveMembershipLevelStripePriceId(level, interval);
   if (!priceId) {
-    throw new Error(`MEMBERSHIP_PRICE_NOT_CONFIGURED:${level}`);
+    throw new Error(`MEMBERSHIP_PRICE_NOT_CONFIGURED:${level}:${interval}`);
   }
   return priceId;
 }

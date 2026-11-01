@@ -17,7 +17,11 @@ import {
   applyMembershipSubscriptionFromStripe,
   getSubscriptionPeriodEnd,
 } from "@/lib/membership-subscription-server";
+import type { MembershipBillingIntervalKey } from "@/lib/membership-billing-shared";
+import { resolveFoundingOfferForUserCheckout } from "@/lib/founding-offer-server";
+import { resolveFoundingPlanChangeFlags } from "@/lib/founding-plan-change-shared";
 import { getMembershipLevelStripePriceId } from "@/lib/stripe-membership-prices-server";
+import { buildStripeSubscriptionDiscountFields } from "@/lib/stripe-subscription-discount-shared";
 import { undoUserScheduledSubscriptionCancellation } from "@/lib/stripe-membership-lifecycle-server";
 import Stripe from "stripe";
 
@@ -55,17 +59,44 @@ export async function upgradeMembershipLevel(userId: string, targetLevel: Member
     throw new Error("Subscription item missing.");
   }
 
-  const newPriceId = getMembershipLevelStripePriceId(targetLevel);
+  const billingInterval = (sub.billingInterval as MembershipBillingIntervalKey) ?? "MONTHLY";
+  const newPriceId = getMembershipLevelStripePriceId(targetLevel, billingInterval);
   const upgradeOptions = buildMembershipUpgradeStripeUpdateOptions();
+
+  const { foundingPriceEndsWithChange } = resolveFoundingPlanChangeFlags({
+    subscription: sub,
+    changeKind: "upgrade",
+    targetLevel,
+  });
+  const founding = await resolveFoundingOfferForUserCheckout({
+    userId,
+    organizationId: sub.organizationId,
+    level: targetLevel,
+    billingInterval,
+  });
+  const discountFields = buildStripeSubscriptionDiscountFields({
+    clearExistingDiscounts: foundingPriceEndsWithChange,
+    applyCouponId:
+      !foundingPriceEndsWithChange && founding.applyCoupon && founding.couponId
+        ? founding.couponId
+        : null,
+  });
 
   let updated: Stripe.Subscription;
   try {
     updated = await stripe.subscriptions.update(sub.stripeSubscriptionId, {
       ...upgradeOptions,
       items: [{ id: item.id, price: newPriceId }],
+      ...discountFields,
       metadata: {
         ...stripeSub.metadata,
         membershipLevel: targetLevel,
+        billingInterval,
+        foundingDiscountEndsAt: foundingPriceEndsWithChange
+          ? ""
+          : founding.foundingDiscountEndsAt
+            ? founding.foundingDiscountEndsAt.toISOString()
+            : (stripeSub.metadata?.foundingDiscountEndsAt ?? ""),
       },
       expand: ["latest_invoice"],
     });
@@ -97,6 +128,7 @@ export async function upgradeMembershipLevel(userId: string, targetLevel: Member
       pendingLevel: null,
       stripeScheduleId: null,
       cancelAtPeriodEnd: false,
+      ...(foundingPriceEndsWithChange ? { foundingDiscountEndsAt: null } : {}),
     },
   });
 
@@ -150,7 +182,8 @@ export async function scheduleMembershipDowngrade(userId: string, targetLevel: M
   }
 
   const periodEndUnix = Math.floor(periodEnd.getTime() / 1000);
-  const newPriceId = getMembershipLevelStripePriceId(targetLevel);
+  const billingInterval = (sub.billingInterval as MembershipBillingIntervalKey) ?? "MONTHLY";
+  const newPriceId = getMembershipLevelStripePriceId(targetLevel, billingInterval);
   const updatedSchedule = await stripe.subscriptionSchedules.update(schedule.id, {
     end_behavior: "release",
     phases: [

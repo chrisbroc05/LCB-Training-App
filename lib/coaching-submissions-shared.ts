@@ -4,6 +4,11 @@
 
 import { resolveEffectiveLevel, type AccessUserFields } from "@/lib/access-shared";
 import { formatDateWithYear, formatMonthYear } from "@/lib/format-date";
+import {
+  chicagoMonthKey,
+  formatPlusMonthlyReviewNextAvailableMessage,
+  nextChicagoCalendarMonthStart,
+} from "@/lib/extra-review-shared";
 import type { DatabaseTier } from "@/lib/membership";
 import {
   getPlaybookLifetimeSubmissionLimit,
@@ -88,9 +93,7 @@ export const ELITE_ROLLOVER_CAP = 8;
 export const ELITE_TOTAL_AVAILABLE_CAP = 8;
 
 export function getCoachingSubmissionPeriodKey(date = new Date()) {
-  const year = date.getUTCFullYear();
-  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
-  return `${year}-${month}`;
+  return chicagoMonthKey(date);
 }
 
 export function getCoachingSubmissionPeriodLabel(periodKey: string) {
@@ -103,8 +106,11 @@ export function getCoachingSubmissionPeriodLabel(periodKey: string) {
 }
 
 export function getNextCoachingSubmissionResetLabel(date = new Date()) {
-  const nextMonth = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 1));
-  return formatDateWithYear(nextMonth);
+  return formatDateWithYear(nextChicagoCalendarMonthStart(date));
+}
+
+export function formatMonthlyCoachingLimitMessage(date = new Date()): string {
+  return `You have used all coaching submissions for this month. ${formatPlusMonthlyReviewNextAvailableMessage(date)}`;
 }
 
 function applyPeriodResetIfNeeded(

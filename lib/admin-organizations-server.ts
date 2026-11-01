@@ -19,10 +19,27 @@ function parseMembershipLevel(value: unknown): MembershipLevel | null {
   return null;
 }
 
-function commissionWindowStart(org: { commissionMonths: number }) {
-  const start = new Date();
-  start.setUTCMonth(start.getUTCMonth() - org.commissionMonths);
-  return start;
+function countCommissionFamilies(
+  members: Array<{ commissionEligible: boolean; commissionEligibleAdminOverride: boolean }>,
+  billingMode: "FAMILY_PAY" | "CLUB_PAY",
+) {
+  if (billingMode === "CLUB_PAY") {
+    return {
+      commissionableFamilies: 0,
+      notCommissionableFamilies: members.length,
+    };
+  }
+
+  let commissionableFamilies = 0;
+  let notCommissionableFamilies = 0;
+  for (const member of members) {
+    if (member.commissionEligibleAdminOverride || member.commissionEligible) {
+      commissionableFamilies += 1;
+    } else {
+      notCommissionableFamilies += 1;
+    }
+  }
+  return { commissionableFamilies, notCommissionableFamilies };
 }
 
 export async function listAdminOrganizations(): Promise<AdminOrganizationRecord[]> {
@@ -35,15 +52,34 @@ export async function listAdminOrganizations(): Promise<AdminOrganizationRecord[
     },
   });
 
+  const now = new Date();
   const records: AdminOrganizationRecord[] = [];
   for (const org of orgs) {
-    const windowStart = commissionWindowStart(org);
-    const commissionAttributionCount = await prisma.user.count({
-      where: {
-        organizationId: org.id,
-        orgJoinedAt: { gte: windowStart },
-      },
-    });
+    const [foundingMemberCount, orgMembers] = await Promise.all([
+      prisma.user.count({
+        where: {
+          organizationId: org.id,
+          membershipSubscription: {
+            is: {
+              foundingDiscountEndsAt: { gt: now },
+              level: "PLUS",
+              billingInterval: "MONTHLY",
+            },
+          },
+        },
+      }),
+      prisma.user.findMany({
+        where: { organizationId: org.id },
+        select: {
+          commissionEligible: true,
+          commissionEligibleAdminOverride: true,
+        },
+      }),
+    ]);
+    const { commissionableFamilies, notCommissionableFamilies } = countCommissionFamilies(
+      orgMembers,
+      org.billingMode,
+    );
 
     records.push({
       id: org.id,
@@ -58,8 +94,15 @@ export async function listAdminOrganizations(): Promise<AdminOrganizationRecord[
       trialLockedCopy: org.trialLockedCopy,
       commissionRate: org.commissionRate,
       commissionMonths: org.commissionMonths,
+      ongoingCommissionRate: org.ongoingCommissionRate,
+      commissionEndsAt: org.commissionEndsAt?.toISOString() ?? null,
+      foundingOfferEnabled: org.foundingOfferEnabled,
+      foundingOfferDeadline: org.foundingOfferDeadline?.toISOString() ?? null,
+      foundingOfferMonths: org.foundingOfferMonths,
+      foundingMemberCount,
+      commissionableFamilies,
+      notCommissionableFamilies,
       memberCount: org._count.members,
-      commissionAttributionCount,
       codes: org.codes.map((code) => ({
         id: code.id,
         code: code.code,
@@ -112,8 +155,21 @@ export async function createAdminOrganization(body: Record<string, unknown>) {
       trialStartsAt,
       trialEndsAt,
       trialLockedCopy: body.trialLockedCopy ? String(body.trialLockedCopy).trim() : null,
-      commissionRate: Number.isFinite(commissionRate) ? commissionRate : 0,
-      commissionMonths: Number.isFinite(commissionMonths) ? Math.max(0, Math.floor(commissionMonths)) : 0,
+      commissionRate: Number.isFinite(commissionRate) ? commissionRate : 0.15,
+      commissionMonths: Number.isFinite(commissionMonths) ? Math.max(0, Math.floor(commissionMonths)) : 12,
+      ongoingCommissionRate: Number.isFinite(Number(body.ongoingCommissionRate))
+        ? Number(body.ongoingCommissionRate)
+        : 0.05,
+      commissionEndsAt: body.commissionEndsAt
+        ? trialEndInstantFromDateInput(String(body.commissionEndsAt))
+        : null,
+      foundingOfferEnabled: Boolean(body.foundingOfferEnabled),
+      foundingOfferDeadline: body.foundingOfferDeadline
+        ? trialEndInstantFromDateInput(String(body.foundingOfferDeadline))
+        : null,
+      foundingOfferMonths: Number.isFinite(Number(body.foundingOfferMonths))
+        ? Math.max(1, Math.floor(Number(body.foundingOfferMonths)))
+        : 12,
     },
   });
 
@@ -165,6 +221,26 @@ export async function updateAdminOrganization(orgId: string, body: Record<string
         body.commissionRate !== undefined ? Number(body.commissionRate) : undefined,
       commissionMonths:
         body.commissionMonths !== undefined ? Number(body.commissionMonths) : undefined,
+      ongoingCommissionRate:
+        body.ongoingCommissionRate !== undefined ? Number(body.ongoingCommissionRate) : undefined,
+      commissionEndsAt:
+        body.commissionEndsAt !== undefined
+          ? body.commissionEndsAt
+            ? trialEndInstantFromDateInput(String(body.commissionEndsAt))
+            : null
+          : undefined,
+      foundingOfferEnabled:
+        body.foundingOfferEnabled !== undefined ? Boolean(body.foundingOfferEnabled) : undefined,
+      foundingOfferDeadline:
+        body.foundingOfferDeadline !== undefined
+          ? body.foundingOfferDeadline
+            ? trialEndInstantFromDateInput(String(body.foundingOfferDeadline))
+            : null
+          : undefined,
+      foundingOfferMonths:
+        body.foundingOfferMonths !== undefined
+          ? Math.max(1, Math.floor(Number(body.foundingOfferMonths)))
+          : undefined,
     },
   });
 

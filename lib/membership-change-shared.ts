@@ -1,5 +1,24 @@
+import {
+  getMembershipBilledPriceDisplay,
+  type MembershipBillingIntervalKey,
+} from "@/lib/membership-billing-shared";
 import type { MembershipLevelKey } from "@/lib/membership-levels-shared";
-import { formatMembershipLevelLabel, MEMBERSHIP_LEVELS } from "@/lib/membership-levels-shared";
+import { formatMembershipLevelLabel } from "@/lib/membership-levels-shared";
+import { appendFoundingPriceEndsNotice } from "@/lib/founding-offer-shared";
+
+export type PlanChangeRecurringPriceParams = {
+  targetLevel: MembershipLevelKey;
+  billingInterval: MembershipBillingIntervalKey;
+  foundingPlusMonthlyActive?: boolean;
+};
+
+export function formatPlanChangeRecurringPrice(params: PlanChangeRecurringPriceParams): string {
+  return getMembershipBilledPriceDisplay({
+    level: params.targetLevel,
+    billingInterval: params.billingInterval,
+    foundingPlusMonthlyActive: params.foundingPlusMonthlyActive,
+  });
+}
 export const MEMBERSHIP_UPGRADE_PRORATION_BEHAVIOR = "always_invoice" as const;
 export const MEMBERSHIP_UPGRADE_PAYMENT_BEHAVIOR = "error_if_incomplete" as const;
 
@@ -43,9 +62,15 @@ export function buildUpgradeConfirmMessage(params: {
   targetLevel: MembershipLevelKey;
   amountDueTodayDisplay: string;
   nextBillingLabel: string;
+  billingInterval: MembershipBillingIntervalKey;
+  foundingPlusMonthlyActive?: boolean;
 }): string {
   const targetLabel = formatMembershipLevelLabel(params.targetLevel);
-  const recurring = MEMBERSHIP_LEVELS[params.targetLevel].priceDisplay;
+  const recurring = formatPlanChangeRecurringPrice({
+    targetLevel: params.targetLevel,
+    billingInterval: params.billingInterval,
+    foundingPlusMonthlyActive: params.foundingPlusMonthlyActive,
+  });
   return `Upgrade to ${targetLabel}? You'll be charged ${params.amountDueTodayDisplay} today for the rest of this billing period, then ${recurring} starting ${params.nextBillingLabel}.`;
 }
 
@@ -53,10 +78,14 @@ export function buildDowngradeConfirmMessage(params: {
   currentLevel: MembershipLevelKey;
   targetLevel: MembershipLevelKey;
   effectiveDateLabel: string;
+  billingInterval: MembershipBillingIntervalKey;
 }): string {
   const currentLabel = formatMembershipLevelLabel(params.currentLevel);
   const targetLabel = formatMembershipLevelLabel(params.targetLevel);
-  const recurring = MEMBERSHIP_LEVELS[params.targetLevel].priceDisplay;
+  const recurring = formatPlanChangeRecurringPrice({
+    targetLevel: params.targetLevel,
+    billingInterval: params.billingInterval,
+  });
   return `Downgrade to ${targetLabel}? You'll keep ${currentLabel} until ${params.effectiveDateLabel}, then switch to ${targetLabel} at ${recurring}.`;
 }
 
@@ -65,7 +94,7 @@ export function buildCancelMembershipConfirmMessage(params: { accessEndsLabel: s
 }
 
 export type PlanChangeModalContent = {
-  kind: "upgrade" | "downgrade" | "cancel";
+  kind: "upgrade" | "downgrade" | "cancel" | "switch_to_monthly" | "switch_to_annual";
   title: string;
   body: string;
   confirmLabel: string;
@@ -77,13 +106,23 @@ export function buildUpgradeModalContent(params: {
   targetLevel: MembershipLevelKey;
   amountDueTodayDisplay: string;
   nextBillingLabel: string;
+  billingInterval: MembershipBillingIntervalKey;
+  foundingPlusMonthlyActive?: boolean;
+  foundingPriceEndsWithChange?: boolean;
 }): PlanChangeModalContent {
   const targetLabel = formatMembershipLevelLabel(params.targetLevel);
-  const recurring = MEMBERSHIP_LEVELS[params.targetLevel].priceDisplay;
+  const recurring = formatPlanChangeRecurringPrice({
+    targetLevel: params.targetLevel,
+    billingInterval: params.billingInterval,
+    foundingPlusMonthlyActive: params.foundingPlusMonthlyActive,
+  });
   return {
     kind: "upgrade",
     title: `Upgrade to ${targetLabel}`,
-    body: `You'll be charged ${params.amountDueTodayDisplay} today for the rest of this billing period. Then it's ${recurring} starting ${params.nextBillingLabel}.`,
+    body: appendFoundingPriceEndsNotice(
+      `You'll be charged ${params.amountDueTodayDisplay} today for the rest of this billing period. Then it's ${recurring} starting ${params.nextBillingLabel}.`,
+      Boolean(params.foundingPriceEndsWithChange),
+    ),
     confirmLabel: "Upgrade now",
     dismissLabel: "Not now",
     successMessage: `You're on ${targetLabel} now.`,
@@ -94,18 +133,80 @@ export function buildDowngradeModalContent(params: {
   currentLevel: MembershipLevelKey;
   targetLevel: MembershipLevelKey;
   effectiveDateLabel: string;
+  billingInterval: MembershipBillingIntervalKey;
+  foundingPriceEndsWithChange?: boolean;
 }): PlanChangeModalContent {
   const currentLabel = formatMembershipLevelLabel(params.currentLevel);
   const targetLabel = formatMembershipLevelLabel(params.targetLevel);
-  const recurring = MEMBERSHIP_LEVELS[params.targetLevel].priceDisplay;
+  const recurring = formatPlanChangeRecurringPrice({
+    targetLevel: params.targetLevel,
+    billingInterval: params.billingInterval,
+  });
   return {
     kind: "downgrade",
     title: `Switch to ${targetLabel}`,
-    body: `You'll keep ${currentLabel} until ${params.effectiveDateLabel}. After that, you'll switch to ${targetLabel} at ${recurring}. You won't be charged anything today.`,
+    body: appendFoundingPriceEndsNotice(
+      `You'll keep ${currentLabel} until ${params.effectiveDateLabel}. After that, you'll switch to ${targetLabel} at ${recurring}. You won't be charged anything today.`,
+      Boolean(params.foundingPriceEndsWithChange),
+    ),
     confirmLabel: `Switch to ${targetLabel}`,
     dismissLabel: `Keep ${currentLabel}`,
     successMessage: `Done. You'll switch to ${targetLabel} on ${params.effectiveDateLabel}.`,
   };
+}
+
+export function buildSwitchToMonthlyModalContent(params: {
+  level: MembershipLevelKey;
+  annualThroughDateLabel: string;
+  foundingPriceEndsWithChange?: boolean;
+}): PlanChangeModalContent {
+  const levelLabel = formatMembershipLevelLabel(params.level);
+  const monthlyPrice = formatPlanChangeRecurringPrice({
+    targetLevel: params.level,
+    billingInterval: "MONTHLY",
+  });
+  return {
+    kind: "switch_to_monthly",
+    title: "Switch to monthly",
+    body: appendFoundingPriceEndsNotice(
+      `You'll keep annual billing through ${params.annualThroughDateLabel}. After that, you'll be billed ${monthlyPrice} for ${levelLabel}. You won't be charged anything today.`,
+      Boolean(params.foundingPriceEndsWithChange),
+    ),
+    confirmLabel: "Switch to monthly",
+    dismissLabel: "Keep annual",
+    successMessage: `You'll switch to monthly billing on ${params.annualThroughDateLabel}.`,
+  };
+}
+
+export function buildSwitchToAnnualModalContent(params: {
+  level: MembershipLevelKey;
+  amountDueTodayDisplay: string;
+  foundingPriceEndsWithChange?: boolean;
+}): PlanChangeModalContent {
+  const levelLabel = formatMembershipLevelLabel(params.level);
+  return {
+    kind: "switch_to_annual",
+    title: "Switch to annual",
+    body: appendFoundingPriceEndsNotice(
+      `You'll be charged ${params.amountDueTodayDisplay} today for ${levelLabel} for a full year, with credit for your unused monthly time. You'll save 2 months compared to paying monthly.`,
+      Boolean(params.foundingPriceEndsWithChange),
+    ),
+    confirmLabel: "Switch to annual",
+    dismissLabel: "Not now",
+    successMessage: "Billing is now annual.",
+  };
+}
+
+export function buildPendingBillingIntervalNotice(params: {
+  pendingInterval: MembershipBillingIntervalKey;
+  effectiveDateLabel: string;
+}): string {
+  const label = params.pendingInterval === "ANNUAL" ? "annual" : "monthly";
+  return `Scheduled switch to ${label} billing on ${params.effectiveDateLabel}.`;
+}
+
+export function buildKeepAnnualBillingSuccessMessage(): string {
+  return "Your scheduled switch was canceled. You'll stay on annual billing.";
 }
 
 export function buildCancelModalContent(params: {

@@ -1,7 +1,14 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import type { AdminOrganizationRecord } from "@/lib/admin-organizations-shared";
+import {
+  buildAdminOrgCommissionsHref,
+  buildOrgFoundingOfferExplainer,
+  formatAdminCommissionRate,
+  isOrgCommissionConfigured,
+  type AdminOrganizationRecord,
+} from "@/lib/admin-organizations-shared";
 import OrgRosterMovePanel from "@/app/admin/organizations/OrgRosterMovePanel";
 import OrgWeeklyFocusAdminPanel from "@/app/admin/organizations/OrgWeeklyFocusAdminPanel";
 import {
@@ -236,36 +243,165 @@ export default function AdminOrganizationsPanel() {
                 className="mt-1 w-full rounded-lg border border-[#2b3650] bg-black px-3 py-2 text-sm text-zinc-100"
               />
             </label>
-            <label className="text-xs text-zinc-400">
-              Commission rate (0-1)
+          </div>
+
+          <div className="mt-5 rounded-xl border border-[#2b3650] bg-black/20 p-4">
+            <p className="text-sm font-semibold text-zinc-100">Founding offer</p>
+            <p className="mt-1 text-xs text-zinc-400">
+              {buildOrgFoundingOfferExplainer(org.foundingOfferMonths)}
+            </p>
+            <label className="mt-3 flex items-center gap-2 text-sm text-zinc-200">
               <input
-                type="number"
-                step="0.01"
-                min="0"
-                max="1"
-                defaultValue={org.commissionRate}
-                onBlur={(event) =>
+                type="checkbox"
+                checked={org.foundingOfferEnabled}
+                onChange={(event) =>
                   void patchOrganization(org.id, {
-                    commissionRate: Number(event.target.value),
+                    foundingOfferEnabled: event.target.checked,
                   })
                 }
-                className="mt-1 w-full rounded-lg border border-[#2b3650] bg-black px-3 py-2 text-sm text-zinc-100"
+                className="h-4 w-4 rounded border-[#2b3650]"
               />
+              Founding offer enabled
             </label>
-            <label className="text-xs text-zinc-400">
-              Commission window (months)
-              <input
-                type="number"
-                min="0"
-                defaultValue={org.commissionMonths}
-                onBlur={(event) =>
-                  void patchOrganization(org.id, {
-                    commissionMonths: Number(event.target.value),
-                  })
-                }
-                className="mt-1 w-full rounded-lg border border-[#2b3650] bg-black px-3 py-2 text-sm text-zinc-100"
-              />
-            </label>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <label className="text-xs text-zinc-400">
+                Deadline (Chicago date, inclusive)
+                <input
+                  type="date"
+                  defaultValue={formatChicagoDateInputValue(org.foundingOfferDeadline)}
+                  onBlur={(event) =>
+                    void patchOrganization(org.id, {
+                      foundingOfferDeadline: event.target.value || null,
+                    })
+                  }
+                  className="mt-1 w-full rounded-lg border border-[#2b3650] bg-black px-3 py-2 text-sm text-zinc-100"
+                />
+              </label>
+              <label className="text-xs text-zinc-400">
+                Founding months
+                <input
+                  type="number"
+                  min={1}
+                  defaultValue={org.foundingOfferMonths}
+                  onBlur={(event) =>
+                    void patchOrganization(org.id, {
+                      foundingOfferMonths: Number(event.target.value),
+                    })
+                  }
+                  className="mt-1 w-full rounded-lg border border-[#2b3650] bg-black px-3 py-2 text-sm text-zinc-100"
+                />
+              </label>
+            </div>
+            <p className="mt-2 text-xs text-zinc-500">
+              Founding members: {org.foundingMemberCount}
+            </p>
+          </div>
+
+          <div className="mt-5 rounded-xl border border-[#2b3650] bg-black/20 p-4">
+            <p className="text-sm font-semibold text-zinc-100">Commission</p>
+            {isOrgCommissionConfigured(org.commissionRate) ? (
+              <>
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  <label className="text-xs text-zinc-400">
+                    Commission rate (first period, 0-1)
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      max="1"
+                      defaultValue={org.commissionRate}
+                      onBlur={(event) =>
+                        void patchOrganization(org.id, {
+                          commissionRate: Number(event.target.value),
+                        })
+                      }
+                      className="mt-1 w-full rounded-lg border border-[#2b3650] bg-black px-3 py-2 text-sm text-zinc-100"
+                    />
+                  </label>
+                  <label className="text-xs text-zinc-400">
+                    Commission months (first period)
+                    <input
+                      type="number"
+                      min="0"
+                      defaultValue={org.commissionMonths}
+                      onBlur={(event) =>
+                        void patchOrganization(org.id, {
+                          commissionMonths: Number(event.target.value),
+                        })
+                      }
+                      className="mt-1 w-full rounded-lg border border-[#2b3650] bg-black px-3 py-2 text-sm text-zinc-100"
+                    />
+                  </label>
+                  <label className="text-xs text-zinc-400">
+                    Ongoing commission rate (0-1)
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      max="1"
+                      defaultValue={org.ongoingCommissionRate}
+                      onBlur={(event) =>
+                        void patchOrganization(org.id, {
+                          ongoingCommissionRate: Number(event.target.value),
+                        })
+                      }
+                      className="mt-1 w-full rounded-lg border border-[#2b3650] bg-black px-3 py-2 text-sm text-zinc-100"
+                    />
+                  </label>
+                  <label className="text-xs text-zinc-400">
+                    Commission ends (Chicago date, optional)
+                    <input
+                      type="date"
+                      defaultValue={formatChicagoDateInputValue(org.commissionEndsAt)}
+                      onBlur={(event) =>
+                        void patchOrganization(org.id, {
+                          commissionEndsAt: event.target.value || null,
+                        })
+                      }
+                      className="mt-1 w-full rounded-lg border border-[#2b3650] bg-black px-3 py-2 text-sm text-zinc-100"
+                    />
+                  </label>
+                </div>
+                <p className="mt-3 text-xs text-zinc-400">
+                  First period {formatAdminCommissionRate(org.commissionRate)} for{" "}
+                  {org.commissionMonths} months, then{" "}
+                  {formatAdminCommissionRate(org.ongoingCommissionRate)} ongoing
+                  {org.commissionEndsAt
+                    ? ` until ${formatChicagoDateInputValue(org.commissionEndsAt)}`
+                    : ""}
+                  .
+                </p>
+                <p className="mt-2 text-xs text-zinc-400">
+                  Commissionable families: {org.commissionableFamilies} | Not commissionable:{" "}
+                  {org.notCommissionableFamilies}
+                </p>
+                <p className="mt-2 text-xs">
+                  <Link href={buildAdminOrgCommissionsHref(org.id)} className="text-[#52B788] underline">
+                    Business &gt; Commissions for this org
+                  </Link>
+                </p>
+              </>
+            ) : (
+              <div className="mt-2 space-y-3">
+                <p className="text-sm text-zinc-400">No commission</p>
+                <label className="text-xs text-zinc-400">
+                  Commission rate (set above 0 to enable)
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="1"
+                    defaultValue={org.commissionRate}
+                    onBlur={(event) =>
+                      void patchOrganization(org.id, {
+                        commissionRate: Number(event.target.value),
+                      })
+                    }
+                    className="mt-1 w-full max-w-[200px] rounded-lg border border-[#2b3650] bg-black px-3 py-2 text-sm text-zinc-100"
+                  />
+                </label>
+              </div>
+            )}
           </div>
 
           {(org.trialStartsAt && !org.trialEndsAt) || (!org.trialStartsAt && org.trialEndsAt) ? (
@@ -287,11 +423,6 @@ export default function AdminOrganizationsPanel() {
             {formatOrgBillingModeLabel(org.billingMode)}
             {org.billingMode === "CLUB_PAY"
               ? ` . Covers ${formatOrgCoveredLevelLabel(org.coveredLevel)}`
-              : ""}
-            . Commission attribution (last {org.commissionMonths} mo):{" "}
-            {org.commissionAttributionCount} joins
-            {org.commissionRate > 0
-              ? ` (~${Math.round(org.commissionRate * 100)}% rate on attributed members)`
               : ""}
           </p>
 

@@ -8,6 +8,7 @@ import {
   SUBMISSION_NOTE_PLACEHOLDER,
   validateSubmissionNote,
 } from "@/lib/submission-form-shared";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 type ResponsePreference = "VIDEO_RESPONSE" | "WRITTEN_RESPONSE";
@@ -18,6 +19,7 @@ type MentalGameFormProps = {
 };
 
 export default function MentalGameForm({ confirmationVariant }: MentalGameFormProps) {
+  const router = useRouter();
   const [playerName, setPlayerName] = useState("");
   const [playerAge, setPlayerAge] = useState("");
   const [topic, setTopic] = useState("SLUMP");
@@ -30,9 +32,24 @@ export default function MentalGameForm({ confirmationVariant }: MentalGameFormPr
   const [submittedTopic, setSubmittedTopic] = useState("");
   const [submittedMessage, setSubmittedMessage] = useState("");
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
+  const [submissionComplete, setSubmissionComplete] = useState(false);
+
+  const finishAfterSubmit = () => {
+    setSubmissionComplete(true);
+    setShowConfirmationModal(true);
+    window.history.replaceState(null, "", "/coaching-submissions?submitted=mental");
+  };
+
+  const closeConfirmation = () => {
+    setShowConfirmationModal(false);
+    router.replace("/coaching-submissions");
+  };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (submissionComplete) {
+      return;
+    }
     setSubmitError("");
 
     if (!playerName.trim() || !playerAge.trim()) {
@@ -77,7 +94,7 @@ export default function MentalGameForm({ confirmationVariant }: MentalGameFormPr
 
     setSubmittedTopic(topic);
     setSubmittedMessage(trimmedMessage);
-    setShowConfirmationModal(true);
+    finishAfterSubmit();
     setPlayerName("");
     setPlayerAge("");
     setTopic("SLUMP");
@@ -86,6 +103,21 @@ export default function MentalGameForm({ confirmationVariant }: MentalGameFormPr
     setManualVideoUrl("");
     setResponsePreference("VIDEO_RESPONSE");
   };
+
+  if (submissionComplete && !showConfirmationModal) {
+    return (
+      <p className="mt-6 text-sm text-zinc-300">
+        Your submission was received.{" "}
+        <button
+          type="button"
+          onClick={() => router.replace("/coaching-submissions")}
+          className="font-semibold text-[#52B788] underline-offset-2 hover:underline"
+        >
+          Back to Coaching Submissions
+        </button>
+      </p>
+    );
+  }
 
   return (
     <>
@@ -207,7 +239,7 @@ export default function MentalGameForm({ confirmationVariant }: MentalGameFormPr
 
       <button
         type="submit"
-        disabled={isSubmitting}
+        disabled={isSubmitting || submissionComplete}
         className="w-full rounded-full bg-[#22c55e] px-6 py-3 font-semibold text-black transition hover:bg-[#35db72] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
       >
         {isSubmitting ? "Submitting..." : "Submit Coaching Submission"}
@@ -217,7 +249,7 @@ export default function MentalGameForm({ confirmationVariant }: MentalGameFormPr
       {showConfirmationModal ? (
         <ResponsiveOverlay
           open={showConfirmationModal}
-          onClose={() => setShowConfirmationModal(false)}
+          onClose={closeConfirmation}
           ariaLabel="Submission confirmation"
           desktopClassName="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
           desktopPanelClassName="w-[94vw] max-w-2xl overflow-y-auto rounded-2xl border border-[#18243a] bg-[#0b1324] p-0 shadow-2xl sm:max-w-3xl"
@@ -233,7 +265,7 @@ export default function MentalGameForm({ confirmationVariant }: MentalGameFormPr
                 <p className="mt-2 whitespace-pre-wrap text-sm text-zinc-300">{submittedMessage}</p>
               </div>
             }
-            onClose={() => setShowConfirmationModal(false)}
+            onClose={closeConfirmation}
           />
         </ResponsiveOverlay>
       ) : null}

@@ -755,6 +755,9 @@ export default function AdminPanel({ mode = "full" }: AdminPanelProps) {
                 {formatDateTime(detail.createdAt)} -{" "}
                 {detail.badgeStatus === "PENDING" ? "Pending" : "Responded"}
               </p>
+              {detail.poolLabel ? (
+                <p className="mt-2 text-sm font-medium text-[#9df3bd]">{detail.poolLabel}</p>
+              ) : null}
             </div>
 
             {detail.memberProfile ? (

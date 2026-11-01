@@ -1,22 +1,27 @@
 "use client";
 
 import { useState } from "react";
+import type { MembershipBillingIntervalKey } from "@/lib/membership-billing-shared";
 import type { MembershipLevelKey } from "@/lib/membership-levels-shared";
 import { formatMembershipLevelLabel } from "@/lib/membership-levels-shared";
 
 type Props = {
   level: MembershipLevelKey;
+  billingInterval?: MembershipBillingIntervalKey;
   label?: string;
   className?: string;
   showOrgCode?: boolean;
+  clubOrgName?: string | null;
   capFullWaitlist?: boolean;
 };
 
 export default function MembershipLevelCheckoutButton({
   level,
+  billingInterval = "MONTHLY",
   label,
   className = "",
   showOrgCode = false,
+  clubOrgName = null,
   capFullWaitlist = false,
 }: Props) {
   const [busy, setBusy] = useState(false);
@@ -35,6 +40,7 @@ export default function MembershipLevelCheckoutButton({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         level,
+        billingInterval: billingInterval.toLowerCase(),
         orgJoinCode: orgJoinCode.trim() || undefined,
       }),
     });
@@ -115,7 +121,11 @@ export default function MembershipLevelCheckoutButton({
 
   return (
     <div className={className}>
-      {showOrgCode ? (
+      {clubOrgName ? (
+        <p className="mb-2 text-xs text-zinc-400">
+          Club: <span className="text-zinc-200">{clubOrgName}</span>
+        </p>
+      ) : showOrgCode ? (
         <label className="mb-2 block text-xs text-zinc-400">
           Club code (optional)
           <input

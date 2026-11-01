@@ -1,10 +1,16 @@
 import "server-only";
 
+import type { MembershipBillingIntervalKey } from "@/lib/membership-billing-shared";
+import {
+  membershipLevelSupportsAnnualBilling,
+  parseMembershipBillingInterval,
+} from "@/lib/membership-billing-shared";
 import type { MembershipLevelKey } from "@/lib/membership-levels-shared";
 import {
   isMembershipLevelKey,
   isPublicMembershipLevelsEnabled,
 } from "@/lib/membership-levels-shared";
+import { resolveFoundingOfferForUserCheckout } from "@/lib/founding-offer-server";
 import { prisma } from "@/lib/prisma";
 import { getStripe } from "@/lib/stripe";
 import {
@@ -31,6 +37,7 @@ export async function createMembershipLevelCheckoutSession(params: {
   userId: string;
   email: string;
   level: MembershipLevelKey;
+  billingInterval?: MembershipBillingIntervalKey;
   orgJoinCode?: string | null;
 }) {
   if (!isMembershipLevelKey(params.level)) {
@@ -58,7 +65,15 @@ export async function createMembershipLevelCheckoutSession(params: {
     select: { stripeCustomerId: true },
   });
 
-  const priceId = resolveMembershipLevelStripePriceId(params.level);
+  const billingInterval = parseMembershipBillingInterval(params.billingInterval ?? "MONTHLY");
+  if (billingInterval === "ANNUAL" && !membershipLevelSupportsAnnualBilling(params.level)) {
+    throw new Error("Invalid billing interval for this level.");
+  }
+  if (params.level === "ALL_ACCESS" && billingInterval !== "MONTHLY") {
+    throw new Error("All-Access is monthly only.");
+  }
+
+  const priceId = resolveMembershipLevelStripePriceId(params.level, billingInterval);
   if (!priceId) {
     throw new Error("MEMBERSHIP_PRICE_NOT_CONFIGURED");
   }
@@ -74,11 +89,22 @@ export async function createMembershipLevelCheckoutSession(params: {
     }
   }
 
+  const founding = await resolveFoundingOfferForUserCheckout({
+    userId: params.userId,
+    organizationId: org.organizationId,
+    level: params.level,
+    billingInterval,
+  });
+
   const metadata: Record<string, string> = {
     userId: params.userId,
     membershipLevel: params.level,
+    billingInterval,
     checkoutKind: "membership_level",
   };
+  if (founding.foundingDiscountEndsAt) {
+    metadata.foundingDiscountEndsAt = founding.foundingDiscountEndsAt.toISOString();
+  }
   if (org.organizationId) {
     metadata.organizationId = org.organizationId;
   }
@@ -97,8 +123,11 @@ export async function createMembershipLevelCheckoutSession(params: {
       ? { customer: customerId }
       : { customer_email: params.email }),
     line_items: [{ price: priceId, quantity: 1 }],
+    ...(founding.applyCoupon && founding.couponId
+      ? { discounts: [{ coupon: founding.couponId }] }
+      : {}),
     success_url: checkoutSuccessPath,
-    cancel_url: `${baseUrl}/upgrade?checkout=cancelled`,
+    cancel_url: `${baseUrl}/upgrade?checkout=canceled`,
     client_reference_id: params.userId,
     metadata,
     subscription_data: {
@@ -110,11 +139,6 @@ export async function createMembershipLevelCheckoutSession(params: {
   if (!session.url) {
     throw new Error("Stripe checkout session missing URL.");
   }
-
-  await prisma.user.update({
-    where: { id: params.userId },
-    data: { pendingCheckoutLevel: params.level },
-  });
 
   return session.url;
 }

@@ -5,12 +5,13 @@ import {
   escapeHtml,
   getPublicAppUrl,
 } from "@/lib/email-layout";
-import type { DatabaseTier } from "@/lib/membership";
 import {
-  formatMembershipLevelLabel,
-  MEMBERSHIP_LEVELS,
-  type MembershipLevelKey,
-} from "@/lib/membership-levels-shared";
+  getMembershipBilledPriceDisplay,
+  type MembershipBillingIntervalKey,
+} from "@/lib/membership-billing-shared";
+import { FOUNDING_PLUS_MONTHLY_COACH_PRICE_LINE } from "@/lib/founding-offer-shared";
+import type { DatabaseTier } from "@/lib/membership";
+import { formatMembershipLevelLabel, type MembershipLevelKey } from "@/lib/membership-levels-shared";
 import { isMembershipLevelUpgrade } from "@/lib/membership-subscription-shared";
 
 const PAID_MEMBERSHIP_LEVELS: MembershipLevelKey[] = ["CORE", "PLUS", "ALL_ACCESS"];
@@ -93,18 +94,45 @@ function bulletList(items: string[]) {
 }
 
 function wrapMemberEmail(params: { subject: string; bodyContentHtml: string; textBody: string }) {
+  const footerOptions = { omitCoachBrocName: true as const };
   const html = buildMemberEmailHtml({
     title: params.subject,
     bodyContentHtml: params.bodyContentHtml,
+    footer: footerOptions,
   });
-  const text = `${params.textBody}\n\n${buildEmailFooterText()}`;
+  const text = `${params.textBody}\n\n${buildEmailFooterText(footerOptions)}`;
   return { subject: params.subject, html, text };
 }
 
 export type MembershipWelcomeEmailOptions = {
   firstName: string;
   showAllAccessSetupLink?: boolean;
+  billingInterval?: MembershipBillingIntervalKey;
+  foundingPlusMonthlyActive?: boolean;
 };
+
+function resolveWelcomeBillingPrice(
+  level: MembershipLevelKey,
+  options: MembershipWelcomeEmailOptions,
+): string {
+  const billingInterval = options.billingInterval ?? "MONTHLY";
+  return getMembershipBilledPriceDisplay({
+    level,
+    billingInterval,
+    foundingPlusMonthlyActive: options.foundingPlusMonthlyActive,
+  });
+}
+
+function buildMembershipBilledPriceLine(
+  level: MembershipLevelKey,
+  options: MembershipWelcomeEmailOptions,
+): { html: string; text: string } {
+  const priceDisplay = resolveWelcomeBillingPrice(level, options);
+  return {
+    html: `You're billed ${priceDisplay}. You can change or cancel anytime in Settings &gt; My plan.`,
+    text: `You're billed ${priceDisplay}. You can change or cancel anytime in Settings > My plan.`,
+  };
+}
 
 export function buildMembershipLevelWelcomeEmail(
   level: MembershipLevelKey,
@@ -113,7 +141,7 @@ export function buildMembershipLevelWelcomeEmail(
   const firstName = options.firstName.trim() || "there";
   const greeting = `Hey ${escapeHtml(firstName)},`;
   const submitUrl = `${getPublicAppUrl()}/coaching-submissions`;
-  const priceLine = `You're billed ${MEMBERSHIP_LEVELS[level].priceDisplay}. You can change or cancel anytime in Settings &gt; My plan.`;
+  const priceLine = buildMembershipBilledPriceLine(level, options);
   const signoff = `<p style="margin:24px 0 0 0; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:1.7; color:#0A1628;">Work hard. Be memorable.<br/>Coach Broc</p>`;
 
   if (level === "CORE") {
@@ -128,7 +156,7 @@ export function buildMembershipLevelWelcomeEmail(
               ${bulletList(bullets.map((b) => escapeHtml(b)))}
               ${paragraph("Start here: send me your first swing video and I'll send back your report.")}
               ${buildEmailButton("Send your swing", submitUrl)}
-              ${paragraph(escapeHtml(priceLine.replace("&gt;", ">")))}
+              ${paragraph(escapeHtml(priceLine.html.replace("&gt;", ">")))}
               ${signoff}`;
     const textBody = `Hey ${firstName},
 
@@ -140,7 +168,7 @@ Welcome to Core. Here's what you've got:
 Start here: send me your first swing video and I'll send back your report.
 Send your swing: ${submitUrl}
 
-You're billed $10/mo. You can change or cancel anytime in Settings > My plan.
+${priceLine.text}
 
 Work hard. Be memorable.
 Coach Broc`;
@@ -160,7 +188,7 @@ Coach Broc`;
               ${bulletList(bullets.map((b) => escapeHtml(b)))}
               ${paragraph("Start here: send me a swing video for your first review this month.")}
               ${buildEmailButton("Send your swing", submitUrl)}
-              ${paragraph(escapeHtml(priceLine.replace("&gt;", ">")))}
+              ${paragraph(escapeHtml(priceLine.html.replace("&gt;", ">")))}
               ${signoff}`;
     const textBody = `Hey ${firstName},
 
@@ -173,7 +201,7 @@ Welcome to Plus. I'm in your corner now. Here's what you've got:
 Start here: send me a swing video for your first review this month.
 Send your swing: ${submitUrl}
 
-You're billed $20/mo. You can change or cancel anytime in Settings > My plan.
+${priceLine.text}
 
 Work hard. Be memorable.
 Coach Broc`;
@@ -197,7 +225,7 @@ Coach Broc`;
               ${allAccessBullets}
               ${setupBlock}
               ${paragraph("One question to think about before our call: What do you want to be known for?")}
-              ${paragraph(escapeHtml(priceLine.replace("&gt;", ">")))}
+              ${paragraph(escapeHtml(priceLine.html.replace("&gt;", ">")))}
               ${signoff}`;
   const textBody = `Hey ${firstName},
 
@@ -209,7 +237,7 @@ Welcome to All-Access. Let's get to work. Here's how it goes:
 ${options.showAllAccessSetupLink ? `\nIf you haven't finished setup yet, do that first: ${setupUrl}\n` : ""}
 One question to think about before our call: What do you want to be known for?
 
-You're billed $249/mo. You can change or cancel anytime in Settings > My plan.
+${priceLine.text}
 
 Work hard. Be memorable.
 Coach Broc`;
@@ -290,9 +318,19 @@ export function buildCoachNewPaidMembershipEmailText(params: {
   email: string;
   orgName: string | null;
   memberAdminUrl: string;
+  billingInterval?: MembershipBillingIntervalKey;
+  foundingPlusMonthlyActive?: boolean;
 }) {
   const levelLabel = formatMembershipLevelLabel(params.level);
-  const price = MEMBERSHIP_LEVELS[params.level].priceDisplay;
+  const billingInterval = params.billingInterval ?? "MONTHLY";
+  const price =
+    params.foundingPlusMonthlyActive && params.level === "PLUS" && billingInterval === "MONTHLY"
+      ? FOUNDING_PLUS_MONTHLY_COACH_PRICE_LINE
+      : getMembershipBilledPriceDisplay({
+          level: params.level,
+          billingInterval,
+          foundingPlusMonthlyActive: params.foundingPlusMonthlyActive,
+        });
   const orgLine = params.orgName?.trim()
     ? `Organization: ${params.orgName.trim()}`
     : "Organization: (none)";

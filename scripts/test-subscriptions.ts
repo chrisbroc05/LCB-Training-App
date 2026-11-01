@@ -291,6 +291,7 @@ function testUpgradeConfirmCopy() {
     targetLevel: "PLUS",
     amountDueTodayDisplay: "$9.67",
     nextBillingLabel: "Nov 27, 2026",
+    billingInterval: "MONTHLY",
   });
   assert.match(message, /Upgrade to Plus\?/);
   assert.match(message, /\$9\.67 today/);
@@ -300,6 +301,7 @@ function testUpgradeConfirmCopy() {
     targetLevel: "PLUS",
     amountDueTodayDisplay: "$10.00",
     nextBillingLabel: "Nov 27, 2026",
+    billingInterval: "MONTHLY",
   });
   assert.equal(modal.title, "Upgrade to Plus");
   assert.match(modal.body, /\$10\.00 today/);
@@ -310,6 +312,7 @@ function testUpgradeConfirmCopy() {
     currentLevel: "PLUS",
     targetLevel: "CORE",
     effectiveDateLabel: "Nov 27, 2026",
+    billingInterval: "MONTHLY",
   });
   assert.equal(downgradeModal.dismissLabel, "Keep Plus");
   assert.match(downgradeModal.body, /won't be charged anything today/);

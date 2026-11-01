@@ -7,6 +7,7 @@ import type { DatabaseTier } from "@/lib/membership";
 import { sendCoachRefundProcessedNotification } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import type { StripeRefundProduct } from "@/lib/stripe-refund-shared";
+import { processMembershipSubscriptionChargeRefund } from "@/lib/membership-charge-refund-server";
 import { getStripe } from "@/lib/stripe";
 
 type ResolvedPurchase = {
@@ -358,6 +359,14 @@ export async function processStripeChargeRefund(charge: Stripe.Charge) {
   const resourceRefund = await tryMarkResourcePurchaseRefunded(charge, refundedAt);
   if (resourceRefund.processed) {
     return resourceRefund;
+  }
+
+  const membershipRefund = await processMembershipSubscriptionChargeRefund({
+    charge,
+    refundedAt,
+  });
+  if (membershipRefund.processed) {
+    return membershipRefund;
   }
 
   const purchase = await resolveChargePurchase(charge);

@@ -96,6 +96,17 @@ export const LEGAL_DOCUMENTS: Record<LegalDocumentId, LegalDocumentConfig> = {
       },
       {
         type: "heading",
+        text: "Core and Plus annual memberships",
+      },
+      {
+        type: "bullets",
+        items: [
+          "You may request a full refund within 14 days of your annual payment date.",
+          "After 14 days, annual plans are non-refundable. You may cancel renewal so access continues through the end of the paid year.",
+        ],
+      },
+      {
+        type: "heading",
         text: "Remote Sessions",
       },
       {

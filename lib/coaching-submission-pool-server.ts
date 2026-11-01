@@ -5,6 +5,7 @@ import {
   listSwingCoachingAllowanceFormOptions,
   resolveSubmittedCoachingPoolId,
   validateCoachingSubmissionPool,
+  type CoachingAllowanceBuildOptions,
   type CoachingAllowancePickerOption,
   type CoachingAllowancePoolId,
   type CoachingSubmissionKind,
@@ -14,18 +15,18 @@ export function resolveCoachingSubmissionPoolContext(
   user: CoachingSubmissionUserFields,
   poolParam: string | null | undefined,
   kind: CoachingSubmissionKind,
+  buildOptions?: CoachingAllowanceBuildOptions,
 ) {
   const swingOptions =
-    kind === "swing" ? listSwingCoachingAllowanceFormOptions(user) : [];
-  const validation = validateCoachingSubmissionPool(user, poolParam, kind);
-  const resolvedPool = validation.ok
-    ? resolveSubmittedCoachingPoolId(validation, user, kind)
-    : undefined;
+    kind === "swing" ? listSwingCoachingAllowanceFormOptions(user, new Date(), buildOptions) : [];
+  const validation = validateCoachingSubmissionPool(user, poolParam, kind, new Date(), buildOptions);
+  const resolvedPool = validation.ok ? resolveSubmittedCoachingPoolId(validation) : undefined;
 
   const selectedOption: CoachingAllowancePickerOption | null =
     resolvedPool != null
-      ? (listSwingCoachingAllowanceFormOptions(user).find((option) => option.poolId === resolvedPool) ??
-        null)
+      ? (listSwingCoachingAllowanceFormOptions(user, new Date(), buildOptions).find(
+          (option) => option.poolId === resolvedPool,
+        ) ?? null)
       : null;
 
   return {
@@ -49,6 +50,6 @@ export function coachingPoolParamsFromValidation(
     return { requestedPool: undefined };
   }
   return {
-    requestedPool: resolveSubmittedCoachingPoolId(validation, user, kind),
+    requestedPool: resolveSubmittedCoachingPoolId(validation),
   };
 }

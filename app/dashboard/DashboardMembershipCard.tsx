@@ -18,6 +18,7 @@ type DashboardMembershipCardProps = {
     pendingLevel: MembershipLevelKey | null;
     currentPeriodEnd: Date;
   } | null;
+  foundingPriceLine?: string | null;
 };
 
 export default function DashboardMembershipCard({
@@ -28,6 +29,7 @@ export default function DashboardMembershipCard({
   subscriptionCurrentPeriodEnd,
   subscriptionCancelAtPeriodEnd,
   phase2Membership,
+  foundingPriceLine = null,
 }: DashboardMembershipCardProps) {
   const nextBillingLabel = phase2Membership
     ? formatMembershipBillingDate(phase2Membership.currentPeriodEnd)
@@ -45,9 +47,12 @@ export default function DashboardMembershipCard({
   return (
     <article className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-4 sm:p-6">
       <h2 className="text-lg font-semibold text-zinc-100">Membership</h2>
-      <div className="mt-3 inline-flex rounded-full border border-[#22c55e]/40 bg-[#22c55e]/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#9df3bd]">
+      <div className="mt-3 inline-flex rounded-full border border-[#22c55e]/40 bg-[#22c55e]/10 px-3 py-1 text-xs font-semibold tracking-wide text-[#9df3bd]">
         {planLabel}
       </div>
+      {foundingPriceLine ? (
+        <p className="mt-2 text-sm text-zinc-300">{foundingPriceLine}</p>
+      ) : null}
 
       {isPaidMember ? (
         <div className="mt-3 space-y-1 text-sm text-zinc-300">

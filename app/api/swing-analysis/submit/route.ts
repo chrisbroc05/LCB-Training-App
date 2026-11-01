@@ -206,10 +206,13 @@ export async function POST(request: Request) {
     if (!coachingUserFields) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    const { countUnusedExtraReviewCredits } = await import("@/lib/extra-review-server");
+    const unusedExtraReviewCredits = await countUnusedExtraReviewCredits(userId);
     const poolContext = resolveCoachingSubmissionPoolContext(
       coachingUserFields,
       body?.coachingAllowancePool,
       "swing",
+      { unusedExtraReviewCredits },
     );
     if (!poolContext.validation.ok) {
       return NextResponse.json({ error: poolContext.validation.error }, { status: 400 });

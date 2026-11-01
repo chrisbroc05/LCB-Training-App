@@ -17,7 +17,8 @@ export type CoachingAllowancePoolId =
   | "program"
   | "org-trial"
   | "free-once"
-  | "legacy-monthly";
+  | "legacy-monthly"
+  | "extra-review";
 
 export type CoachingSubmissionKind = "swing" | "mental";
 
@@ -41,6 +42,7 @@ const POOL_IDS: CoachingAllowancePoolId[] = [
   "org-trial",
   "free-once",
   "legacy-monthly",
+  "extra-review",
 ];
 
 export function isCoachingAllowancePoolId(value: string): value is CoachingAllowancePoolId {
@@ -62,6 +64,8 @@ export function poolIdToReviewTrack(poolId: CoachingAllowancePoolId): CoachingRe
       return "ORG_TRIAL_QUICK";
     case "free-once":
       return "FREE_ONCE";
+    case "extra-review":
+      return "EXTRA_REVIEW";
   }
 }
 
@@ -113,9 +117,14 @@ function playbookOption(user: CoachingSubmissionUserFields, now: Date): Coaching
   };
 }
 
+export type CoachingAllowanceBuildOptions = {
+  unusedExtraReviewCredits?: number;
+};
+
 function buildAllCoachingAllowanceOptions(
   user: AccessUserFields & CoachingSubmissionUserFields,
   now = new Date(),
+  buildOptions?: CoachingAllowanceBuildOptions,
 ): CoachingAllowancePickerOption[] {
   const options: CoachingAllowancePickerOption[] = [];
   const level = activeMembershipLevel(user, now);
@@ -201,6 +210,21 @@ function buildAllCoachingAllowanceOptions(
     }
   }
 
+  const unusedExtra = buildOptions?.unusedExtraReviewCredits ?? 0;
+  if (unusedExtra > 0) {
+    options.push({
+      poolId: "extra-review",
+      title: "Extra review",
+      description: "A one-time in-depth review you purchased.",
+      swingFormTitle: "Extra review",
+      swingFormDescription: "Use your purchased extra review credit.",
+      availabilityLine: `${unusedExtra} available`,
+      canSubmit: true,
+      supportsSwing: true,
+      supportsMindset: true,
+    });
+  }
+
   return options;
 }
 
@@ -208,8 +232,9 @@ function buildAllCoachingAllowanceOptions(
 export function listCoachingAllowanceSummaryOptions(
   user: AccessUserFields & CoachingSubmissionUserFields,
   now = new Date(),
+  buildOptions?: CoachingAllowanceBuildOptions,
 ): CoachingAllowancePickerOption[] {
-  return buildAllCoachingAllowanceOptions(user, now);
+  return buildAllCoachingAllowanceOptions(user, now, buildOptions);
 }
 
 export function formatCoachingAllowanceSummaryLine(option: CoachingAllowancePickerOption): string {
@@ -220,15 +245,29 @@ export function formatCoachingAllowanceSummaryLine(option: CoachingAllowancePick
 export function listSwingCoachingAllowanceFormOptions(
   user: AccessUserFields & CoachingSubmissionUserFields,
   now = new Date(),
+  buildOptions?: CoachingAllowanceBuildOptions,
 ): CoachingAllowancePickerOption[] {
-  return buildAllCoachingAllowanceOptions(user, now).filter((option) => option.supportsSwing);
+  return buildAllCoachingAllowanceOptions(user, now, buildOptions).filter(
+    (option) => option.supportsSwing,
+  );
+}
+
+function listSubmittableSwingCoachingAllowanceFormOptions(
+  user: AccessUserFields & CoachingSubmissionUserFields,
+  now = new Date(),
+  buildOptions?: CoachingAllowanceBuildOptions,
+): CoachingAllowancePickerOption[] {
+  return listSwingCoachingAllowanceFormOptions(user, now, buildOptions).filter(
+    (option) => option.canSubmit,
+  );
 }
 
 export function requiresSwingAllowanceFormChoice(
   user: AccessUserFields & CoachingSubmissionUserFields,
   now = new Date(),
+  buildOptions?: CoachingAllowanceBuildOptions,
 ): boolean {
-  return listSwingCoachingAllowanceFormOptions(user, now).length >= 2;
+  return listSubmittableSwingCoachingAllowanceFormOptions(user, now, buildOptions).length >= 2;
 }
 
 /** @deprecated Use requiresSwingAllowanceFormChoice */
@@ -250,8 +289,9 @@ export function listCoachingAllowancePickerOptions(
 export function resolveAutoMindsetPoolId(
   user: AccessUserFields & CoachingSubmissionUserFields,
   now = new Date(),
+  buildOptions?: CoachingAllowanceBuildOptions,
 ): CoachingAllowancePoolId | null {
-  const eligible = buildAllCoachingAllowanceOptions(user, now).filter(
+  const eligible = buildAllCoachingAllowanceOptions(user, now, buildOptions).filter(
     (option) => option.supportsMindset && option.canSubmit,
   );
   if (eligible.length === 0) {
@@ -264,8 +304,9 @@ export function resolveAutoMindsetPoolId(
 export function canSubmitMindsetCoachingRequest(
   user: AccessUserFields & CoachingSubmissionUserFields,
   now = new Date(),
+  buildOptions?: CoachingAllowanceBuildOptions,
 ): boolean {
-  return resolveAutoMindsetPoolId(user, now) != null;
+  return resolveAutoMindsetPoolId(user, now, buildOptions) != null;
 }
 
 function resolveSingleSubmittableSwingPool(
@@ -287,9 +328,10 @@ export function validateCoachingSubmissionPool(
   poolId: string | null | undefined,
   kind: CoachingSubmissionKind,
   now = new Date(),
+  buildOptions?: CoachingAllowanceBuildOptions,
 ): ValidateCoachingPoolResult {
   if (kind === "mental") {
-    const mindsetPool = resolveAutoMindsetPoolId(user, now);
+    const mindsetPool = resolveAutoMindsetPoolId(user, now, buildOptions);
     if (!mindsetPool) {
       return { ok: false, error: "No coaching allowance is available for mindset submissions." };
     }
@@ -300,12 +342,13 @@ export function validateCoachingSubmissionPool(
     };
   }
 
-  const swingOptions = listSwingCoachingAllowanceFormOptions(user, now);
-  if (swingOptions.length === 0) {
+  const swingOptions = listSwingCoachingAllowanceFormOptions(user, now, buildOptions);
+  const submittableSwing = listSubmittableSwingCoachingAllowanceFormOptions(user, now, buildOptions);
+  if (submittableSwing.length === 0) {
     return { ok: false, error: "No coaching submission allowances are available right now." };
   }
 
-  const needsChoice = swingOptions.length >= 2;
+  const needsChoice = submittableSwing.length >= 2;
 
   if (poolId && isCoachingAllowancePoolId(poolId) && !swingOptions.some((option) => option.poolId === poolId)) {
     return { ok: false, error: "That coaching allowance is not available." };
@@ -334,23 +377,54 @@ export function validateCoachingSubmissionPool(
     return { ok: false, error: "No coaching allowance is available for swing submissions." };
   }
 
-  return { ok: true, poolId: null, reviewTrack: null };
+  if (poolId && isCoachingAllowancePoolId(poolId)) {
+    const selected = swingOptions.find((option) => option.poolId === poolId);
+    if (!selected) {
+      return { ok: false, error: "That coaching allowance is not available." };
+    }
+    if (!selected.canSubmit) {
+      return { ok: false, error: "That coaching allowance is not available right now." };
+    }
+    return {
+      ok: true,
+      poolId,
+      reviewTrack: poolIdToReviewTrack(poolId),
+    };
+  }
+
+  return {
+    ok: true,
+    poolId: autoPool,
+    reviewTrack: poolIdToReviewTrack(autoPool),
+  };
+}
+
+export function validateCoachingSubmissionPoolWithExtraCredits(
+  user: AccessUserFields & CoachingSubmissionUserFields,
+  poolId: string | null | undefined,
+  kind: CoachingSubmissionKind,
+  unusedExtraReviewCredits: number,
+  now = new Date(),
+): ValidateCoachingPoolResult {
+  return validateCoachingSubmissionPool(user, poolId, kind, now, {
+    unusedExtraReviewCredits,
+  });
 }
 
 export function resolveSubmittedCoachingPoolId(
   validation: Extract<ValidateCoachingPoolResult, { ok: true }>,
-  user: AccessUserFields & CoachingSubmissionUserFields,
-  kind: CoachingSubmissionKind,
-  now = new Date(),
 ): CoachingAllowancePoolId | undefined {
-  if (validation.poolId) {
-    return validation.poolId;
-  }
-  if (kind === "swing") {
-    const auto = resolveSingleSubmittableSwingPool(listSwingCoachingAllowanceFormOptions(user, now));
-    return auto ?? undefined;
-  }
-  return resolveAutoMindsetPoolId(user, now) ?? undefined;
+  return validation.poolId ?? undefined;
+}
+
+export function resolveSingleSubmittableSwingPoolId(
+  user: AccessUserFields & CoachingSubmissionUserFields,
+  now = new Date(),
+  buildOptions?: CoachingAllowanceBuildOptions,
+): CoachingAllowancePoolId | null {
+  return resolveSingleSubmittableSwingPool(
+    listSwingCoachingAllowanceFormOptions(user, now, buildOptions),
+  );
 }
 
 export function isPoolEligibleNow(

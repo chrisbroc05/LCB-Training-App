@@ -2,8 +2,7 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import CompleteMembershipCheckoutClient from "@/app/upgrade/complete-checkout/CompleteMembershipCheckoutClient";
 import { authOptions } from "@/lib/auth";
-import { isMembershipLevelKey } from "@/lib/membership-levels-shared";
-import { prisma } from "@/lib/prisma";
+import { consumeMembershipCheckoutIntent } from "@/lib/membership-checkout-intent-server";
 
 export default async function CompleteMembershipCheckoutPage() {
   const session = await getServerSession(authOptions);
@@ -11,19 +10,17 @@ export default async function CompleteMembershipCheckoutPage() {
     redirect("/auth?mode=login");
   }
 
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { pendingCheckoutLevel: true },
-  });
-
-  const level = user?.pendingCheckoutLevel;
-  if (!level || !isMembershipLevelKey(level)) {
+  const intent = await consumeMembershipCheckoutIntent(session.user.id);
+  if (!intent) {
     redirect("/upgrade");
   }
 
   return (
     <div className="mx-auto flex min-h-[50vh] w-full max-w-lg items-center justify-center px-4 py-16">
-      <CompleteMembershipCheckoutClient level={level} />
+      <CompleteMembershipCheckoutClient
+        level={intent.level}
+        billingInterval={intent.billingInterval}
+      />
     </div>
   );
 }

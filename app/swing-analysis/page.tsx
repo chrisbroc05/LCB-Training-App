@@ -1,14 +1,20 @@
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import CoachingSubmissionQuota from "@/app/CoachingSubmissionQuota";
+import { buildReviewAllowanceFallbackCopy } from "@/app/components/CoachingSubmissionUsageNotice";
+import CoachingMonthlyLimitPanel from "@/app/components/CoachingMonthlyLimitPanel";
 import LockedFeaturePanel from "@/app/LockedFeaturePanel";
 import SwingAnalysisForm from "@/app/swing-analysis/SwingAnalysisForm";
-import { resolveEffectiveLevel } from "@/lib/access-shared";
+import { getReviewAllowance, resolveEffectiveLevel } from "@/lib/access-shared";
+import { isPublicMembershipLevelsEnabled } from "@/lib/membership-levels-shared";
+import { SWING_COACHING_FORM_INTRO } from "@/lib/coaching-submission-display-shared";
 import {
   ensureCoachingSubmissionPeriod,
+  formatMonthlyCoachingLimitMessage,
   getCoachingSubmissionAvailabilityForUser,
 } from "@/lib/coaching-submissions";
+import { loadExtraReviewUiState } from "@/lib/extra-review-server";
+import { mapExtraReviewUiState } from "@/lib/extra-review-ui-shared";
 import { PLAYBOOK_SUBMISSIONS_EXHAUSTED_MESSAGE } from "@/lib/coaching-submissions";
 import {
   getSwingSubmissionConfirmationVariant,
@@ -44,7 +50,7 @@ export default async function SwingAnalysisPage() {
     return (
       <LockedFeaturePanel
         title="Coaching Submissions"
-        description="Upload your latest swing video and include context so our coaches can provide targeted feedback."
+        description={SWING_COACHING_FORM_INTRO}
         message={PLAYBOOK_SUBMISSIONS_EXHAUSTED_MESSAGE}
         upgradeLabel="View the 12-Week Program"
         upgradeHref="/program"
@@ -56,7 +62,7 @@ export default async function SwingAnalysisPage() {
     return (
       <LockedFeaturePanel
         title="Coaching Submissions"
-        description="Upload your latest swing video and include context so our coaches can provide targeted feedback."
+        description={SWING_COACHING_FORM_INTRO}
         message={freeSubmissionUsedUpgradeMessage}
         upgradeLabel="Join the 12-Week Program"
         upgradeHref="/program"
@@ -68,7 +74,7 @@ export default async function SwingAnalysisPage() {
     return (
       <LockedFeaturePanel
         title="Coaching Submissions"
-        description="Upload your latest swing video and include context so our coaches can provide targeted feedback."
+        description={SWING_COACHING_FORM_INTRO}
         message="Coach Broc is finishing your written report. You can submit again after it is sent."
         upgradeLabel="View profile"
         upgradeHref="/profile"
@@ -76,19 +82,40 @@ export default async function SwingAnalysisPage() {
     );
   }
 
+  const membershipLevelsLive = isPublicMembershipLevelsEnabled();
+  const extraReviewState =
+    membershipLevelsLive && effective === "PLUS"
+      ? await loadExtraReviewUiState(session.user.id)
+      : null;
+  const extraReviewUi = extraReviewState ? mapExtraReviewUiState(extraReviewState) : null;
+  const unusedExtraReviewCredits = extraReviewState?.unusedCredits ?? 0;
+
   if (lockReason === "monthly-limit") {
-    return (
-      <LockedFeaturePanel
-        title="Coaching Submissions"
-        description="Upload your latest swing video and include context so our coaches can provide targeted feedback."
-        message={`You have used all coaching submissions for this month. Your count resets on ${availability?.resetsOnLabel ?? "the next period"}.`}
-        upgradeLabel="View Membership"
-        upgradeHref="/settings"
-      />
-    );
+    const hasExtraSwing =
+      unusedExtraReviewCredits > 0 &&
+      listSwingCoachingAllowanceFormOptions(userFields, new Date(), {
+        unusedExtraReviewCredits,
+      }).some((option) => option.canSubmit);
+    if (!hasExtraSwing) {
+      return (
+        <CoachingMonthlyLimitPanel
+          title="Coaching Submissions"
+          description={SWING_COACHING_FORM_INTRO}
+          message={formatMonthlyCoachingLimitMessage()}
+          showExtraReviewOffer={
+            membershipLevelsLive && effective === "PLUS" && unusedExtraReviewCredits === 0
+          }
+          extraReview={extraReviewUi}
+          upgradeLabel="View Membership"
+          upgradeHref="/settings"
+        />
+      );
+    }
   }
 
-  const swingOptions = listSwingCoachingAllowanceFormOptions(userFields);
+  const swingOptions = listSwingCoachingAllowanceFormOptions(userFields, new Date(), {
+    unusedExtraReviewCredits,
+  });
   const hasSubmittableSwing = swingOptions.some((option) => option.canSubmit);
 
   if (!hasSubmittableSwing) {
@@ -125,8 +152,16 @@ export default async function SwingAnalysisPage() {
   const effectiveLevel = accessFields ? resolveEffectiveLevel(accessFields) : "FREE";
   const confirmationVariant = getSwingSubmissionConfirmationVariant(effectiveLevel);
   const weeklyFocus = await loadCurrentOrgWeeklyFocusForUser(session.user.id);
-  const requiresAllowanceChoice = requiresSwingAllowanceFormChoice(userFields);
+  const allowanceBuildOptions = { unusedExtraReviewCredits };
+  const requiresAllowanceChoice = requiresSwingAllowanceFormChoice(
+    userFields,
+    new Date(),
+    allowanceBuildOptions,
+  );
   const defaultHideResponsePreference = shouldHideSwingResponsePreference(effectiveLevel);
+  const quotaFallbackCopy = buildReviewAllowanceFallbackCopy(getReviewAllowance(userFields), {
+    coreQuickReportNextEligibleAt: userFields.coreQuickReportNextEligibleAt,
+  });
 
   return (
     <div className="mx-auto w-full max-w-4xl px-4 py-10 sm:px-6 sm:py-14 md:py-20">
@@ -134,18 +169,19 @@ export default async function SwingAnalysisPage() {
         <h1 className="text-2xl font-semibold leading-tight text-zinc-100 sm:text-3xl">
           Coaching Submissions
         </h1>
-        <p className="mt-2 text-zinc-300">
-          Upload your latest swing video and include context so our coaches can provide targeted
-          feedback.
-        </p>
+        <p className="mt-2 text-zinc-300">{SWING_COACHING_FORM_INTRO}</p>
 
-        <CoachingSubmissionQuota user={userFields} />
         <SwingAnalysisForm
           confirmationVariant={confirmationVariant}
           defaultHideResponsePreference={defaultHideResponsePreference}
           weeklyFocusTitle={weeklyFocus?.title ?? null}
           swingAllowanceOptions={swingOptions}
           requiresSwingAllowanceChoice={requiresAllowanceChoice}
+          coachingSubmissionPeriod={userFields.coachingSubmissionPeriod}
+          extraReviewUseByIso={
+            extraReviewState?.nextCreditExpiresAt?.toISOString() ?? null
+          }
+          quotaFallbackCopy={quotaFallbackCopy}
         />
       </section>
     </div>

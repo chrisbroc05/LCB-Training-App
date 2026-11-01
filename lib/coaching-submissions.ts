@@ -14,6 +14,7 @@ import {
   getCoachingSubmissionPeriodKey,
   getPlaybookSubmissionAllowance,
   canSubmitCoachingForms,
+  formatMonthlyCoachingLimitMessage,
 } from "@/lib/coaching-submissions-shared";
 import type { FreeSwingAnalysisResponseMode } from "@/lib/free-swing-analysis-response-shared";
 import { getFreeSwingAnalysisResponseMode } from "@/lib/free-swing-analysis-response-server";
@@ -38,6 +39,7 @@ export {
   getCoachingSubmissionPeriodKey,
   getCoachingSubmissionPeriodLabel,
   getNextCoachingSubmissionResetLabel,
+  formatMonthlyCoachingLimitMessage,
   getCoachingSubmissionAvailability,
   canSubmitCoachingForms,
   getCoachingSubmissionLockReason,
@@ -191,7 +193,7 @@ export async function ensureCoachingSubmissionPeriod(userId: string) {
 
 type CoachingSubmissionTransactionClient = Pick<
   typeof prisma,
-  "user" | "swingAnalysisSubmission" | "mentalGameSubmission"
+  "user" | "swingAnalysisSubmission" | "mentalGameSubmission" | "extraReviewCredit"
 >;
 
 async function consumeFromRequestedPool(
@@ -207,7 +209,7 @@ async function consumeFromRequestedPool(
   freeSwingMode: FreeSwingAnalysisResponseMode,
   availability: CoachingSubmissionAvailability,
 ) {
-  if (!isPoolEligibleNow(syncedUser, poolId)) {
+  if (poolId !== "extra-review" && !isPoolEligibleNow(syncedUser, poolId)) {
     return { ok: false as const, availability, membershipTier: syncedUser.membershipTier };
   }
 
@@ -287,6 +289,32 @@ async function consumeFromRequestedPool(
     };
   }
 
+  if (poolId === "extra-review") {
+    const credit = await tx.extraReviewCredit.findFirst({
+      where: {
+        userId,
+        usedAt: null,
+        expiresAt: { gt: new Date() },
+      },
+      orderBy: { purchasedAt: "asc" },
+      select: { id: true },
+    });
+    if (!credit) {
+      return { ok: false as const, availability, membershipTier: syncedUser.membershipTier };
+    }
+    await tx.extraReviewCredit.update({
+      where: { id: credit.id },
+      data: { usedAt: new Date() },
+    });
+    await tx.user.update({ where: { id: userId }, data: periodSync });
+    return {
+      ok: true as const,
+      availability,
+      membershipTier: syncedUser.membershipTier,
+      reviewTrack: "EXTRA_REVIEW" as CoachingReviewTrack,
+    };
+  }
+
   return { ok: false as const, availability, membershipTier: syncedUser.membershipTier };
 }
 
@@ -326,15 +354,28 @@ export async function consumeCoachingSubmission(
   const availability = getCoachingSubmissionAvailability(syncedUser, new Date(), {
     hasPendingQuickWrittenReport,
   });
-  if (!availability.canSubmit) {
-    return { ok: false as const, availability, membershipTier: syncedUser.membershipTier };
-  }
 
   const periodSync = {
     coachingSubmissionPeriod: syncedUser.coachingSubmissionPeriod,
     coachingSubmissionsUsedThisMonth: syncedUser.coachingSubmissionsUsedThisMonth,
     eliteRolloverCredits: syncedUser.eliteRolloverCredits,
   };
+
+  if (options?.requestedPool === "extra-review") {
+    return consumeFromRequestedPool(
+      tx,
+      userId,
+      syncedUser,
+      options.requestedPool,
+      periodSync,
+      freeSwingMode,
+      availability,
+    );
+  }
+
+  if (!availability.canSubmit) {
+    return { ok: false as const, availability, membershipTier: syncedUser.membershipTier };
+  }
 
   if (options?.requestedPool) {
     return consumeFromRequestedPool(
@@ -565,7 +606,7 @@ export function getCoachingSubmissionLimitError(
   }
 
   if (lockReason === "monthly-limit") {
-    return "You have used all coaching submissions for this month. Your count resets on the 1st.";
+    return formatMonthlyCoachingLimitMessage();
   }
 
   if (lockReason === "pending-quick-report") {

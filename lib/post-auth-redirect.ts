@@ -1,9 +1,14 @@
 import "server-only";
 
-import { isMembershipLevelKey } from "@/lib/membership-levels-shared";
-import { MEMBERSHIP_COMPLETE_CHECKOUT_PATH } from "@/lib/membership-checkout-intent-shared";
 import { prisma } from "@/lib/prisma";
 import { getPostAuthRedirectPath } from "@/lib/free-swing-flow";
+import { expireStaleMembershipCheckoutIntent } from "@/lib/membership-checkout-intent-server";
+import {
+  buildOrgJoinLandingPath,
+  buildOrgJoinWelcomePath,
+  parseOrgJoinRedirectPath,
+} from "@/lib/org-join-auth-shared";
+import { findOrganizationByJoinCode } from "@/lib/org-server";
 
 export async function clearStalePendingCheckout(userId: string) {
   await prisma.user.updateMany({
@@ -21,18 +26,12 @@ export async function resolvePostAuthDestination(
   callbackUrlParam?: string | null,
 ) {
   await clearStalePendingCheckout(userId);
+  await expireStaleMembershipCheckoutIntent(userId);
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { membershipTier: true, membershipLevel: true, pendingCheckoutLevel: true },
+    select: { membershipTier: true, membershipLevel: true },
   });
-
-  if (
-    user?.pendingCheckoutLevel &&
-    isMembershipLevelKey(user.pendingCheckoutLevel)
-  ) {
-    return MEMBERSHIP_COMPLETE_CHECKOUT_PATH;
-  }
 
   if (user?.membershipLevel === "ALL_ACCESS") {
     const enrollment = await prisma.programEnrollment.findUnique({
@@ -58,5 +57,24 @@ export async function resolvePostAuthDestination(
     return "/dashboard/today";
   }
 
-  return getPostAuthRedirectPath(redirectParam, callbackUrlParam);
+  const baseRedirect = getPostAuthRedirectPath(redirectParam, callbackUrlParam);
+  const joinCode = parseOrgJoinRedirectPath(baseRedirect);
+  if (!joinCode) {
+    return baseRedirect;
+  }
+
+  const match = await findOrganizationByJoinCode(joinCode);
+  if (!match) {
+    return buildOrgJoinLandingPath(joinCode);
+  }
+
+  const member = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { organizationId: true },
+  });
+  if (member?.organizationId === match.organization.id) {
+    return buildOrgJoinWelcomePath(joinCode);
+  }
+
+  return buildOrgJoinLandingPath(joinCode);
 }

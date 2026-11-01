@@ -8,6 +8,7 @@ import { authOptions } from "@/lib/auth";
 import { isTwelveWeekProgramMember, type DatabaseTier } from "@/lib/membership";
 import { toAccessUserFields, userAccessSelect } from "@/lib/access-server";
 import { canAccessProgramDashboard } from "@/lib/program-access-shared";
+import { fallbackDeferredParentAccountSignupConsent } from "@/lib/legal-server";
 import { prisma } from "@/lib/prisma";
 import { FREE_SWING_AUTH_URL } from "@/lib/free-swing-flow";
 import { PLAYBOOK_PROGRAM_INCLUDED_DESCRIPTION } from "@/lib/playbook-branding";
@@ -44,10 +45,15 @@ export default async function ProgramPage({ searchParams }: ProgramPageProps) {
   const session = await getServerSession(authOptions);
   const resolvedSearchParams = searchParams ? await searchParams : {};
   const autoStartCheckout = resolvedSearchParams.startCheckout === "1";
+  const checkoutCancelled = resolvedSearchParams.checkout === "cancelled";
   let hasTwelveWeekProgram = false;
   let hasPersonalProgram = false;
 
   if (session?.user?.id) {
+    if (checkoutCancelled) {
+      await fallbackDeferredParentAccountSignupConsent(session.user.id, "checkout_canceled");
+    }
+
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: userAccessSelect,

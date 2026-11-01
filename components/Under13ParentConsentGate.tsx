@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { isLegalPublicPath } from "@/lib/legal-shared";
 import { MEMBERSHIP_COMPLETE_CHECKOUT_PATH } from "@/lib/membership-checkout-intent-shared";
@@ -8,6 +8,8 @@ import { MEMBERSHIP_COMPLETE_CHECKOUT_PATH } from "@/lib/membership-checkout-int
 type Under13LockStatus = {
   needsAcceptance?: boolean;
   needsUnder13ParentLock?: boolean;
+  under13ParentConsentGateMode?: "player_waiting_on_parent" | "parent_verify_email" | null;
+  playerDisplayName?: string;
   parentConsentEmail?: string | null;
   parentConsentResendsRemaining?: number;
 };
@@ -22,6 +24,7 @@ export default function Under13ParentConsentGate() {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [loadingAction, setLoadingAction] = useState<"resend" | "update" | null>(null);
+  const wasUnder13LockedRef = useRef(false);
 
   const fetchStatus = async () => {
     const response = await fetch("/api/legal/status");
@@ -53,9 +56,16 @@ export default function Under13ParentConsentGate() {
       if (data.parentConsentEmail) {
         setParentEmail(data.parentConsentEmail);
       }
-      if (!data.needsUnder13ParentLock) {
-        setShowEmailEditor(false);
-        clearPolling();
+      if (data.needsUnder13ParentLock) {
+        wasUnder13LockedRef.current = true;
+        return;
+      }
+
+      setShowEmailEditor(false);
+      clearPolling();
+
+      if (wasUnder13LockedRef.current) {
+        wasUnder13LockedRef.current = false;
         void fetch("/api/auth/post-login-redirect")
           .then((response) => response.json())
           .then((payload: { path?: string }) => {
@@ -112,7 +122,9 @@ export default function Under13ParentConsentGate() {
   }
 
   const resendsRemaining = status.parentConsentResendsRemaining ?? 0;
-  const displayEmail = status.parentConsentEmail ?? "your parent";
+  const displayEmail = status.parentConsentEmail ?? "your email";
+  const playerName = status.playerDisplayName?.trim() || "your player";
+  const parentVerifyMode = status.under13ParentConsentGateMode === "parent_verify_email";
 
   const handleResend = async () => {
     setError("");
@@ -178,9 +190,20 @@ export default function Under13ParentConsentGate() {
       <div className="w-full max-w-lg rounded-3xl border border-[#18243a] bg-[#0b1324] p-6 sm:p-8">
         <h1 className="text-2xl font-semibold text-zinc-100">Almost there!</h1>
         <p className="mt-3 text-sm leading-relaxed text-zinc-400">
-          We sent an email to{" "}
-          <span className="font-semibold text-zinc-200">{displayEmail}</span> so your parent can
-          confirm. Once they tap &quot;Yes, I agreed&quot; you&apos;re all set.
+          {parentVerifyMode ? (
+            <>
+              We sent an email to{" "}
+              <span className="font-semibold text-zinc-200">{displayEmail}</span>. Confirm your
+              email to finish setting up{" "}
+              <span className="font-semibold text-zinc-200">{playerName}</span>&apos;s account.
+            </>
+          ) : (
+            <>
+              We sent an email to{" "}
+              <span className="font-semibold text-zinc-200">{displayEmail}</span> so your parent can
+              confirm. Once they tap &quot;Yes, I agreed&quot; you&apos;re all set.
+            </>
+          )}
         </p>
 
         {message ? <p className="mt-3 text-sm text-[#52B788]">{message}</p> : null}

@@ -31,7 +31,18 @@ enum CoachingReviewTrack {
   QUICK_SIX_WEEK
   ORG_TRIAL_QUICK
   IN_DEPTH_MONTHLY
+  EXTRA_REVIEW
   PROGRAM
+}
+
+enum MembershipBillingInterval {
+  MONTHLY
+  ANNUAL
+}
+
+enum MembershipEmailType {
+  ANNUAL_RENEWAL_REMINDER
+  COMMISSION_MONTHLY_REPORT
 }
 
 enum FreeSwingAnalysisResponseMode {
@@ -206,6 +217,8 @@ model User {
   twelveWeekProgramEndsAt    DateTime?
   pendingCheckoutTier    MembershipTier?
   pendingCheckoutLevel   MembershipLevel?
+  pendingCheckoutBillingInterval MembershipBillingInterval?
+  pendingCheckoutAt      DateTime?
   subscriptionStatus     SubscriptionStatus     @default(ACTIVE)
   stripeCustomerId       String?                @unique
   stripeSubscriptionId   String?                @unique
@@ -231,6 +244,7 @@ model User {
   parentConsentName      String?
   parentConsentEmail     String?
   parentConsentConfirmedAt DateTime?
+  parentConsentMethod      String?
   parentConsentEmailSentAt DateTime?
   parentConsentReminderSentAt DateTime?
   parentConsentManualResendDayKey String?
@@ -271,15 +285,26 @@ model User {
   orgTeamId              String?
   orgJoinedAt            DateTime?
   orgTeamChangedAt       DateTime?
+  commissionAttributionOrgId     String?
+  commissionAttributionJoinedAt  DateTime?
+  commissionEligible             Boolean        @default(true)
+  commissionIneligibleReason     String?
+  commissionEligibleAdminOverride  Boolean        @default(false)
+  commissionOverrideNote           String?
   orgTrialQuickReportUsed Boolean               @default(false)
   orgTrialDashboardDismissedAt DateTime?
   coreQuickReportNextEligibleAt DateTime?
   organization           Organization?          @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  commissionAttributionOrg Organization?          @relation("UserCommissionAttribution", fields: [commissionAttributionOrgId], references: [id], onDelete: SetNull)
   orgTeam                OrgTeam?               @relation(fields: [orgTeamId], references: [id], onDelete: SetNull)
   fixItGrants            UserFixItGrant[]
   membershipSubscription MembershipSubscription?
+  extraReviewCredits     ExtraReviewCredit[]
+  orgCommissionLedger    OrgCommissionLedgerEntry[]
+  membershipEmailLogs    MembershipEmailLog[]
 
   @@index([organizationId])
+  @@index([commissionAttributionOrgId])
   @@index([orgTeamId])
 }
 
@@ -306,15 +331,24 @@ model Organization {
   trialStartsAt      DateTime?
   trialEndsAt        DateTime?
   trialLockedCopy    String?
-  commissionRate     Float           @default(0)
-  commissionMonths   Int             @default(0)
-  createdAt          DateTime        @default(now())
-  updatedAt          DateTime        @updatedAt
-  codes              OrgCode[]
+  commissionRate           Float           @default(0.15)
+  commissionMonths         Int             @default(12)
+  ongoingCommissionRate    Float           @default(0.05)
+  commissionEndsAt         DateTime?
+  foundingOfferEnabled     Boolean         @default(false)
+  foundingOfferDeadline    DateTime?
+  foundingOfferMonths      Int             @default(12)
+  createdAt                DateTime        @default(now())
+  updatedAt                DateTime        @updatedAt
+  codes                    OrgCode[]
   teams              OrgTeam[]
   weeklyFocuses      OrgWeeklyFocus[]
   members            User[]
+  commissionAttributedMembers User[] @relation("UserCommissionAttribution")
   membershipSubscriptions MembershipSubscription[]
+  commissionLedger        OrgCommissionLedgerEntry[]
+  commissionPayouts         OrgCommissionPayout[]
+  commissionCarry         OrgCommissionCarryBalance?
 }
 
 model OrgCode {
@@ -1118,26 +1152,29 @@ model DrillLibraryCatalog {
 }
 
 model MembershipSubscription {
-  id                   String             @id @default(cuid())
-  userId               String             @unique
+  id                   String                    @id @default(cuid())
+  userId               String                    @unique
   stripeCustomerId     String
-  stripeSubscriptionId String             @unique
+  stripeSubscriptionId String                    @unique
   stripePriceId        String?
   stripeScheduleId     String?
   level                MembershipLevel
+  billingInterval      MembershipBillingInterval @default(MONTHLY)
   status               SubscriptionStatus
   currentPeriodEnd     DateTime
-  cancelAtPeriodEnd    Boolean            @default(false)
+  cancelAtPeriodEnd    Boolean                   @default(false)
   pendingLevel         MembershipLevel?
+  pendingBillingInterval MembershipBillingInterval?
+  foundingDiscountEndsAt DateTime?
   startedAt            DateTime
   organizationId       String?
   orgJoinedAtSnapshot  DateTime?
   pastDueGraceEndsAt   DateTime?
   accessEndedAt        DateTime?
-  createdAt            DateTime           @default(now())
-  updatedAt            DateTime           @updatedAt
-  user                 User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  organization         Organization?      @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  createdAt            DateTime                  @default(now())
+  updatedAt            DateTime                  @updatedAt
+  user                 User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization         Organization?             @relation(fields: [organizationId], references: [id], onDelete: SetNull)
   payments             MembershipSubscriptionPayment[]
 
   @@index([organizationId])
@@ -1150,14 +1187,92 @@ model MembershipSubscriptionPayment {
   membershipSubscriptionId String?
   userId                   String?
   level                    MembershipLevel?
-  amountCents              Int
+  billingInterval          MembershipBillingInterval?
+  amountPaidCents          Int
+  processingFeeCents       Int?
+  netCents                 Int?
+  stripeChargeId           String?
+  commissionFeePending     Boolean                 @default(false)
   currency                 String                  @default("usd")
   paidAt                   DateTime
+  annualRefundEligibleUntil DateTime?
+  refundedAt               DateTime?
   createdAt                DateTime                @default(now())
   membershipSubscription   MembershipSubscription? @relation(fields: [membershipSubscriptionId], references: [id], onDelete: SetNull)
 
   @@index([userId, paidAt(sort: Desc)])
-  @@index([membershipSubscriptionId])
+  @@index([commissionFeePending])
+}
+
+model ExtraReviewCredit {
+  id                    String    @id @default(cuid())
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  purchasedAt           DateTime  @default(now())
+  expiresAt             DateTime
+  usedAt                DateTime?
+  stripeCheckoutSessionId String?   @unique
+  createdAt             DateTime  @default(now())
+
+  @@index([userId, usedAt])
+  @@index([userId, expiresAt])
+}
+
+model OrgCommissionLedgerEntry {
+  id                   String                    @id @default(cuid())
+  organizationId       String
+  organization         Organization              @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId               String
+  user                 User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stripeInvoiceId      String?
+  level                MembershipLevel?
+  billingInterval      MembershipBillingInterval?
+  amountPaidCents      Int
+  processingFeeCents   Int?
+  netCents             Int?
+  paymentCents         Int
+  commissionRate       Float
+  commissionCents      Int
+  commissionFeePending Boolean                   @default(false)
+  paidAt               DateTime
+  isRefund             Boolean                   @default(false)
+  createdAt            DateTime                  @default(now())
+
+  @@index([organizationId, paidAt(sort: Desc)])
+  @@index([userId, paidAt(sort: Desc)])
+  @@index([commissionFeePending])
+}
+
+model OrgCommissionPayout {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  monthKey       String
+  amountCents    Int
+  paidAt         DateTime
+  method         String?
+  note           String?
+  createdAt      DateTime     @default(now())
+
+  @@unique([organizationId, monthKey])
+}
+
+model OrgCommissionCarryBalance {
+  organizationId String       @id
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  amountCents    Int          @default(0)
+  updatedAt      DateTime     @updatedAt
+}
+
+model MembershipEmailLog {
+  id        String              @id @default(cuid())
+  userId    String
+  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      MembershipEmailType
+  dedupeKey String              @unique
+  sentAt    DateTime            @default(now())
+
+  @@index([userId, type])
 }
 
 model StripeWebhookEvent {

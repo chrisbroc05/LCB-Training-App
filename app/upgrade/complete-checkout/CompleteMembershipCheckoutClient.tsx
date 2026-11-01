@@ -2,14 +2,16 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import type { MembershipBillingIntervalKey } from "@/lib/membership-billing-shared";
 import type { MembershipLevelKey } from "@/lib/membership-levels-shared";
 import { formatMembershipLevelLabel } from "@/lib/membership-levels-shared";
 
 type Props = {
   level: MembershipLevelKey;
+  billingInterval: MembershipBillingIntervalKey;
 };
 
-export default function CompleteMembershipCheckoutClient({ level }: Props) {
+export default function CompleteMembershipCheckoutClient({ level, billingInterval }: Props) {
   const [message, setMessage] = useState("Taking you to secure checkout...");
   const [blocked, setBlocked] = useState(false);
 
@@ -28,7 +30,7 @@ export default function CompleteMembershipCheckoutClient({ level }: Props) {
       const response = await fetch("/api/stripe/checkout/membership-level", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ level }),
+        body: JSON.stringify({ level, billingInterval: billingInterval.toLowerCase() }),
       });
       const data = (await response.json().catch(() => ({}))) as {
         url?: string;
@@ -68,7 +70,7 @@ export default function CompleteMembershipCheckoutClient({ level }: Props) {
       cancelled = true;
       clearRetry();
     };
-  }, [level]);
+  }, [level, billingInterval]);
 
   return (
     <section className="w-full rounded-3xl border border-[#18243a] bg-[#0b1324]/90 p-8 text-center">

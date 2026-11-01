@@ -27,6 +27,15 @@ import { postCheckout } from "@/lib/checkout-client";
 import { submitSignupRequest } from "@/lib/signup-client";
 import type { SignupRequestPayload } from "@/lib/signup-shared";
 import { isMembershipLevelKey, type MembershipLevelKey } from "@/lib/membership-levels-shared";
+import { buildOrgJoinWelcomePath } from "@/lib/org-join-auth-shared";
+import {
+  isSignupEmailAlreadyExistsError,
+  SIGNUP_EMAIL_EXISTS_FRIENDLY_MESSAGE,
+} from "@/lib/signup-auth-shared";
+import {
+  resolvePostLoginRedirectPath,
+  waitForAuthenticatedSession,
+} from "@/lib/signup-session-client";
 
 type AuthMode = "login" | "signup";
 
@@ -38,11 +47,21 @@ export default function AuthPage() {
   );
 }
 
+function billingFrequencyToMembershipInterval(
+  billing: BillingFrequency,
+): "MONTHLY" | "ANNUAL" {
+  return billing === "annual" ? "ANNUAL" : "MONTHLY";
+}
+
 async function startMembershipLevelCheckout(
   level: MembershipLevelKey,
+  billingInterval: "MONTHLY" | "ANNUAL" = "MONTHLY",
 ): Promise<{ url?: string; error?: string }> {
   try {
-    return await postCheckout("/api/stripe/checkout/membership-level", { level });
+    return await postCheckout("/api/stripe/checkout/membership-level", {
+      level,
+      billingInterval: billingInterval.toLowerCase(),
+    });
   } catch (error) {
     return {
       error: error instanceof Error ? error.message : "Unable to start checkout.",
@@ -125,7 +144,10 @@ function AuthContent() {
       : signupRoleParam === "PLAYER"
         ? ("PLAYER" as const)
         : undefined;
-  const postAuthPath = getPostAuthRedirectPath(redirectParam, callbackUrlParam);
+  const orgCodeFromQuery = searchParams.get("orgCode")?.trim() ?? "";
+  const postAuthPath = orgCodeFromQuery
+    ? buildOrgJoinWelcomePath(orgCodeFromQuery)
+    : getPostAuthRedirectPath(redirectParam, callbackUrlParam);
   const loginHref = buildAuthPageHref({ mode: "login", searchParams });
   const signupHref = buildAuthPageHref({ mode: "signup", searchParams });
   const selectedTier: TierKey =
@@ -276,8 +298,12 @@ function AuthContent() {
     };
 
     if (membershipCheckoutLevel) {
-      const checkoutData = await startMembershipLevelCheckout(membershipCheckoutLevel);
+      const checkoutData = await startMembershipLevelCheckout(
+        membershipCheckoutLevel,
+        billingFrequencyToMembershipInterval(billingFrequency),
+      );
       if (checkoutData.url) {
+        await fetch("/api/auth/clear-pending-membership-checkout", { method: "POST" });
         window.location.href = checkoutData.url;
         return;
       }
@@ -338,18 +364,25 @@ function AuthContent() {
       signupSource,
       orgJoinCode,
       pendingMembershipLevel: membershipCheckoutLevel ?? undefined,
+      pendingMembershipBillingInterval: membershipCheckoutLevel
+        ? billingFrequencyToMembershipInterval(billingFrequency).toLowerCase()
+        : undefined,
     });
 
     if (!response.ok) {
       setSignupLoading(false);
-      setSignupError(response.error);
+      setSignupError(
+        isSignupEmailAlreadyExistsError(response.error)
+          ? SIGNUP_EMAIL_EXISTS_FRIENDLY_MESSAGE
+          : response.error,
+      );
       return;
     }
 
     const loginResult = await signIn("credentials", {
       email: payload.email,
       password: payload.password,
-      callbackUrl: "/auth",
+      callbackUrl: postAuthPath,
       redirect: false,
     });
 
@@ -359,22 +392,30 @@ function AuthContent() {
       return;
     }
 
-    if (isFreeSwingFlow || authRedirectParam === FREE_SWING_AUTH_REDIRECT) {
+    const sessionReady = await waitForAuthenticatedSession();
+    if (!sessionReady) {
       setSignupLoading(false);
+      setSignupError(
+        "Account created, but sign-in is still completing. Use Sign in below to continue.",
+      );
+      return;
+    }
+
+    if (isFreeSwingFlow || authRedirectParam === FREE_SWING_AUTH_REDIRECT) {
       markPendingCoachingWelcome();
       window.location.href = "/coaching-submissions";
       return;
     }
 
     if (membershipCheckoutLevel) {
-      const checkoutData = await startMembershipLevelCheckout(membershipCheckoutLevel);
+      const interval = billingFrequencyToMembershipInterval(billingFrequency);
+      const checkoutData = await startMembershipLevelCheckout(membershipCheckoutLevel, interval);
       if (checkoutData.url) {
-        setSignupLoading(false);
+        await fetch("/api/auth/clear-pending-membership-checkout", { method: "POST" });
         window.location.href = checkoutData.url;
         return;
       }
 
-      setSignupLoading(false);
       window.location.href = "/upgrade/complete-checkout";
       return;
     }
@@ -387,7 +428,6 @@ function AuthContent() {
         return;
       }
 
-      setSignupLoading(false);
       window.location.href = checkoutData.url;
       return;
     }
@@ -404,13 +444,17 @@ function AuthContent() {
         return;
       }
 
-      setSignupLoading(false);
       window.location.href = checkoutData.url;
       return;
     }
 
-    setSignupLoading(false);
-    window.location.href = postAuthPath;
+    const destinationPath = await resolvePostLoginRedirectPath({
+      redirectParam,
+      callbackUrlParam,
+      orgCodeFromQuery: orgCodeFromQuery || null,
+      fallbackPath: postAuthPath,
+    });
+    window.location.href = destinationPath;
   };
 
   const handleResumeCheckout = async () => {

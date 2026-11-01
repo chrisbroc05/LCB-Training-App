@@ -6,6 +6,7 @@ import type { AccessUserFields } from "@/lib/access-shared";
 import type { MembershipLevelKey } from "@/lib/membership-levels-shared";
 import type { DatabaseTier } from "@/lib/membership";
 import { prisma } from "@/lib/prisma";
+import { resolveCommissionEligibilityForOrgJoin } from "@/lib/commission-eligibility-server";
 
 export const userOrgAccessSelect = {
   organizationId: true,
@@ -128,13 +129,55 @@ export async function joinOrganizationForUser(params: {
   }
 
   const joinedAt = new Date();
+  const existing = await prisma.user.findUnique({
+    where: { id: params.userId },
+    select: {
+      email: true,
+      orgJoinedAt: true,
+      commissionAttributionOrgId: true,
+      commissionAttributionJoinedAt: true,
+      commissionEligibleAdminOverride: true,
+    },
+  });
+
+  const effectiveJoinedAt = existing?.orgJoinedAt ?? joinedAt;
+  const isFirstCommissionAttribution =
+    !existing?.commissionAttributionOrgId && org.commissionRate > 0;
+  const attributionOrgId = isFirstCommissionAttribution
+    ? org.id
+    : (existing?.commissionAttributionOrgId ?? null);
+  const attributionJoinedAt = isFirstCommissionAttribution
+    ? effectiveJoinedAt
+    : (existing?.commissionAttributionJoinedAt ?? null);
+
+  let commissionEligible: boolean | undefined;
+  let commissionIneligibleReason: string | null | undefined;
+
+  const shouldEvaluateCommissionEligibility =
+    org.billingMode === "CLUB_PAY" || org.commissionRate > 0;
+  if (shouldEvaluateCommissionEligibility && !existing?.commissionEligibleAdminOverride) {
+    const eligibility = await resolveCommissionEligibilityForOrgJoin({
+      userId: params.userId,
+      email: existing?.email ?? "",
+      orgJoinedAt: effectiveJoinedAt,
+      orgBillingMode: org.billingMode,
+      orgCommissionRate: org.commissionRate,
+    });
+    commissionEligible = eligibility.commissionEligible;
+    commissionIneligibleReason = eligibility.commissionIneligibleReason;
+  }
+
   await prisma.user.update({
     where: { id: params.userId },
     data: {
       organizationId: org.id,
       orgTeamId: teamId,
-      orgJoinedAt: joinedAt,
+      orgJoinedAt: effectiveJoinedAt,
       orgTeamChangedAt: teamId ? joinedAt : null,
+      commissionAttributionOrgId: attributionOrgId,
+      commissionAttributionJoinedAt: attributionJoinedAt,
+      ...(commissionEligible !== undefined ? { commissionEligible } : {}),
+      ...(commissionIneligibleReason !== undefined ? { commissionIneligibleReason } : {}),
     },
   });
 

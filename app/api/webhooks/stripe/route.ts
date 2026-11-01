@@ -16,6 +16,7 @@ import {
   sendRemoteSessionPurchaseConfirmationEmail,
 } from "@/lib/notifications";
 import { processStripeChargeRefund } from "@/lib/stripe-refund-server";
+import { confirmParentConsentFromPayment } from "@/lib/legal-server";
 import { sendTwelveWeekProgramWelcomeIfNeeded } from "@/lib/membership-welcome-email-server";
 import {
   applyMembershipSubscriptionFromStripe,
@@ -26,7 +27,8 @@ import {
 import { isPhase2MembershipPriceId } from "@/lib/stripe-membership-prices-server";
 import { subscriptionStatusGrantsAccess } from "@/lib/membership-subscription-shared";
 import { parseMembershipLevelFromMetadata } from "@/lib/membership-subscription-shared";
-import { getInvoiceLinePriceId } from "@/lib/stripe-invoice-shared";
+import { grantExtraReviewCreditFromCheckout } from "@/lib/extra-review-server";
+import { getInvoiceLinePriceId, getStripeInvoiceSubscriptionId } from "@/lib/stripe-invoice-shared";
 
 function mapPriceIdToTier(priceId?: string | null) {
   if (!priceId) {
@@ -180,6 +182,7 @@ export async function POST(request: Request) {
             console.error("Failed to send Playbook purchase confirmation email", error);
           }
         }
+        await confirmParentConsentFromPayment(userId);
       } else if (checkoutSession.mode === "payment" && membershipTier === "TWELVE_WEEK") {
         const startedAt = new Date();
         const existingUser = await prisma.user.findUnique({
@@ -218,6 +221,7 @@ export async function POST(request: Request) {
           }
         }
         void sendCoachNewProgramPlayerPushForUser(userId);
+        await confirmParentConsentFromPayment(userId);
       } else if (checkoutSession.mode === "subscription") {
         const checkoutKind = checkoutSession.metadata?.checkoutKind;
         const membershipLevel = parseMembershipLevelFromMetadata(
@@ -242,6 +246,7 @@ export async function POST(request: Request) {
                 : null,
             });
           }
+          await confirmParentConsentFromPayment(userId);
         } else {
           await prisma.user.updateMany({
             where: { id: userId },
@@ -268,6 +273,21 @@ export async function POST(request: Request) {
         checkoutSession.customer_email?.toLowerCase() ??
         checkoutSession.metadata?.email?.toLowerCase() ??
         null;
+
+      if (
+        checkoutSession.metadata?.checkoutKind === "extra_review" &&
+        metadataUserId &&
+        checkoutSession.id
+      ) {
+        try {
+          await grantExtraReviewCreditFromCheckout({
+            userId: metadataUserId,
+            stripeCheckoutSessionId: checkoutSession.id,
+          });
+        } catch (error) {
+          console.error("Failed to grant extra review credit", error);
+        }
+      }
 
       if (purchaseType === "resource" && resourceSlug && checkoutSession.id) {
         const resource = getResourceDefinition(resourceSlug);
@@ -487,13 +507,14 @@ export async function POST(request: Request) {
 
   if (event.type === "invoice.paid") {
     const invoice = event.data.object as Stripe.Invoice;
-    const stripeSubscriptionId =
-      typeof (invoice as { subscription?: unknown }).subscription === "string"
-        ? ((invoice as { subscription?: string }).subscription ?? null)
-        : null;
+    const stripeSubscriptionId = getStripeInvoiceSubscriptionId(invoice);
     const linePriceId = getInvoiceLinePriceId(invoice.lines?.data[0]);
     if (isPhase2MembershipPriceId(linePriceId) || stripeSubscriptionId) {
       await recordMembershipSubscriptionInvoice({ invoice, subscriptionId: stripeSubscriptionId });
+      const { runPendingCommissionFeeResolution } = await import(
+        "@/lib/membership-payment-stripe-fee-server"
+      );
+      await runPendingCommissionFeeResolution({ limit: 10 });
       if (stripeSubscriptionId) {
         const subRow = await prisma.membershipSubscription.findFirst({
           where: { stripeSubscriptionId },
