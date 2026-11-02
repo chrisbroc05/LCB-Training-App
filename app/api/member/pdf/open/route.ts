@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { buildMemberPdfInlineRedirectPath } from "@/lib/member-pdf-open-shared";
 import { createMemberPdfOpenToken } from "@/lib/member-pdf-open-token-shared";
 import type { MemberPdfViewKind } from "@/lib/my-resources-shared";
 import {
@@ -63,7 +64,5 @@ export async function GET(request: Request) {
     download,
   });
 
-  const inlineUrl = new URL("/api/member/pdf/inline", url.origin);
-  inlineUrl.searchParams.set("token", openToken);
-  return NextResponse.redirect(inlineUrl);
+  return NextResponse.redirect(buildMemberPdfInlineRedirectPath(openToken));
 }

@@ -4,9 +4,12 @@ export function getRequestBaseUrl(request: Request) {
   if (host) {
     return `${proto}://${host}`;
   }
-  const envUrl = process.env.NEXTAUTH_URL ?? process.env.NEXT_PUBLIC_APP_URL;
-  if (envUrl) {
+  const envUrl = process.env.NEXT_PUBLIC_APP_URL ?? process.env.NEXTAUTH_URL;
+  if (envUrl?.trim()) {
     return envUrl.replace(/\/$/, "");
+  }
+  if (process.env.NODE_ENV === "production") {
+    return "https://www.lcbtraining.com";
   }
   return "http://localhost:3000";
 }

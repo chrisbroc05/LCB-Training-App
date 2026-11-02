@@ -24,5 +24,5 @@ export async function GET(request: Request) {
     );
   }
 
-  return NextResponse.redirect(new URL(result.redirectPath, request.url));
+  return NextResponse.redirect(result.redirectPath);
 }

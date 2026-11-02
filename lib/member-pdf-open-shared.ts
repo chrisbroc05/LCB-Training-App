@@ -42,3 +42,14 @@ export function buildMemberPdfViewerHref(params: MemberPdfOpenParams) {
 export function isMemberPdfOpenHref(href: string): boolean {
   return href.startsWith("/api/member/pdf/open?");
 }
+
+/** Relative redirect target after minting an open token (never use request.url origin). */
+export function buildMemberPdfInlineRedirectPath(openToken: string): string {
+  return `/api/member/pdf/inline?token=${encodeURIComponent(openToken)}`;
+}
+
+export function memberPdfHrefMustNotContainLocalhost(href: string): void {
+  if (/localhost/i.test(href)) {
+    throw new Error(`member PDF href must not contain localhost: ${href}`);
+  }
+}
