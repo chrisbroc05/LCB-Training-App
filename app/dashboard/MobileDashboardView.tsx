@@ -10,8 +10,12 @@ import { canAccessCoachingNav, type DatabaseTier } from "@/lib/membership";
 import { MEMBERSHIP_LEVELS } from "@/lib/membership-levels-shared";
 import type { AccessUserFields } from "@/lib/access-shared";
 import InPersonEmergencyReminderCard from "@/components/InPersonEmergencyReminderCard";
+import DashboardTwelveWeekUpsellCard from "@/app/dashboard/DashboardTwelveWeekUpsellCard";
+import OrgPickTeamBanner from "@/app/dashboard/OrgPickTeamBanner";
 import OrgTrialDashboardCard from "@/app/dashboard/OrgTrialDashboardCard";
 import OrgWeeklyFocusCard from "@/app/dashboard/OrgWeeklyFocusCard";
+import { resolveEffectiveLevel } from "@/lib/access-shared";
+import { shouldShowTwelveWeekDashboardUpsell } from "@/lib/dashboard-upgrade-copy-shared";
 
 type UnreadResponseNotification = {
   id: number;
@@ -70,6 +74,9 @@ export default function MobileDashboardView({
   keepBuildingCoaching,
 }: MobileDashboardViewProps) {
   const isEnrolled = isPersonalProgramMember;
+  const isOrgTrial = resolveEffectiveLevel(access) === "ORG_TRIAL";
+  const showTwelveWeekCard =
+    !isEnrolled && shouldShowTwelveWeekDashboardUpsell(access);
 
   return (
     <div className="mobile-card-stack px-4 pb-4 pt-4 md:hidden">
@@ -124,6 +131,7 @@ export default function MobileDashboardView({
 
       <OrgWeeklyFocusCard userId={userId} />
       <OrgTrialDashboardCard userId={userId} />
+      {isOrgTrial ? <OrgPickTeamBanner userId={userId} /> : null}
 
       {hasProgramEnrollmentRow ? (
         <>
@@ -154,6 +162,8 @@ export default function MobileDashboardView({
 
           <DashboardPlaybookProgressCard userId={userId} />
 
+          {showTwelveWeekCard ? <DashboardTwelveWeekUpsellCard /> : null}
+
           {canAccessCoachingNav(membershipTier) ? (
             <div className="mobile-card [&_article]:border-0 [&_article]:bg-transparent [&_article]:p-0">
               <MonthlyGoalProgressCard
@@ -164,7 +174,11 @@ export default function MobileDashboardView({
           ) : null}
 
           <div className="[&_section]:mt-0 [&_section]:rounded-2xl [&_section]:border [&_section]:border-[#18243a] [&_section]:p-4">
-            <DashboardUpgradeSection membershipTier={membershipTier} access={access} />
+            <DashboardUpgradeSection
+              membershipTier={membershipTier}
+              access={access}
+              hideTwelveWeekUpsell={showTwelveWeekCard}
+            />
           </div>
         </>
       )}

@@ -12,13 +12,15 @@ import {
 type DashboardUpgradeSectionProps = {
   membershipTier: DatabaseTier;
   access: AccessUserFields;
+  hideTwelveWeekUpsell?: boolean;
 };
 
 export default function DashboardUpgradeSection({
   membershipTier,
   access,
+  hideTwelveWeekUpsell = false,
 }: DashboardUpgradeSectionProps) {
-  const showTwelveWeek = shouldShowTwelveWeekDashboardUpsell(access);
+  const showTwelveWeek = !hideTwelveWeekUpsell && shouldShowTwelveWeekDashboardUpsell(access);
   const levelSuggestion = getDashboardLevelUpSuggestion(access);
 
   if (!showTwelveWeek && !levelSuggestion && membershipTier !== "FREE") {

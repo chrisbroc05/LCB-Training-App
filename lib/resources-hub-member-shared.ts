@@ -9,6 +9,7 @@ import type { CoachingSubmissionUserFields } from "@/lib/coaching-submissions-sh
 import { formatMembershipLevelLabel } from "@/lib/membership-levels-shared";
 import { buildMemberPdfViewerHref } from "@/lib/my-resources-shared";
 import type { ResourceDefinition } from "@/lib/resources-shared";
+import { getWorkoutResource } from "@/lib/workout-resources";
 import type { StarterWorkoutProgramKey } from "@/lib/starter-workouts-in-app-shared";
 import { formatDateWithYear } from "@/lib/format-date";
 
@@ -66,7 +67,14 @@ function includedLabelForAccess(access: AccessUserFields): string | null {
   return null;
 }
 
+function memberHrefForIncludedGuidePdf(filename: string): string {
+  return buildMemberPdfViewerHref({ kind: "guide", file: filename });
+}
+
 function memberHrefForResource(resource: ResourceDefinition, filename: string): string {
+  if (getWorkoutResource(filename)) {
+    return memberHrefForIncludedGuidePdf(filename);
+  }
   const key = resource.downloadFileKeys?.[0] ?? "";
   const kind = key.startsWith("guides/") ? "guide" : "workout";
   return buildMemberPdfViewerHref({ kind, file: filename });

@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { canAccessPlaybook } from "@/lib/membership";
+import { canViewPlaybook, resolveEffectiveLevel } from "@/lib/access-shared";
 import { toAccessUserFields, userAccessSelect } from "@/lib/access-server";
+import { getOrgTrialPlaybookUnlockLine } from "@/lib/org-trial-copy-shared";
 import { emptyAccessUserRow } from "@/lib/empty-access-user-shared";
 import {
   isPublicMembershipLevelsEnabled,
@@ -34,14 +35,24 @@ export default async function DashboardPlaybookProgressCard({
     .filter(Boolean)
     .join(" ");
 
-  if (
-    !canAccessPlaybook(
-      access.membershipTier,
-      access.playbookLegacyAccess,
-      access.membershipLevel,
-      access.membershipLevelExpiresAt,
-    )
-  ) {
+  if (!canViewPlaybook(access)) {
+    if (resolveEffectiveLevel(access) === "ORG_TRIAL") {
+      return (
+        <article className={articleClassName}>
+          <h2 className="text-lg font-semibold text-zinc-100 sm:text-xl">The Next Level Playbook</h2>
+          <p className="mt-2 text-sm text-zinc-400">
+            {getOrgTrialPlaybookUnlockLine(access.orgTrialLockedCopy)}
+          </p>
+          <Link
+            href="/playbook"
+            className="mt-4 inline-flex items-center justify-center rounded-full border border-[#52B788] px-5 py-2.5 text-sm font-semibold text-[#52B788] transition hover:bg-[#52B788]/10"
+          >
+            About the Playbook
+          </Link>
+        </article>
+      );
+    }
+
     if (shouldShowPlaybookCorePlusUpsell(access.membershipLevel)) {
       return (
         <article className={articleClassName}>

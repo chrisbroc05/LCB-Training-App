@@ -250,6 +250,10 @@ export function canViewWorkoutInApp(user: AccessUserFields, now = new Date()): b
   return getWorkoutAccessMode(user, now) !== "none";
 }
 
+export function canViewStarterWorkoutsInApp(user: AccessUserFields, now = new Date()): boolean {
+  return getWorkoutAccessMode(user, now) === "starter_in_app";
+}
+
 export function canDownloadWorkoutPdfs(user: AccessUserFields, now = new Date()): boolean {
   return getWorkoutAccessMode(user, now) === "full_programs";
 }
@@ -259,6 +263,7 @@ const CORE_GUIDE_FILENAMES = new Set([
   "LCB_Nutrition_Guide.pdf",
   "LCB_Parent_Guide.pdf",
   "LCB_Arm_Care_4Week_Starter.pdf",
+  "LCB_Back_and_Arm_4Week_Starter.pdf",
 ]);
 
 const PLUS_EXTRA_GUIDE_FILENAMES = new Set([

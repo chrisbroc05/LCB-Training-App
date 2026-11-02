@@ -12,6 +12,7 @@ export const MY_RESOURCES_GUIDE_FILENAMES = [
   "LCB_Parent_Guide.pdf",
   "LCB_Nutrition_Guide.pdf",
   "LCB_Arm_Care_4Week_Starter.pdf",
+  "LCB_Back_and_Arm_4Week_Starter.pdf",
   "LCB_Mental_Game_Workbook.pdf",
   "LCB_Recruiting_Guide.pdf",
 ] as const;

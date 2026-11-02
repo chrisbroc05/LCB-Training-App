@@ -10,7 +10,7 @@ import {
 type OrgTrialDashboardCardClientProps = {
   orgName: string;
   includesLine: string;
-  endLabel: string | null;
+  trialRunsThroughLine: string | null;
   trialEndsAtIso: string | null;
   teamName: string | null;
   mode: OrgTrialDashboardCardMode;
@@ -20,7 +20,7 @@ type OrgTrialDashboardCardClientProps = {
 export default function OrgTrialDashboardCardClient({
   orgName,
   includesLine,
-  endLabel,
+  trialRunsThroughLine,
   trialEndsAtIso,
   teamName,
   mode,
@@ -84,8 +84,8 @@ export default function OrgTrialDashboardCardClient({
         </>
       )}
 
-      {endLabel ? (
-        <p className="mt-3 text-sm text-zinc-400">Trial ends on {endLabel} (Chicago time).</p>
+      {trialRunsThroughLine ? (
+        <p className="mt-3 text-sm text-zinc-400">{trialRunsThroughLine}</p>
       ) : null}
       {teamName ? <p className="mt-2 text-xs text-zinc-500">Team: {teamName}</p> : null}
     </article>

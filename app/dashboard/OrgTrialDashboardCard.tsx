@@ -1,7 +1,7 @@
 import { resolveEffectiveLevel } from "@/lib/access-shared";
 import { toAccessUserFields, userAccessSelect } from "@/lib/access-server";
 import { getOrgTrialIncludesLine } from "@/lib/org-trial-copy-shared";
-import { formatChicagoTrialEndLabel } from "@/lib/org-trial-dates-shared";
+import { formatOrgTrialRunsThroughLabel } from "@/lib/org-trial-dates-shared";
 import { resolveOrgTrialDashboardCardVisibility } from "@/lib/org-trial-dashboard-shared";
 import { prisma } from "@/lib/prisma";
 import OrgTrialDashboardCardClient from "@/app/dashboard/OrgTrialDashboardCardClient";
@@ -37,7 +37,7 @@ export default async function OrgTrialDashboardCard({ userId }: OrgTrialDashboar
   }
 
   const orgName = access.orgName?.trim() || "Your organization";
-  const endLabel = formatChicagoTrialEndLabel(access.orgTrialEndsAt ?? null);
+  const trialRunsThroughLine = formatOrgTrialRunsThroughLabel(access.orgTrialEndsAt ?? null);
   const trialEndsAtIso = access.orgTrialEndsAt
     ? (access.orgTrialEndsAt instanceof Date
         ? access.orgTrialEndsAt
@@ -49,7 +49,7 @@ export default async function OrgTrialDashboardCard({ userId }: OrgTrialDashboar
     <OrgTrialDashboardCardClient
       orgName={orgName}
       includesLine={getOrgTrialIncludesLine()}
-      endLabel={endLabel}
+      trialRunsThroughLine={trialRunsThroughLine}
       trialEndsAtIso={trialEndsAtIso}
       teamName={access.orgTeamName ?? user.orgTeam?.name ?? null}
       mode={visibility.mode}

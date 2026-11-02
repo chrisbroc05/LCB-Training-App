@@ -109,13 +109,13 @@ export default function JoinOrganizationForm({
     <div className="mt-6 space-y-4">
       {teams.length > 0 ? (
         <label className="block text-sm text-zinc-200">
-          Team (optional)
+          Pick your team
           <select
             value={orgTeamId}
             onChange={(event) => setOrgTeamId(event.target.value)}
             className="mt-1 w-full rounded-xl border border-[#2b3650] bg-[#0A1628]/80 px-4 py-3 text-sm text-zinc-100"
           >
-            <option value="">No team selected</option>
+            <option value="">Choose a team</option>
             {teams.map((team) => (
               <option key={team.id} value={team.id}>
                 {team.name}

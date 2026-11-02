@@ -5,12 +5,15 @@ import { authOptions } from "@/lib/auth";
 import { formatDateTime } from "@/lib/format-date";
 import { prisma } from "@/lib/prisma";
 import DashboardCoachingCard from "@/app/dashboard/DashboardCoachingCard";
+import DashboardTwelveWeekUpsellCard from "@/app/dashboard/DashboardTwelveWeekUpsellCard";
+import OrgPickTeamBanner from "@/app/dashboard/OrgPickTeamBanner";
 import OrgWeeklyFocusCard from "@/app/dashboard/OrgWeeklyFocusCard";
 import OrgTrialDashboardCard from "@/app/dashboard/OrgTrialDashboardCard";
 import DashboardEnrolledHomeSection from "@/app/dashboard/DashboardEnrolledHomeSection";
 import DashboardMembershipCard from "@/app/dashboard/DashboardMembershipCard";
 import DashboardPlaybookWelcomeCard from "@/app/dashboard/DashboardPlaybookWelcomeCard";
 import DashboardUpgradeSection from "@/app/dashboard/DashboardUpgradeSection";
+import { shouldShowTwelveWeekDashboardUpsell } from "@/lib/dashboard-upgrade-copy-shared";
 import MobileDashboardView from "@/app/dashboard/MobileDashboardView";
 import ProgramSetupBanner from "@/app/dashboard/ProgramSetupBanner";
 import MonthlyGoalProgressCard from "@/app/dashboard/MonthlyGoalProgressCard";
@@ -557,6 +560,9 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           <div className="mt-8 space-y-4 sm:space-y-5">
             <OrgWeeklyFocusCard userId={session.user.id} />
             <OrgTrialDashboardCard userId={session.user.id} />
+            {effectiveLevel === "ORG_TRIAL" ? (
+              <OrgPickTeamBanner userId={session.user.id} />
+            ) : null}
             <DashboardMembershipCard
               planLabel={membershipCardLabel}
               isPaidMember={isPaidMember}
@@ -590,6 +596,10 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
               extraReview={extraReviewCardProps}
             />
           </div>
+
+          {!isPersonalProgramMember && shouldShowTwelveWeekDashboardUpsell(access) ? (
+            <DashboardTwelveWeekUpsellCard className="mt-8" />
+          ) : null}
 
           {canAccessCoachingNav(membershipTier) ? (
             <section className="mt-10 border-t border-[#18243a] pt-10 sm:mt-12 sm:pt-12">
@@ -694,7 +704,11 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       ) : null}
 
       {!isPersonalProgramMember ? (
-        <DashboardUpgradeSection membershipTier={membershipTier} access={access} />
+        <DashboardUpgradeSection
+          membershipTier={membershipTier}
+          access={access}
+          hideTwelveWeekUpsell={!isPersonalProgramMember && shouldShowTwelveWeekDashboardUpsell(access)}
+        />
       ) : null}
       </div>
     </>

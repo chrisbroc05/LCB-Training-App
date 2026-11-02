@@ -2,8 +2,9 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import PlaybookApp from "@/app/playbook/PlaybookApp";
 import PlaybookPurchasePage from "@/app/playbook/PlaybookPurchasePage";
-import { canAccessPlaybook } from "@/lib/membership";
+import { canViewPlaybook, resolveEffectiveLevel } from "@/lib/access-shared";
 import { toAccessUserFields, userAccessSelect } from "@/lib/access-server";
+import PlaybookOrgTrialLockedPage from "@/app/playbook/PlaybookOrgTrialLockedPage";
 import { emptyAccessUserRow } from "@/lib/empty-access-user-shared";
 import { fallbackDeferredParentAccountSignupConsent } from "@/lib/legal-server";
 import { prisma } from "@/lib/prisma";
@@ -35,8 +36,11 @@ export default async function PlaybookPage({ searchParams }: PlaybookPageProps) 
       : toAccessUserFields(emptyAccessUserRow);
     membershipLevelForUpsell = access.membershipLevel;
 
-    if (canAccessPlaybook(access.membershipTier, access.playbookLegacyAccess, access.membershipLevel, access.membershipLevelExpiresAt)) {
+    if (canViewPlaybook(access)) {
       return <PlaybookApp />;
+    }
+    if (resolveEffectiveLevel(access) === "ORG_TRIAL") {
+      return <PlaybookOrgTrialLockedPage orgTrialLockedCopy={access.orgTrialLockedCopy} />;
     }
   }
 

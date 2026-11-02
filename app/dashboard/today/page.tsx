@@ -2,8 +2,10 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { resolveEffectiveLevel } from "@/lib/access-shared";
 import { canAccessProgramDashboard } from "@/lib/program-access-shared";
 import { toAccessUserFields, userAccessSelect } from "@/lib/access-server";
+import OrgTrialTodayHome from "@/app/dashboard/OrgTrialTodayHome";
 import ProgramTodaySetupPrompt from "@/app/dashboard/ProgramTodaySetupPrompt";
 import ProgramTodayView from "@/app/dashboard/ProgramTodayView";
 import InPersonEmergencyReminderCard from "@/components/InPersonEmergencyReminderCard";
@@ -31,6 +33,13 @@ export default async function ProgramTodayPage() {
 
   const access = toAccessUserFields(user);
   if (!canAccessProgramDashboard(access)) {
+    if (resolveEffectiveLevel(access) === "ORG_TRIAL") {
+      return (
+        <div className="mobile-card-stack px-4 pb-28 pt-2 md:mx-auto md:max-w-3xl md:px-6 md:pb-10 md:pt-6">
+          <OrgTrialTodayHome userId={session.user.id} />
+        </div>
+      );
+    }
     redirect("/dashboard");
   }
 

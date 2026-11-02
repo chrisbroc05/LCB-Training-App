@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { canViewStarterWorkoutsInApp } from "@/lib/membership";
+import { canViewStarterWorkoutsInApp } from "@/lib/access-shared";
 import { toAccessUserFields, userAccessSelect } from "@/lib/access-server";
 import { getStarterWorkoutProgram } from "@/lib/starter-workouts-in-app-shared";
 import { getWorkout } from "@/lib/workout-program-training";
@@ -33,15 +33,7 @@ export default async function StarterWorkoutWeekPage({ params }: PageProps) {
     select: userAccessSelect,
   });
   const access = user ? toAccessUserFields(user) : null;
-  if (
-    !access ||
-    !canViewStarterWorkoutsInApp(
-      access.membershipTier,
-      access.playbookLegacyAccess,
-      access.membershipLevel,
-      access.membershipLevelExpiresAt,
-    )
-  ) {
+  if (!access || !canViewStarterWorkoutsInApp(access)) {
     redirect("/workouts/starters");
   }
 

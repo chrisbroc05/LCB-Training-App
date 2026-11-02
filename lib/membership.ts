@@ -4,6 +4,7 @@ import {
   canViewPlaybook,
   getWorkoutAccessMode,
   hasFullDrillLibraryAccess,
+  type AccessUserFields,
 } from "@/lib/access-shared";
 import type { MembershipLevelKey } from "@/lib/membership-levels-shared";
 import { toPlaybookEntitlementFields } from "@/lib/playbook-entitlements-shared";
@@ -221,14 +222,19 @@ export function canAccessWorkoutPrograms(
 }
 
 export function canViewStarterWorkoutsInApp(
-  userTier: DatabaseTier,
+  userOrTier: AccessUserFields | DatabaseTier,
   playbookLegacyAccess = false,
   membershipLevel: MembershipLevelKey | null = null,
   membershipLevelExpiresAt: Date | string | null = null,
 ) {
+  if (typeof userOrTier === "object" && userOrTier !== null && "membershipTier" in userOrTier) {
+    return (
+      getWorkoutAccessMode(userOrTier) === "starter_in_app"
+    );
+  }
   return (
     getWorkoutAccessMode(
-      accessFields(userTier, playbookLegacyAccess, membershipLevel, membershipLevelExpiresAt),
+      accessFields(userOrTier, playbookLegacyAccess, membershipLevel, membershipLevelExpiresAt),
     ) === "starter_in_app"
   );
 }

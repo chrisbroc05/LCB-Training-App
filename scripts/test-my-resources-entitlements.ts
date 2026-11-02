@@ -42,7 +42,20 @@ function testCoreStartersNotFullPdfs() {
   });
   assert.equal(canDownloadWorkoutPdfs(user), false);
   assert.equal(canDownloadGuideFilename(user, "LCB_Arm_Care_4Week_Starter.pdf"), true);
+  assert.equal(canDownloadGuideFilename(user, "LCB_Back_and_Arm_4Week_Starter.pdf"), true);
   assert.equal(canDownloadGuideFilename(user, "LCB_Recruiting_Guide.pdf"), false);
+}
+
+function testOrgTrialStartersAndGuides() {
+  const user = baseUser({
+    membershipTier: "FREE",
+    organizationId: "org-1",
+    orgTrialActive: true,
+    orgTrialEndsAt: new Date(Date.now() + 86400000).toISOString(),
+  });
+  assert.equal(canDownloadWorkoutPdfs(user), false);
+  assert.equal(canDownloadGuideFilename(user, "LCB_PreGame_Warmup.pdf"), true);
+  assert.equal(canDownloadGuideFilename(user, "LCB_Mental_Game_Workbook.pdf"), false);
 }
 
 function testTwelveWeekTierEnum() {
@@ -55,4 +68,5 @@ testTwelveWeekFullWorkoutsAndGuides();
 testLegacyPlaybookFullWorkouts();
 testCoreStartersNotFullPdfs();
 testTwelveWeekTierEnum();
+testOrgTrialStartersAndGuides();
 console.log("my-resources entitlements ok");

@@ -62,6 +62,7 @@ export function shouldShowTwelveWeekDashboardUpsell(user: AccessUserFields, now 
   const effective = resolveEffectiveLevel(user, now);
   return (
     effective === "FREE" ||
+    effective === "ORG_TRIAL" ||
     effective === "PLAYBOOK" ||
     effective === "CORE" ||
     user.membershipTier === "BASIC"

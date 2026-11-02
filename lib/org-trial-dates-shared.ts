@@ -138,6 +138,26 @@ export function isOrgTrialWindowActive(
   return t >= start.getTime() && t <= end.getTime();
 }
 
+export function formatOrgTrialRunsThroughLabel(
+  trialEndsAt: Date | string | null | undefined,
+): string | null {
+  if (!trialEndsAt) {
+    return null;
+  }
+  const end = trialEndsAt instanceof Date ? trialEndsAt : new Date(trialEndsAt);
+  if (Number.isNaN(end.getTime())) {
+    return null;
+  }
+  const parts = readChicagoParts(end);
+  const display = new Date(Date.UTC(parts.year, parts.month - 1, parts.day, 12, 0, 0, 0));
+  const monthDay = display.toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    timeZone: "UTC",
+  });
+  return `Your free trial runs through ${monthDay}.`;
+}
+
 export function formatChicagoTrialEndLabel(
   trialEndsAt: Date | string | null | undefined,
 ): string | null {

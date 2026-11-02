@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getUpgradeLabelForLevel } from "@/lib/membership-levels-shared";
-import { canViewStarterWorkoutsInApp } from "@/lib/membership";
+import { canViewStarterWorkoutsInApp } from "@/lib/access-shared";
 import { toAccessUserFields, userAccessSelect } from "@/lib/access-server";
 import { STARTER_WORKOUT_PROGRAMS } from "@/lib/starter-workouts-in-app-shared";
 import { prisma } from "@/lib/prisma";
@@ -19,12 +19,7 @@ export default async function StarterWorkoutsPage() {
     select: userAccessSelect,
   });
   const access = user ? toAccessUserFields(user) : null;
-  const allowed = access && canViewStarterWorkoutsInApp(
-    access.membershipTier,
-    access.playbookLegacyAccess,
-    access.membershipLevel,
-    access.membershipLevelExpiresAt,
-  );
+  const allowed = access && canViewStarterWorkoutsInApp(access);
 
   if (!allowed) {
     return (

@@ -84,6 +84,15 @@ export const workoutResourceGroups: WorkoutResourceGroup[] = [
         storageFileKey: "resources/starters/LCB_Arm_Care_4Week_Starter.pdf",
       },
       {
+        filename: "LCB_Back_and_Arm_4Week_Starter.pdf",
+        title: "Back and Arm Strength Starter",
+        description: "Four-week back and arm strength starter for high school athletes.",
+        requiredTier: "basic",
+        accessKind: "playbook_guide",
+        actionLabel: "View Starter",
+        storageFileKey: "resources/starters/LCB_Back_and_Arm_4Week_Starter.pdf",
+      },
+      {
         filename: "LCB_Rotational_Sample.pdf",
         title: "Rotational Power Sample",
         description: "Sample rotational power work from Coach Broc.",
@@ -123,24 +132,13 @@ export function getWorkoutResourceUrl(filename: string) {
   return `/api/workout-resources/${filename}`;
 }
 
-export function canAccessWorkoutResourceFile(
-  user: Pick<AccessUserFields, "membershipTier" | "playbookLegacyAccess"> &
-    Partial<Pick<AccessUserFields, "membershipLevel" | "membershipLevelExpiresAt">>,
-  filename: string,
-): boolean {
+export function canAccessWorkoutResourceFile(user: AccessUserFields, filename: string): boolean {
   const resource = getWorkoutResource(filename);
   if (!resource) {
     return false;
   }
 
-  const access = toPlaybookEntitlementFields(
-    user.membershipTier,
-    user.playbookLegacyAccess,
-    user.membershipLevel ?? null,
-    user.membershipLevelExpiresAt ?? null,
-  );
-
-  return canDownloadGuideFilename(access, filename);
+  return canDownloadGuideFilename(user, filename);
 }
 
 /** @deprecated Use canAccessWorkoutResourceFile with playbookLegacyAccess. */
