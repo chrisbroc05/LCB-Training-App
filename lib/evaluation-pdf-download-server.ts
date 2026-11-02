@@ -7,10 +7,11 @@ import {
   isEvaluationPdfKey,
 } from "@/lib/r2";
 
-export async function resolveEvaluationPdfPresignedDownloadUrl(params: {
+async function resolveEvaluationPdfPresignedUrl(params: {
   submissionId: string;
   userId: string;
   userEmail?: string | null;
+  inline: boolean;
 }) {
   const submission = await prisma.swingAnalysisSubmission.findUnique({
     where: { id: params.submissionId },
@@ -40,7 +41,24 @@ export async function resolveEvaluationPdfPresignedDownloadUrl(params: {
 
   const { downloadUrl, expiresInSeconds } = await createPresignedEvaluationPdfDownloadUrl(
     submission.evaluationPdfR2Key,
+    { inline: params.inline },
   );
 
   return { ok: true as const, downloadUrl, expiresInSeconds };
+}
+
+export async function resolveEvaluationPdfPresignedDownloadUrl(params: {
+  submissionId: string;
+  userId: string;
+  userEmail?: string | null;
+}) {
+  return resolveEvaluationPdfPresignedUrl({ ...params, inline: false });
+}
+
+export async function resolveEvaluationPdfPresignedInlineUrl(params: {
+  submissionId: string;
+  userId: string;
+  userEmail?: string | null;
+}) {
+  return resolveEvaluationPdfPresignedUrl({ ...params, inline: true });
 }

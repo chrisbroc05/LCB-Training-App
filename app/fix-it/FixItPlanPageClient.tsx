@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import MemberPdfOpenLink from "@/app/components/MemberPdfOpenLink";
 import FixItVimeoEmbed from "@/app/fix-it/FixItVimeoEmbed";
+import { buildMemberPdfOpenHref } from "@/lib/member-pdf-open-shared";
 import type { FixItPlanGenerated } from "@/lib/fix-it-plans-data.generated";
 import { FIX_IT_PLANS_META } from "@/lib/fix-it-plans-shared";
 
@@ -25,9 +27,17 @@ function SectionBlock({ title, body }: { title: string; body: string }) {
 }
 
 export default function FixItPlanPageClient({ plan, accessToken }: FixItPlanPageClientProps) {
-  const pdfHref = accessToken
-    ? `/api/fix-it/download?resource=${encodeURIComponent(plan.resourceSlug)}&token=${encodeURIComponent(accessToken)}`
-    : `/api/fix-it/download?resource=${encodeURIComponent(plan.resourceSlug)}`;
+  const openHref = buildMemberPdfOpenHref({
+    kind: "fixit",
+    resource: plan.resourceSlug,
+    fixitToken: accessToken ?? undefined,
+  });
+  const downloadHref = buildMemberPdfOpenHref({
+    kind: "fixit",
+    resource: plan.resourceSlug,
+    fixitToken: accessToken ?? undefined,
+    download: true,
+  });
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-10 sm:py-14">
@@ -36,12 +46,18 @@ export default function FixItPlanPageClient({ plan, accessToken }: FixItPlanPage
       <p className="mt-2 text-base text-zinc-400">{plan.subtitle}</p>
 
       <div className="mt-6 flex flex-wrap gap-3">
-        <a
-          href={pdfHref}
+        <MemberPdfOpenLink
+          href={openHref}
           className="inline-flex min-h-[48px] items-center rounded-full bg-[#2D6A4F] px-5 py-3 text-sm font-semibold text-white hover:bg-[#52B788]"
         >
+          Open PDF
+        </MemberPdfOpenLink>
+        <MemberPdfOpenLink
+          href={downloadHref}
+          className="inline-flex min-h-[48px] items-center rounded-full border border-[#2b3650] px-5 py-3 text-sm font-semibold text-zinc-200 hover:border-[#52B788]"
+        >
           Download PDF
-        </a>
+        </MemberPdfOpenLink>
         <Link
           href="/fix-it"
           className="inline-flex min-h-[48px] items-center rounded-full border border-[#2b3650] px-5 py-3 text-sm font-semibold text-zinc-200 hover:border-[#52B788]"

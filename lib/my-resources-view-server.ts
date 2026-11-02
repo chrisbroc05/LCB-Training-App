@@ -14,8 +14,10 @@ import {
 import { peekResourceDownloadToken } from "@/lib/resource-download-token";
 import { canDownloadPaidResourceFile } from "@/lib/resources-access-server";
 import { getResourceDefinition } from "@/lib/resources-shared";
+import { resolveEvaluationPdfPresignedDownloadUrl } from "@/lib/evaluation-pdf-download-server";
 import { canAccessWorkoutResourceFile, getWorkoutResource } from "@/lib/workout-resources";
 import { prisma } from "@/lib/prisma";
+import { buildMemberPdfOpenHref } from "@/lib/member-pdf-open-shared";
 
 const WORKOUT_PDF_NAMES = new Set([
   "LCB_Strength_8-11_Phase1.pdf",
@@ -56,6 +58,7 @@ export async function resolvePdfViewerForSession(params: {
   token?: string | null;
   resource?: string | null;
   fixitToken?: string | null;
+  submissionId?: string | null;
 }): Promise<ResolvedPdfViewer | null> {
   if (params.kind === "workout") {
     const file = params.file?.trim();
@@ -143,6 +146,26 @@ export async function resolvePdfViewerForSession(params: {
       title: getResourceDefinition(paidGate.payload.resourceSlug)?.title ?? "Download",
       pdfSrc: `/api/resources/download?token=${encodeURIComponent(token)}&inline=1`,
       downloadHref: `/api/resources/download?token=${encodeURIComponent(token)}&download=1`,
+    };
+  }
+
+  if (params.kind === "evaluation") {
+    const submissionId = params.submissionId?.trim();
+    if (!submissionId) {
+      return null;
+    }
+    const resolved = await resolveEvaluationPdfPresignedDownloadUrl({
+      submissionId,
+      userId: params.userId,
+      userEmail: params.email,
+    });
+    if (!resolved.ok) {
+      return null;
+    }
+    return {
+      title: "Swing evaluation report",
+      pdfSrc: buildMemberPdfOpenHref({ kind: "evaluation", submissionId }),
+      downloadHref: buildMemberPdfOpenHref({ kind: "evaluation", submissionId, download: true }),
     };
   }
 

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import MemberPdfOpenLink from "@/app/components/MemberPdfOpenLink";
 import FocusDrillCards from "@/app/components/FocusDrillCards";
+import { buildMemberPdfOpenHref } from "@/lib/member-pdf-open-shared";
 import { formatWrittenReportLineForDisplay } from "@/lib/written-report-line-shared";
 
 type WrittenPlayerReportSectionProps = {
@@ -29,26 +30,8 @@ export default function WrittenPlayerReportSection({
   hasEvaluationPdf,
   drillThumbnailMap,
 }: WrittenPlayerReportSectionProps) {
-  const [downloadError, setDownloadError] = useState("");
-  const [downloading, setDownloading] = useState(false);
-
-  const handleDownload = async () => {
-    setDownloading(true);
-    setDownloadError("");
-    const response = await fetch(
-      `/api/player-evaluations/download?submissionId=${encodeURIComponent(submissionId)}`,
-    );
-    setDownloading(false);
-    const data = (await response.json().catch(() => ({}))) as {
-      downloadUrl?: string;
-      error?: string;
-    };
-    if (!response.ok || !data.downloadUrl) {
-      setDownloadError(data.error ?? "Unable to download PDF.");
-      return;
-    }
-    window.open(data.downloadUrl, "_blank", "noopener,noreferrer");
-  };
+  const openHref = buildMemberPdfOpenHref({ kind: "evaluation", submissionId });
+  const downloadHref = buildMemberPdfOpenHref({ kind: "evaluation", submissionId, download: true });
 
   return (
     <div className="space-y-4">
@@ -58,16 +41,19 @@ export default function WrittenPlayerReportSection({
       </div>
 
       {hasEvaluationPdf ? (
-        <div>
-          <button
-            type="button"
-            disabled={downloading}
-            onClick={() => void handleDownload()}
-            className="inline-flex rounded-full bg-[#22c55e] px-5 py-2.5 text-sm font-semibold text-black disabled:opacity-60"
+        <div className="flex flex-wrap gap-3">
+          <MemberPdfOpenLink
+            href={openHref}
+            className="inline-flex rounded-full bg-[#22c55e] px-5 py-2.5 text-sm font-semibold text-black"
           >
-            {downloading ? "Preparing PDF..." : "Download PDF"}
-          </button>
-          {downloadError ? <p className="mt-2 text-sm text-red-300">{downloadError}</p> : null}
+            Open PDF
+          </MemberPdfOpenLink>
+          <MemberPdfOpenLink
+            href={downloadHref}
+            className="inline-flex rounded-full border border-[#2b3650] px-5 py-2.5 text-sm font-semibold text-zinc-100"
+          >
+            Download PDF
+          </MemberPdfOpenLink>
         </div>
       ) : null}
 

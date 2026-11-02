@@ -48,15 +48,19 @@ export function listIncludedMyResourceGuideFilenames(access: AccessUserFields): 
   );
 }
 
+function hubGuideOpenHrefIsAllowed(access: AccessUserFields, href: string): boolean {
+  const url = new URL(href, "https://lcbtraining.test");
+  const kind = url.searchParams.get("kind") as MemberPdfViewKind | null;
+  const file = url.searchParams.get("file");
+  if (kind === "guide" && file) {
+    return memberPdfViewerIsAllowed(access, "guide", file);
+  }
+  return false;
+}
+
 export function hubIncludedHrefIsAllowed(access: AccessUserFields, href: string): boolean {
-  if (href.startsWith("/resources/view?")) {
-    const url = new URL(href, "https://lcbtraining.test");
-    const kind = url.searchParams.get("kind") as MemberPdfViewKind | null;
-    const file = url.searchParams.get("file");
-    if (kind === "guide" && file) {
-      return memberPdfViewerIsAllowed(access, "guide", file);
-    }
-    return false;
+  if (href.startsWith("/api/member/pdf/open?") || href.startsWith("/resources/view?")) {
+    return hubGuideOpenHrefIsAllowed(access, href);
   }
   return memberStarterAppHrefIsAllowed(access, href);
 }

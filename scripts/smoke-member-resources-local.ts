@@ -45,11 +45,17 @@ function starterProgramOk(text: string, status: number): string | null {
   return missingExpected(status, text, ["Back to", "- Week"]);
 }
 
-function guideViewerOk(text: string, status: number): string | null {
+function memberGuidePdfOpenOk(text: string, status: number): string | null {
   if (text.includes("Full workout programs unlock with an upgraded membership")) {
-    return "upgrade wall on guide viewer";
+    return "upgrade wall on guide open";
   }
-  return missingExpected(status, text, ["Download", "/api/workout-resources/", "iframe"]);
+  if (status !== 200) {
+    return `HTTP ${status}`;
+  }
+  if (text.startsWith("%PDF")) {
+    return null;
+  }
+  return "expected inline PDF body";
 }
 
 function orgTrialDashboardOk(text: string, status: number): string | null {
@@ -82,24 +88,24 @@ const ORG_TRIAL_PATHS: PathCheck[] = [
   { path: "/workouts/starters/mobility", assertOk: starterProgramOk },
   { path: "/workouts/starters/strength/12-15/1", assertOk: starterProgramOk },
   {
-    path: "/resources/view?kind=guide&file=LCB_PreGame_Warmup.pdf",
-    assertOk: guideViewerOk,
+    path: "/api/member/pdf/open?kind=guide&file=LCB_PreGame_Warmup.pdf",
+    assertOk: memberGuidePdfOpenOk,
   },
   {
-    path: "/resources/view?kind=guide&file=LCB_Parent_Guide.pdf",
-    assertOk: guideViewerOk,
+    path: "/api/member/pdf/open?kind=guide&file=LCB_Parent_Guide.pdf",
+    assertOk: memberGuidePdfOpenOk,
   },
   {
-    path: "/resources/view?kind=guide&file=LCB_Nutrition_Guide.pdf",
-    assertOk: guideViewerOk,
+    path: "/api/member/pdf/open?kind=guide&file=LCB_Nutrition_Guide.pdf",
+    assertOk: memberGuidePdfOpenOk,
   },
   {
-    path: "/resources/view?kind=guide&file=LCB_Arm_Care_4Week_Starter.pdf",
-    assertOk: guideViewerOk,
+    path: "/api/member/pdf/open?kind=guide&file=LCB_Arm_Care_4Week_Starter.pdf",
+    assertOk: memberGuidePdfOpenOk,
   },
   {
-    path: "/resources/view?kind=guide&file=LCB_Back_and_Arm_4Week_Starter.pdf",
-    assertOk: guideViewerOk,
+    path: "/api/member/pdf/open?kind=guide&file=LCB_Back_and_Arm_4Week_Starter.pdf",
+    assertOk: memberGuidePdfOpenOk,
   },
 ];
 

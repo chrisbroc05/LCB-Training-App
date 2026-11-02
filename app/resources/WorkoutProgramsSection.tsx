@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
-import { buildMemberPdfViewerHref } from "@/lib/my-resources-shared";
+import MemberPdfOpenLink from "@/app/components/MemberPdfOpenLink";
+import { buildMemberPdfOpenHref, buildMemberPdfViewerHref } from "@/lib/my-resources-shared";
 import { useEffect, useState } from "react";
 import {
   ageGroupDetails,
@@ -14,17 +14,36 @@ import {
 } from "@/lib/workout-programs";
 
 function ResourceActionPill({ href, label, filename }: { href: string; label: string; filename?: string }) {
-  const viewerHref =
+  const openParams =
     filename && href.startsWith("/api/workouts/")
-      ? buildMemberPdfViewerHref({ kind: "workout", file: filename })
+      ? ({ kind: "workout" as const, file: filename })
       : filename && href.includes("Rotational")
-        ? buildMemberPdfViewerHref({ kind: "guide", file: "LCB_Rotational_Sample.pdf" })
-        : href;
+        ? ({ kind: "guide" as const, file: "LCB_Rotational_Sample.pdf" })
+        : null;
+
+  if (!openParams) {
+    return (
+      <MemberPdfOpenLink href={href} className="resources-action-pill">
+        {label}
+      </MemberPdfOpenLink>
+    );
+  }
 
   return (
-    <Link href={viewerHref} className="resources-action-pill">
-      {label}
-    </Link>
+    <div className="flex flex-wrap gap-2">
+      <MemberPdfOpenLink
+        href={buildMemberPdfViewerHref(openParams)}
+        className="resources-action-pill"
+      >
+        {label}
+      </MemberPdfOpenLink>
+      <MemberPdfOpenLink
+        href={buildMemberPdfOpenHref({ ...openParams, download: true })}
+        className="resources-action-pill"
+      >
+        Download
+      </MemberPdfOpenLink>
+    </div>
   );
 }
 

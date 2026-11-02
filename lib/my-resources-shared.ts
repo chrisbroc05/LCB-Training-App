@@ -88,31 +88,9 @@ export type MyResourcesViewModel = {
   preferredWorkoutAgeGroup: AgeGroupKey | null;
 };
 
-export type MemberPdfViewKind = "workout" | "guide" | "purchase" | "fixit";
+export type MemberPdfViewKind = "workout" | "guide" | "purchase" | "fixit" | "evaluation";
 
-export function buildMemberPdfViewerHref(params: {
-  kind: MemberPdfViewKind;
-  file?: string;
-  token?: string;
-  resource?: string;
-  fixitToken?: string;
-}) {
-  const search = new URLSearchParams();
-  search.set("kind", params.kind);
-  if (params.file) {
-    search.set("file", params.file);
-  }
-  if (params.token) {
-    search.set("token", params.token);
-  }
-  if (params.resource) {
-    search.set("resource", params.resource);
-  }
-  if (params.fixitToken) {
-    search.set("fixitToken", params.fixitToken);
-  }
-  return `/resources/view?${search.toString()}`;
-}
+export { buildMemberPdfOpenHref, buildMemberPdfViewerHref } from "@/lib/member-pdf-open-shared";
 
 export function parseResourcesTabParam(value: string | null | undefined): MyResourcesTab {
   return value === "mine" ? "mine" : "browse";

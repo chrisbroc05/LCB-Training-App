@@ -14,6 +14,7 @@ import {
   isFixItResourceSlug,
 } from "@/lib/fix-it-plans-shared";
 import {
+  buildMemberPdfOpenHref,
   buildMemberPdfViewerHref,
   type MyResourceGuideRowModel,
   type MyResourceLinkItem,
@@ -26,11 +27,9 @@ import {
   type MyResourceWorkoutProgramsSection,
 } from "@/lib/my-resources-shared";
 import {
-  buildGuidePdfApiHref,
   buildMobilityFilename,
   buildSpeedPhaseFilename,
   buildStrengthPhaseFilename,
-  buildWorkoutPdfApiHref,
   MY_RESOURCES_AGE_GROUPS,
   MY_RESOURCES_GUIDE_FILENAMES,
   MY_RESOURCES_PHASE_PILL_LABELS,
@@ -91,7 +90,7 @@ function buildPhaseActions(
     return {
       label: MY_RESOURCES_PHASE_PILL_LABELS[phase],
       viewerHref: buildMemberPdfViewerHref({ kind: "workout", file }),
-      downloadHref: buildWorkoutPdfApiHref(file, true),
+      downloadHref: buildMemberPdfOpenHref({ kind: "workout", file, download: true }),
     };
   });
 }
@@ -118,7 +117,11 @@ function buildFullWorkoutProgramsSection(
             {
               label: program.singleActionLabel ?? "Open program",
               viewerHref: buildMemberPdfViewerHref({ kind: "guide", file: ROTATIONAL_POWER_FILENAME }),
-              downloadHref: buildGuidePdfApiHref(ROTATIONAL_POWER_FILENAME, true),
+              downloadHref: buildMemberPdfOpenHref({
+                kind: "guide",
+                file: ROTATIONAL_POWER_FILENAME,
+                download: true,
+              }),
             },
           ],
         },
@@ -138,7 +141,7 @@ function buildFullWorkoutProgramsSection(
           {
             label: program.singleActionLabel ?? "Open program",
             viewerHref: buildMemberPdfViewerHref({ kind: "workout", file }),
-            downloadHref: buildWorkoutPdfApiHref(file, true),
+            downloadHref: buildMemberPdfOpenHref({ kind: "workout", file, download: true }),
           },
         ];
       }
@@ -244,7 +247,7 @@ async function buildPurchasedStarterPdfs(params: {
           id: dedupe,
           label: getResourceDownloadLabel(fileKey),
           viewerHref: buildMemberPdfViewerHref({ kind: "purchase", token }),
-          downloadHref: `/api/resources/download?token=${encodeURIComponent(token)}&download=1`,
+          downloadHref: buildMemberPdfOpenHref({ kind: "purchase", token, download: true }),
         }),
       );
     }
@@ -266,7 +269,7 @@ function buildGuidesSection(access: AccessUserFields, isAdmin: boolean): MyResou
       id: `guide-${filename}`,
       name,
       viewerHref: buildMemberPdfViewerHref({ kind: "guide", file: filename }),
-      downloadHref: buildGuidePdfApiHref(filename, true),
+      downloadHref: buildMemberPdfOpenHref({ kind: "guide", file: filename, download: true }),
     });
   }
 

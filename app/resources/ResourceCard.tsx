@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import MemberPdfOpenLink from "@/app/components/MemberPdfOpenLink";
+import { isMemberPdfOpenHref } from "@/lib/member-pdf-open-shared";
 import DigitalProductSalesFinalNotice from "@/app/resources/DigitalProductSalesFinalNotice";
 import type { ResourceDefinition } from "@/lib/resources-shared";
 import type { ResourceHubMemberOverride } from "@/lib/resources-hub-member-shared";
@@ -53,12 +55,21 @@ export default function ResourceCard({ resource, onAction, memberOverride }: Res
       ) : null}
 
       {memberOverride ? (
-        <Link
-          href={memberOverride.href}
-          className="mt-5 flex min-h-[48px] w-full items-center justify-center rounded-full bg-[#2D6A4F] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#52B788] hover:text-[#0A1628] group-hover:bg-[#52B788] group-hover:text-[#0A1628]"
-        >
-          {memberOverride.buttonLabel}
-        </Link>
+        isMemberPdfOpenHref(memberOverride.href) ? (
+          <MemberPdfOpenLink
+            href={memberOverride.href}
+            className="mt-5 flex min-h-[48px] w-full items-center justify-center rounded-full bg-[#2D6A4F] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#52B788] hover:text-[#0A1628] group-hover:bg-[#52B788] group-hover:text-[#0A1628]"
+          >
+            {memberOverride.buttonLabel}
+          </MemberPdfOpenLink>
+        ) : (
+          <Link
+            href={memberOverride.href}
+            className="mt-5 flex min-h-[48px] w-full items-center justify-center rounded-full bg-[#2D6A4F] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#52B788] hover:text-[#0A1628] group-hover:bg-[#52B788] group-hover:text-[#0A1628]"
+          >
+            {memberOverride.buttonLabel}
+          </Link>
+        )
       ) : (
         <button
           type="button"

@@ -178,14 +178,20 @@ export async function uploadEvaluationPdfBuffer(params: {
   return params.key;
 }
 
-export async function createPresignedEvaluationPdfDownloadUrl(key: string) {
+export async function createPresignedEvaluationPdfDownloadUrl(
+  key: string,
+  options?: { inline?: boolean },
+) {
   const { bucketName } = getR2Config();
   const fileName = sanitizeFileName(key.split("/").pop() ?? "player-evaluation.pdf");
+  const disposition = options?.inline
+    ? `inline; filename="${fileName}"`
+    : `attachment; filename="${fileName}"`;
 
   const command = new GetObjectCommand({
     Bucket: bucketName,
     Key: key,
-    ResponseContentDisposition: `attachment; filename="${fileName}"`,
+    ResponseContentDisposition: disposition,
     ResponseContentType: "application/pdf",
   });
 

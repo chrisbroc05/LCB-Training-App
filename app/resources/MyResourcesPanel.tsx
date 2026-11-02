@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import MemberPdfOpenLink from "@/app/components/MemberPdfOpenLink";
 import { useState } from "react";
 import MyResourcesGuides from "@/app/resources/MyResourcesGuides";
 import MyResourcesWorkoutPrograms from "@/app/resources/MyResourcesWorkoutPrograms";
@@ -34,12 +35,12 @@ function TreeItem({ item, depth }: { item: MyResourceTreeItem; depth: number }) 
   if (item.kind === "pdf") {
     return (
       <div style={{ paddingLeft: depth * 12 }} className="py-1">
-        <Link
+        <MemberPdfOpenLink
           href={item.viewerHref}
           className="inline-flex min-h-[44px] items-center text-sm font-semibold text-[#52B788] underline-offset-2 hover:underline"
         >
           {item.label}
-        </Link>
+        </MemberPdfOpenLink>
       </div>
     );
   }
