@@ -138,6 +138,25 @@ export function isOrgTrialWindowActive(
   return t >= start.getTime() && t <= end.getTime();
 }
 
+export function formatChicagoMonthDayLabel(
+  instant: Date | string | null | undefined,
+): string | null {
+  if (!instant) {
+    return null;
+  }
+  const end = instant instanceof Date ? instant : new Date(instant);
+  if (Number.isNaN(end.getTime())) {
+    return null;
+  }
+  const parts = readChicagoParts(end);
+  const display = new Date(Date.UTC(parts.year, parts.month - 1, parts.day, 12, 0, 0, 0));
+  return display.toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    timeZone: "UTC",
+  });
+}
+
 export function formatOrgTrialRunsThroughLabel(
   trialEndsAt: Date | string | null | undefined,
 ): string | null {

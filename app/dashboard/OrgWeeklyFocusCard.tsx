@@ -2,6 +2,7 @@ import { resolveEffectiveLevel } from "@/lib/access-shared";
 import { toAccessUserFields, userAccessSelect } from "@/lib/access-server";
 import { formatWeekStartLabel } from "@/lib/org-weekly-focus-shared";
 import { loadCurrentOrgWeeklyFocusForUser } from "@/lib/org-weekly-focus-server";
+import OrgWeeklyFocusComingSoonCard from "@/app/dashboard/OrgWeeklyFocusComingSoonCard";
 import FocusDrillCards from "@/app/components/FocusDrillCards";
 import { getDrillLibraryVideosByIds } from "@/lib/drill-library-videos";
 import { fetchVimeoThumbnailMap } from "@/lib/vimeo-oembed";
@@ -23,16 +24,7 @@ export default async function OrgWeeklyFocusCard({ userId }: OrgWeeklyFocusCardP
       return null;
     }
     const orgName = access?.orgName?.trim() || "Your club";
-    return (
-      <article className="rounded-2xl border border-[#52B788]/40 bg-[#22c55e]/5 p-4 sm:p-6">
-        <p className="text-xs font-semibold uppercase tracking-wide text-[#9df3bd]">
-          {orgName} focus
-        </p>
-        <p className="mt-3 text-sm text-zinc-300">
-          This week&apos;s focus is coming soon. Check back Monday.
-        </p>
-      </article>
-    );
+    return <OrgWeeklyFocusComingSoonCard userId={userId} orgName={orgName} />;
   }
 
   const drillVideos = getDrillLibraryVideosByIds(focus.drillIds);

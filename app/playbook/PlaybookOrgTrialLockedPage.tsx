@@ -1,16 +1,12 @@
 import Link from "next/link";
 import { PLAYBOOK_NAME } from "@/lib/playbook-branding";
-import { getOrgTrialPlaybookUnlockLine } from "@/lib/org-trial-copy-shared";
+import type { OrgTrialPlaybookLockedCopy } from "@/lib/org-trial-playbook-locked-shared";
 
 type PlaybookOrgTrialLockedPageProps = {
-  orgTrialLockedCopy?: string | null;
+  copy: OrgTrialPlaybookLockedCopy;
 };
 
-export default function PlaybookOrgTrialLockedPage({
-  orgTrialLockedCopy,
-}: PlaybookOrgTrialLockedPageProps) {
-  const message = getOrgTrialPlaybookUnlockLine(orgTrialLockedCopy);
-
+export default function PlaybookOrgTrialLockedPage({ copy }: PlaybookOrgTrialLockedPageProps) {
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-12 sm:px-6 sm:py-16">
       <section className="rounded-3xl border border-[#18243a] bg-[#0b1324]/80 p-6 sm:p-8 md:p-10">
@@ -20,7 +16,11 @@ export default function PlaybookOrgTrialLockedPage({
         <h1 className="mt-3 text-3xl font-bold tracking-tight text-zinc-100 sm:text-4xl">
           {PLAYBOOK_NAME}
         </h1>
-        <p className="mt-6 text-base leading-relaxed text-zinc-300">{message}</p>
+        <p className="mt-6 text-base leading-relaxed text-zinc-300">{copy.description}</p>
+        <p className="mt-4 text-base leading-relaxed text-zinc-300">{copy.unlockLine}</p>
+        {copy.foundingLine ? (
+          <p className="mt-3 text-base leading-relaxed text-zinc-300">{copy.foundingLine}</p>
+        ) : null}
         <Link
           href="/dashboard"
           className="mt-8 inline-flex items-center justify-center rounded-full border border-[#52B788] px-5 py-2.5 text-sm font-semibold text-[#52B788] transition hover:bg-[#52B788]/10"

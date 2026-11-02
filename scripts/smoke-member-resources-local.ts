@@ -60,7 +60,10 @@ function orgTrialPlaybookOk(text: string, status: number): string | null {
   if (text.includes("Standalone Purchase") && text.includes("$59")) {
     return "org trial sees paid playbook purchase page";
   }
-  return missingExpected(status, text, ["Playbook", "playbook", "January"]);
+  return missingExpected(status, text, [
+    "four-chapter interactive guide",
+    "Unlocks in January with Plus",
+  ]);
 }
 
 function resourcesTabOk(text: string, status: number): string | null {

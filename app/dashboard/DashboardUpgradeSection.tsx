@@ -23,7 +23,10 @@ export default function DashboardUpgradeSection({
   const showTwelveWeek = !hideTwelveWeekUpsell && shouldShowTwelveWeekDashboardUpsell(access);
   const levelSuggestion = getDashboardLevelUpSuggestion(access);
 
-  if (!showTwelveWeek && !levelSuggestion && membershipTier !== "FREE") {
+  const showBookCall = membershipTier === "FREE";
+  const showLevelUpHeader = Boolean(levelSuggestion || showTwelveWeek);
+
+  if (!showTwelveWeek && !levelSuggestion && !showBookCall) {
     return null;
   }
 
@@ -33,18 +36,20 @@ export default function DashboardUpgradeSection({
 
   return (
     <section className="mt-10 rounded-3xl border border-[#18243a] bg-[#0A1628] px-5 py-8 sm:px-8 sm:py-10">
-      <div className="mx-auto max-w-4xl text-center">
-        <h2 className="text-2xl font-semibold leading-tight text-zinc-100 sm:text-3xl">
-          Ready to Level Up?
-        </h2>
-        {levelSuggestion ? (
-          <p className="mt-2 text-zinc-300">{levelSuggestion.body}</p>
-        ) : (
-          <p className="mt-2 text-zinc-300">
-            {TWELVE_WEEK_DASHBOARD_UPSELL_COPY} {TWELVE_WEEK_DASHBOARD_UPSELL_PRICE}
-          </p>
-        )}
-      </div>
+      {showLevelUpHeader ? (
+        <div className="mx-auto max-w-4xl text-center">
+          <h2 className="text-2xl font-semibold leading-tight text-zinc-100 sm:text-3xl">
+            Ready to Level Up?
+          </h2>
+          {levelSuggestion ? (
+            <p className="mt-2 text-zinc-300">{levelSuggestion.body}</p>
+          ) : (
+            <p className="mt-2 text-zinc-300">
+              {TWELVE_WEEK_DASHBOARD_UPSELL_COPY} {TWELVE_WEEK_DASHBOARD_UPSELL_PRICE}
+            </p>
+          )}
+        </div>
+      ) : null}
 
       {levelSuggestion ? (
         <article className="mx-auto mt-8 max-w-xl rounded-2xl border border-[#52B788]/40 bg-[#0b1324]/80 p-5 sm:p-6">
@@ -73,7 +78,7 @@ export default function DashboardUpgradeSection({
         </article>
       ) : null}
 
-      {membershipTier === "FREE" ? (
+      {showBookCall ? (
         <article className="mx-auto mt-8 max-w-xl rounded-2xl border border-[#22c55e]/40 bg-[#22c55e]/10 p-5 sm:p-6">
           <h3 className="text-xl font-semibold text-zinc-100">Have questions?</h3>
           <p className="mt-3 text-sm text-zinc-300">

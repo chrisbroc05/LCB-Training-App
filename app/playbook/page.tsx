@@ -5,6 +5,7 @@ import PlaybookPurchasePage from "@/app/playbook/PlaybookPurchasePage";
 import { canViewPlaybook, resolveEffectiveLevel } from "@/lib/access-shared";
 import { toAccessUserFields, userAccessSelect } from "@/lib/access-server";
 import PlaybookOrgTrialLockedPage from "@/app/playbook/PlaybookOrgTrialLockedPage";
+import { buildOrgTrialPlaybookLockedCopy } from "@/lib/org-trial-playbook-locked-shared";
 import { emptyAccessUserRow } from "@/lib/empty-access-user-shared";
 import { fallbackDeferredParentAccountSignupConsent } from "@/lib/legal-server";
 import { prisma } from "@/lib/prisma";
@@ -29,7 +30,24 @@ export default async function PlaybookPage({ searchParams }: PlaybookPageProps) 
     }
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: userAccessSelect,
+      select: {
+        ...userAccessSelect,
+        organization: {
+          select: {
+            name: true,
+            active: true,
+            billingMode: true,
+            coveredLevel: true,
+            trialStartsAt: true,
+            trialEndsAt: true,
+            trialLockedCopy: true,
+            logoUrl: true,
+            foundingOfferEnabled: true,
+            foundingOfferDeadline: true,
+            foundingOfferMonths: true,
+          },
+        },
+      },
     });
     const access = user
       ? toAccessUserFields(user)
@@ -40,7 +58,18 @@ export default async function PlaybookPage({ searchParams }: PlaybookPageProps) 
       return <PlaybookApp />;
     }
     if (resolveEffectiveLevel(access) === "ORG_TRIAL") {
-      return <PlaybookOrgTrialLockedPage orgTrialLockedCopy={access.orgTrialLockedCopy} />;
+      const org = user?.organization;
+      const copy = buildOrgTrialPlaybookLockedCopy({
+        orgName: access.orgName ?? org?.name ?? null,
+        founding: org
+          ? {
+              foundingOfferEnabled: org.foundingOfferEnabled,
+              foundingOfferDeadline: org.foundingOfferDeadline,
+              foundingOfferMonths: org.foundingOfferMonths,
+            }
+          : null,
+      });
+      return <PlaybookOrgTrialLockedPage copy={copy} />;
     }
   }
 
