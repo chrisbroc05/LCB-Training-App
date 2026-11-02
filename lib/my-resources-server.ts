@@ -14,7 +14,7 @@ import {
   isFixItResourceSlug,
 } from "@/lib/fix-it-plans-shared";
 import {
-  buildMemberPdfOpenHref,
+  buildMemberPdfHref,
   buildMemberPdfViewerHref,
   type MyResourceGuideRowModel,
   type MyResourceLinkItem,
@@ -90,7 +90,7 @@ function buildPhaseActions(
     return {
       label: MY_RESOURCES_PHASE_PILL_LABELS[phase],
       viewerHref: buildMemberPdfViewerHref({ kind: "workout", file }),
-      downloadHref: buildMemberPdfOpenHref({ kind: "workout", file, download: true }),
+      downloadHref: buildMemberPdfHref({ kind: "workout", file, download: true }),
     };
   });
 }
@@ -117,7 +117,7 @@ function buildFullWorkoutProgramsSection(
             {
               label: program.singleActionLabel ?? "Open program",
               viewerHref: buildMemberPdfViewerHref({ kind: "guide", file: ROTATIONAL_POWER_FILENAME }),
-              downloadHref: buildMemberPdfOpenHref({
+              downloadHref: buildMemberPdfHref({
                 kind: "guide",
                 file: ROTATIONAL_POWER_FILENAME,
                 download: true,
@@ -141,7 +141,7 @@ function buildFullWorkoutProgramsSection(
           {
             label: program.singleActionLabel ?? "Open program",
             viewerHref: buildMemberPdfViewerHref({ kind: "workout", file }),
-            downloadHref: buildMemberPdfOpenHref({ kind: "workout", file, download: true }),
+            downloadHref: buildMemberPdfHref({ kind: "workout", file, download: true }),
           },
         ];
       }
@@ -247,7 +247,7 @@ async function buildPurchasedStarterPdfs(params: {
           id: dedupe,
           label: getResourceDownloadLabel(fileKey),
           viewerHref: buildMemberPdfViewerHref({ kind: "purchase", token }),
-          downloadHref: buildMemberPdfOpenHref({ kind: "purchase", token, download: true }),
+          downloadHref: buildMemberPdfHref({ kind: "purchase", token, download: true }),
         }),
       );
     }
@@ -269,7 +269,7 @@ function buildGuidesSection(access: AccessUserFields, isAdmin: boolean): MyResou
       id: `guide-${filename}`,
       name,
       viewerHref: buildMemberPdfViewerHref({ kind: "guide", file: filename }),
-      downloadHref: buildMemberPdfOpenHref({ kind: "guide", file: filename, download: true }),
+      downloadHref: buildMemberPdfHref({ kind: "guide", file: filename, download: true }),
     });
   }
 

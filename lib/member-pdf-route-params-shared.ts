@@ -1,5 +1,3 @@
-import "server-only";
-
 import type { MemberPdfViewKind } from "@/lib/my-resources-shared";
 
 export type MemberPdfHandoffParams = {
@@ -25,7 +23,7 @@ function readKind(value: string | null): MemberPdfViewKind | null {
   return null;
 }
 
-export function parseMemberPdfHandoffSearchParams(
+export function parseMemberPdfRouteSearchParams(
   searchParams: URLSearchParams,
 ): MemberPdfHandoffParams | null {
   const kind = readKind(searchParams.get("kind"));

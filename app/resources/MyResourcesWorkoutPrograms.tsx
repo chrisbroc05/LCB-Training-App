@@ -1,6 +1,6 @@
 "use client";
 
-import MemberPdfOpenLink from "@/app/components/MemberPdfOpenLink";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { MyResourceProgramCardModel, MyResourceWorkoutProgramsSection } from "@/lib/my-resources-shared";
 import { MY_RESOURCES_AGE_GROUPS } from "@/lib/my-resources-catalog-shared";
@@ -55,22 +55,22 @@ function ProgramCard(props: {
       <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
         {program.layout === "phases"
           ? actions.map((action) => (
-              <MemberPdfOpenLink
-                key={`${program.key}-${action.label}-open`}
+              <Link
+                key={`${program.key}-${action.label}`}
                 href={action.viewerHref}
                 className="resources-action-pill w-full justify-center sm:w-auto"
               >
                 {action.label}
-              </MemberPdfOpenLink>
+              </Link>
             ))
           : actions.map((action) => (
-              <MemberPdfOpenLink
-                key={`${program.key}-${action.label}-open`}
+              <Link
+                key={`${program.key}-${action.label}`}
                 href={action.viewerHref}
                 className="resources-action-pill w-full justify-center sm:w-auto"
               >
                 {program.singleActionLabel ?? action.label}
-              </MemberPdfOpenLink>
+              </Link>
             ))}
       </div>
     </article>

@@ -1,9 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import MemberPdfOpenLink from "@/app/components/MemberPdfOpenLink";
 import FixItVimeoEmbed from "@/app/fix-it/FixItVimeoEmbed";
-import { buildMemberPdfOpenHref } from "@/lib/member-pdf-open-shared";
+import { buildMemberPdfHref } from "@/lib/my-resources-shared";
 import type { FixItPlanGenerated } from "@/lib/fix-it-plans-data.generated";
 import { FIX_IT_PLANS_META } from "@/lib/fix-it-plans-shared";
 
@@ -27,12 +26,12 @@ function SectionBlock({ title, body }: { title: string; body: string }) {
 }
 
 export default function FixItPlanPageClient({ plan, accessToken }: FixItPlanPageClientProps) {
-  const openHref = buildMemberPdfOpenHref({
+  const openHref = buildMemberPdfHref({
     kind: "fixit",
     resource: plan.resourceSlug,
     fixitToken: accessToken ?? undefined,
   });
-  const downloadHref = buildMemberPdfOpenHref({
+  const downloadHref = buildMemberPdfHref({
     kind: "fixit",
     resource: plan.resourceSlug,
     fixitToken: accessToken ?? undefined,
@@ -46,18 +45,18 @@ export default function FixItPlanPageClient({ plan, accessToken }: FixItPlanPage
       <p className="mt-2 text-base text-zinc-400">{plan.subtitle}</p>
 
       <div className="mt-6 flex flex-wrap gap-3">
-        <MemberPdfOpenLink
+        <Link
           href={openHref}
           className="inline-flex min-h-[48px] items-center rounded-full bg-[#2D6A4F] px-5 py-3 text-sm font-semibold text-white hover:bg-[#52B788]"
         >
           Open PDF
-        </MemberPdfOpenLink>
-        <MemberPdfOpenLink
+        </Link>
+        <Link
           href={downloadHref}
           className="inline-flex min-h-[48px] items-center rounded-full border border-[#2b3650] px-5 py-3 text-sm font-semibold text-zinc-200 hover:border-[#52B788]"
         >
           Download PDF
-        </MemberPdfOpenLink>
+        </Link>
         <Link
           href="/fix-it"
           className="inline-flex min-h-[48px] items-center rounded-full border border-[#2b3650] px-5 py-3 text-sm font-semibold text-zinc-200 hover:border-[#52B788]"

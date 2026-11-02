@@ -44,7 +44,7 @@
     "test:video-poster-capture": "npx --yes tsx scripts/test-video-poster-capture-shared.ts",
     "test:my-resources": "npx --yes tsx scripts/test-my-resources-entitlements.ts",
     "test:resources-included-access": "npx --yes tsx scripts/test-resources-included-access.ts",
-    "test:member-pdf-open": "npx --yes tsx scripts/test-member-pdf-open-token.ts",
+    "test:member-pdf-href": "npx --yes tsx scripts/test-member-pdf-href.ts",
     "test:org-trial-playbook-locked": "npx --yes tsx scripts/test-org-trial-playbook-locked-shared.ts",
     "test:dev-environment-guard": "npx --yes tsx scripts/test-dev-environment-guard.ts",
     "test:subscriptions": "npx --yes tsx scripts/test-subscriptions.ts",

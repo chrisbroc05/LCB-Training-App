@@ -1,6 +1,6 @@
 "use client";
 
-import MemberPdfOpenLink from "@/app/components/MemberPdfOpenLink";
+import Link from "next/link";
 import type { MyResourceGuidesSection } from "@/lib/my-resources-shared";
 
 type MyResourcesGuidesProps = {
@@ -31,18 +31,12 @@ export default function MyResourcesGuides({ section }: MyResourcesGuidesProps) {
                 {guide.name}
               </p>
               <div className="flex shrink-0 gap-2">
-                <MemberPdfOpenLink
-                  href={guide.viewerHref}
-                  className="resources-action-pill px-5 text-sm"
-                >
+                <Link href={guide.viewerHref} className="resources-action-pill px-5 text-sm">
                   Open
-                </MemberPdfOpenLink>
-                <MemberPdfOpenLink
-                  href={guide.downloadHref}
-                  className="resources-action-pill px-5 text-sm"
-                >
+                </Link>
+                <Link href={guide.downloadHref} className="resources-action-pill px-5 text-sm">
                   Download
-                </MemberPdfOpenLink>
+                </Link>
               </div>
             </div>
           </li>

@@ -26,7 +26,7 @@ const REDIRECT_KINDS: MemberPdfViewKind[] = [
   "evaluation",
 ];
 
-/** Legacy bookmarks: send members through the signed native PDF open flow. */
+/** Legacy bookmarks -> same-tab /resources/pdf delivery. */
 export default async function ResourcePdfViewPage({ searchParams }: PageProps) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
@@ -48,5 +48,5 @@ export default async function ResourcePdfViewPage({ searchParams }: PageProps) {
     }
   }
 
-  redirect(`/resources/pdf/handoff?${open.toString()}`);
+  redirect(`/resources/pdf?${open.toString()}`);
 }

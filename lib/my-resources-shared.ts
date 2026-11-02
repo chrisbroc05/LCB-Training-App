@@ -91,10 +91,10 @@ export type MyResourcesViewModel = {
 export type MemberPdfViewKind = "workout" | "guide" | "purchase" | "fixit" | "evaluation";
 
 export {
-  buildMemberPdfHandoffHref,
+  buildMemberPdfHref,
   buildMemberPdfOpenHref,
   buildMemberPdfViewerHref,
-} from "@/lib/member-pdf-open-shared";
+} from "@/lib/member-pdf-href-shared";
 
 export function parseResourcesTabParam(value: string | null | undefined): MyResourcesTab {
   return value === "mine" ? "mine" : "browse";

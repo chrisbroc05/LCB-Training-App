@@ -1,8 +1,8 @@
 "use client";
 
-import MemberPdfOpenLink from "@/app/components/MemberPdfOpenLink";
+import Link from "next/link";
 import FocusDrillCards from "@/app/components/FocusDrillCards";
-import { buildMemberPdfOpenHref } from "@/lib/member-pdf-open-shared";
+import { buildMemberPdfHref } from "@/lib/my-resources-shared";
 import { formatWrittenReportLineForDisplay } from "@/lib/written-report-line-shared";
 
 type WrittenPlayerReportSectionProps = {
@@ -30,8 +30,8 @@ export default function WrittenPlayerReportSection({
   hasEvaluationPdf,
   drillThumbnailMap,
 }: WrittenPlayerReportSectionProps) {
-  const openHref = buildMemberPdfOpenHref({ kind: "evaluation", submissionId });
-  const downloadHref = buildMemberPdfOpenHref({ kind: "evaluation", submissionId, download: true });
+  const openHref = buildMemberPdfHref({ kind: "evaluation", submissionId });
+  const downloadHref = buildMemberPdfHref({ kind: "evaluation", submissionId, download: true });
 
   return (
     <div className="space-y-4">
@@ -42,18 +42,18 @@ export default function WrittenPlayerReportSection({
 
       {hasEvaluationPdf ? (
         <div className="flex flex-wrap gap-3">
-          <MemberPdfOpenLink
+          <Link
             href={openHref}
             className="inline-flex rounded-full bg-[#22c55e] px-5 py-2.5 text-sm font-semibold text-black"
           >
             Open PDF
-          </MemberPdfOpenLink>
-          <MemberPdfOpenLink
+          </Link>
+          <Link
             href={downloadHref}
             className="inline-flex rounded-full border border-[#2b3650] px-5 py-2.5 text-sm font-semibold text-zinc-100"
           >
             Download PDF
-          </MemberPdfOpenLink>
+          </Link>
         </div>
       ) : null}
 

@@ -60,8 +60,7 @@ function hubGuideOpenHrefIsAllowed(access: AccessUserFields, href: string): bool
 
 export function hubIncludedHrefIsAllowed(access: AccessUserFields, href: string): boolean {
   if (
-    href.startsWith("/resources/pdf/handoff?") ||
-    href.startsWith("/api/member/pdf/open?") ||
+    href.startsWith("/resources/pdf?") ||
     href.startsWith("/resources/view?")
   ) {
     return hubGuideOpenHrefIsAllowed(access, href);

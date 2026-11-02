@@ -1,6 +1,5 @@
 import Link from "next/link";
-import MemberPdfOpenLink from "@/app/components/MemberPdfOpenLink";
-import { buildMemberPdfOpenHref, buildMemberPdfViewerHref } from "@/lib/my-resources-shared";
+import { buildMemberPdfHref, buildMemberPdfViewerHref } from "@/lib/my-resources-shared";
 import {
   canAccessWorkoutResourceFile,
   getWorkoutResourceLockMessage,
@@ -29,18 +28,18 @@ export default function ResourceGuideCard({
       {hasAccess ? (
         <div className="mt-4 border-t border-[#2b3650] pt-4">
           <div className="flex flex-wrap gap-2">
-            <MemberPdfOpenLink
+            <Link
               href={buildMemberPdfViewerHref({ kind: "guide", file: resource.filename })}
               className="resources-action-pill"
             >
               {resource.actionLabel}
-            </MemberPdfOpenLink>
-            <MemberPdfOpenLink
-              href={buildMemberPdfOpenHref({ kind: "guide", file: resource.filename, download: true })}
+            </Link>
+            <Link
+              href={buildMemberPdfHref({ kind: "guide", file: resource.filename, download: true })}
               className="resources-action-pill"
             >
               Download
-            </MemberPdfOpenLink>
+            </Link>
           </div>
         </div>
       ) : (

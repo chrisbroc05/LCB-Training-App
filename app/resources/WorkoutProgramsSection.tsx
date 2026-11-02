@@ -1,7 +1,7 @@
 "use client";
 
-import MemberPdfOpenLink from "@/app/components/MemberPdfOpenLink";
-import { buildMemberPdfOpenHref, buildMemberPdfViewerHref } from "@/lib/my-resources-shared";
+import Link from "next/link";
+import { buildMemberPdfHref, buildMemberPdfViewerHref } from "@/lib/my-resources-shared";
 import { useEffect, useState } from "react";
 import {
   ageGroupDetails,
@@ -23,26 +23,23 @@ function ResourceActionPill({ href, label, filename }: { href: string; label: st
 
   if (!openParams) {
     return (
-      <MemberPdfOpenLink href={href} className="resources-action-pill">
+      <Link href={href} className="resources-action-pill">
         {label}
-      </MemberPdfOpenLink>
+      </Link>
     );
   }
 
   return (
     <div className="flex flex-wrap gap-2">
-      <MemberPdfOpenLink
-        href={buildMemberPdfViewerHref(openParams)}
-        className="resources-action-pill"
-      >
+      <Link href={buildMemberPdfViewerHref(openParams)} className="resources-action-pill">
         {label}
-      </MemberPdfOpenLink>
-      <MemberPdfOpenLink
-        href={buildMemberPdfOpenHref({ ...openParams, download: true })}
+      </Link>
+      <Link
+        href={buildMemberPdfHref({ ...openParams, download: true })}
         className="resources-action-pill"
       >
         Download
-      </MemberPdfOpenLink>
+      </Link>
     </div>
   );
 }

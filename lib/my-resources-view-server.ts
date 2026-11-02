@@ -17,7 +17,7 @@ import { getResourceDefinition } from "@/lib/resources-shared";
 import { resolveEvaluationPdfPresignedDownloadUrl } from "@/lib/evaluation-pdf-download-server";
 import { canAccessWorkoutResourceFile, getWorkoutResource } from "@/lib/workout-resources";
 import { prisma } from "@/lib/prisma";
-import { buildMemberPdfOpenHref } from "@/lib/member-pdf-open-shared";
+import { buildMemberPdfHref } from "@/lib/member-pdf-href-shared";
 
 const WORKOUT_PDF_NAMES = new Set([
   "LCB_Strength_8-11_Phase1.pdf",
@@ -164,8 +164,8 @@ export async function resolvePdfViewerForSession(params: {
     }
     return {
       title: "Swing evaluation report",
-      pdfSrc: buildMemberPdfOpenHref({ kind: "evaluation", submissionId }),
-      downloadHref: buildMemberPdfOpenHref({ kind: "evaluation", submissionId, download: true }),
+      pdfSrc: buildMemberPdfHref({ kind: "evaluation", submissionId }),
+      downloadHref: buildMemberPdfHref({ kind: "evaluation", submissionId, download: true }),
     };
   }
 
