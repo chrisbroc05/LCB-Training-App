@@ -48,5 +48,5 @@ export default async function ResourcePdfViewPage({ searchParams }: PageProps) {
     }
   }
 
-  redirect(`/api/member/pdf/open?${open.toString()}`);
+  redirect(`/resources/pdf/handoff?${open.toString()}`);
 }

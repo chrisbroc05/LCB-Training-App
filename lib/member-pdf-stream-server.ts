@@ -1,16 +1,16 @@
 import "server-only";
 
 import { readFile } from "fs/promises";
-import { existsSync } from "fs";
-import path from "path";
 import { NextResponse } from "next/server";
 import { canDownloadPaidResourceFile } from "@/lib/resources-access-server";
 import { resolveFixItPlanAccessEmail } from "@/lib/fix-it-plan-access-server";
-import { getFixItPdfFileKey, isFixItResourceSlug } from "@/lib/fix-it-plans-shared";
+import {
+  resolveMemberFixItFileKey,
+  resolveMemberGuideAbsolutePath,
+  resolveMemberWorkoutAbsolutePath,
+} from "@/lib/member-pdf-file-server";
 import { resolveFreeResourceDownloadGate, resolvePaidResourceDownloadGate } from "@/lib/resource-download-access-server";
-import { getResourceDefinition } from "@/lib/resources-shared";
 import { getPrivateResourceAbsolutePath } from "@/lib/resource-files-server";
-import { getWorkoutResource } from "@/lib/workout-resources";
 import {
   resolveEvaluationPdfPresignedDownloadUrl,
   resolveEvaluationPdfPresignedInlineUrl,
@@ -18,53 +18,13 @@ import {
 import { prisma } from "@/lib/prisma";
 import type { MemberPdfOpenTokenPayload } from "@/lib/member-pdf-open-token-shared";
 
-const WORKOUT_PDF_NAMES = new Set([
-  "LCB_Strength_8-11_Phase1.pdf",
-  "LCB_Strength_8-11_Phase2.pdf",
-  "LCB_Strength_8-11_Phase3.pdf",
-  "LCB_Strength_12-15_Phase1.pdf",
-  "LCB_Strength_12-15_Phase2.pdf",
-  "LCB_Strength_12-15_Phase3.pdf",
-  "LCB_Strength_16-18_Phase1.pdf",
-  "LCB_Strength_16-18_Phase2.pdf",
-  "LCB_Strength_16-18_Phase3.pdf",
-  "LCB_Speed-Agility_8-11_Phase1.pdf",
-  "LCB_Speed-Agility_8-11_Phase2.pdf",
-  "LCB_Speed-Agility_8-11_Phase3.pdf",
-  "LCB_Speed-Agility_12-15_Phase1.pdf",
-  "LCB_Speed-Agility_12-15_Phase2.pdf",
-  "LCB_Speed-Agility_12-15_Phase3.pdf",
-  "LCB_Speed-Agility_16-18_Phase1.pdf",
-  "LCB_Speed-Agility_16-18_Phase2.pdf",
-  "LCB_Speed-Agility_16-18_Phase3.pdf",
-  "LCB_Mobility_8-11.pdf",
-  "LCB_Mobility_12-15.pdf",
-  "LCB_Mobility_16-18.pdf",
-]);
-
-function getWorkoutPdfPath(filename: string) {
-  const privatePath = path.join(process.cwd(), "private", "workouts", filename);
-  if (existsSync(privatePath)) {
-    return privatePath;
-  }
-  return path.join(process.cwd(), "public", "workouts", filename);
-}
-
-function getGuidePdfPath(filename: string) {
-  const resource = getWorkoutResource(filename);
-  if (resource?.storageFileKey) {
-    return getPrivateResourceAbsolutePath(resource.storageFileKey);
-  }
-  return getPrivateResourceAbsolutePath(`guides/${filename}`);
-}
-
 function pdfResponse(buffer: Buffer, filename: string, download: boolean) {
   return new NextResponse(new Uint8Array(buffer), {
     status: 200,
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `${download ? "attachment" : "inline"}; filename="${filename}"`,
       "Cache-Control": "private, no-store",
+      "Content-Disposition": `${download ? "attachment" : "inline"}; filename="${filename}"`,
     },
   });
 }
@@ -77,8 +37,8 @@ export async function streamMemberPdfFromOpenToken(payload: MemberPdfOpenTokenPa
     if (!file) {
       return null;
     }
-    const filePath = getGuidePdfPath(file);
-    if (!existsSync(filePath)) {
+    const filePath = resolveMemberGuideAbsolutePath(file);
+    if (!filePath) {
       return null;
     }
     const fileBuffer = await readFile(filePath);
@@ -87,11 +47,11 @@ export async function streamMemberPdfFromOpenToken(payload: MemberPdfOpenTokenPa
 
   if (payload.kind === "workout") {
     const file = payload.file?.trim();
-    if (!file || !WORKOUT_PDF_NAMES.has(file)) {
+    if (!file) {
       return null;
     }
-    const filePath = getWorkoutPdfPath(file);
-    if (!existsSync(filePath)) {
+    const filePath = resolveMemberWorkoutAbsolutePath(file);
+    if (!filePath) {
       return null;
     }
     const fileBuffer = await readFile(filePath);
@@ -160,7 +120,8 @@ export async function streamMemberPdfFromOpenToken(payload: MemberPdfOpenTokenPa
 
   if (payload.kind === "fixit") {
     const resourceSlug = payload.fixitResource?.trim() ?? "";
-    if (!isFixItResourceSlug(resourceSlug)) {
+    const fileKey = resolveMemberFixItFileKey(resourceSlug);
+    if (!fileKey) {
       return null;
     }
     const user = await prisma.user.findUnique({
@@ -174,10 +135,6 @@ export async function streamMemberPdfFromOpenToken(payload: MemberPdfOpenTokenPa
       sessionUserId: payload.uid,
     });
     if (!allowedEmail) {
-      return null;
-    }
-    const fileKey = getFixItPdfFileKey(resourceSlug);
-    if (!fileKey) {
       return null;
     }
     const filePath = getPrivateResourceAbsolutePath(fileKey);

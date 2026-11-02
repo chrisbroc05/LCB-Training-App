@@ -10,8 +10,7 @@ export type MemberPdfOpenParams = {
   download?: boolean;
 };
 
-export function buildMemberPdfOpenHref(params: MemberPdfOpenParams): string {
-  const search = new URLSearchParams();
+function appendMemberPdfOpenSearchParams(search: URLSearchParams, params: MemberPdfOpenParams) {
   search.set("kind", params.kind);
   if (params.file) {
     search.set("file", params.file);
@@ -31,21 +30,41 @@ export function buildMemberPdfOpenHref(params: MemberPdfOpenParams): string {
   if (params.download) {
     search.set("download", "1");
   }
-  return `/api/member/pdf/open?${search.toString()}`;
 }
 
-/** @deprecated Use buildMemberPdfOpenHref; kept as alias for existing call sites. */
+/** Handoff page: mints a signed go URL while the member is signed in. */
+export function buildMemberPdfHandoffHref(params: MemberPdfOpenParams): string {
+  const search = new URLSearchParams();
+  appendMemberPdfOpenSearchParams(search, params);
+  return `/resources/pdf/handoff?${search.toString()}`;
+}
+
+/** Sessionless delivery URL (short-lived signed token). */
+export function buildMemberPdfGoPath(openToken: string): string {
+  return `/api/member/pdf/go?token=${encodeURIComponent(openToken)}`;
+}
+
+/** @deprecated Use buildMemberPdfHandoffHref. */
+export function buildMemberPdfOpenHref(params: MemberPdfOpenParams): string {
+  return buildMemberPdfHandoffHref(params);
+}
+
+/** @deprecated Use buildMemberPdfHandoffHref. */
 export function buildMemberPdfViewerHref(params: MemberPdfOpenParams) {
-  return buildMemberPdfOpenHref(params);
+  return buildMemberPdfHandoffHref(params);
 }
 
 export function isMemberPdfOpenHref(href: string): boolean {
-  return href.startsWith("/api/member/pdf/open?");
+  return (
+    href.startsWith("/resources/pdf/handoff?") ||
+    href.startsWith("/api/member/pdf/open?") ||
+    href.startsWith("/api/member/pdf/go?")
+  );
 }
 
-/** Relative redirect target after minting an open token (never use request.url origin). */
+/** @deprecated Inline hop removed; use buildMemberPdfGoPath. */
 export function buildMemberPdfInlineRedirectPath(openToken: string): string {
-  return `/api/member/pdf/inline?token=${encodeURIComponent(openToken)}`;
+  return buildMemberPdfGoPath(openToken);
 }
 
 export function memberPdfHrefMustNotContainLocalhost(href: string): void {

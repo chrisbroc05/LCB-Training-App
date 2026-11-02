@@ -7,7 +7,7 @@ import { isAdminEmail } from "@/lib/admin";
 import { toAccessUserFields, userAccessSelect } from "@/lib/access-server";
 import { emptyAccessUserRow } from "@/lib/empty-access-user-shared";
 import { prisma } from "@/lib/prisma";
-import { getPrivateResourceAbsolutePath } from "@/lib/resource-files-server";
+import { resolveMemberGuideAbsolutePath } from "@/lib/member-pdf-file-server";
 import { getWorkoutResource, canAccessWorkoutResourceFile } from "@/lib/workout-resources";
 
 type RouteContext = {
@@ -15,14 +15,6 @@ type RouteContext = {
     filename: string;
   }>;
 };
-
-function getWorkoutResourcePdfPath(filename: string) {
-  const resource = getWorkoutResource(filename);
-  if (resource?.storageFileKey) {
-    return getPrivateResourceAbsolutePath(resource.storageFileKey);
-  }
-  return getPrivateResourceAbsolutePath(`guides/${filename}`);
-}
 
 export async function GET(request: Request, context: RouteContext) {
   const { filename } = await context.params;
@@ -52,8 +44,8 @@ export async function GET(request: Request, context: RouteContext) {
     }
   }
 
-  const filePath = getWorkoutResourcePdfPath(filename);
-  if (!existsSync(filePath)) {
+  const filePath = resolveMemberGuideAbsolutePath(filename);
+  if (!filePath || !existsSync(filePath)) {
     return NextResponse.json({ error: "Resource file not found." }, { status: 404 });
   }
 

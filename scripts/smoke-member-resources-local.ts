@@ -16,6 +16,8 @@ const PASSWORD = process.env.SMOKE_PASSWORD ?? "LcbDevSeed!2026";
 type PathCheck = {
   path: string;
   assertOk: (text: string, status: number) => string | null;
+  /** Mint session JSON then fetch signed go URL (member PDF flow). */
+  memberPdfMintGo?: boolean;
 };
 
 function missingExpected(status: number, text: string, expected: string[]): string | null {
@@ -88,24 +90,29 @@ const ORG_TRIAL_PATHS: PathCheck[] = [
   { path: "/workouts/starters/mobility", assertOk: starterProgramOk },
   { path: "/workouts/starters/strength/12-15/1", assertOk: starterProgramOk },
   {
-    path: "/api/member/pdf/open?kind=guide&file=LCB_PreGame_Warmup.pdf",
+    path: "/api/member/pdf/mint?kind=guide&file=LCB_PreGame_Warmup.pdf",
     assertOk: memberGuidePdfOpenOk,
+    memberPdfMintGo: true,
   },
   {
-    path: "/api/member/pdf/open?kind=guide&file=LCB_Parent_Guide.pdf",
+    path: "/api/member/pdf/mint?kind=guide&file=LCB_Parent_Guide.pdf",
     assertOk: memberGuidePdfOpenOk,
+    memberPdfMintGo: true,
   },
   {
-    path: "/api/member/pdf/open?kind=guide&file=LCB_Nutrition_Guide.pdf",
+    path: "/api/member/pdf/mint?kind=guide&file=LCB_Nutrition_Guide.pdf",
     assertOk: memberGuidePdfOpenOk,
+    memberPdfMintGo: true,
   },
   {
-    path: "/api/member/pdf/open?kind=guide&file=LCB_Arm_Care_4Week_Starter.pdf",
+    path: "/api/member/pdf/mint?kind=guide&file=LCB_Arm_Care_4Week_Starter.pdf",
     assertOk: memberGuidePdfOpenOk,
+    memberPdfMintGo: true,
   },
   {
-    path: "/api/member/pdf/open?kind=guide&file=LCB_Back_and_Arm_4Week_Starter.pdf",
+    path: "/api/member/pdf/mint?kind=guide&file=LCB_Back_and_Arm_4Week_Starter.pdf",
     assertOk: memberGuidePdfOpenOk,
+    memberPdfMintGo: true,
   },
 ];
 
@@ -169,9 +176,25 @@ async function signIn(email: string): Promise<Map<string, string>> {
   return jar;
 }
 
-async function fetchPath(jar: Map<string, string>, path: string) {
+async function fetchPath(jar: Map<string, string>, path: string, memberPdfMintGo?: boolean) {
+  const cookie = cookieHeader(jar);
+  if (memberPdfMintGo) {
+    const mintRes = await fetch(`${BASE}${path}`, {
+      headers: { Cookie: cookie },
+    });
+    const mintJson = (await mintRes.json().catch(() => ({}))) as { goUrl?: string };
+    if (!mintRes.ok || !mintJson.goUrl) {
+      return { status: mintRes.status, text: JSON.stringify(mintJson) };
+    }
+    const goRes = await fetch(`${BASE}${mintJson.goUrl}`, {
+      headers: { Cookie: cookie },
+      redirect: "follow",
+    });
+    return { status: goRes.status, text: await goRes.text() };
+  }
+
   const res = await fetch(`${BASE}${path}`, {
-    headers: { Cookie: cookieHeader(jar) },
+    headers: { Cookie: cookie },
     redirect: "follow",
   });
   return { status: res.status, text: await res.text() };
@@ -183,7 +206,7 @@ async function smokePaths(label: string, email: string, checks: PathCheck[]) {
   const issues: string[] = [];
 
   for (const check of checks) {
-    const { status, text } = await fetchPath(jar, check.path);
+    const { status, text } = await fetchPath(jar, check.path, check.memberPdfMintGo);
     const problem = check.assertOk(text, status);
     if (problem) {
       issues.push(`${label} ${check.path}: ${problem}`);
