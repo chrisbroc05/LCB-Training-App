@@ -8,6 +8,9 @@ import {
   parseWrittenReportPaste,
   type WrittenReportSections,
 } from "@/lib/written-report-parse-shared";
+import AdminWrittenReportSubmissionContext, {
+  type AdminWrittenReportSubmissionDetail,
+} from "@/app/admin/reports/AdminWrittenReportSubmissionContext";
 
 type QuickReportListItem = {
   id: string;
@@ -58,6 +61,8 @@ export default function AdminReportsPendingPanel(props: { initialSelectedId?: st
   const [recommendedFixItSlug, setRecommendedFixItSlug] = useState("");
   const [sendError, setSendError] = useState("");
   const [sending, setSending] = useState(false);
+  const [detail, setDetail] = useState<AdminWrittenReportSubmissionDetail | null>(null);
+  const [loadingDetail, setLoadingDetail] = useState(false);
 
   const selected = useMemo(
     () => items.find((item) => item.id === selectedId) ?? null,
@@ -94,6 +99,38 @@ export default function AdminReportsPendingPanel(props: { initialSelectedId?: st
     setLibraryDrillIds([]);
     setRecommendedFixItSlug("");
     setSendError("");
+    setDetail(null);
+  }, [selectedId]);
+
+  useEffect(() => {
+    if (!selectedId) {
+      setDetail(null);
+      return;
+    }
+
+    let cancelled = false;
+    const loadDetail = async () => {
+      setLoadingDetail(true);
+      const response = await fetch(`/api/admin/submissions/swing/${selectedId}`, {
+        cache: "no-store",
+      });
+      if (cancelled) {
+        return;
+      }
+      setLoadingDetail(false);
+      if (!response.ok) {
+        setDetail(null);
+        return;
+      }
+      const data = (await response.json()) as { submission: AdminWrittenReportSubmissionDetail };
+      setDetail(data.submission);
+    };
+
+    void loadDetail();
+
+    return () => {
+      cancelled = true;
+    };
   }, [selectedId]);
 
   const handleParse = () => {
@@ -181,10 +218,13 @@ export default function AdminReportsPendingPanel(props: { initialSelectedId?: st
           <p className="text-sm text-zinc-400">Select a submission from the queue.</p>
         ) : (
           <div className="space-y-4 rounded-xl border border-[#2b3650] bg-black/30 p-4">
-            <div>
-              <p className="text-sm font-semibold text-zinc-100">{selected.playerName}</p>
-              <p className="mt-1 text-xs text-zinc-400">{selected.userEmail}</p>
-            </div>
+            <AdminWrittenReportSubmissionContext
+              detail={detail}
+              loading={loadingDetail}
+              levelLabel={selected.levelLabel}
+              organizationName={selected.organizationName}
+              teamName={selected.teamName}
+            />
 
             <label className="block text-sm text-zinc-300">
               Paste report

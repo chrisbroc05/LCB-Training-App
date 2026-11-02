@@ -13,6 +13,8 @@ type R2PresignedVideoPlayerProps = {
   title?: string;
   className?: string;
   onFirstPlay?: () => void;
+  /** Shown under error text so admins never see a blank video area. */
+  rawReference?: string | null;
 };
 
 type PresignedPlaybackResponse = {
@@ -35,6 +37,7 @@ export default function R2PresignedVideoPlayer({
   title = "Video",
   className = "",
   onFirstPlay,
+  rawReference,
 }: R2PresignedVideoPlayerProps) {
   const r2Key = resolveR2Key(storedVideo);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -58,6 +61,9 @@ export default function R2PresignedVideoPlayer({
     });
 
     if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error("File missing");
+      }
       throw new Error("Unable to load video.");
     }
 
@@ -167,7 +173,15 @@ export default function R2PresignedVideoPlayer({
   }
 
   if (error || !playbackUrl) {
-    return <p className="px-4 py-3 text-sm text-red-300">{error ?? "Unable to load video."}</p>;
+    const reference = rawReference?.trim() || storedVideo.trim() || null;
+    return (
+      <div className="px-4 py-3 text-sm text-red-300">
+        <p>{error ?? "Unable to load video."}</p>
+        {reference ? (
+          <p className="mt-2 break-all font-mono text-xs text-zinc-500">{reference}</p>
+        ) : null}
+      </div>
+    );
   }
 
   const videoSrc = appendVideoPreviewTimeFragment(playbackUrl);
