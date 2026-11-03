@@ -1,4 +1,5 @@
-import { getDailyPlan } from "../lib/program-daily-plan";
+import { computeProgramStreak } from "../lib/program-streak-shared";
+import { getDailyPlan, getTaskKeysForDay } from "../lib/program-daily-plan";
 import type { ProgramEnrollmentPlanInput } from "../lib/program-daily-plan";
 import type { ProgramDailyPlanOverrides } from "../lib/program-plan-overrides";
 import { resolveStrengthVariant } from "../lib/strength-variant-shared";
@@ -289,6 +290,75 @@ function assertCustomTaskReplaceCase() {
   console.log("Custom replace test passed.");
 }
 
+function assertRestDayCoachCustomTaskCase() {
+  const enrollment: ProgramEnrollmentPlanInput = {
+    ageGroup: "AGE_12_15",
+    focusAreas: ["hitting"],
+    equipment: ["cage_field"],
+    seasonMode: "OFF_SEASON",
+  };
+  const dayInfo = makeDayInfo(1, 7);
+  const baseTasks = getDailyPlan(enrollment, dayInfo);
+  if (baseTasks.length !== 0) {
+    throw new Error("Expected no base tasks on a rest day.");
+  }
+
+  const overrides: ProgramDailyPlanOverrides = {
+    customTasks: [
+      {
+        id: "rest-coach-task",
+        programDay: dayInfo.programDay,
+        title: "Coach mobility",
+        target: "10 minutes",
+        details: "Easy stretch and breathing.",
+        drillIds: [],
+        replacesTaskKey: null,
+      },
+    ],
+  };
+
+  const tasks = getDailyPlan(enrollment, dayInfo, overrides);
+  if (tasks.length !== 1) {
+    throw new Error("Expected one coach task on rest day.");
+  }
+  if (!tasks[0]?.isCoachAdded) {
+    throw new Error("Rest-day custom task should be coach-added.");
+  }
+
+  const keys = getTaskKeysForDay(enrollment, dayInfo, overrides);
+  if (keys.length !== 1) {
+    throw new Error("Expected rest-day coach task in required task keys.");
+  }
+
+  console.log("Rest day coach custom task test passed.");
+}
+
+function assertRestDayStreakCase() {
+  const startDate = parseProgramDateKey("2026-01-05");
+  const completedRestDay = new Set([7]);
+  const streakWithCompletedRest = computeProgramStreak({
+    startDate,
+    currentProgramDay: 7,
+    completedWorkDays: completedRestDay,
+  });
+  if (streakWithCompletedRest !== 1) {
+    throw new Error(`Expected streak 1 with completed rest day, got ${streakWithCompletedRest}.`);
+  }
+
+  const streakWithOpenRest = computeProgramStreak({
+    startDate,
+    currentProgramDay: 8,
+    completedWorkDays: new Set(),
+  });
+  if (streakWithOpenRest !== 0) {
+    throw new Error(
+      `Expected incomplete rest day not to break streak on next day, got ${streakWithOpenRest}.`,
+    );
+  }
+
+  console.log("Rest day streak test passed.");
+}
+
 function printProgramWeekSamples() {
   const mondayStartKey = "2026-01-05";
   const thursdayStartKey = "2026-01-08";
@@ -362,6 +432,8 @@ function assertEnrollmentTrackCase() {
 
 assertFocusOverrideCase();
 assertCustomTaskReplaceCase();
+assertRestDayCoachCustomTaskCase();
+assertRestDayStreakCase();
 assertEnrollmentTrackCase();
 assertSaturdayStartUsesRealWeekday();
 printProgramWeekSamples();

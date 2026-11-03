@@ -128,7 +128,7 @@ export async function buildAdminProgramPlayerProfile(
         { startDate: enrollment.startDate },
         day,
       );
-      if (dayInfo.dayOfWeek === 7 || dayInfo.isBeforeStart) {
+      if (dayInfo.isBeforeStart) {
         continue;
       }
       const overrides = buildOverridesForWeekAndDay(overrideBundle, dayInfo.weekNumber, day);

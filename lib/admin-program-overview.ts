@@ -110,10 +110,6 @@ export async function buildAdminProgramOverview(now = new Date(), options?: Over
 
       if (planInput && enrollment.startDate) {
         for (let day = 1; day <= Math.min(schedule.programDay, PROGRAM_DAY_COUNT); day += 1) {
-          if (getDayOfWeekForProgramDay(enrollment.startDate, day) === 7) {
-            continue;
-          }
-
           const dayInfo = buildProgramDayInfoForProgramDay(
             { startDate: enrollment.startDate },
             day,
@@ -142,7 +138,7 @@ export async function buildAdminProgramOverview(now = new Date(), options?: Over
 
       let todayTotal = 0;
       let todayDone = 0;
-      if (planInput && schedule.programDay > 0 && schedule.dayOfWeek !== 7) {
+      if (planInput && schedule.programDay > 0) {
         const dayInfo = buildProgramDayInfoForProgramDay(
           { startDate: enrollment.startDate },
           schedule.programDay,

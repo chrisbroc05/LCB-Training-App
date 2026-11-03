@@ -1099,6 +1099,47 @@ export default function ProgramTodayView() {
         </section>
       ) : null}
 
+      {!payload.isComplete &&
+      !payload.isBeforeStart &&
+      payload.isRestDay &&
+      payload.tasks.length > 0 ? (
+        <>
+          {viewingDifferentDay ? (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#18243a] bg-[#0b1324]/90 px-4 py-3">
+              <p className="text-sm font-medium text-zinc-200">
+                {payload.isViewingYesterday
+                  ? "Viewing yesterday. You can still check these off."
+                  : `Viewing ${payload.viewedWeekdayName}. View only.`}
+              </p>
+              <button type="button" onClick={() => void loadToday()} className={BTN_OUTLINE}>
+                Back to today
+              </button>
+            </div>
+          ) : null}
+
+          {payload.allTasksComplete ? (
+            <section className="rounded-2xl border border-[#52B788]/40 bg-[#52B788]/10 px-5 py-4 text-center text-sm font-semibold text-[#9df3bd]">
+              Day done. Work Hard. Be Memorable.
+            </section>
+          ) : null}
+
+          <div ref={todayTasksRef} id="today-tasks" className="space-y-3">
+            {payload.tasks.map((task) => (
+              <TaskCard
+                key={task.key}
+                task={task}
+                programDay={payload.viewedProgramDay}
+                weekdayName={payload.viewedWeekdayName || "Today"}
+                canComplete={payload.canCompleteTasks}
+                canAccessPlaybook={payload.canAccessPlaybook}
+                onUpdate={() => void loadToday(viewedProgramDay ?? undefined)}
+                onOpenAnswer={setAnswerSheet}
+              />
+            ))}
+          </div>
+        </>
+      ) : null}
+
       {!payload.isComplete && !payload.isBeforeStart && !payload.isRestDay ? (
         <>
           {viewingDifferentDay ? (

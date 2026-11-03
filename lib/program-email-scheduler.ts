@@ -101,9 +101,6 @@ async function getStreakForEnrollment(enrollment: ActiveEnrollmentRecord, now: D
 
   if (planInput) {
     for (let day = 1; day <= Math.min(schedule.programDay, PROGRAM_DAY_COUNT); day += 1) {
-      if (getDayOfWeekForProgramDay(enrollment.startDate, day) === 7) {
-        continue;
-      }
       const dayInfo = buildProgramDayInfoForProgramDay({ startDate: enrollment.startDate }, day);
       const overrides = buildOverridesForWeekAndDay(overrideBundle, dayInfo.weekNumber, day);
       const expectedKeys = getTaskKeysForDay(planInput, dayInfo, overrides);

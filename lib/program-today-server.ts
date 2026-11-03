@@ -263,7 +263,7 @@ export async function buildProgramTodayPayload(params: {
         )
       : undefined;
   const viewedTasks =
-    planInput && viewedDayInfo.programDay > 0 && viewedDayInfo.dayOfWeek !== 7
+    planInput && viewedDayInfo.programDay > 0
       ? getDailyPlan(planInput, viewedDayInfo, viewedOverrides)
       : [];
 
@@ -405,7 +405,7 @@ export async function buildProgramTodayPayload(params: {
     for (let day = 1; day <= Math.min(todayInfo.programDay, PROGRAM_DAY_COUNT); day += 1) {
       const dayInfo = buildProgramDayInfoForProgramDay(enrollmentSchedule, day);
 
-      if (dayInfo.isBeforeStart || dayInfo.dayOfWeek === 7) {
+      if (dayInfo.isBeforeStart) {
         continue;
       }
       const dayOverrides = buildOverridesForWeekAndDay(
@@ -522,21 +522,6 @@ export async function buildProgramTodayPayload(params: {
       programDay !== todayInfo.programDay;
     const tappable = programDay > 0 && programDay <= todayInfo.programDay;
 
-    if (dayOfWeek === 7) {
-      weekDays.push({
-        programDay,
-        dayOfWeek,
-        weekdayLabel,
-        weekdayName,
-        status: dayLogProgramDays.has(programDay) ? "complete" : "rest",
-        isToday,
-        tappable,
-        editable: false,
-        completionRatio: dayLogProgramDays.has(programDay) ? 1 : 0,
-      });
-      continue;
-    }
-
     const dayOverrides =
       planInput && dayInfo.weekNumber > 0
         ? buildOverridesForWeekAndDay(overrideBundle, dayInfo.weekNumber, programDay)
@@ -552,16 +537,18 @@ export async function buildProgramTodayPayload(params: {
       expectedKeys.length > 0 ? completedCount / expectedKeys.length : 0;
 
     let status: ProgramWeekDayStatus["status"] = "upcoming";
-    if (programDay > todayInfo.programDay) {
+    if (dayOfWeek === 7 && expectedKeys.length === 0) {
+      status = dayLogProgramDays.has(programDay) ? "complete" : "rest";
+    } else if (programDay > todayInfo.programDay) {
       status = "upcoming";
     } else if (expectedKeys.length > 0 && completedCount === expectedKeys.length) {
       status = "complete";
     } else if (completedCount > 0) {
       status = "partial";
     } else if (programDay < todayInfo.programDay) {
-      status = "missed";
+      status = dayOfWeek === 7 ? "rest" : "missed";
     } else {
-      status = "upcoming";
+      status = dayOfWeek === 7 && expectedKeys.length === 0 ? "rest" : "upcoming";
     }
 
     weekDays.push({

@@ -23,6 +23,9 @@ export function computeProgramStreak(params: {
   while (day >= 1) {
     const dayOfWeek = getDayOfWeekForProgramDay(params.startDate, day);
     if (dayOfWeek === 7) {
+      if (params.completedWorkDays.has(day)) {
+        streak += 1;
+      }
       day -= 1;
       continue;
     }

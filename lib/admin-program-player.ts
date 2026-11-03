@@ -405,22 +405,19 @@ export function buildAdminWeekDayTasks(params: {
       params.weekNumber,
       programDay,
     );
-    const tasks =
-      dayInfo.dayOfWeek === 7
-        ? []
-        : getDailyPlan(params.planInput, dayInfo, overrides).map((task) => {
-            const completion = params.enrollment.taskCompletions.find(
-              (item) => item.programDay === programDay && item.taskKey === task.key,
-            );
+    const tasks = getDailyPlan(params.planInput, dayInfo, overrides).map((task) => {
+      const completion = params.enrollment.taskCompletions.find(
+        (item) => item.programDay === programDay && item.taskKey === task.key,
+      );
 
-            return {
-              ...task,
-              completed: Boolean(completion),
-              note: completion?.note ?? null,
-              completionType: completion?.completionType ?? null,
-              completedAt: completion?.completedAt.toISOString() ?? null,
-            };
-          });
+      return {
+        ...task,
+        completed: Boolean(completion),
+        note: completion?.note ?? null,
+        completionType: completion?.completionType ?? null,
+        completedAt: completion?.completedAt.toISOString() ?? null,
+      };
+    });
 
     days.push({
       programDay,

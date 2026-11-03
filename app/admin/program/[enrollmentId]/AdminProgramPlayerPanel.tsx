@@ -536,9 +536,6 @@ export default function AdminProgramPlayerPanel({
 
   const weekTaskSummary = detail.weekDays.reduce(
     (acc, day) => {
-      if (day.isRestDay) {
-        return acc;
-      }
       for (const task of day.tasks) {
         acc.due += 1;
         if (task.completed) {
@@ -1167,7 +1164,6 @@ export default function AdminProgramPlayerPanel({
                 ? day.weekdayName
                 : WEEKDAY_NAMES[day.dayOfWeek - 1] ?? "";
             const isEditable =
-              !day.isRestDay &&
               !("isNotStarted" in day && day.isNotStarted) &&
               day.programDay >= detail.schedule.programDay;
             const showForm = taskForm?.programDay === day.programDay;
@@ -1202,7 +1198,7 @@ export default function AdminProgramPlayerPanel({
                     </button>
                   ) : null}
                 </div>
-                {!day.isRestDay ? (
+                {!day.isRestDay || day.tasks.length > 0 || showForm ? (
                   <div className="mt-3 space-y-3">
                     {day.tasks.map((task) => {
                       const customTaskRecord = detail.customTasks.find(
