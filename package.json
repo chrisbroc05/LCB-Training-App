@@ -54,6 +54,7 @@
     "test:membership-payment-commission-shared": "npx --yes tsx scripts/test-membership-payment-commission-shared.ts",
     "test:membership-charge-refund-shared": "npx --yes tsx scripts/test-membership-charge-refund-shared.ts",
     "test:admin-organizations-shared": "npx --yes tsx scripts/test-admin-organizations-shared.ts",
+    "test:bulk-org-teams": "npx --yes tsx scripts/test-bulk-org-teams-shared.ts",
     "test:founding-offer-shared": "npx --yes tsx scripts/test-founding-offer-shared.ts",
     "test:founding-plan-change-shared": "npx --yes tsx scripts/test-founding-plan-change-shared.ts",
     "test:org-join-auth-shared": "npx --yes tsx scripts/test-org-join-auth-shared.ts",

@@ -9,6 +9,7 @@ import {
   isOrgCommissionConfigured,
   type AdminOrganizationRecord,
 } from "@/lib/admin-organizations-shared";
+import { formatBulkOrgTeamResultSummary } from "@/lib/bulk-org-teams-shared";
 import OrgRosterMovePanel from "@/app/admin/organizations/OrgRosterMovePanel";
 import OrgWeeklyFocusAdminPanel from "@/app/admin/organizations/OrgWeeklyFocusAdminPanel";
 import {
@@ -23,6 +24,9 @@ export default function AdminOrganizationsPanel() {
   const [error, setError] = useState<string | null>(null);
   const [newName, setNewName] = useState("");
   const [saveNotes, setSaveNotes] = useState<Record<string, string>>({});
+  const [bulkTeamText, setBulkTeamText] = useState<Record<string, string>>({});
+  const [bulkTeamNotes, setBulkTeamNotes] = useState<Record<string, string>>({});
+  const [bulkTeamBusy, setBulkTeamBusy] = useState<Record<string, boolean>>({});
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -126,6 +130,51 @@ export default function AdminOrganizationsPanel() {
       return;
     }
     await load();
+  }
+
+  async function bulkAddTeams(orgId: string) {
+    const text = bulkTeamText[orgId] ?? "";
+    setBulkTeamBusy((current) => ({ ...current, [orgId]: true }));
+    setBulkTeamNotes((current) => ({ ...current, [orgId]: "" }));
+    setError(null);
+
+    const response = await fetch(`/api/admin/organizations/${orgId}/teams/bulk`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+    });
+
+    setBulkTeamBusy((current) => ({ ...current, [orgId]: false }));
+
+    const data = (await response.json()) as {
+      error?: string;
+      summary?: string;
+      added?: number;
+      reactivated?: number;
+      skipped?: number;
+      organizations?: AdminOrganizationRecord[];
+    };
+
+    if (!response.ok) {
+      const message = data.error ?? "Could not bulk add teams.";
+      setBulkTeamNotes((current) => ({ ...current, [orgId]: message }));
+      setError(message);
+      return;
+    }
+
+    const summary =
+      data.summary ??
+      formatBulkOrgTeamResultSummary({
+        added: data.added ?? 0,
+        reactivated: data.reactivated ?? 0,
+        skipped: data.skipped ?? 0,
+      });
+    setBulkTeamNotes((current) => ({ ...current, [orgId]: summary }));
+    if (data.organizations) {
+      setOrganizations(data.organizations);
+    } else {
+      await load();
+    }
   }
 
   if (loading) {
@@ -481,6 +530,35 @@ export default function AdminOrganizationsPanel() {
             >
               Add team
             </button>
+          </div>
+
+          <div className="mt-4 rounded-xl border border-[#2b3650] bg-black/20 p-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">Bulk add teams</p>
+            <label className="mt-2 block text-xs text-zinc-300">
+              One team name per line
+              <textarea
+                value={bulkTeamText[org.id] ?? ""}
+                onChange={(event) =>
+                  setBulkTeamText((current) => ({ ...current, [org.id]: event.target.value }))
+                }
+                rows={5}
+                placeholder={"10U\n11U\n12U"}
+                className="mt-2 w-full rounded-lg border border-[#2b3650] bg-black/40 px-3 py-2 font-mono text-xs text-zinc-100"
+              />
+            </label>
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                disabled={bulkTeamBusy[org.id]}
+                onClick={() => void bulkAddTeams(org.id)}
+                className="rounded-full bg-[#22c55e] px-4 py-2 text-xs font-semibold text-black disabled:opacity-60"
+              >
+                {bulkTeamBusy[org.id] ? "Adding..." : "Add teams"}
+              </button>
+              {bulkTeamNotes[org.id] ? (
+                <p className="text-xs text-zinc-300">{bulkTeamNotes[org.id]}</p>
+              ) : null}
+            </div>
           </div>
 
           <OrgRosterMovePanel organizationId={org.id} teams={org.teams} onMoved={() => void load()} />

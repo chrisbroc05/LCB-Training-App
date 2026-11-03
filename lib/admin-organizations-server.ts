@@ -10,6 +10,11 @@ import {
   trialEndInstantFromDateInput,
   trialStartInstantFromDateInput,
 } from "@/lib/org-trial-dates-shared";
+import {
+  formatBulkOrgTeamResultSummary,
+  parseBulkOrgTeamNameLines,
+  planBulkOrgTeamUpserts,
+} from "@/lib/bulk-org-teams-shared";
 import { prisma } from "@/lib/prisma";
 
 function parseMembershipLevel(value: unknown): MembershipLevel | null {
@@ -302,6 +307,58 @@ export async function upsertOrgTeam(orgId: string, body: Record<string, unknown>
     },
   });
   return { ok: true as const };
+}
+
+export async function bulkAddOrgTeams(orgId: string, rawText: string) {
+  const organization = await prisma.organization.findUnique({ where: { id: orgId } });
+  if (!organization) {
+    return { ok: false as const, error: "Organization not found." };
+  }
+
+  const names = parseBulkOrgTeamNameLines(rawText);
+  if (!names.length) {
+    return { ok: false as const, error: "Enter at least one team name (one per line)." };
+  }
+
+  const existingTeams = await prisma.orgTeam.findMany({
+    where: { organizationId: orgId },
+    select: { id: true, name: true, sortOrder: true, active: true },
+  });
+
+  const plan = planBulkOrgTeamUpserts(names, existingTeams);
+
+  await prisma.$transaction(async (tx) => {
+    for (const action of plan.actions) {
+      if (action.kind === "skip") {
+        continue;
+      }
+
+      if (action.kind === "reactivate") {
+        await tx.orgTeam.update({
+          where: { id: action.teamId },
+          data: { active: true, sortOrder: action.sortOrder, name: action.name },
+        });
+        continue;
+      }
+
+      await tx.orgTeam.create({
+        data: {
+          organizationId: orgId,
+          name: action.name,
+          sortOrder: action.sortOrder,
+          active: true,
+        },
+      });
+    }
+  });
+
+  return {
+    ok: true as const,
+    added: plan.added,
+    reactivated: plan.reactivated,
+    skipped: plan.skipped,
+    summary: formatBulkOrgTeamResultSummary(plan),
+  };
 }
 
 export async function moveOrganizationMembers(params: {
