@@ -129,6 +129,12 @@ enum ProgramEmailType {
   SETUP_REMINDER
 }
 
+enum CoachSignupAlertMode {
+  INSTANT
+  DAILY
+  OFF
+}
+
 enum PushNotificationType {
   DAILY_WORK
   DAY_BEFORE_START
@@ -139,6 +145,7 @@ enum PushNotificationType {
   COACH_NEW_SUBMISSION
   COACH_NEW_PROGRAM_PLAYER
   COACH_NIGHTLY_SUMMARY
+  COACH_NEW_SIGNUP
   COACH_NEW_MESSAGE
   COACH_REPLY
   COACH_REFUND_PROCESSED
@@ -645,6 +652,7 @@ model CoachAlertSettings {
   newMessagesEnabled         Boolean  @default(true)
   nightlySummaryPushEnabled    Boolean  @default(true)
   emailNightlySummaryEnabled   Boolean  @default(true)
+  newSignupAlertMode           CoachSignupAlertMode @default(INSTANT)
   createdAt                  DateTime @default(now())
   updatedAt                  DateTime @updatedAt
 }

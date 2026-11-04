@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import MemberDetailContent, { type MemberDetail } from "@/app/admin/MemberDetailContent";
 import AdminMemberPlanBadge from "@/app/admin/AdminMemberPlanBadge";
 import MobileBottomSheet from "@/app/components/mobile/MobileBottomSheet";
@@ -94,8 +95,10 @@ function CallStatusIndicator({ booked }: { booked: boolean }) {
 
 export default function MembersPanel() {
   const isMobile = useIsMobile();
+  const searchParams = useSearchParams();
+  const memberFromQuery = searchParams.get("member")?.trim() || null;
   const [members, setMembers] = useState<MemberSummary[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(memberFromQuery);
   const [detail, setDetail] = useState<MemberDetail | null>(null);
   const [loadingList, setLoadingList] = useState(false);
   const [loadingDetail, setLoadingDetail] = useState(false);
@@ -138,6 +141,12 @@ export default function MembersPanel() {
 
     void loadMembers();
   }, []);
+
+  useEffect(() => {
+    if (memberFromQuery) {
+      setSelectedId(memberFromQuery);
+    }
+  }, [memberFromQuery]);
 
   useEffect(() => {
     if (!selectedId) {

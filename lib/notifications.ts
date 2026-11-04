@@ -144,17 +144,6 @@ function buildSubmissionNotificationHtml(params: {
   `;
 }
 
-export async function sendNewMemberNotification(params: {
-  userEmail: string;
-  checkoutLabel?: string;
-}) {
-  const checkout = params.checkoutLabel?.trim() || "Free";
-  await sendCoachNotificationEmail({
-    subject: "New Member Signed Up",
-    text: `A new member signed up.\n\nEmail: ${params.userEmail}\nCheckout: ${checkout}`,
-  });
-}
-
 type SubmissionConfirmationType = "SWING" | "MENTAL";
 
 function truncateSubmissionNotes(notes: string, maxLength = 300) {

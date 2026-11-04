@@ -75,3 +75,11 @@ export function buildAdminSubmissionUrl(tab: CoachSubmissionTab, submissionId: s
 export function buildAdminProgramPlayerUrl(enrollmentId: string) {
   return ADMIN_ROUTES.coaching.programPlayer(enrollmentId);
 }
+
+export function buildAdminMemberUrl(userId: string, appBaseUrl?: string) {
+  const path = `${ADMIN_ROUTES.players.members}?member=${encodeURIComponent(userId)}`;
+  if (appBaseUrl) {
+    return `${appBaseUrl.replace(/\/$/, "")}${path}`;
+  }
+  return path;
+}

@@ -21,13 +21,11 @@ import {
   applyMinorLegalParentConsentRecords,
   sendMinorLegalParentConsentEmailIfNeeded,
 } from "@/lib/legal-server";
-import { sendNewMemberNotification } from "@/lib/notifications";
 import { isTestAccountEmail } from "@/lib/test-account-shared";
 import type { SignupRequestPayload } from "@/lib/signup-shared";
 import { parseMembershipBillingInterval } from "@/lib/membership-billing-shared";
 import { isMembershipLevelKey } from "@/lib/membership-levels-shared";
 import {
-  formatSignupCheckoutLabelForCoachNotification,
   shouldSendFreeWelcomeAtSignup,
 } from "@/lib/membership-welcome-email-shared";
 import { isCompanyMailingAddressConfigured } from "@/lib/marketing-email-guard-server";
@@ -269,10 +267,6 @@ export async function POST(request: Request) {
 
     const userId = createdUser.id;
 
-    runSignupBackgroundTask(userId, "linkLeadToUserByEmail", async () => {
-      const { linkLeadToUserByEmail } = await import("@/lib/leads-server");
-      await linkLeadToUserByEmail(userId, email);
-    });
 
     const skipParentConsentEmailAtSignup =
       body.accountRole === "PARENT" && paidCheckoutIntent && isUnder13PlayerAge(playerAge);
@@ -283,15 +277,11 @@ export async function POST(request: Request) {
       });
     }
 
-    runSignupBackgroundTask(userId, "sendNewMemberNotification", async () => {
-      await sendNewMemberNotification({
-        userEmail: email,
-        checkoutLabel: formatSignupCheckoutLabelForCoachNotification({
-          pendingCheckoutLevel,
-          signupSource,
-          selectedMembershipTier: membershipTierForNotification,
-        }),
-      });
+    runSignupBackgroundTask(userId, "coachSignupAlerts", async () => {
+      const { linkLeadToUserByEmail } = await import("@/lib/leads-server");
+      await linkLeadToUserByEmail(userId, email);
+      const { handleCoachSignupAlerts } = await import("@/lib/coach-signup-alert-server");
+      await handleCoachSignupAlerts({ userId, signupSource });
     });
 
     if (

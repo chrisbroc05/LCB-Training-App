@@ -1,3 +1,4 @@
+import type { CoachSignupAlertSnapshot } from "@/lib/coach-signup-alert-shared";
 import { LEAD_ROLE_OPTIONS } from "@/lib/resources-shared";
 
 export type CoachDailySummarySaleLine = {
@@ -33,6 +34,7 @@ export type CoachDailySummaryBusiness = {
   newLeads: CoachDailySummaryNewLeadLine[];
   checkoutFollowUps: CoachDailySummaryCheckoutFollowUpLine[];
   freeAccounts: CoachDailySummaryFreeAccountLine[];
+  signupsToday: CoachSignupAlertSnapshot[];
 };
 
 export const PLAYBOOK_SALE_AMOUNT_CENTS = 5900;
@@ -70,7 +72,8 @@ export function coachDailySummaryBusinessHasContent(business: CoachDailySummaryB
     business.sales.length > 0 ||
     business.newLeads.length > 0 ||
     business.checkoutFollowUps.length > 0 ||
-    business.freeAccounts.length > 0
+    business.freeAccounts.length > 0 ||
+    business.signupsToday.length > 0
   );
 }
 

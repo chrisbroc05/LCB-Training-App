@@ -277,6 +277,43 @@ export default function AdminProgramCoachAlerts() {
                 void saveSettings({ newProgramPlayersEnabled: checked });
               }}
             />
+            <div className="border-b border-[#2b3650]/80 py-4">
+              <p className="text-sm font-medium text-zinc-100">New sign-up alerts</p>
+              <p className="mt-1 text-sm text-zinc-400">
+                Email and push when someone creates an account (club, free, or paid checkout).
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {(
+                  [
+                    ["INSTANT", "Instant"],
+                    ["DAILY", "Daily summary"],
+                    ["OFF", "Off"],
+                  ] as const
+                ).map(([value, label]) => {
+                  const selected = state.settings.newSignupAlertMode === value;
+                  return (
+                    <button
+                      key={value}
+                      type="button"
+                      disabled={isSaving}
+                      onClick={() => {
+                        void saveSettings({ newSignupAlertMode: value });
+                      }}
+                      className={`rounded-full px-4 py-2 text-sm font-medium transition disabled:opacity-60 ${
+                        selected
+                          ? "bg-[#52B788] text-[#0b1324]"
+                          : "border border-[#2b3650] bg-[#060b16] text-zinc-300 hover:border-[#52B788]/50"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="mt-2 text-xs text-zinc-500">
+                Daily summary runs with the 8pm Chicago coach email (names and counts included there).
+              </p>
+            </div>
             <ToggleRow
               label="New messages"
               description="Alert when a 12-week player sends you a direct message."

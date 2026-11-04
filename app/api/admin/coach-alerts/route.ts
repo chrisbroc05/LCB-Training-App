@@ -45,13 +45,16 @@ export async function PATCH(request: Request) {
   const data: Partial<{
     newVideosEnabled: boolean;
     newProgramPlayersEnabled: boolean;
+    newMessagesEnabled: boolean;
     nightlySummaryPushEnabled: boolean;
     emailNightlySummaryEnabled: boolean;
+    newSignupAlertMode: "INSTANT" | "DAILY" | "OFF";
   }> = {};
 
   for (const key of [
     "newVideosEnabled",
     "newProgramPlayersEnabled",
+    "newMessagesEnabled",
     "nightlySummaryPushEnabled",
     "emailNightlySummaryEnabled",
   ] as const) {
@@ -61,6 +64,14 @@ export async function PATCH(request: Request) {
       }
       data[key] = body[key];
     }
+  }
+
+  if ("newSignupAlertMode" in body) {
+    const mode = body.newSignupAlertMode;
+    if (mode !== "INSTANT" && mode !== "DAILY" && mode !== "OFF") {
+      return NextResponse.json({ error: "Invalid newSignupAlertMode value." }, { status: 400 });
+    }
+    data.newSignupAlertMode = mode;
   }
 
   if (Object.keys(data).length === 0) {

@@ -1,9 +1,12 @@
+import type { CoachSignupAlertMode } from "@/lib/coach-signup-alert-shared";
+
 export type CoachAlertSettingsState = {
   newVideosEnabled: boolean;
   newProgramPlayersEnabled: boolean;
   newMessagesEnabled: boolean;
   nightlySummaryPushEnabled: boolean;
   emailNightlySummaryEnabled: boolean;
+  newSignupAlertMode: CoachSignupAlertMode;
 };
 
 export type CoachSubmissionTab = "swing" | "mental";
@@ -30,6 +33,7 @@ export function coachNewProgramPlayerPushTitle(params: {
 }
 
 import type { CoachDailySummaryBusiness } from "@/lib/coach-daily-summary-business-shared";
+import type { CoachSignupAlertSnapshot } from "@/lib/coach-signup-alert-shared";
 
 function snapshotBusinessHasContent(business: CoachDailySummaryBusiness | null | undefined) {
   if (!business) {
@@ -40,7 +44,8 @@ function snapshotBusinessHasContent(business: CoachDailySummaryBusiness | null |
     business.sales.length > 0 ||
     business.newLeads.length > 0 ||
     business.checkoutFollowUps.length > 0 ||
-    business.freeAccounts.length > 0
+    business.freeAccounts.length > 0 ||
+    (business.signupsToday?.length ?? 0) > 0
   );
 }
 
@@ -58,6 +63,7 @@ export type CoachDailySummarySnapshot = {
   quizCompletedToday: number;
   quizAverageScoreToday: number;
   business?: CoachDailySummaryBusiness | null;
+  signupsToday?: CoachSignupAlertSnapshot[];
 };
 
 export function coachDailySummaryHasContent(data: CoachDailySummarySnapshot) {

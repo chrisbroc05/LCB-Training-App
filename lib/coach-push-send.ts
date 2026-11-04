@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { PushNotificationType } from "@prisma/client";
+import type { CoachSignupAlertMode, PushNotificationType } from "@prisma/client";
 import {
   getAdminUsersWithAlertSettings,
 } from "@/lib/coach-alert-settings";
@@ -113,4 +113,71 @@ export async function sendCoachAlertPushSafe(params: {
     console.error("Coach alert push failed", error);
     return { sent: 0, skipped: true, reason: "error" as const };
   }
+}
+
+export async function sendCoachSignupAlertPushForMode(params: {
+  mode: CoachSignupAlertMode;
+  type: PushNotificationType;
+  dedupeKey: string;
+  message: PushMessagePayload;
+  skipDedupeCheck?: boolean;
+}) {
+  if (!isPushEnabled()) {
+    return { sent: 0, skipped: true, reason: "push_not_configured" as const };
+  }
+
+  if (!params.skipDedupeCheck && (await hasPushBeenSent(params.dedupeKey))) {
+    return { sent: 0, skipped: true, reason: "already_sent" as const };
+  }
+
+  const admins = await getAdminUsersWithAlertSettings();
+  if (admins.length === 0) {
+    return { sent: 0, skipped: true, reason: "no_admin_users" as const };
+  }
+
+  let sent = 0;
+  let lastError: string | null = null;
+  let logUserId = admins[0]?.id ?? "";
+
+  for (const admin of admins) {
+    if (admin.settings.newSignupAlertMode !== params.mode) {
+      continue;
+    }
+
+    const result = await sendPushToUser(admin.id, params.message, {
+      type: params.type,
+      dedupeKey: params.dedupeKey,
+      skipLog: true,
+      skipDedupeCheck: true,
+    });
+
+    if (result.sent > 0) {
+      sent += result.sent;
+      logUserId = admin.id;
+    } else if (typeof result.reason === "string") {
+      lastError = result.reason;
+    }
+  }
+
+  const success = sent > 0;
+
+  if (logUserId) {
+    try {
+      await recordCoachPushLog({
+        userId: logUserId,
+        type: params.type,
+        dedupeKey: params.dedupeKey,
+        success,
+        error: success ? null : lastError,
+      });
+    } catch (error) {
+      console.error("Failed to record coach signup push log", error);
+    }
+  }
+
+  return {
+    sent,
+    skipped: !success,
+    reason: success ? null : (lastError ?? "no_subscriptions"),
+  };
 }

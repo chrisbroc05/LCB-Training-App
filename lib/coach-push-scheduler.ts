@@ -9,7 +9,7 @@ import { sendCoachAlertPush } from "@/lib/coach-push-send";
 
 export type ScheduledCoachPushPreview = {
   channel: "coach-push";
-  type: "COACH_NIGHTLY_SUMMARY";
+  type: "COACH_NIGHTLY_SUMMARY" | "COACH_NEW_SIGNUP";
   title: string;
   body: string;
   url: string;
@@ -57,6 +57,56 @@ export async function maybeSendCoachNightlySummaryPush(params: {
       body,
       url,
     },
+  });
+
+  return result.sent > 0;
+}
+
+export async function maybeSendCoachDailySignupSummaryPush(params: {
+  dateKey: string;
+  dryRun: boolean;
+  previews: ScheduledCoachPushPreview[];
+}) {
+  const { anyAdminCoachSignupAlertMode } = await import("@/lib/coach-alert-settings");
+  if (!(await anyAdminCoachSignupAlertMode("DAILY"))) {
+    return false;
+  }
+
+  const { loadCoachSignupAlertSnapshotsForDateKey } = await import(
+    "@/lib/coach-signup-alert-server"
+  );
+  const signups = await loadCoachSignupAlertSnapshotsForDateKey(params.dateKey);
+  if (signups.length === 0) {
+    return false;
+  }
+
+  const { buildCoachSignupDailyRollup } = await import("@/lib/coach-signup-alert-shared");
+  const { ADMIN_ROUTES } = await import("@/lib/admin-routes-shared");
+  const rollup = buildCoachSignupDailyRollup(signups);
+  const title = rollup.title;
+  const body = rollup.body;
+  const url = ADMIN_ROUTES.players.members;
+  const dedupeKey = `coach:COACH_NEW_SIGNUP:DAILY:${params.dateKey}`;
+
+  params.previews.push({
+    channel: "coach-push",
+    type: "COACH_NEW_SIGNUP",
+    title,
+    body,
+    url,
+    dateKey: params.dateKey,
+  });
+
+  if (params.dryRun) {
+    return true;
+  }
+
+  const { sendCoachSignupAlertPushForMode } = await import("@/lib/coach-push-send");
+  const result = await sendCoachSignupAlertPushForMode({
+    mode: "DAILY",
+    type: "COACH_NEW_SIGNUP",
+    dedupeKey,
+    message: { title, body, url },
   });
 
   return result.sent > 0;

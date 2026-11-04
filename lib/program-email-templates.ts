@@ -5,6 +5,12 @@ import {
   type CoachDailySummaryBusiness,
 } from "@/lib/coach-daily-summary-business-shared";
 import {
+  buildCoachSignupDailyRollup,
+  coachSignupPlayerDisplayName,
+  formatCoachSignupAccessLabel,
+  formatCoachSignupSourceLine,
+} from "@/lib/coach-signup-alert-shared";
+import {
   buildEmailButton,
   buildEmailInfoBox,
   buildEmailSectionLabel,
@@ -418,10 +424,15 @@ ${buildEmailFooterText()}`;
   };
 }
 
-function buildCoachDailySummaryBusinessHtml(business: CoachDailySummaryBusiness | null | undefined) {
+function buildCoachDailySummaryBusinessHtml(
+  business: CoachDailySummaryBusiness | null | undefined,
+  options?: { includeSignupDailySection?: boolean },
+) {
   if (!business) {
     return { html: "", text: "" };
   }
+
+  const includeSignupDailySection = options?.includeSignupDailySection ?? false;
 
   const sectionsHtml: string[] = [];
   const sectionsText: string[] = [];
@@ -489,7 +500,30 @@ function buildCoachDailySummaryBusinessHtml(business: CoachDailySummaryBusiness 
     );
   }
 
-  if (business.freeAccounts.length > 0) {
+  if (includeSignupDailySection && business.signupsToday.length > 0) {
+    const rollup = buildCoachSignupDailyRollup(business.signupsToday);
+    const linesHtml = business.signupsToday
+      .map((signup) => {
+        const name = coachSignupPlayerDisplayName(signup);
+        const source = formatCoachSignupSourceLine(signup);
+        const access = formatCoachSignupAccessLabel(signup);
+        return `<li style="margin:0 0 8px 0; font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:1.5; color:#0A1628;"><strong>${escapeHtml(name)}</strong> &mdash; ${escapeHtml(source)}, ${escapeHtml(access)}</li>`;
+      })
+      .join("");
+    sectionsHtml.push(
+      `${buildEmailSectionLabel("NEW SIGN-UPS TODAY")}
+      <p style="margin:0 0 8px 0; font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:1.5; color:#0A1628;">${escapeHtml(rollup.title.replace(/^Today: /, ""))}</p>
+      <ul style="margin:0 0 16px 0; padding:0 0 0 20px;">${linesHtml}</ul>`,
+    );
+    sectionsText.push(
+      `NEW SIGN-UPS TODAY\n${rollup.title.replace(/^Today: /, "")}\n${business.signupsToday
+        .map((signup) => {
+          const name = coachSignupPlayerDisplayName(signup);
+          return `- ${name} -- ${formatCoachSignupSourceLine(signup)}, ${formatCoachSignupAccessLabel(signup)}`;
+        })
+        .join("\n")}`,
+    );
+  } else if (business.freeAccounts.length > 0) {
     const linesHtml = business.freeAccounts
       .map(
         (entry) =>
@@ -528,6 +562,7 @@ export function buildCoachDailySummaryEmail(params: {
   quizCompletedToday: number;
   quizAverageScoreToday: number;
   business?: CoachDailySummaryBusiness | null;
+  includeSignupDailySection?: boolean;
 }) {
   const subject = buildCoachDailySummarySubject({
     finished: params.finished,
@@ -537,7 +572,9 @@ export function buildCoachDailySummaryEmail(params: {
   });
   const adminUrl = `${getPublicAppUrl()}/admin`;
   const leadsAdminUrl = `${getPublicAppUrl()}/admin/business/leads`;
-  const businessBlocks = buildCoachDailySummaryBusinessHtml(params.business);
+  const businessBlocks = buildCoachDailySummaryBusinessHtml(params.business, {
+    includeSignupDailySection: params.includeSignupDailySection,
+  });
 
   const finishedHtml =
     params.finishedNames.length > 0

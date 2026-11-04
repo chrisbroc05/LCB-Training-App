@@ -664,7 +664,12 @@ async function maybeSendCoachDailySummary(
     return false;
   }
 
-  const email = buildCoachDailySummaryEmail(summaryData);
+  const { anyAdminCoachSignupAlertMode } = await import("@/lib/coach-alert-settings");
+  const includeSignupDailySection = await anyAdminCoachSignupAlertMode("DAILY");
+  const email = buildCoachDailySummaryEmail({
+    ...summaryData,
+    includeSignupDailySection,
+  });
 
   previews.push({
     type,
@@ -824,6 +829,15 @@ export async function runProgramEmailScheduler(params?: {
       maybeSendCoachNightlySummaryPush({
         dateKey,
         summaryData,
+        dryRun,
+        previews: coachPushPreviews,
+      }),
+    );
+
+    const { maybeSendCoachDailySignupSummaryPush } = await import("@/lib/coach-push-scheduler");
+    await trySend("coach-daily-signup-summary-push", () =>
+      maybeSendCoachDailySignupSummaryPush({
+        dateKey,
         dryRun,
         previews: coachPushPreviews,
       }),
@@ -1008,7 +1022,12 @@ export async function sendTestProgramEmail(params: {
       if (!summaryData) {
         throw new Error("No active players for coach summary.");
       }
-      const email = buildCoachDailySummaryEmail(summaryData);
+      const { anyAdminCoachSignupAlertMode } = await import("@/lib/coach-alert-settings");
+  const includeSignupDailySection = await anyAdminCoachSignupAlertMode("DAILY");
+  const email = buildCoachDailySummaryEmail({
+    ...summaryData,
+    includeSignupDailySection,
+  });
       await sendProgramEmail({
         to: params.toEmail,
         subject: `[TEST] ${email.subject}`,

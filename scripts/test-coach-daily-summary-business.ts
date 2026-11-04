@@ -44,6 +44,7 @@ function testSubjectWithBusiness() {
       ],
       checkoutFollowUps: [],
       freeAccounts: [],
+      signupsToday: [],
     },
   });
 
@@ -69,6 +70,7 @@ function testBusinessHasContent() {
       newLeads: [],
       checkoutFollowUps: [],
       freeAccounts: [{ name: "A", accountKindLabel: "Player", email: "a@example.com" }],
+      signupsToday: [],
     }),
     true,
   );
@@ -108,6 +110,7 @@ function testEmailIncludesBusinessSections() {
         },
       ],
       freeAccounts: [],
+      signupsToday: [],
     },
   });
 

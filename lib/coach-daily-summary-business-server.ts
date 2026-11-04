@@ -291,12 +291,18 @@ export async function buildCoachDailySummaryBusinessData(
     email: user.email,
   }));
 
+  const { loadCoachSignupAlertSnapshotsForDateKey } = await import(
+    "@/lib/coach-signup-alert-server"
+  );
+  const signupsToday = await loadCoachSignupAlertSnapshotsForDateKey(dateKey);
+
   return {
     sales,
     salesTotalCents,
     newLeads,
     checkoutFollowUps,
     freeAccounts,
+    signupsToday,
   };
 }
 

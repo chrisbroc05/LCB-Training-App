@@ -56,6 +56,7 @@ export function serializeCoachAlertSettings(settings: {
   newMessagesEnabled: boolean;
   nightlySummaryPushEnabled: boolean;
   emailNightlySummaryEnabled: boolean;
+  newSignupAlertMode: import("@prisma/client").CoachSignupAlertMode;
 }): CoachAlertSettingsState {
   return {
     newVideosEnabled: settings.newVideosEnabled,
@@ -63,6 +64,7 @@ export function serializeCoachAlertSettings(settings: {
     newMessagesEnabled: settings.newMessagesEnabled,
     nightlySummaryPushEnabled: settings.nightlySummaryPushEnabled,
     emailNightlySummaryEnabled: settings.emailNightlySummaryEnabled,
+    newSignupAlertMode: settings.newSignupAlertMode,
   };
 }
 
@@ -122,4 +124,15 @@ export async function isCoachEmailSummaryEnabled() {
   }
 
   return admins.some((admin) => admin.settings.emailNightlySummaryEnabled);
+}
+
+export async function anyAdminCoachSignupAlertMode(
+  mode: import("@prisma/client").CoachSignupAlertMode,
+) {
+  const admins = await getAdminUsersWithAlertSettings();
+  if (admins.length === 0) {
+    return mode === "INSTANT";
+  }
+
+  return admins.some((admin) => admin.settings.newSignupAlertMode === mode);
 }
