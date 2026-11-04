@@ -21,6 +21,7 @@ export const ADMIN_ROUTES = {
     free: "/admin/players/free",
     organizations: "/admin/players/organizations",
     waivers: "/admin/players/waivers",
+    mediaRoster: "/admin/players/media-roster",
     testing: "/admin/testing",
   },
   content: {

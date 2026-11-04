@@ -184,7 +184,7 @@ export const LEGAL_DOCUMENTS: Record<LegalDocumentId, LegalDocumentConfig> = {
         items: [
           "You own the videos, notes, and other content you submit.",
           "You give LCB Training permission to store, view, and review your content to provide coaching to you.",
-          "We will only use your videos or name on social media, our website, or in marketing if you opt in through the media consent setting. You can turn it off anytime in Settings. Turning it off stops future use; it does not remove posts that are already published, but you can ask us to take specific posts down.",
+          "Group training footage (team sessions, clinics, drills with multiple players) is part of LCB Training programs and may be shared on LCB Training's website and social media. Media consent covers close-ups, one-on-one clips, and using your player's first name. You can choose yes or no when you sign up or in Settings. Turning consent off stops future close-ups and name use; it does not remove posts that are already published, but you can ask us to take specific posts down. Families who want a player kept out of all footage, including group videos, can contact us.",
         ],
       },
       {
@@ -342,7 +342,7 @@ export const LEGAL_DOCUMENTS: Record<LegalDocumentId, LegalDocumentConfig> = {
         type: "bullets",
         items: [
           "With the player's parent or second email contact, who can receive recaps and reminders and view message history.",
-          "On social media or our website, only if you opt in through media consent.",
+          "Group training footage on social media and our website as part of the program; close-ups, one-on-one clips, and first name only if you opt in through media consent.",
           "When required by law, or to protect the safety of a player or others.",
         ],
       },
@@ -434,7 +434,7 @@ export const LEGAL_DOCUMENTS: Record<LegalDocumentId, LegalDocumentConfig> = {
   waiver: {
     id: "waiver",
     title: "Assumption of Risk and Release of Liability (Waiver)",
-    lastUpdatedLabel: "September 29, 2026",
+    lastUpdatedLabel: "November 4, 2026",
     intro:
       "Please read carefully. This is a legal document. It affects your legal rights.",
     blocks: [
@@ -509,7 +509,15 @@ export const LEGAL_DOCUMENTS: Record<LegalDocumentId, LegalDocumentConfig> = {
       },
       {
         type: "heading",
-        text: "8. Medical emergencies",
+        text: "8. Photos and videos",
+      },
+      {
+        type: "paragraph",
+        text: "Group training footage (team sessions, clinics, drills with multiple players) is part of LCB Training programs and may be shared on LCB Training's website and social media. Separate media consent covers close-ups, one-on-one clips, and using the participant's first name. You choose yes or no when signing. Contact LCB Training if you need a player kept out of all footage, including group videos.",
+      },
+      {
+        type: "heading",
+        text: "9. Medical emergencies",
       },
       {
         type: "paragraph",
@@ -517,7 +525,7 @@ export const LEGAL_DOCUMENTS: Record<LegalDocumentId, LegalDocumentConfig> = {
       },
       {
         type: "heading",
-        text: "9. Other terms",
+        text: "10. Other terms",
       },
       {
         type: "bullets",

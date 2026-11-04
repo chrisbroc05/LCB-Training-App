@@ -8,10 +8,13 @@ import {
   buildAgreementMergeKey,
   formatAgreementSourceLabels,
   isTermsVersionOutdated,
+  mediaDisplayStatusMatchesFilter,
   type AgreementSource,
   type AgreementSourceFilter,
+  type MediaDisplayFilter,
   type UnifiedAgreementRecord,
 } from "@/lib/admin-agreements-shared";
+import { resolveMediaDisplayStatus } from "@/lib/media-consent-shared";
 import {
   buildWaiverPlayerFullName,
   isWaiverSignatureOutdated,
@@ -22,6 +25,7 @@ export type UnifiedAgreementListFilters = {
   teamSlug?: string;
   search?: string;
   source?: AgreementSourceFilter;
+  media?: MediaDisplayFilter;
 };
 
 type WaiverRow = {
@@ -39,6 +43,7 @@ type WaiverRow = {
   emergencyContactPhone: string;
   medicalNotes: string | null;
   mediaConsent: boolean;
+  mediaOptOutAll: boolean;
   typedSignature: string;
   version: string;
   signedAt: Date;
@@ -63,6 +68,7 @@ type AppRow = {
   parentConsentEmail: string | null;
   parentConsentConfirmedAt: Date | null;
   mediaConsent: boolean;
+  mediaOptOutAll: boolean;
   trainsInPerson: boolean;
   emergencyContactName: string | null;
   emergencyContactPhone: string | null;
@@ -90,6 +96,7 @@ type AgreementPartial = {
   version: string;
   signedAt: Date;
   mediaConsent: boolean;
+  mediaOptOutAll: boolean;
   acceptedByName: string | null;
   acceptedAsParent: boolean | null;
   agreementRoleLabel: string | null;
@@ -131,6 +138,7 @@ function waiverToPartial(row: WaiverRow): AgreementPartial {
     version: row.version,
     signedAt: row.signedAt,
     mediaConsent: row.mediaConsent,
+    mediaOptOutAll: row.mediaOptOutAll,
     acceptedByName: row.signerFullName,
     acceptedAsParent: row.playerAge < 18,
     agreementRoleLabel: formatLegalAgreementRole(row.playerAge < 18),
@@ -176,6 +184,7 @@ function appToPartial(row: AppRow): AgreementPartial {
     version: row.termsVersion ?? "",
     signedAt: row.termsAcceptedAt,
     mediaConsent: row.mediaConsent,
+    mediaOptOutAll: row.mediaOptOutAll,
     acceptedByName: row.acceptedByName,
     acceptedAsParent: row.acceptedAsParent,
     agreementRoleLabel: row.acceptedByName
@@ -229,6 +238,7 @@ function mergePartials(left: AgreementPartial, right: AgreementPartial): Agreeme
     version: primary.version || secondary.version,
     signedAt,
     mediaConsent: primary.mediaConsent,
+    mediaOptOutAll: primary.mediaOptOutAll || secondary.mediaOptOutAll,
     acceptedByName: primary.acceptedByName ?? secondary.acceptedByName,
     acceptedAsParent: primary.acceptedAsParent ?? secondary.acceptedAsParent,
     agreementRoleLabel: primary.agreementRoleLabel ?? secondary.agreementRoleLabel,
@@ -290,6 +300,11 @@ function serializeMerged(record: AgreementPartial): UnifiedAgreementRecord {
     version: record.version,
     signedAt: record.signedAt.toISOString(),
     mediaConsent: record.mediaConsent,
+    mediaOptOutAll: record.mediaOptOutAll,
+    mediaDisplayStatus: resolveMediaDisplayStatus({
+      mediaConsent: record.mediaConsent,
+      mediaOptOutAll: record.mediaOptOutAll,
+    }),
     acceptedByName: record.acceptedByName,
     acceptedAsParent: record.acceptedAsParent,
     agreementRoleLabel: record.agreementRoleLabel,
@@ -352,6 +367,7 @@ export async function listUnifiedAgreements(filters: UnifiedAgreementListFilters
         emergencyContactPhone: true,
         medicalNotes: true,
         mediaConsent: true,
+        mediaOptOutAll: true,
         typedSignature: true,
         version: true,
         signedAt: true,
@@ -381,6 +397,7 @@ export async function listUnifiedAgreements(filters: UnifiedAgreementListFilters
         parentConsentEmail: true,
         parentConsentConfirmedAt: true,
         mediaConsent: true,
+        mediaOptOutAll: true,
         trainsInPerson: true,
         emergencyContactName: true,
         emergencyContactPhone: true,
@@ -446,6 +463,13 @@ export async function listUnifiedAgreements(filters: UnifiedAgreementListFilters
 
   if (search) {
     records = records.filter((record) => recordMatchesSearch(record, search));
+  }
+
+  const mediaFilter = filters.media ?? "ALL";
+  if (mediaFilter !== "ALL") {
+    records = records.filter((record) =>
+      mediaDisplayStatusMatchesFilter(record.mediaDisplayStatus, mediaFilter),
+    );
   }
 
   return records;

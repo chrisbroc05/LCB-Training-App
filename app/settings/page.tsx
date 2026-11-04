@@ -105,6 +105,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
       acceptedByName: true,
       acceptedAsParent: true,
       mediaConsent: true,
+      mediaOptOutAll: true,
       trainsInPerson: true,
       emergencyContactName: true,
       emergencyContactPhone: true,
@@ -205,6 +206,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
           acceptedByName={user.acceptedByName}
           acceptedAsParent={user.acceptedAsParent}
           mediaConsent={user.mediaConsent}
+          mediaOptOutAll={user.mediaOptOutAll}
         />
         <InPersonTrainingSection initialInfo={serializeInPersonTrainingInfo(user)} />
         <OrgTeamSection />

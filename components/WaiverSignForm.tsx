@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import MediaConsentChoiceFields from "@/components/MediaConsentChoiceFields";
 import { LEGAL_PAGE_PATHS } from "@/lib/legal-shared";
 import {
   createEmptyWaiverSignFormValues,
@@ -145,11 +146,6 @@ export default function WaiverSignForm({ initialTeamName = "", teamLocked = fals
       </div>
     );
   }
-
-  const mediaConsentLabel =
-    values.players.length > 1
-      ? "OK for Coach Broc to share videos of these players on LCB Training social media and website."
-      : "OK for Coach Broc to share videos of this player on LCB Training social media and website.";
 
   return (
     <div className="mx-auto w-full max-w-[760px] px-4 py-6 sm:px-6 sm:py-8">
@@ -371,15 +367,11 @@ export default function WaiverSignForm({ initialTeamName = "", teamLocked = fals
             </span>
           </label>
 
-          <label className="flex items-start gap-3">
-            <input
-              type="checkbox"
-              checked={values.mediaConsent}
-              onChange={(event) => updateValues({ mediaConsent: event.target.checked })}
-              className="mt-1 h-4 w-4 shrink-0 accent-[#22c55e]"
-            />
-            <span className="text-sm text-zinc-300">{mediaConsentLabel}</span>
-          </label>
+          <MediaConsentChoiceFields
+            mediaConsent={values.mediaConsent}
+            onChange={(mediaConsent) => updateValues({ mediaConsent })}
+            namePrefix="waiverMediaConsent"
+          />
 
           <label className={labelClass}>
             Type your full name to sign

@@ -9,9 +9,13 @@ import {
   buildWaiverOutdatedTooltip,
   formatRosterPlayerStatusLabel,
   getRosterPlayerStatuses,
+  MEDIA_DISPLAY_FILTER_OPTIONS,
   type AgreementSourceFilter,
+  type MediaDisplayFilter,
   type UnifiedAgreementRecord,
 } from "@/lib/admin-agreements-shared";
+import MediaDisplayBadge from "@/app/admin/components/MediaDisplayBadge";
+import AdminMediaOptOutToggle from "@/app/admin/AdminMediaOptOutToggle";
 import { LEGAL_DOCS_VERSION } from "@/lib/legal-shared";
 import { WAIVER_VERSION } from "@/lib/waiver-sign-shared";
 import {
@@ -31,6 +35,7 @@ export default function AdminWaiversPanel() {
   const [teamFilter, setTeamFilter] = useState("");
   const [search, setSearch] = useState("");
   const [sourceFilter, setSourceFilter] = useState<AgreementSourceFilter>("all");
+  const [mediaFilter, setMediaFilter] = useState<MediaDisplayFilter>("ALL");
   const [teamLinkName, setTeamLinkName] = useState("");
   const [rosterText, setRosterText] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -53,6 +58,9 @@ export default function AdminWaiversPanel() {
     if (sourceFilter !== "all") {
       params.set("source", sourceFilter);
     }
+    if (mediaFilter !== "ALL") {
+      params.set("media", mediaFilter);
+    }
 
     const response = await fetch(`/api/admin/waivers?${params.toString()}`, { cache: "no-store" });
     const data = (await response.json().catch(() => ({}))) as {
@@ -70,7 +78,7 @@ export default function AdminWaiversPanel() {
 
     setAgreements(data.agreements ?? []);
     setTeamOptions(data.teams ?? []);
-  }, [teamFilter, search, sourceFilter]);
+  }, [teamFilter, search, sourceFilter, mediaFilter]);
 
   const sendResignLink = async (record: UnifiedAgreementRecord) => {
     if (!record.waiverSignatureId) {
@@ -221,6 +229,20 @@ export default function AdminWaiversPanel() {
               ))}
             </select>
           </label>
+          <label className="text-sm text-zinc-300">
+            Media
+            <select
+              value={mediaFilter}
+              onChange={(event) => setMediaFilter(event.target.value as MediaDisplayFilter)}
+              className="mt-1 w-full rounded-xl border border-[#2b3650] bg-black px-4 py-3 text-sm text-zinc-100"
+            >
+              {MEDIA_DISPLAY_FILTER_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
           <label className="text-sm text-zinc-300 sm:col-span-2 lg:col-span-1">
             Search
             <input
@@ -363,7 +385,9 @@ export default function AdminWaiversPanel() {
                 {!record.waiverDocumentVersion && !record.termsDocumentVersion ? (
                   <p>{record.version}</p>
                 ) : null}
-                <p className="mt-1">{record.mediaConsent ? "Media yes" : "Media no"}</p>
+                <div className="mt-1">
+                  <MediaDisplayBadge status={record.mediaDisplayStatus} />
+                </div>
               </div>
             </div>
           </button>
@@ -467,9 +491,33 @@ export default function AdminWaiversPanel() {
                 <dd>{selected.medicalNotes}</dd>
               </div>
             ) : null}
-            <div>
-              <dt className="text-zinc-500">Media consent</dt>
-              <dd>{selected.mediaConsent ? "Yes" : "No"}</dd>
+            <div className="sm:col-span-2">
+              <dt className="text-zinc-500">Media</dt>
+              <dd className="mt-1">
+                <AdminMediaOptOutToggle
+                  memberId={selected.userId ?? undefined}
+                  waiverSignatureId={
+                    selected.waiverSignatureId && !selected.userId
+                      ? selected.waiverSignatureId
+                      : undefined
+                  }
+                  mediaOptOutAll={selected.mediaOptOutAll}
+                  mediaDisplayStatus={selected.mediaDisplayStatus}
+                  onUpdated={(next) => {
+                    setAgreements((current) =>
+                      current.map((row) =>
+                        row.id === selected.id
+                          ? {
+                              ...row,
+                              mediaOptOutAll: next.mediaOptOutAll,
+                              mediaDisplayStatus: next.mediaDisplayStatus,
+                            }
+                          : row,
+                      ),
+                    );
+                  }}
+                />
+              </dd>
             </div>
             {selected.typedSignature ? (
               <div>

@@ -82,6 +82,7 @@ export async function buildAdminProgramPlayerDetail(enrollmentId: string, now = 
           parentConsentEmail: true,
           parentConsentConfirmedAt: true,
           mediaConsent: true,
+          mediaOptOutAll: true,
           trainsInPerson: true,
           emergencyContactName: true,
           emergencyContactPhone: true,
@@ -259,7 +260,10 @@ export async function buildAdminProgramPlayerDetail(enrollmentId: string, now = 
           : "Not accepted",
         acceptedByName: enrollment.user.acceptedByName,
         agreementRoleLabel: formatLegalAgreementRole(enrollment.user.acceptedAsParent),
-        mediaConsentLabel: formatMediaConsentLabel(enrollment.user.mediaConsent),
+        mediaConsentLabel: formatMediaConsentLabel(
+          enrollment.user.mediaConsent,
+          enrollment.user.mediaOptOutAll,
+        ),
         parentConsentStatus: formatParentConsentStatus({
           playerAge: enrollment.user.playerAge,
           parentConsentEmail: enrollment.user.parentConsentEmail,

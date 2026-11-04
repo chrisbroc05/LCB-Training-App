@@ -15,6 +15,7 @@ import AdminMemberPlanBadge from "@/app/admin/AdminMemberPlanBadge";
 import AdminMembershipLevelSection from "@/app/admin/AdminMembershipLevelSection";
 import AdminMembershipSubscriptionPanel from "@/app/admin/AdminMembershipSubscriptionPanel";
 import AdminMemberCommissionPanel from "@/app/admin/AdminMemberCommissionPanel";
+import AdminMediaOptOutToggle from "@/app/admin/AdminMediaOptOutToggle";
 import type { MembershipBillingIntervalKey } from "@/lib/membership-billing-shared";
 import type { MembershipLevelKey } from "@/lib/membership-levels-shared";
 import type { MemberProductAccessSummary } from "@/lib/admin-product-access-shared";
@@ -51,7 +52,9 @@ export type MemberDetail = {
     acceptedAsParent: boolean;
     agreementRoleLabel: string;
     mediaConsent: boolean;
+    mediaOptOutAll: boolean;
     mediaConsentLabel: string;
+    mediaDisplayStatus: import("@/lib/media-consent-shared").MediaDisplayStatus;
   };
   inPersonTraining: InPersonTrainingInfo;
   hasStripeSubscription: boolean;
@@ -320,10 +323,11 @@ export default function MemberDetailContent({
             {detail.legalAcceptance.acceptedByName} ({detail.legalAcceptance.agreementRoleLabel})
           </p>
         ) : null}
-        <p className="mt-2">
-          <span className="font-semibold text-zinc-100">Media consent:</span>{" "}
-          {detail.legalAcceptance.mediaConsentLabel}
-        </p>
+        <AdminMediaOptOutToggle
+          memberId={detail.id}
+          mediaOptOutAll={detail.legalAcceptance.mediaOptOutAll}
+          mediaDisplayStatus={detail.legalAcceptance.mediaDisplayStatus}
+        />
       </div>
 
       <div className="rounded-xl border border-[#2b3650] bg-[#0b1324]/70 p-4 text-sm text-zinc-300">

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import MediaConsentChoiceFields from "@/components/MediaConsentChoiceFields";
 import type { AccountRole } from "@/lib/account-shared";
 import type { LegalAgreementRole } from "@/lib/legal-shared";
 import {
@@ -231,19 +232,11 @@ export default function LegalAgreementFields({
       ) : null}
 
       {showMediaConsent ? (
-        <label className="flex items-start gap-3">
-          <input
-            type="checkbox"
-            checked={values.mediaConsent}
-            onChange={(event) =>
-              onChange({ ...values, mediaConsent: event.target.checked })
-            }
-            className="mt-1 h-4 w-4 shrink-0 accent-[#22c55e]"
-          />
-          <span className={labelClass}>
-            OK for Coach Broc to share my videos on LCB Training social media and website.
-          </span>
-        </label>
+        <MediaConsentChoiceFields
+          mediaConsent={values.mediaConsent}
+          onChange={(mediaConsent) => onChange({ ...values, mediaConsent })}
+          namePrefix="signupMediaConsent"
+        />
       ) : null}
 
       {error ? <p className="text-sm text-red-300">{error}</p> : null}

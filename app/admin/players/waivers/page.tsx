@@ -1,4 +1,5 @@
 import AdminPageHeader from "@/app/admin/AdminPageHeader";
+import AdminMediaPolicyUpdatePanel from "@/app/admin/AdminMediaPolicyUpdatePanel";
 import AdminWaiversPanel from "@/app/admin/waivers/AdminWaiversPanel";
 import { ADMIN_ROUTES } from "@/lib/admin-routes-shared";
 
@@ -11,6 +12,7 @@ export default function AdminPlayersWaiversPage() {
         backHref={ADMIN_ROUTES.players.hub}
         backLabel="Players"
       />
+      <AdminMediaPolicyUpdatePanel />
       <AdminWaiversPanel />
     </div>
   );

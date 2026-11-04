@@ -1,3 +1,4 @@
+import { formatMediaConsentLabel as formatMediaConsentDisplayLabel } from "@/lib/media-consent-shared";
 import { isValidEmailFormat } from "@/lib/second-email-shared";
 
 export const LEGAL_DOCS_VERSION = "2026-10-21";
@@ -147,8 +148,11 @@ export function formatLegalAgreementRole(acceptedAsParent: boolean) {
   return acceptedAsParent ? "Parent or guardian" : "Player (18+)";
 }
 
-export function formatMediaConsentLabel(mediaConsent: boolean) {
-  return mediaConsent ? "Yes" : "No";
+export function formatMediaConsentLabel(
+  mediaConsent: boolean,
+  mediaOptOutAll?: boolean,
+) {
+  return formatMediaConsentDisplayLabel({ mediaConsent, mediaOptOutAll });
 }
 
 function formatParentConsentSinceDate(value: Date | string) {

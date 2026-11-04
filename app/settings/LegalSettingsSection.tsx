@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import SettingsCard from "@/app/settings/SettingsCard";
 import { settingsLabelClass } from "@/app/settings/settings-styles";
+import MediaConsentChoiceFields from "@/components/MediaConsentChoiceFields";
 import {
   formatLegalAgreementRole,
   formatMediaConsentLabel,
@@ -16,6 +17,7 @@ type LegalSettingsSectionProps = {
   acceptedByName: string | null;
   acceptedAsParent: boolean;
   mediaConsent: boolean;
+  mediaOptOutAll?: boolean;
 };
 
 export default function LegalSettingsSection({
@@ -24,6 +26,7 @@ export default function LegalSettingsSection({
   acceptedByName,
   acceptedAsParent,
   mediaConsent: initialMediaConsent,
+  mediaOptOutAll = false,
 }: LegalSettingsSectionProps) {
   const [mediaConsent, setMediaConsent] = useState(initialMediaConsent);
   const [saving, setSaving] = useState(false);
@@ -88,19 +91,25 @@ export default function LegalSettingsSection({
       </div>
 
       <div className="mt-6 rounded-2xl border border-[#2b3650] bg-black/30 p-4">
-        <label className="flex items-start gap-3">
-          <input
-            type="checkbox"
-            checked={mediaConsent}
-            disabled={saving}
-            onChange={(event) => void handleMediaConsentChange(event.target.checked)}
-            className="mt-1 h-4 w-4 accent-[#22c55e]"
-          />
-          <span className="text-sm text-zinc-300">
-            OK for Coach Broc to share my videos on LCB Training social media and website. Current
-            setting: {formatMediaConsentLabel(mediaConsent)}.
-          </span>
-        </label>
+        {mediaOptOutAll ? (
+          <p className="text-sm text-zinc-300">
+            Your family is marked{" "}
+            <strong className="text-zinc-100">Keep out of all footage</strong> by Coach Broc. Email
+            chrisbroc05@gmail.com if that should change.
+          </p>
+        ) : (
+          <>
+            <MediaConsentChoiceFields
+              mediaConsent={mediaConsent}
+              disabled={saving}
+              onChange={(nextValue) => void handleMediaConsentChange(nextValue)}
+              namePrefix="settingsMediaConsent"
+            />
+            <p className="mt-3 text-sm text-zinc-400">
+              Current setting: {formatMediaConsentLabel(mediaConsent, mediaOptOutAll)}.
+            </p>
+          </>
+        )}
       </div>
 
       {error ? <p className="mt-3 text-sm text-red-300">{error}</p> : null}

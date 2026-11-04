@@ -1,5 +1,16 @@
 import { LEGAL_DOCS_VERSION } from "@/lib/legal-shared";
+import {
+  resolveMediaDisplayStatus,
+  type MediaDisplayFilter,
+  type MediaDisplayStatus,
+} from "@/lib/media-consent-shared";
 import { normalizePersonName, WAIVER_VERSION } from "@/lib/waiver-sign-shared";
+
+export type { MediaDisplayFilter };
+export {
+  MEDIA_DISPLAY_FILTER_OPTIONS,
+  mediaDisplayStatusMatchesFilter,
+} from "@/lib/media-consent-shared";
 
 export type AgreementSource = "waiver_link" | "app_signup";
 
@@ -43,6 +54,8 @@ export type UnifiedAgreementRecord = {
   version: string;
   signedAt: string;
   mediaConsent: boolean;
+  mediaOptOutAll: boolean;
+  mediaDisplayStatus: MediaDisplayStatus;
   acceptedByName: string | null;
   acceptedAsParent: boolean | null;
   agreementRoleLabel: string | null;

@@ -166,6 +166,13 @@ export async function loadPlayersHubCards(): Promise<AdminSectionHubCard[]> {
       statLabel: "Signatures",
     },
     {
+      href: ADMIN_ROUTES.players.mediaRoster,
+      title: "Media roster",
+      description: "Media choices by team before you post.",
+      statValue: "View",
+      statLabel: "Yes / Group / Keep out",
+    },
+    {
       href: ADMIN_ROUTES.players.testing,
       title: "Team testing",
       description: "Testing sessions, metrics, and player profiles.",

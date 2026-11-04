@@ -16,6 +16,10 @@ import {
 import { memberProfileSelect, serializeMemberProfile } from "@/lib/player-profile";
 import { formatDateTime } from "@/lib/format-date";
 import {
+  resolveMediaDisplayStatus,
+  type MediaDisplayStatus,
+} from "@/lib/media-consent-shared";
+import {
   formatLegalAgreementRole,
   formatMediaConsentLabel,
 } from "@/lib/legal-shared";
@@ -79,6 +83,8 @@ export const adminMemberListSelect = {
   coachingSubmissionsUsedThisMonth: true,
   coachingSubmissionPeriod: true,
   eliteRolloverCredits: true,
+  mediaConsent: true,
+  mediaOptOutAll: true,
   _count: {
     select: {
       swingAnalysisSubmissions: true,
@@ -122,6 +128,8 @@ type AdminMemberListRecord = {
   coachingSubmissionsUsedThisMonth: number;
   coachingSubmissionPeriod: string | null;
   eliteRolloverCredits: number;
+  mediaConsent: boolean;
+  mediaOptOutAll: boolean;
   _count: {
     swingAnalysisSubmissions: number;
     mentalGameSubmissions: number;
@@ -244,6 +252,12 @@ export function serializeAdminMemberSummary(user: AdminMemberListRecord) {
           trialEndsAt: user.organization.trialEndsAt?.toISOString() ?? null,
         }
       : null,
+    mediaConsent: user.mediaConsent,
+    mediaOptOutAll: user.mediaOptOutAll,
+    mediaDisplayStatus: resolveMediaDisplayStatus({
+      mediaConsent: user.mediaConsent,
+      mediaOptOutAll: user.mediaOptOutAll,
+    }) satisfies MediaDisplayStatus,
   };
 }
 
@@ -344,6 +358,7 @@ export const adminMemberDetailSelect = {
   acceptedByName: true,
   acceptedAsParent: true,
   mediaConsent: true,
+  mediaOptOutAll: true,
   trainsInPerson: true,
   emergencyContactName: true,
   emergencyContactPhone: true,
@@ -664,7 +679,12 @@ export function serializeAdminMemberDetail(
       acceptedAsParent: user.acceptedAsParent,
       agreementRoleLabel: formatLegalAgreementRole(user.acceptedAsParent),
       mediaConsent: user.mediaConsent,
-      mediaConsentLabel: formatMediaConsentLabel(user.mediaConsent),
+      mediaOptOutAll: user.mediaOptOutAll,
+      mediaConsentLabel: formatMediaConsentLabel(user.mediaConsent, user.mediaOptOutAll),
+      mediaDisplayStatus: resolveMediaDisplayStatus({
+        mediaConsent: user.mediaConsent,
+        mediaOptOutAll: user.mediaOptOutAll,
+      }),
     },
     inPersonTraining: serializeInPersonTrainingInfo(user),
     hasStripeSubscription: Boolean(user.stripeSubscriptionId),

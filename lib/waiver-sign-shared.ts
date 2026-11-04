@@ -1,12 +1,12 @@
 import { LEGAL_PAGE_PATHS } from "@/lib/legal-shared";
 
 /** Bumps only when /sign waiver summary or full waiver page text changes (not Terms-only updates). */
-export const WAIVER_VERSION = "2026-09-29";
+export const WAIVER_VERSION = "2026-11-04";
 
 /**
  * Waiver rows historically stored LEGAL_DOCS_VERSION at sign time. These legal bumps did not change waiver text.
  */
-export const WAIVER_VERSION_EQUIVALENT_TO_CURRENT = ["2026-10-21"] as const;
+export const WAIVER_VERSION_EQUIVALENT_TO_CURRENT = ["2026-09-29", "2026-10-21"] as const;
 
 export function isWaiverSignatureOutdated(version: string | null | undefined) {
   const normalized = version?.trim();
@@ -54,6 +54,8 @@ If the participant is under 18, a parent or legal guardian must agree for the pa
 In an emergency during an in-person activity, you authorize LCB Training to call emergency services and seek first aid or medical treatment if you cannot be reached.
 
 This Waiver is governed by Illinois law. Your electronic agreement (checking the box and typing your name) has the same effect as a signature.
+
+Photos and videos: Group training footage may be shared on LCB Training's website and social media. Separate media consent on the form covers close-ups, one-on-one clips, and using a player's first name.
 
 Read the full documents before signing:
 Terms: ${LEGAL_PAGE_PATHS.terms}

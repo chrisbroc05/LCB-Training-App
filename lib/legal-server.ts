@@ -745,6 +745,34 @@ export async function updateUserMediaConsent(userId: string, mediaConsent: boole
     select: {
       mediaConsent: true,
       mediaConsentUpdatedAt: true,
+      mediaOptOutAll: true,
+    },
+  });
+}
+
+export async function updateUserMediaOptOutAll(userId: string, mediaOptOutAll: boolean) {
+  return prisma.user.update({
+    where: { id: userId },
+    data: { mediaOptOutAll },
+    select: {
+      mediaConsent: true,
+      mediaOptOutAll: true,
+      mediaConsentUpdatedAt: true,
+    },
+  });
+}
+
+export async function updateWaiverMediaOptOutAll(
+  waiverSignatureId: string,
+  mediaOptOutAll: boolean,
+) {
+  return prisma.waiverSignature.update({
+    where: { id: waiverSignatureId },
+    data: { mediaOptOutAll },
+    select: {
+      id: true,
+      mediaConsent: true,
+      mediaOptOutAll: true,
     },
   });
 }

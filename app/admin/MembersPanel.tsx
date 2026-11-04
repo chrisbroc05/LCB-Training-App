@@ -13,6 +13,7 @@ import {
   formatOptionalDateTime,
 } from "@/lib/format-date";
 import { formatDatabaseTierLabel, type DatabaseTier } from "@/lib/membership";
+import MediaDisplayBadge from "@/app/admin/components/MediaDisplayBadge";
 import {
   ADMIN_MEMBER_LEVEL_FILTERS,
   adminMemberLevelFilterLabel,
@@ -20,6 +21,11 @@ import {
   memberMatchesAdminLevelFilter,
   type AdminMemberLevelFilter,
 } from "@/lib/admin-member-filters-shared";
+import {
+  MEDIA_DISPLAY_FILTER_OPTIONS,
+  mediaDisplayStatusMatchesFilter,
+  type MediaDisplayFilter,
+} from "@/lib/media-consent-shared";
 
 type MemberSummary = {
   id: string;
@@ -53,6 +59,7 @@ type MemberSummary = {
   monthlySubmissionsRemaining: number | null;
   playbookSubmissionsRemaining: number | null;
   playbookSubmissionsLimit: number | null;
+  mediaDisplayStatus: import("@/lib/media-consent-shared").MediaDisplayStatus;
 };
 
 function formatRemainingSubmissions(member: MemberSummary) {
@@ -105,6 +112,7 @@ export default function MembersPanel() {
   const [searchQuery, setSearchQuery] = useState("");
   const [levelFilter, setLevelFilter] = useState<AdminMemberLevelFilter>("ALL");
   const [orgFilter, setOrgFilter] = useState<string>("ALL");
+  const [mediaFilter, setMediaFilter] = useState<MediaDisplayFilter>("ALL");
   const [tierDraft, setTierDraft] = useState<DatabaseTier>("FREE");
   const [notesDraft, setNotesDraft] = useState("");
   const [tierError, setTierError] = useState("");
@@ -213,6 +221,10 @@ export default function MembersPanel() {
         }
       }
 
+      if (!mediaDisplayStatusMatchesFilter(member.mediaDisplayStatus, mediaFilter)) {
+        return false;
+      }
+
       if (!normalizedQuery) {
         return true;
       }
@@ -221,7 +233,7 @@ export default function MembersPanel() {
       const email = member.email.toLowerCase();
       return name.includes(normalizedQuery) || email.includes(normalizedQuery);
     });
-  }, [members, searchQuery, levelFilter, orgFilter]);
+  }, [members, searchQuery, levelFilter, orgFilter, mediaFilter]);
 
   const updateMemberInList = (updatedMember: MemberDetail) => {
     setMembers((current) =>
@@ -618,6 +630,23 @@ export default function MembersPanel() {
               </select>
             </div>
             <div className="w-full md:w-auto">
+              <label className="block text-sm font-medium text-zinc-200" htmlFor="member-media-filter">
+                Media
+              </label>
+              <select
+                id="member-media-filter"
+                value={mediaFilter}
+                onChange={(event) => setMediaFilter(event.target.value as MediaDisplayFilter)}
+                className="mt-2 w-full min-w-0 rounded-lg border border-[#2b3650] bg-[#0b1324]/80 px-3 py-2 text-sm text-zinc-100 md:min-w-[160px]"
+              >
+                {MEDIA_DISPLAY_FILTER_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="w-full md:w-auto">
               <label
                 className="block text-sm font-medium text-zinc-200"
                 htmlFor="member-org-filter"
@@ -665,10 +694,13 @@ export default function MembersPanel() {
                           </p>
                           <p className="mt-0.5 truncate text-xs text-zinc-400">{member.email}</p>
                         </div>
-                        <AdminMemberPlanBadge
-                          planDisplayLabel={member.planDisplayLabel}
-                          planExpiryLabel={member.planExpiryLabel}
-                        />
+                        <div className="flex flex-col items-end gap-2">
+                          <MediaDisplayBadge status={member.mediaDisplayStatus} />
+                          <AdminMemberPlanBadge
+                            planDisplayLabel={member.planDisplayLabel}
+                            planExpiryLabel={member.planExpiryLabel}
+                          />
+                        </div>
                       </div>
                       <p className="mt-2 text-xs text-zinc-500">{member.productAccessCompact}</p>
                       <div className="mt-3 flex items-center justify-between text-xs text-zinc-400">
@@ -690,6 +722,7 @@ export default function MembersPanel() {
                     <tr className="border-b border-[#2b3650] text-xs uppercase tracking-wide text-zinc-400">
                       <th className="px-3 py-3 font-semibold">Name</th>
                       <th className="px-3 py-3 font-semibold">Email</th>
+                      <th className="px-3 py-3 font-semibold">Media</th>
                       <th className="px-3 py-3 font-semibold">Plan</th>
                       <th className="px-3 py-3 font-semibold">Products</th>
                       <th className="px-3 py-3 font-semibold">Member Since</th>
@@ -715,6 +748,9 @@ export default function MembersPanel() {
                             {member.name?.trim() || "Unnamed member"}
                           </td>
                           <td className="px-3 py-3 text-zinc-300">{member.email}</td>
+                          <td className="px-3 py-3">
+                            <MediaDisplayBadge status={member.mediaDisplayStatus} />
+                          </td>
                           <td className="px-3 py-3">
                             <AdminMemberPlanBadge
                           planDisplayLabel={member.planDisplayLabel}

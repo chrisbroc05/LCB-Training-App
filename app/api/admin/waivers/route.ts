@@ -7,7 +7,7 @@ import {
   listUnifiedAgreements,
   resolveTeamSlugFilter,
 } from "@/lib/admin-agreements-server";
-import type { AgreementSourceFilter } from "@/lib/admin-agreements-shared";
+import type { AgreementSourceFilter, MediaDisplayFilter } from "@/lib/admin-agreements-shared";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -22,6 +22,7 @@ export async function GET(request: Request) {
   const team = url.searchParams.get("team")?.trim() ?? "";
   const search = url.searchParams.get("search")?.trim() ?? "";
   const source = (url.searchParams.get("source")?.trim() ?? "all") as AgreementSourceFilter;
+  const media = (url.searchParams.get("media")?.trim() ?? "ALL") as MediaDisplayFilter;
   const teamSlug = resolveTeamSlugFilter(team);
 
   const [agreements, teams] = await Promise.all([
@@ -29,6 +30,7 @@ export async function GET(request: Request) {
       teamSlug,
       search: search || undefined,
       source,
+      media,
     }),
     listDistinctWaiverTeamNames(),
   ]);

@@ -258,6 +258,7 @@ model User {
   parentConsentManualResendCount Int @default(0)
   mediaConsent           Boolean                @default(false)
   mediaConsentUpdatedAt  DateTime?
+  mediaOptOutAll         Boolean                @default(false)
   trainsInPerson         Boolean                @default(false)
   emergencyContactName   String?
   emergencyContactPhone  String?
@@ -518,6 +519,7 @@ model WaiverSignature {
   emergencyContactPhone String
   medicalNotes          String?
   mediaConsent          Boolean          @default(false)
+  mediaOptOutAll        Boolean          @default(false)
   typedSignature        String
   version               String
   signedAt              DateTime         @default(now())
@@ -533,6 +535,15 @@ model WaiverSignature {
   @@index([userId])
   @@index([ip, signedAt])
   @@index([submissionBatchId])
+}
+
+model MediaPolicyUpdateEmailLog {
+  id        String   @id @default(cuid())
+  email     String
+  dedupeKey String   @unique
+  sentAt    DateTime @default(now())
+
+  @@index([email])
 }
 
 model MarketingEmailLog {
