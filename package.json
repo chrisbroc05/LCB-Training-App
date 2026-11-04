@@ -24,6 +24,8 @@
     "test:coach-daily-summary-business": "npx --yes tsx scripts/test-coach-daily-summary-business.ts",
     "test:coach-signup-alert-shared": "npx --yes tsx scripts/test-coach-signup-alert-shared.ts",
     "test:media-consent-shared": "npx --yes tsx scripts/test-media-consent-shared.ts",
+    "test:club-report-shared": "npx --yes tsx scripts/test-club-report-shared.ts",
+    "test:org-trial-submission-reminder-shared": "npx --yes tsx scripts/test-org-trial-submission-reminder-shared.ts",
     "test:program-stats": "npx --yes tsx scripts/test-program-stats.ts",
     "test:program-task-completion": "npx --yes tsx scripts/test-program-task-completion.ts",
     "test:coaching-submissions": "npx --yes tsx scripts/test-coaching-submissions.ts",

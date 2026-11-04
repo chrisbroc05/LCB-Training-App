@@ -62,6 +62,7 @@ export const adminMemberListSelect = {
   organizationId: true,
   orgTrialQuickReportUsed: true,
   coreQuickReportNextEligibleAt: true,
+  clubReportExcluded: true,
   organization: {
     select: {
       id: true,
@@ -108,6 +109,7 @@ type AdminMemberListRecord = {
   organizationId: string | null;
   orgTrialQuickReportUsed: boolean;
   coreQuickReportNextEligibleAt: Date | null;
+  clubReportExcluded: boolean;
   organization: {
     id?: string;
     name?: string;
@@ -242,6 +244,7 @@ export function serializeAdminMemberSummary(user: AdminMemberListRecord) {
     organizationName: user.organization?.name ?? null,
     orgTrialQuickReportUsed: user.orgTrialQuickReportUsed,
     coreQuickReportNextEligibleAt: user.coreQuickReportNextEligibleAt?.toISOString() ?? null,
+    clubReportExcluded: user.clubReportExcluded,
     playbookLegacyAccess: user.playbookLegacyAccess,
     organization: user.organization
       ? {
@@ -300,6 +303,7 @@ export const adminMemberDetailSelect = {
   organizationId: true,
   orgTrialQuickReportUsed: true,
   coreQuickReportNextEligibleAt: true,
+  clubReportExcluded: true,
   commissionEligible: true,
   commissionIneligibleReason: true,
   commissionEligibleAdminOverride: true,

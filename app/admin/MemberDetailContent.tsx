@@ -15,6 +15,7 @@ import AdminMemberPlanBadge from "@/app/admin/AdminMemberPlanBadge";
 import AdminMembershipLevelSection from "@/app/admin/AdminMembershipLevelSection";
 import AdminMembershipSubscriptionPanel from "@/app/admin/AdminMembershipSubscriptionPanel";
 import AdminMemberCommissionPanel from "@/app/admin/AdminMemberCommissionPanel";
+import AdminMemberClubReportPanel from "@/app/admin/AdminMemberClubReportPanel";
 import AdminMediaOptOutToggle from "@/app/admin/AdminMediaOptOutToggle";
 import type { MembershipBillingIntervalKey } from "@/lib/membership-billing-shared";
 import type { MembershipLevelKey } from "@/lib/membership-levels-shared";
@@ -43,6 +44,9 @@ export type MemberDetail = {
   monthlySubmissionsRemaining: number | null;
   playbookSubmissionsRemaining: number | null;
   playbookSubmissionsLimit: number | null;
+  organizationId: string | null;
+  organizationName: string | null;
+  clubReportExcluded: boolean;
   adminNotes: string | null;
   legalAcceptance: {
     termsVersion: string | null;
@@ -299,6 +303,16 @@ export default function MemberDetailContent({
             <AdminMemberCommissionPanel
               memberId={detail.id}
               commission={detail.commission}
+              onUpdated={onMemberUpdated}
+            />
+          </div>
+        ) : null}
+        {detail.organizationId && detail.organizationName ? (
+          <div className="mt-4">
+            <AdminMemberClubReportPanel
+              memberId={detail.id}
+              organizationName={detail.organizationName}
+              clubReportExcluded={detail.clubReportExcluded}
               onUpdated={onMemberUpdated}
             />
           </div>

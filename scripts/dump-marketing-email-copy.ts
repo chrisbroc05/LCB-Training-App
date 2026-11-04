@@ -10,6 +10,7 @@ import {
   buildFollowupOtherSixDay4Email,
   buildFollowupSampleDayDay7Email,
   buildFreeSubmissionReminderEmail,
+  buildOrgTrialSubmissionReminderEmail,
   buildMarketingTestSubmissionContext,
   buildWelcomeMarketingEmail,
 } from "../lib/marketing-email-templates";
@@ -48,6 +49,7 @@ function main() {
   const copies: Array<[string, { subject: string; text: string }]> = [
     ["WELCOME.txt", buildWelcomeMarketingEmail(recipient)],
     ["FREE_SUBMISSION_REMINDER.txt", buildFreeSubmissionReminderEmail(recipient)],
+    ["ORG_TRIAL_SUBMISSION_REMINDER.txt", buildOrgTrialSubmissionReminderEmail(recipient)],
     ["FOLLOWUP_DRILLS_DAY_2.txt", buildFollowupDrillsDay2Email(recipient, submission)],
     ["FOLLOWUP_OTHER_SIX_DAY_4.txt", buildFollowupOtherSixDay4Email(recipient)],
     ["FOLLOWUP_SAMPLE_DAY_DAY_7.txt", buildFollowupSampleDayDay7Email(recipient)],

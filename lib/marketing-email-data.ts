@@ -11,8 +11,14 @@ import type {
   FollowupSubmissionContext,
   MarketingEmailRecipient,
 } from "@/lib/marketing-email-templates";
-import type { AccessUserFields } from "@/lib/access-shared";
+import { resolveEffectiveLevel, type AccessUserFields } from "@/lib/access-shared";
+import { buildClubReportAccessFields } from "@/lib/club-report-shared";
 import { getPlaybookSubmissionAllowance } from "@/lib/coaching-submissions-shared";
+import {
+  isOrgTrialSubmissionReminderDue,
+  shouldOfferFreeSubmissionReminder,
+} from "@/lib/org-trial-submission-reminder-shared";
+import { isOrgTrialWindowActive } from "@/lib/org-shared";
 import type { DatabaseTier } from "@/lib/membership";
 import { prisma } from "@/lib/prisma";
 
@@ -222,6 +228,14 @@ export async function loadFreeSubmissionReminderCandidates(now = new Date()) {
       accountRole: true,
       accountHolderName: true,
       signupDate: true,
+      organizationId: true,
+      organization: {
+        select: {
+          active: true,
+          trialStartsAt: true,
+          trialEndsAt: true,
+        },
+      },
     },
     take: 200,
   });
@@ -230,8 +244,96 @@ export async function loadFreeSubmissionReminderCandidates(now = new Date()) {
     .filter(
       (user) =>
         isOnOrAfterMarketingEmailsStart(user.signupDate) &&
-        isMarketingEmailInWindow("FREE_SUBMISSION_REMINDER", user.signupDate, now),
+        isMarketingEmailInWindow("FREE_SUBMISSION_REMINDER", user.signupDate, now) &&
+        shouldOfferFreeSubmissionReminder({
+          organizationId: user.organizationId,
+          orgActive: user.organization?.active ?? false,
+          trialStartsAt: user.organization?.trialStartsAt ?? null,
+          trialEndsAt: user.organization?.trialEndsAt ?? null,
+          now,
+        }),
     )
+    .map((user) => ({
+      userId: user.id,
+      email: user.email,
+      firstName: getFirstName(user),
+      ownsPlaybook: false,
+      signupDate: user.signupDate,
+    }));
+}
+
+export async function loadOrgTrialSubmissionReminderCandidates(now = new Date()) {
+  const users = await prisma.user.findMany({
+    where: {
+      organizationId: { not: null },
+      notifyAnnouncements: true,
+      marketingEmailsSuppressed: false,
+      isTestAccount: false,
+      clubReportExcluded: false,
+      swingAnalysisSubmissions: { none: {} },
+      organization: { is: { active: true } },
+    },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      playerFirstName: true,
+      accountRole: true,
+      accountHolderName: true,
+      signupDate: true,
+      membershipTier: true,
+      membershipLevel: true,
+      membershipLevelExpiresAt: true,
+      playbookLegacyAccess: true,
+      organizationId: true,
+      orgTeamId: true,
+      orgTrialQuickReportUsed: true,
+      coreQuickReportNextEligibleAt: true,
+      organization: {
+        select: {
+          active: true,
+          billingMode: true,
+          coveredLevel: true,
+          trialStartsAt: true,
+          trialEndsAt: true,
+        },
+      },
+    },
+    take: 200,
+  });
+
+  return users
+    .filter((user) => {
+      if (!user.organizationId || !user.organization) {
+        return false;
+      }
+      if (!isOrgTrialWindowActive(user.organization.trialStartsAt, user.organization.trialEndsAt, now)) {
+        return false;
+      }
+      if (!isOnOrAfterMarketingEmailsStart(user.signupDate)) {
+        return false;
+      }
+      if (!isOrgTrialSubmissionReminderDue(user.signupDate, now)) {
+        return false;
+      }
+      const access = buildClubReportAccessFields({
+        id: user.id,
+        orgTeamId: user.orgTeamId,
+        signupDate: user.signupDate,
+        orgJoinedAt: null,
+        isTestAccount: false,
+        clubReportExcluded: false,
+        membershipTier: user.membershipTier,
+        membershipLevel: user.membershipLevel,
+        membershipLevelExpiresAt: user.membershipLevelExpiresAt,
+        playbookLegacyAccess: user.playbookLegacyAccess,
+        organizationId: user.organizationId,
+        orgTrialQuickReportUsed: user.orgTrialQuickReportUsed,
+        coreQuickReportNextEligibleAt: user.coreQuickReportNextEligibleAt,
+        organization: user.organization,
+      });
+      return resolveEffectiveLevel(access, now) === "ORG_TRIAL";
+    })
     .map((user) => ({
       userId: user.id,
       email: user.email,

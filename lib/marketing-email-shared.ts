@@ -12,6 +12,7 @@ export const MARKETING_EMAIL_TYPES = [
   "MEMBERSHIP_LEVEL_WELCOME",
   "TWELVE_WEEK_PROGRAM_WELCOME",
   "FREE_SUBMISSION_REMINDER",
+  "ORG_TRIAL_SUBMISSION_REMINDER",
   "FOLLOWUP_DRILLS_DAY_2",
   "FOLLOWUP_OTHER_SIX_DAY_4",
   "FOLLOWUP_SAMPLE_DAY_DAY_7",
@@ -27,6 +28,7 @@ export const MARKETING_EMAIL_LABELS: Record<MarketingEmailTypeValue, string> = {
   TWELVE_WEEK_PROGRAM_WELCOME:
     "Welcome (12-Week program purchase; transactional - dedupe log only, not scheduler)",
   FREE_SUBMISSION_REMINDER: "Free breakdown waiting (day 2 signup)",
+  ORG_TRIAL_SUBMISSION_REMINDER: "Org trial swing report waiting (day 2+ signup)",
   FOLLOWUP_DRILLS_DAY_2: "Follow-up day 2: Did you try the drills?",
   FOLLOWUP_OTHER_SIX_DAY_4: "Follow-up day 4: The other six days",
   FOLLOWUP_SAMPLE_DAY_DAY_7: "Follow-up day 7: Sample program day",
@@ -44,6 +46,7 @@ export const MARKETING_EMAIL_WINDOWS: Partial<
   Record<MarketingEmailTypeValue, { minDays: number; maxDays: number }>
 > = {
   FREE_SUBMISSION_REMINDER: { minDays: 2, maxDays: 3 },
+  ORG_TRIAL_SUBMISSION_REMINDER: { minDays: 2, maxDays: 3650 },
   FOLLOWUP_DRILLS_DAY_2: { minDays: 2, maxDays: 3 },
   FOLLOWUP_OTHER_SIX_DAY_4: { minDays: 4, maxDays: 5 },
   FOLLOWUP_SAMPLE_DAY_DAY_7: { minDays: 7, maxDays: 8 },

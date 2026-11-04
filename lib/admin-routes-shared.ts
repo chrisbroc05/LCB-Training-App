@@ -20,6 +20,8 @@ export const ADMIN_ROUTES = {
     members: "/admin/players/members",
     free: "/admin/players/free",
     organizations: "/admin/players/organizations",
+    organizationClubReport: (orgId: string) =>
+      `/admin/players/organizations/${orgId}/report`,
     waivers: "/admin/players/waivers",
     mediaRoster: "/admin/players/media-roster",
     testing: "/admin/testing",

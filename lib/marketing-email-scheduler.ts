@@ -9,6 +9,7 @@ import {
 import {
   getDueFollowupTypes,
   loadFreeSubmissionReminderCandidates,
+  loadOrgTrialSubmissionReminderCandidates,
   loadMarketingFollowupAnchors,
   loadUserMarketingRecipient,
 } from "@/lib/marketing-email-data";
@@ -139,6 +140,30 @@ export async function runMarketingEmailScheduler(params?: {
     } catch (error) {
       errors.push(
         `FREE_SUBMISSION_REMINDER for ${candidate.email}: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
+      );
+    }
+  }
+
+  const orgTrialReminderCandidates = await loadOrgTrialSubmissionReminderCandidates(now);
+  for (const candidate of orgTrialReminderCandidates) {
+    try {
+      const result = await previewOrSend({
+        recipient: candidate,
+        type: "ORG_TRIAL_SUBMISSION_REMINDER",
+        anchorDate: candidate.signupDate,
+        dryRun,
+        previews,
+      });
+      if (result.sent) {
+        sent += 1;
+      } else if (result.skipped) {
+        skipped += 1;
+      }
+    } catch (error) {
+      errors.push(
+        `ORG_TRIAL_SUBMISSION_REMINDER for ${candidate.email}: ${
           error instanceof Error ? error.message : "Unknown error"
         }`,
       );

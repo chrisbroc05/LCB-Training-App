@@ -180,6 +180,7 @@ enum MarketingEmailType {
   MEMBERSHIP_LEVEL_WELCOME
   TWELVE_WEEK_PROGRAM_WELCOME
   FREE_SUBMISSION_REMINDER
+  ORG_TRIAL_SUBMISSION_REMINDER
   FOLLOWUP_DRILLS_DAY_2
   FOLLOWUP_OTHER_SIX_DAY_4
   FOLLOWUP_SAMPLE_DAY_DAY_7
@@ -220,6 +221,7 @@ model User {
   membershipTierBeforeProgram MembershipTier?
   marketingEmailsSuppressed Boolean             @default(false)
   isTestAccount             Boolean             @default(false)
+  clubReportExcluded        Boolean             @default(false)
   twelveWeekProgramStartedAt DateTime?
   twelveWeekProgramEndsAt    DateTime?
   pendingCheckoutTier    MembershipTier?

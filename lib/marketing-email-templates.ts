@@ -122,6 +122,34 @@ Work hard. Be memorable.`;
   });
 }
 
+export function buildOrgTrialSubmissionReminderEmail(recipient: MarketingEmailRecipient) {
+  const greeting = heyGreeting(recipient);
+  const submitUrl = getMarketingCoachingSubmissionsUrl();
+
+  const bodyContentHtml = `<h1 style="margin:0 0 16px 0; font-family:Arial, Helvetica, sans-serif; font-size:24px; line-height:1.3; color:#0A1628;">Your swing report from Coach Broc is waiting</h1>
+              ${paragraph(`${escapeHtml(greeting)},`)}
+              ${paragraph(
+                "Your free trial includes a personal swing report from me. Grab your phone, film a few swings from the side, and send them over. I'll send back what I see and a few drills to work on.",
+              )}
+              ${buildEmailButton("Send your swing", submitUrl)}
+              ${paragraph("Coach Broc")}`;
+
+  const textBody = `${greeting},
+
+Your free trial includes a personal swing report from me. Grab your phone, film a few swings from the side, and send them over. I'll send back what I see and a few drills to work on.
+
+Send your swing: ${submitUrl}
+
+Coach Broc`;
+
+  return wrapMarketingEmail({
+    title: "Your swing report from Coach Broc is waiting",
+    bodyContentHtml,
+    textBody,
+    userId: recipient.userId,
+  });
+}
+
 export function buildFreeSubmissionReminderEmail(recipient: MarketingEmailRecipient) {
   const greeting = heyGreeting(recipient);
   const submitUrl = getMarketingCoachingSubmissionsUrl();
@@ -341,6 +369,8 @@ export function buildMarketingEmailContent(
       return buildWelcomeMarketingEmail(recipient);
     case "FREE_SUBMISSION_REMINDER":
       return buildFreeSubmissionReminderEmail(recipient);
+    case "ORG_TRIAL_SUBMISSION_REMINDER":
+      return buildOrgTrialSubmissionReminderEmail(recipient);
     case "FOLLOWUP_DRILLS_DAY_2":
       if (!submission) {
         throw new Error("Submission context is required for day 2 follow-up.");

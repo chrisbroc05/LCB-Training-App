@@ -9,6 +9,7 @@ import {
   isOrgCommissionConfigured,
   type AdminOrganizationRecord,
 } from "@/lib/admin-organizations-shared";
+import { ADMIN_ROUTES } from "@/lib/admin-routes-shared";
 import { formatBulkOrgTeamResultSummary } from "@/lib/bulk-org-teams-shared";
 import OrgRosterMovePanel from "@/app/admin/organizations/OrgRosterMovePanel";
 import OrgWeeklyFocusAdminPanel from "@/app/admin/organizations/OrgWeeklyFocusAdminPanel";
@@ -214,12 +215,20 @@ export default function AdminOrganizationsPanel() {
                 {org.memberCount} members . Join link: /join/{org.codes[0]?.code ?? "..."}
               </p>
             </div>
-            <a
-              href={`/api/admin/organizations/${org.id}/roster`}
-              className="rounded-full border border-[#2b3650] px-3 py-1.5 text-xs font-semibold text-zinc-200"
-            >
-              Download roster CSV
-            </a>
+            <div className="flex flex-wrap gap-2">
+              <Link
+                href={ADMIN_ROUTES.players.organizationClubReport(org.id)}
+                className="rounded-full border border-[#52B788]/50 bg-[#52B788]/10 px-3 py-1.5 text-xs font-semibold text-[#9df3bd]"
+              >
+                Club report
+              </Link>
+              <a
+                href={`/api/admin/organizations/${org.id}/roster`}
+                className="rounded-full border border-[#2b3650] px-3 py-1.5 text-xs font-semibold text-zinc-200"
+              >
+                Download roster CSV
+              </a>
+            </div>
           </div>
 
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
