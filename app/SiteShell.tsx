@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import LandingHeader from "@/app/LandingHeader";
+import PublicSiteHeader from "@/app/PublicSiteHeader";
 import MobileAppHeader from "@/app/components/mobile/MobileAppHeader";
 import MobileBottomNav from "@/app/components/mobile/MobileBottomNav";
 import MobilePageTransition from "@/app/components/mobile/MobilePageTransition";
@@ -52,7 +52,6 @@ export default function SiteShell({
   const pathname = usePathname();
   const isStandaloneLanding = pathname.startsWith("/details") || pathname.startsWith("/remote");
   const isCompactPublic = isCompactPublicPage(pathname);
-  const isHomePage = pathname === "/";
   const useMobileChrome = shouldUseMobileAppChrome(isLoggedIn, pathname);
   const onAdminRoute = pathname.startsWith("/admin");
   const showMembershipPaymentBanner =
@@ -83,7 +82,7 @@ export default function SiteShell({
         />
       ) : null}
       <div className={headerWrapperClass}>
-        {isHomePage ? <LandingHeader isLoggedIn={isLoggedIn} /> : header}
+        {useMobileChrome ? header : <PublicSiteHeader isLoggedIn={isLoggedIn} />}
       </div>
       <main className={useMobileChrome ? "mobile-app-main flex-1 md:pb-0 md:pt-0" : "flex-1"}>
         {showMembershipPaymentBanner ? (

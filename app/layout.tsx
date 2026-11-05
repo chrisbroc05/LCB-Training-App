@@ -9,9 +9,7 @@ import {
   loadLoggedInLayoutAccess,
   type OrgTrialHeaderSummary,
 } from "@/lib/layout-access-server";
-import BrandLogo from "@/app/BrandLogo";
 import LoggedInSiteHeader from "@/app/components/LoggedInSiteHeader";
-import TopNavigation from "@/app/TopNavigation";
 import SiteShell from "@/app/SiteShell";
 import AppSplashScreen from "@/components/AppSplashScreen";
 import PWAInstallHint from "@/components/PWAInstallHint";
@@ -133,31 +131,7 @@ export default async function RootLayout({
                 hasProgramEnrollment={hasProgramEnrollment}
                 orgTrialHeader={orgTrialHeader}
               />
-            ) : (
-              <header className="site-header-bar border-b border-[#18243a] bg-black md:bg-black/95 md:backdrop-blur">
-                <div className="mx-auto w-full max-w-6xl px-4 py-3 sm:px-6 sm:py-4">
-                  <div className="flex items-center justify-between gap-3 md:grid md:grid-cols-[1fr_auto] md:items-center">
-                    <Link href="/" className="flex min-w-0 items-center gap-2 sm:gap-3">
-                      <div className="relative h-10 w-28 shrink-0 sm:h-12 sm:w-32">
-                        <BrandLogo className="object-contain" />
-                      </div>
-                      <span className="shrink-0 text-lg font-semibold tracking-tight text-zinc-100 sm:text-xl">
-                        LCB <span className="text-[#22c55e]">Training</span>
-                      </span>
-                    </Link>
-                    <TopNavigation
-                      isLoggedIn={false}
-                      isAdmin={false}
-                      hasDrillLibraryAccess={false}
-                      hasPlaybookAccess={false}
-                      hasMemberDownloadsAccess={false}
-                      hasCoachingAccess={false}
-                      hasProgramEnrollment={false}
-                    />
-                  </div>
-                </div>
-              </header>
-            )
+            ) : null
           }
           adminToggle={null}
           footer={

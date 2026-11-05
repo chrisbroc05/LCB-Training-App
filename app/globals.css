@@ -6,26 +6,33 @@
 :root {
   --background: #000000;
   --foreground: #f4f4f5;
-  /* Bar height below the status bar (mobile app header inner + vertical padding). */
+  /* Logged-in mobile app header bar below the status bar. */
   --site-mobile-header-content-height: 88px;
-  /* Sticky site header offset for in-page anchor targets (matches mobile-app-main top padding). */
+  /* Public marketing header bar below the status bar (matches .public-site-header h-14). */
+  --public-site-header-content-height: 56px;
+  /* Sticky site header offset for in-page anchor targets on desktop. */
   --site-sticky-header-scroll-offset: 7rem;
 }
 
 @media (max-width: 767px) {
   :root {
     --site-sticky-header-scroll-offset: calc(
-      var(--site-mobile-header-content-height) + env(safe-area-inset-top, 0px)
+      var(--public-site-header-content-height) + env(safe-area-inset-top, 0px)
     );
   }
 
   .site-sticky-header-shell {
-    padding-top: env(safe-area-inset-top);
     background-color: #000;
   }
 
-  .site-header-bar {
+  .public-site-header {
+    padding-top: env(safe-area-inset-top);
     background-color: #000;
+    border-bottom: 1px solid #18243a;
+  }
+
+  .mobile-app-main {
+    padding-top: calc(var(--site-mobile-header-content-height) + env(safe-area-inset-top, 0px));
   }
 }
 
@@ -295,7 +302,6 @@ body {
 
 @media (max-width: 767px) {
   .mobile-app-main {
-    padding-top: var(--site-sticky-header-scroll-offset);
     padding-bottom: calc(100px + env(safe-area-inset-bottom));
     min-height: 100vh;
   }

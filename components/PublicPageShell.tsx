@@ -1,14 +1,16 @@
-import PublicCompactHeader from "@/components/PublicCompactHeader";
+import PublicSiteHeader from "@/app/PublicSiteHeader";
 
 type PublicPageShellProps = {
   children: React.ReactNode;
   isLoggedIn?: boolean;
 };
 
-export default function PublicPageShell({ children, isLoggedIn }: PublicPageShellProps) {
+export default function PublicPageShell({ children, isLoggedIn = false }: PublicPageShellProps) {
   return (
     <div className="flex min-h-[100dvh] flex-col bg-black text-zinc-100">
-      <PublicCompactHeader isLoggedIn={isLoggedIn} />
+      <div className="site-sticky-header-shell">
+        <PublicSiteHeader isLoggedIn={isLoggedIn} />
+      </div>
       <main className="flex-1">{children}</main>
     </div>
   );

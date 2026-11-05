@@ -31,7 +31,7 @@ export default function LoggedInSiteHeader({
   orgTrialHeader,
 }: LoggedInSiteHeaderProps) {
   return (
-    <header className="logged-in-site-header site-header-bar border-b border-[#18243a] bg-black md:bg-black/95 md:backdrop-blur">
+    <header className="logged-in-site-header border-b border-[#18243a] bg-black md:bg-black/95 md:backdrop-blur">
       <div className="mx-auto w-full max-w-6xl px-4 py-3 sm:px-6">
         <div className="app-header-bar app-header-bar-desktop">
           <AppHeaderBar
