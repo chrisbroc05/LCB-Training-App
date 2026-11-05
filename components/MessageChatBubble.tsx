@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import MobileBottomSheet from "@/app/components/mobile/MobileBottomSheet";
 import {
   NON_PROGRAM_CHAT_SHEET_TITLE,
   shouldShowMessageBubble,
 } from "@/lib/direct-messaging-shared";
 import { usePlayerMessageStatus } from "@/lib/messaging-unread-client";
+
+const HOMEPAGE_CHAT_REVEAL_SCROLL_PX = 400;
 
 type MessageChatBubbleProps = {
   isLoggedIn: boolean;
@@ -30,9 +32,26 @@ function ChatIcon() {
 
 export default function MessageChatBubble({ isLoggedIn }: MessageChatBubbleProps) {
   const pathname = usePathname();
+  const isHomePage = pathname === "/";
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [isRevealed, setIsRevealed] = useState(!isHomePage);
   const shouldTrackUnread = isLoggedIn && !pathname.startsWith("/messages");
   const status = usePlayerMessageStatus(shouldTrackUnread);
+
+  useEffect(() => {
+    if (!isHomePage) {
+      setIsRevealed(true);
+      return;
+    }
+
+    function updateReveal() {
+      setIsRevealed(window.scrollY >= HOMEPAGE_CHAT_REVEAL_SCROLL_PX);
+    }
+
+    updateReveal();
+    window.addEventListener("scroll", updateReveal, { passive: true });
+    return () => window.removeEventListener("scroll", updateReveal);
+  }, [isHomePage]);
 
   if (!shouldShowMessageBubble(pathname)) {
     return null;
@@ -55,7 +74,11 @@ export default function MessageChatBubble({ isLoggedIn }: MessageChatBubbleProps
 
   return (
     <>
-      <div className="message-chat-bubble fixed right-4 z-[65] md:right-6">
+      <div
+        className={`message-chat-bubble fixed right-4 z-[65] transition-opacity duration-300 md:right-6 ${
+          isRevealed ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
+        }`}
+      >
         {canOpenChat ? (
           <Link href="/messages" aria-label="Open messages" className="relative inline-flex">
             {bubble}

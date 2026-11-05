@@ -1,7 +1,6 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import LandingSwingBanner from "@/app/LandingSwingBanner";
 import LandingHeader from "@/app/LandingHeader";
 import MobileAppHeader from "@/app/components/mobile/MobileAppHeader";
 import MobileBottomNav from "@/app/components/mobile/MobileBottomNav";
@@ -84,7 +83,6 @@ export default function SiteShell({
         />
       ) : null}
       <div className={headerWrapperClass}>
-        {isHomePage ? <LandingSwingBanner isLoggedIn={isLoggedIn} /> : null}
         {isHomePage ? <LandingHeader isLoggedIn={isLoggedIn} /> : header}
       </div>
       <main className={useMobileChrome ? "mobile-app-main flex-1 md:pb-0 md:pt-0" : "flex-1"}>

@@ -22,7 +22,7 @@ import { getServerSession } from "next-auth";
 import BrandStorySection from "@/components/BrandStorySection";
 import CoachBioSection from "@/components/CoachBioSection";
 import { authOptions } from "@/lib/auth";
-import { BRAND_PRIMARY_SLOGAN, BRAND_SECONDARY_TAGLINE } from "@/lib/brand-copy";
+import { BRAND_PRIMARY_SLOGAN } from "@/lib/brand-copy";
 import { PLAYBOOK_STANDALONE_DESCRIPTION } from "@/lib/playbook-branding";
 import {
   TWELVE_WEEK_PROGRAM_NAME,
@@ -124,51 +124,41 @@ export default async function Home() {
 
   return (
     <>
-      <section className="w-full bg-gradient-to-br from-[#0A1628] via-[#0f1d34] to-[#050b16]">
-        <div className="mx-auto w-full max-w-4xl px-4 py-12 text-center sm:px-6 sm:py-16 md:py-20">
-          {!isLoggedIn ? (
-            <p className="mb-6 text-sm text-zinc-400">
-              Already have an account?{" "}
-              <Link
-                href="/auth?mode=login"
-                className="font-semibold text-[#52B788] transition hover:text-[#9df3bd]"
-              >
-                Log In
-              </Link>
-            </p>
-          ) : null}
-          <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl md:text-6xl">
+      <section
+        id="home-hero"
+        className="w-full bg-gradient-to-br from-[#0A1628] via-[#0f1d34] to-[#050b16]"
+      >
+        <div className="mx-auto w-full max-w-4xl px-4 py-5 text-center sm:px-6 sm:py-16 md:py-20">
+          <p className="mx-auto max-w-md text-[0.6875rem] font-semibold uppercase leading-snug tracking-[0.14em] text-[#52B788] sm:max-w-none sm:text-xs sm:tracking-[0.18em]">
+            BASEBALL AND SOFTBALL PLAYER DEVELOPMENT
+          </p>
+          <h1 className="mt-3 text-4xl font-bold tracking-tight text-white sm:mt-4 sm:text-5xl md:text-6xl">
             {BRAND_PRIMARY_SLOGAN}
           </h1>
-          <p className="mt-5 text-xl font-medium text-[#52B788] sm:text-2xl md:text-3xl">
-            {BRAND_SECONDARY_TAGLINE}
-          </p>
-          <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-zinc-300 sm:text-lg">
-            Baseball and softball training for youth, high school, and college players.
-          </p>
-          <p className="mx-auto mt-4 max-w-2xl text-lg font-semibold leading-snug text-zinc-100 sm:text-xl">
+          <p className="mx-auto mt-3 max-w-xl text-base font-semibold leading-snug text-zinc-100 sm:mt-4 sm:text-lg md:text-xl">
             Lessons are one day a week. What happens the other six?
           </p>
-          <p className="mx-auto mt-3 max-w-2xl text-base text-zinc-400 sm:text-lg">
-            Daily training plans and personal swing feedback from Coach Broc between lessons.
+          <p className="mx-auto mt-2 max-w-[32ch] text-sm leading-relaxed text-zinc-400 sm:mt-3 sm:max-w-2xl sm:text-base">
+            Daily plans and personal feedback from Coach Broc for youth, high school, and college
+            players.
           </p>
-          <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center sm:justify-center">
+          <div className="mt-5 flex flex-col items-stretch justify-center gap-2.5 sm:mt-8 sm:flex-row sm:items-center sm:justify-center sm:gap-3">
             <Link
               href={FREE_SWING_AUTH_URL}
-              className="inline-flex w-full items-center justify-center rounded-full bg-[#22c55e] px-6 py-3 text-sm font-semibold text-black transition hover:bg-[#35db72] sm:w-auto"
+              className="inline-flex w-full items-center justify-center rounded-full bg-[#22c55e] px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-[#35db72] sm:w-auto sm:px-6 sm:py-3"
             >
               Get Your Free Swing Breakdown
             </Link>
             <Link
               href={plansHref}
-              className="inline-flex w-full items-center justify-center rounded-full border border-[#52B788]/60 bg-[#52B788]/10 px-6 py-3 text-sm font-semibold text-[#52B788] transition hover:bg-[#52B788]/20 sm:w-auto"
+              className="inline-flex w-full items-center justify-center rounded-full border border-[#52B788]/60 bg-[#52B788]/10 px-5 py-2.5 text-sm font-semibold text-[#52B788] transition hover:bg-[#52B788]/20 sm:w-auto sm:px-6 sm:py-3"
             >
               See Plans
             </Link>
           </div>
 
           {landingHeroEmbedUrl ? (
-            <div className="mx-auto mt-8 w-full sm:mt-10 md:mt-12 md:max-w-[400px]">
+            <div className="mx-auto mt-5 w-full sm:mt-10 md:mt-12 md:max-w-[400px]">
               <HomepageVideoFrame aspectClassName="aspect-[9/16]">
                 <iframe
                   src={landingHeroEmbedUrl}

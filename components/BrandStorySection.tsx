@@ -5,6 +5,7 @@ export default function BrandStorySection() {
     <section className="border-t border-[#52B788]/20 bg-[#0A1628]">
       <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-14">
         <div className="space-y-5 text-center text-base leading-relaxed text-zinc-300 sm:text-lg">
+          <p className="text-lg font-semibold text-[#52B788] sm:text-xl">{BRAND_SECONDARY_TAGLINE}</p>
           <p>
             LCB Training is baseball and softball training for the days between lessons. Travel ball
             gives you games and team reps. The days in between are where habits, skill, and confidence
@@ -17,8 +18,8 @@ export default function BrandStorySection() {
           </p>
           <p>
             We build the complete player in every area, from hitting and fielding to speed, agility,
-            strength, and mobility. But all of it serves the same underlying question:{" "}
-            <span className="font-semibold text-[#52B788]">{BRAND_SECONDARY_TAGLINE}</span>
+            strength, and mobility. That work only matters when it connects to who you are becoming on
+            and off the field.
           </p>
           <p>
             The physical training and the mindset coaching are not two separate offerings. They are

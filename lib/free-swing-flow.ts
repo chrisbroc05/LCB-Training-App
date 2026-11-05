@@ -1,4 +1,3 @@
-export const LANDING_SWING_BANNER_DISMISSED_KEY = "lcb-landing-swing-banner-dismissed";
 export const PENDING_COACHING_WELCOME_KEY = "lcb-pending-coaching-welcome";
 export const COACHING_WELCOME_SEEN_KEY = "lcb-coaching-welcome-seen";
 export const FREE_SWING_AUTH_REDIRECT = "coaching-submissions";
