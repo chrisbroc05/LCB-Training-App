@@ -17,6 +17,7 @@ import {
 } from "@/lib/twelve-week-program";
 import { toVimeoEmbedUrl } from "@/lib/vimeo";
 import TestimonialsSection from "@/components/TestimonialsSection";
+import StartFreeSection from "@/components/StartFreeSection";
 import PublicMembershipLevelsSection from "@/app/components/PublicMembershipLevelsSection";
 import PlaybookCoreMemberUnlockActions from "@/app/playbook/PlaybookCoreMemberUnlockActions";
 import { prisma } from "@/lib/prisma";
@@ -146,6 +147,8 @@ export default async function Home() {
       </section>
 
       <BrandStorySection />
+
+      <StartFreeSection />
 
       <div className="mx-auto w-full max-w-6xl px-4 pb-10 pt-10 sm:px-6 sm:pb-14 sm:pt-12 md:pb-20 md:pt-14">
         <CoachBioSection />

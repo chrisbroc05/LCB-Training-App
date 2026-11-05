@@ -159,7 +159,9 @@ export default async function RootLayout({
           footer={
             <footer className="border-t border-[#18243a] py-6 text-center text-sm text-zinc-400">
               <div className="mx-auto flex w-full max-w-6xl flex-col items-center justify-center gap-2 px-4 sm:px-6 md:flex-row md:gap-4">
-                <span>&copy; {new Date().getFullYear()} LCB Training. All rights reserved.</span>
+                <span>
+                  &copy; {new Date().getFullYear()} LCB Training LLC. All rights reserved.
+                </span>
                 <span className="hidden text-zinc-600 md:inline">|</span>
                 <div className="flex items-center gap-4">
                   <Link href="/terms" className="transition hover:text-[#98b144]">
