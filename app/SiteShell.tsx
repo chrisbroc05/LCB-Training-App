@@ -67,8 +67,8 @@ export default function SiteShell({
   }
 
   const headerWrapperClass = useMobileChrome
-    ? "sticky top-0 z-30 hidden md:block"
-    : "sticky top-0 z-30";
+    ? "site-sticky-header-shell hidden md:block"
+    : "site-sticky-header-shell";
 
   const shell = (
     <>

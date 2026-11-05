@@ -17,8 +17,8 @@ export default function SeeHowICoachSection() {
           <div className="text-center md:text-left">
             <h2 className="text-2xl font-semibold text-zinc-100 sm:text-3xl">See How I Coach</h2>
             <p className="mt-3 text-base leading-relaxed text-zinc-400 sm:text-lg">
-              A real video breakdown I sent a player. Every breakdown is built for that player,
-              whether it's hitting, fielding, or the mental game.
+            A real video breakdown I sent a player. Every breakdown is built for that player, no
+            matter what part of their game we're developing.
             </p>
             <div className="mt-8 hidden md:flex">
               <Link href={FREE_SWING_AUTH_URL} className={freeSwingButtonClassName}>

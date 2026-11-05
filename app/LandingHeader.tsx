@@ -20,7 +20,7 @@ export default function LandingHeader({ isLoggedIn }: LandingHeaderProps) {
 
   if (isLoggedIn) {
     return (
-      <header className="border-b border-[#18243a] bg-black/95 backdrop-blur">
+      <header className="site-header-bar border-b border-[#18243a] bg-black md:bg-black/95 md:backdrop-blur">
         <div className="mx-auto grid w-full max-w-6xl grid-cols-[auto_1fr_auto] items-center gap-3 px-4 py-3 sm:px-6 sm:py-4">
           <Link href="/" className="flex shrink-0 items-center" aria-label="LCB Training home">
             <div className="relative h-9 w-24 sm:h-10 sm:w-28">
@@ -46,7 +46,7 @@ export default function LandingHeader({ isLoggedIn }: LandingHeaderProps) {
   }
 
   return (
-    <header className="border-b border-[#18243a] bg-black/95 backdrop-blur">
+    <header className="site-header-bar border-b border-[#18243a] bg-black md:bg-black/95 md:backdrop-blur">
       <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6 md:grid md:grid-cols-[auto_1fr_auto] md:items-center md:py-4">
         <Link href="/" className="flex min-w-0 shrink-0 items-center" aria-label="LCB Training home">
           <div className="relative h-9 w-[5.5rem] sm:h-10 sm:w-28">
