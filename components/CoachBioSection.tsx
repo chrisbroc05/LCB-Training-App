@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { BRAND_PRIMARY_SLOGAN } from "@/lib/brand-copy";
+import { LCB_INSTAGRAM_URL, LCB_TIKTOK_URL } from "@/lib/social-links";
 
 const accolades = [
   "NJCAA National Champion - Oakton Community College",
@@ -69,13 +70,29 @@ export default function CoachBioSection() {
           &quot;{BRAND_PRIMARY_SLOGAN}&quot;
         </p>
 
-        <p className="mt-8 text-center">
+        <p className="mt-8 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-center text-sm">
           <Link
             href="/coach"
-            className="text-base font-semibold text-[#52B788] underline decoration-[#52B788]/40 underline-offset-4 transition hover:text-[#9df3bd] hover:decoration-[#9df3bd]"
+            className="font-semibold text-[#52B788] underline decoration-[#52B788]/40 underline-offset-4 transition hover:text-[#9df3bd] hover:decoration-[#9df3bd]"
           >
             Read my full bio
           </Link>
+          <a
+            href={LCB_INSTAGRAM_URL}
+            className="font-semibold text-zinc-400 transition hover:text-[#52B788]"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            Instagram
+          </a>
+          <a
+            href={LCB_TIKTOK_URL}
+            className="font-semibold text-zinc-400 transition hover:text-[#52B788]"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            TikTok
+          </a>
         </p>
       </div>
     </section>

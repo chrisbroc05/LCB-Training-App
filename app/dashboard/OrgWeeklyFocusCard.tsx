@@ -34,7 +34,7 @@ export default async function OrgWeeklyFocusCard({ userId }: OrgWeeklyFocusCardP
       : {};
 
   return (
-    <article className="rounded-2xl border border-[#52B788]/40 bg-[#22c55e]/5 p-4 sm:p-6">
+    <article className="scroll-mt-4 rounded-2xl border border-[#52B788]/40 bg-[#22c55e]/5 p-4 sm:p-6">
       <p className="text-xs font-semibold uppercase tracking-wide text-[#9df3bd]">
         {focus.organizationName}
         {focus.teamName ? ` - ${focus.teamName}` : ""} focus

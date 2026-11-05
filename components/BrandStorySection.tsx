@@ -6,13 +6,18 @@ export default function BrandStorySection() {
       <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-14">
         <div className="space-y-5 text-center text-base leading-relaxed text-zinc-300 sm:text-lg">
           <p>
+            LCB Training is baseball and softball training for the days between lessons. Travel ball
+            gives you games and team reps. The days in between are where habits, skill, and confidence
+            actually grow.
+          </p>
+          <p>
             Great players are remembered for more than their stats. They are remembered for hustling
             down the line on a routine ground ball. For asking good questions. For looking a coach in
             the eye when it matters.
           </p>
           <p>
-            LCB Training builds the complete player in every area, from hitting and fielding to
-            speed, agility, strength, and mobility. But all of it serves the same underlying question:{" "}
+            We build the complete player in every area, from hitting and fielding to speed, agility,
+            strength, and mobility. But all of it serves the same underlying question:{" "}
             <span className="font-semibold text-[#52B788]">{BRAND_SECONDARY_TAGLINE}</span>
           </p>
           <p>

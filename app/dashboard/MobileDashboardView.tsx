@@ -79,7 +79,7 @@ export default function MobileDashboardView({
     !isEnrolled && shouldShowTwelveWeekDashboardUpsell(access);
 
   return (
-    <div className="mobile-card-stack px-4 pb-4 pt-4 md:hidden">
+    <div className="mobile-card-stack px-4 pb-4 pt-2 md:hidden">
       {checkoutStatus === "success" && checkoutProduct === "playbook" && membershipTier === "BASIC" ? (
         <article className="mobile-card border-[#22c55e]/40 bg-[#22c55e]/10 text-sm text-[#bafccf]">
           Payment successful. The Next Level Playbook is unlocked and ready on your dashboard.

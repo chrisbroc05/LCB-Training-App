@@ -117,6 +117,17 @@ export default async function ProgramPage({ searchParams }: ProgramPageProps) {
           </p>
         </div>
 
+        <div className="mt-8 space-y-2 text-sm text-zinc-400">
+          <p>
+            Full refund within 14 days if you have not sent any videos yet. Full details are in our{" "}
+            <Link href="/terms" className="font-semibold text-[#52B788] hover:text-[#9df3bd]">
+              terms
+            </Link>
+            .
+          </p>
+          <p className="text-zinc-500">Secure checkout powered by Stripe.</p>
+        </div>
+
         <div className="mt-10">
           <ProgramCheckoutSection
             isLoggedIn={Boolean(session?.user)}

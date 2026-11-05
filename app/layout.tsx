@@ -32,8 +32,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "LCB Training",
-  description: "Baseball membership training platform by LCB Training",
+  title: {
+    default: "LCB Training",
+    template: "%s | LCB Training",
+  },
+  description:
+    "Baseball and softball player development with Coach Broc. Daily training plans and swing feedback between lessons.",
 };
 
 export const viewport = {
@@ -163,7 +167,23 @@ export default async function RootLayout({
                   &copy; {new Date().getFullYear()} LCB Training LLC. All rights reserved.
                 </span>
                 <span className="hidden text-zinc-600 md:inline">|</span>
-                <div className="flex items-center gap-4">
+                <div className="flex flex-wrap items-center justify-center gap-4">
+                  <a
+                    href="https://www.instagram.com/lcbtraining"
+                    className="transition hover:text-[#98b144]"
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  >
+                    Instagram
+                  </a>
+                  <a
+                    href="https://www.tiktok.com/@cbroc05"
+                    className="transition hover:text-[#98b144]"
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  >
+                    TikTok
+                  </a>
                   <Link href="/terms" className="transition hover:text-[#98b144]">
                     Terms of Service
                   </Link>

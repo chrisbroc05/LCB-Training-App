@@ -30,11 +30,18 @@ const startFreeCards = [
 
 export default function StartFreeSection() {
   return (
-    <section className="border-t border-[#18243a] bg-black">
+    <section id="start-free" className="scroll-mt-site-header border-t border-[#18243a] bg-black">
       <div className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6 sm:py-14">
         <div className="mx-auto max-w-3xl text-center">
-          <h2 className="text-2xl font-semibold text-zinc-100 sm:text-3xl">Start Free</h2>
-          <p className="mt-3 text-base text-zinc-400 sm:text-lg">Not sure where to start? Pick one.</p>
+          <p className="text-sm font-semibold uppercase tracking-wide text-[#52B788]">
+            For players and parents
+          </p>
+          <h2 className="mt-2 text-2xl font-semibold text-zinc-100 sm:text-3xl">Start Free</h2>
+          <p className="mt-3 text-base leading-relaxed text-zinc-400 sm:text-lg">
+            Players get a daily plan and personal feedback from Coach Broc, not another generic drill
+            app. Parents know exactly what their player should be working on between lessons. Not
+            sure where to start? Pick one.
+          </p>
         </div>
         <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {startFreeCards.map((card) => (

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import BrandLogo from "@/app/BrandLogo";
+import { getHomepagePlansHref } from "@/lib/homepage-plans-link";
 
 type LandingHeaderProps = {
   isLoggedIn: boolean;
@@ -12,6 +13,8 @@ const landingPrimaryButtonClassName =
   "inline-flex h-10 shrink-0 items-center justify-center rounded-full bg-[#22c55e] px-3 text-xs font-semibold text-[#0A1628] transition hover:bg-[#35db72] sm:h-11 sm:px-5 sm:text-sm";
 
 export default function LandingHeader({ isLoggedIn }: LandingHeaderProps) {
+  const plansHref = getHomepagePlansHref();
+
   return (
     <header className="border-b border-[#18243a] bg-black/95 backdrop-blur">
       <div className="mx-auto grid w-full max-w-6xl grid-cols-[auto_1fr_auto] items-center gap-3 px-4 py-3 sm:px-6 sm:py-4">
@@ -27,11 +30,22 @@ export default function LandingHeader({ isLoggedIn }: LandingHeaderProps) {
 
         <div className="flex items-center justify-end gap-2 sm:gap-3">
           {isLoggedIn ? (
-            <Link href="/dashboard" className={landingOutlineButtonClassName}>
-              Go to Dashboard
-            </Link>
+            <>
+              <Link href={plansHref} className={landingOutlineButtonClassName}>
+                Plans
+              </Link>
+              <Link href="/dashboard" className={landingOutlineButtonClassName}>
+                Go to Dashboard
+              </Link>
+            </>
           ) : (
             <>
+              <Link href="/#start-free" className={landingOutlineButtonClassName}>
+                Start Free
+              </Link>
+              <Link href={plansHref} className={landingOutlineButtonClassName}>
+                Plans
+              </Link>
               <Link href="/auth?mode=login" className={landingOutlineButtonClassName}>
                 Log In
               </Link>

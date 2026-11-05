@@ -6,6 +6,18 @@
 :root {
   --background: #000000;
   --foreground: #f4f4f5;
+  /* Sticky site header offset for in-page anchor targets (matches mobile-app-main top padding). */
+  --site-sticky-header-scroll-offset: 7rem;
+}
+
+@media (max-width: 767px) {
+  :root {
+    --site-sticky-header-scroll-offset: calc(88px + env(safe-area-inset-top, 0px));
+  }
+}
+
+.scroll-mt-site-header {
+  scroll-margin-top: var(--site-sticky-header-scroll-offset);
 }
 
 @theme inline {
@@ -264,7 +276,7 @@ body {
 
 @media (max-width: 767px) {
   .mobile-app-main {
-    padding-top: calc(64px + env(safe-area-inset-top));
+    padding-top: calc(88px + env(safe-area-inset-top));
     padding-bottom: calc(100px + env(safe-area-inset-bottom));
     min-height: 100vh;
   }
@@ -290,7 +302,7 @@ body {
   }
 
   .mobile-app-header-inner {
-    min-height: 64px;
+    min-height: 76px;
     padding: 6px 12px;
   }
 

@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { BRAND_PRIMARY_SLOGAN } from "@/lib/brand-copy";
 
+const SPLASH_SEEN_KEY = "lcb-splash-seen";
+
 type SplashPhase = "visible" | "fading" | "hidden";
 
 export default function AppSplashScreen() {
@@ -10,8 +12,20 @@ export default function AppSplashScreen() {
   const [logoFailed, setLogoFailed] = useState(false);
 
   useEffect(() => {
-    const fadeTimer = window.setTimeout(() => setPhase("fading"), 550);
-    const hideTimer = window.setTimeout(() => setPhase("hidden"), 950);
+    if (typeof window !== "undefined" && window.localStorage.getItem(SPLASH_SEEN_KEY) === "1") {
+      setPhase("hidden");
+      return;
+    }
+
+    const fadeTimer = window.setTimeout(() => setPhase("fading"), 220);
+    const hideTimer = window.setTimeout(() => {
+      setPhase("hidden");
+      try {
+        window.localStorage.setItem(SPLASH_SEEN_KEY, "1");
+      } catch {
+        // ignore storage failures
+      }
+    }, 480);
 
     return () => {
       window.clearTimeout(fadeTimer);
@@ -26,7 +40,7 @@ export default function AppSplashScreen() {
   return (
     <div
       aria-hidden="true"
-      className={`fixed inset-0 z-[9999] flex items-center justify-center bg-[#0A1628] transition-opacity duration-[400ms] ease-out ${
+      className={`fixed inset-0 z-[9999] flex items-center justify-center bg-[#0A1628] transition-opacity duration-[260ms] ease-out ${
         phase === "fading" ? "pointer-events-none opacity-0" : "opacity-100"
       }`}
       style={{

@@ -15,7 +15,7 @@ export default async function PublicMembershipLevelsSection() {
   const allAccessAvailable = await isAllAccessCheckoutAvailable();
 
   return (
-    <section className="mt-14">
+    <section id="plans" className="scroll-mt-site-header mt-14">
       <div className="mb-6 text-center">
         <h2 className="text-2xl font-semibold text-zinc-100 sm:text-3xl">Membership levels</h2>
         <p className="mt-2 text-zinc-300">Core, Plus, and All-Access. Billed monthly in the app.</p>

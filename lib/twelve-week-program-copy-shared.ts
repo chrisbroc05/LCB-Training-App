@@ -11,5 +11,9 @@ export const TWELVE_WEEK_KICKOFF_AND_CHECKINS_LINE = "A kickoff call with Coach 
 export const TWELVE_WEEK_PROGRAM_CARD_DESCRIPTION =
   "A daily plan built for you, weekly video breakdowns, direct messaging, and a kickoff call with me and a parent. Lessons are one day a week. This is the other six.";
 
+/** Homepage program section (no repeat of the hero six-days line). */
+export const TWELVE_WEEK_PROGRAM_HOMEPAGE_BLURB =
+  "A daily plan built for you, weekly video breakdowns, direct messaging, and a kickoff call with me and a parent. Structured coaching for the days in between lessons.";
+
 /** Short phrase for settings and inline mentions (third person). */
 export const TWELVE_WEEK_KICKOFF_AND_CHECKINS_SHORT = "a kickoff call with Coach Broc and a parent";

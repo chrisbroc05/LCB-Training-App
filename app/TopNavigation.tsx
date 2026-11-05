@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
+import { getHomepagePlansHref } from "@/lib/homepage-plans-link";
 import { shouldUseMobileAppChrome } from "@/lib/mobile-ui";
 
 type TopNavigationProps = {
@@ -403,6 +404,7 @@ export default function TopNavigation({
   userDisplayName,
 }: TopNavigationProps) {
   const pathname = usePathname();
+  const plansHref = getHomepagePlansHref();
   const [mobileOpen, setMobileOpen] = useState(false);
   const { navRef, openDropdownId, openDropdown, scheduleCloseDropdown, closeAllDropdowns } =
     useNavDropdowns();
@@ -436,6 +438,16 @@ export default function TopNavigation({
       <nav className="flex items-center justify-end md:justify-self-end">
         <div className="hidden items-center gap-1 md:flex">
           <Link
+            href="/#start-free"
+            onClick={closeMenus}
+            className={linkClass(false)}
+          >
+            Start Free
+          </Link>
+          <Link href={plansHref} onClick={closeMenus} className={linkClass(false)}>
+            Plans
+          </Link>
+          <Link
             href="/resources"
             onClick={closeMenus}
             className={linkClass(pathname.startsWith("/resources"))}
@@ -467,6 +479,12 @@ export default function TopNavigation({
           {mobileOpen ? (
             <div className="absolute right-0 top-[calc(100%+8px)] z-30 min-w-[200px] rounded-xl border border-[#2b3650] bg-[#0b1324] p-3 shadow-2xl shadow-black/50">
               <div className="space-y-1">
+                <Link href="/#start-free" onClick={closeMenus} className={linkClass(false)}>
+                  Start Free
+                </Link>
+                <Link href={plansHref} onClick={closeMenus} className={linkClass(false)}>
+                  Plans
+                </Link>
                 <Link
                   href="/resources"
                   onClick={closeMenus}
@@ -529,6 +547,10 @@ export default function TopNavigation({
           className={linkClass(pathname.startsWith("/resources"))}
         >
           Resources
+        </Link>
+
+        <Link href={plansHref} onClick={closeMenus} className={linkClass(false)}>
+          Plans
         </Link>
 
         {showTrainNav ? (
@@ -611,6 +633,9 @@ export default function TopNavigation({
                     className={linkClass(pathname.startsWith("/resources"))}
                   >
                     Resources
+                  </Link>
+                  <Link href={plansHref} onClick={closeMenus} className={linkClass(false)}>
+                    Plans
                   </Link>
                 </div>
               </div>

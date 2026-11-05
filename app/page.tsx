@@ -1,10 +1,23 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { buildHomepageMetadata } from "@/lib/homepage-seo";
+import { TWELVE_WEEK_PROGRAM_HOMEPAGE_BLURB } from "@/lib/twelve-week-program-copy-shared";
+import AppPreviewSection from "@/components/AppPreviewSection";
+import HomepageVideoFrame from "@/components/HomepageVideoFrame";
+import SeeHowICoachSection from "@/components/SeeHowICoachSection";
+import HomepageFaqSection from "@/components/HomepageFaqSection";
+import HomepageJsonLd from "@/components/HomepageJsonLd";
+import { FREE_SWING_AUTH_URL } from "@/lib/free-swing-flow";
+import { getHomepagePlansHref } from "@/lib/homepage-plans-link";
+
+export const metadata: Metadata = buildHomepageMetadata();
+
 /**
  * Brand reinforcement opportunities elsewhere in the app:
  * 1. Dashboard welcome (app/dashboard/page.tsx) -- echo the secondary tagline beneath "welcome back"
  * 2. Site footer (app/layout.tsx) -- add "What do you want to be known for?" under the primary slogan
  * 3. Coaching submission flow -- a one-line prompt before upload: "What do you want this work to say about you?"
  */
-import Link from "next/link";
 import { getServerSession } from "next-auth";
 import BrandStorySection from "@/components/BrandStorySection";
 import CoachBioSection from "@/components/CoachBioSection";
@@ -107,6 +120,7 @@ export default async function Home() {
       )?.membershipLevel ?? null
     : null;
   const showPlaybookCoreUpsell = shouldShowPlaybookCorePlusUpsell(membershipLevel);
+  const plansHref = getHomepagePlansHref();
 
   return (
     <>
@@ -129,10 +143,33 @@ export default async function Home() {
           <p className="mt-5 text-xl font-medium text-[#52B788] sm:text-2xl md:text-3xl">
             {BRAND_SECONDARY_TAGLINE}
           </p>
+          <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-zinc-300 sm:text-lg">
+            Baseball and softball training for youth, high school, and college players.
+          </p>
+          <p className="mx-auto mt-4 max-w-2xl text-lg font-semibold leading-snug text-zinc-100 sm:text-xl">
+            Lessons are one day a week. What happens the other six?
+          </p>
+          <p className="mx-auto mt-3 max-w-2xl text-base text-zinc-400 sm:text-lg">
+            Daily training plans and personal swing feedback from Coach Broc between lessons.
+          </p>
+          <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center sm:justify-center">
+            <Link
+              href={FREE_SWING_AUTH_URL}
+              className="inline-flex w-full items-center justify-center rounded-full bg-[#22c55e] px-6 py-3 text-sm font-semibold text-black transition hover:bg-[#35db72] sm:w-auto"
+            >
+              Get Your Free Swing Breakdown
+            </Link>
+            <Link
+              href={plansHref}
+              className="inline-flex w-full items-center justify-center rounded-full border border-[#52B788]/60 bg-[#52B788]/10 px-6 py-3 text-sm font-semibold text-[#52B788] transition hover:bg-[#52B788]/20 sm:w-auto"
+            >
+              See Plans
+            </Link>
+          </div>
 
           {landingHeroEmbedUrl ? (
             <div className="mx-auto mt-8 w-full sm:mt-10 md:mt-12 md:max-w-[400px]">
-              <div className="relative aspect-[9/16] w-full overflow-hidden rounded-2xl border border-[#2b3650] bg-black shadow-2xl shadow-black/40">
+              <HomepageVideoFrame aspectClassName="aspect-[9/16]">
                 <iframe
                   src={landingHeroEmbedUrl}
                   title="LCB Training intro video"
@@ -140,15 +177,19 @@ export default async function Home() {
                   allow="fullscreen; picture-in-picture"
                   allowFullScreen
                 />
-              </div>
+              </HomepageVideoFrame>
             </div>
           ) : null}
         </div>
       </section>
 
-      <BrandStorySection />
+      <AppPreviewSection />
+
+      <SeeHowICoachSection />
 
       <StartFreeSection />
+
+      <BrandStorySection />
 
       <div className="mx-auto w-full max-w-6xl px-4 pb-10 pt-10 sm:px-6 sm:pb-14 sm:pt-12 md:pb-20 md:pt-14">
         <CoachBioSection />
@@ -160,9 +201,7 @@ export default async function Home() {
                 {TWELVE_WEEK_PROGRAM_NAME}
               </h2>
               <p className="mt-4 text-base leading-relaxed text-zinc-300 sm:text-lg">
-                12 weeks of structured coaching with Coach Broc. Train with purpose, get personal
-                feedback on every swing and mental game submission, and build habits that last beyond
-                the season.
+                {TWELVE_WEEK_PROGRAM_HOMEPAGE_BLURB}
               </p>
             </div>
 
@@ -267,9 +306,9 @@ export default async function Home() {
             <article className="rounded-xl border border-[#2b3650] bg-[#0A1628]/60 p-5">
               <h3 className="text-base font-semibold text-zinc-200">Remote Session</h3>
               <p className="mt-2 text-sm text-zinc-400">
-                Book a single live 60-minute video session with Coach Broc.
+                Book a single live 60-minute video session with Coach Broc. See pricing on the
+                remote session page.
               </p>
-              <p className="mt-3 text-lg font-semibold text-[#98b144]">$60 / session</p>
               <Link
                 href="/remote"
                 className="mt-4 inline-flex items-center justify-center rounded-full border border-[#52B788]/60 px-4 py-2 text-sm font-semibold text-[#52B788] transition hover:bg-[#52B788]/10"
@@ -280,11 +319,14 @@ export default async function Home() {
           </div>
         </section>
 
+        <HomepageFaqSection />
+
         <div className="mx-auto w-full max-w-6xl px-4 pb-16 sm:px-6">
           <PublicMembershipLevelsSection />
         </div>
       </div>
 
+      <HomepageJsonLd />
     </>
   );
 }
