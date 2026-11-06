@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { resolveCronDryRunNow } from "@/lib/cron-dry-run-at-shared";
 import { runProgramEmailScheduler } from "@/lib/program-email-scheduler";
 
 function isAuthorized(request: Request) {
@@ -20,10 +21,29 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const dryRun = new URL(request.url).searchParams.get("dryRun") === "1";
+  const url = new URL(request.url);
+  const dryRun = url.searchParams.get("dryRun") === "1";
 
   try {
-    const result = await runProgramEmailScheduler({ dryRun });
+    let now: Date;
+    let atQueryApplied: boolean;
+    try {
+      ({ now, atQueryApplied } = resolveCronDryRunNow({
+        dryRun,
+        atParam: dryRun ? url.searchParams.get("at") : null,
+      }));
+    } catch (parseError) {
+      return NextResponse.json(
+        { error: parseError instanceof Error ? parseError.message : "Invalid at parameter." },
+        { status: 400 },
+      );
+    }
+
+    const result = await runProgramEmailScheduler({
+      dryRun,
+      now,
+      atQueryApplied: dryRun && atQueryApplied,
+    });
     return NextResponse.json(result);
   } catch (error) {
     console.error("Program email cron failed", error);

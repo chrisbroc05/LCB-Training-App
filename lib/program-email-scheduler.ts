@@ -94,6 +94,10 @@ export type ProgramEmailRunResult = {
   dateKey: string;
   hour: number;
   activeWindows: string[];
+  /** Present in dry run: effective instant used for Chicago schedule (from ?at or server clock). */
+  simulatedAt?: string;
+  /** True when dry run used a valid ?at= value */
+  atQueryApplied?: boolean;
   dryRun: boolean;
   previews: ScheduledEmailPreview[];
   pushPreviews: ScheduledPushPreview[];
@@ -759,9 +763,11 @@ async function maybeSendCoachDailySummary(
 export async function runProgramEmailScheduler(params?: {
   dryRun?: boolean;
   now?: Date;
+  atQueryApplied?: boolean;
 }): Promise<ProgramEmailRunResult> {
   const dryRun = params?.dryRun ?? false;
   const now = params?.now ?? new Date();
+  const atQueryApplied = params?.atQueryApplied ?? false;
   const { dateKey, hour, isSaturday, isSunday } = getChicagoDateTimeParts(now);
   const day = { isSaturday, isSunday };
   const activeWindows = getActiveScheduleWindows(hour, day).map((window) => window.id);
@@ -928,6 +934,12 @@ export async function runProgramEmailScheduler(params?: {
     dateKey,
     hour,
     activeWindows,
+    ...(dryRun
+      ? {
+          simulatedAt: now.toISOString(),
+          atQueryApplied,
+        }
+      : {}),
     dryRun,
     previews,
     pushPreviews,

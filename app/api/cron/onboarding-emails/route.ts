@@ -1,4 +1,7 @@
 import { NextResponse } from "next/server";
+import { resolveCronDryRunNow } from "@/lib/cron-dry-run-at-shared";
+import { getChicagoDateTimeParts } from "@/lib/program-email-chicago";
+import { getActiveScheduleWindows } from "@/lib/program-schedule-windows";
 import { runLeadEmailScheduler } from "@/lib/lead-email-scheduler";
 import { runMarketingEmailScheduler } from "@/lib/marketing-email-scheduler";
 import { runDeferredParentAccountSignupFallbacks } from "@/lib/legal-server";
@@ -30,7 +33,35 @@ export async function POST(request: Request) {
   const skipSideEffects = dryRun || url.searchParams.get("skipSideEffects") === "1";
 
   try {
-    const now = new Date();
+    let now: Date;
+    let simulatedAtIso: string;
+    let atQueryApplied: boolean;
+    try {
+      ({ now, simulatedAtIso, atQueryApplied } = resolveCronDryRunNow({
+        dryRun,
+        atParam: dryRun ? url.searchParams.get("at") : null,
+      }));
+    } catch (parseError) {
+      return NextResponse.json(
+        { error: parseError instanceof Error ? parseError.message : "Invalid at parameter." },
+        { status: 400 },
+      );
+    }
+
+    const chicagoParts = getChicagoDateTimeParts(now);
+    const programSchedulePreview = dryRun
+      ? {
+          dateKey: chicagoParts.dateKey,
+          chicagoHour: chicagoParts.hour,
+          isSaturday: chicagoParts.isSaturday,
+          isSunday: chicagoParts.isSunday,
+          activeWindowIds: getActiveScheduleWindows(chicagoParts.hour, {
+            isSaturday: chicagoParts.isSaturday,
+            isSunday: chicagoParts.isSunday,
+          }).map((window) => window.id),
+        }
+      : undefined;
+
     const marketingResult = await runMarketingEmailScheduler({ dryRun, now });
     const leadResult = await runLeadEmailScheduler({ now, dryRun });
     const renewalResult = await runAnnualRenewalReminderEmails({ now, dryRun });
@@ -56,6 +87,13 @@ export async function POST(request: Request) {
       success: true,
       dryRun,
       skipSideEffects,
+      ...(dryRun
+        ? {
+            simulatedAt: simulatedAtIso,
+            atQueryApplied,
+            programSchedulePreview,
+          }
+        : {}),
       marketing: {
         sent: marketingResult.sent,
         skipped: marketingResult.skipped,
