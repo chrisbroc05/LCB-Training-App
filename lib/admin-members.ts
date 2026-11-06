@@ -15,6 +15,7 @@ import {
 } from "@/lib/membership";
 import { memberProfileSelect, serializeMemberProfile } from "@/lib/player-profile";
 import { formatDateTime } from "@/lib/format-date";
+import { MARKETING_EMAIL_LABELS } from "@/lib/marketing-email-shared";
 import {
   resolveMediaDisplayStatus,
   type MediaDisplayStatus,
@@ -399,6 +400,16 @@ export const adminMemberDetailSelect = {
       status: true,
     },
   },
+  marketingEmailLogs: {
+    orderBy: { sentAt: "desc" as const },
+    select: {
+      id: true,
+      type: true,
+      subject: true,
+      deliveryToEmail: true,
+      sentAt: true,
+    },
+  },
   playbookProgress: {
     select: {
       overallComplete: true,
@@ -495,6 +506,13 @@ type AdminMemberDetailRecord = AdminMemberListRecord & {
     monthlyFocus: string;
     createdAt: Date;
     status: string;
+  }>;
+  marketingEmailLogs: Array<{
+    id: string;
+    type: string;
+    subject: string | null;
+    deliveryToEmail: string | null;
+    sentAt: Date;
   }>;
   playbookProgress: {
     overallComplete: boolean;
@@ -726,6 +744,17 @@ export function serializeAdminMemberDetail(
       monthlyFocus: checkin.monthlyFocus,
       createdAt: checkin.createdAt.toISOString(),
       status: formatSubmissionStatus(checkin.status),
+    })),
+    marketingEmailsSent: user.marketingEmailLogs.map((row) => ({
+      id: row.id,
+      type: row.type,
+      typeLabel:
+        row.type in MARKETING_EMAIL_LABELS
+          ? MARKETING_EMAIL_LABELS[row.type as keyof typeof MARKETING_EMAIL_LABELS]
+          : row.type,
+      subject: row.subject,
+      deliveryToEmail: row.deliveryToEmail,
+      sentAt: row.sentAt.toISOString(),
     })),
     playbook: user.playbookProgress
       ? {

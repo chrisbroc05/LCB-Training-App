@@ -12,6 +12,7 @@ import {
   isDayBeforeStart,
   hasSetupReminderBeenSent,
   isSetupReminderDue,
+  isProgramStillBeforeFirstWorkDay,
   loadActiveEnrollments,
   loadSetupIncompleteEnrollments,
   shouldSendGoneQuietEmail,
@@ -33,7 +34,12 @@ import {
 import { isGoneQuiet } from "@/lib/program-gone-quiet";
 import { buildParentUnsubscribeUrl } from "@/lib/program-parent-token";
 import { computeProgramStreak, getDayOfWeekForProgramDay } from "@/lib/program-streak-shared";
-import { getProgramDay, PROGRAM_DAY_COUNT } from "@/lib/program-schedule";
+import {
+  getChicagoDaysSinceDate,
+  getProgramDay,
+  PROGRAM_DAY_COUNT,
+} from "@/lib/program-schedule";
+import { getProgramStaleSetupReminderMaxDays } from "@/lib/program-cron-stale-shared";
 import {
   buildProgramDayInfoForProgramDay,
   toEnrollmentPlanInput,
@@ -44,14 +50,21 @@ import {
 } from "@/lib/program-plan-overrides-server";
 import { getTaskKeysForDay } from "@/lib/program-daily-plan";
 import { isCoachEmailSummaryEnabled } from "@/lib/coach-alert-settings";
-import { sendDueParentConsentReminders } from "@/lib/legal-server";
+import {
+  loadParentConsentReminderPreviews,
+  sendDueParentConsentReminders,
+  type ParentConsentReminderPreview,
+} from "@/lib/legal-server";
 import {
   maybeSendCoachNightlySummaryPush,
   type ScheduledCoachPushPreview,
 } from "@/lib/coach-push-scheduler";
-import { processQueuedCoachVideoNotifications } from "@/lib/coach-video-notifications";
-import { processQueuedPlayerCoachReplyNotifications } from "@/lib/direct-messaging-notifications";
-import { processQueuedTaskFeedbackNotifications } from "@/lib/task-feedback-notifications";
+import {
+  buildProgramQueuedNotificationPreviews,
+  processProgramQueuedNotificationsAfterStalePass,
+  skipStaleProgramQueuedNotifications,
+  type ProgramQueuedNotificationPreview,
+} from "@/lib/program-queue-notifications-server";
 import { isMorningPlayerPushWindow } from "@/lib/direct-messaging-quiet-hours";
 import {
   getActiveScheduleWindows,
@@ -74,6 +87,7 @@ export type ScheduledEmailPreview = {
   to: string;
   subject: string;
   dateKey: string;
+  staleReason?: string;
 };
 
 export type ProgramEmailRunResult = {
@@ -84,6 +98,13 @@ export type ProgramEmailRunResult = {
   previews: ScheduledEmailPreview[];
   pushPreviews: ScheduledPushPreview[];
   coachPushPreviews: ScheduledCoachPushPreview[];
+  parentConsentReminderPreviews: ParentConsentReminderPreview[];
+  staleQueueSkipSummary: {
+    coachReplySkipped: number;
+    coachVideoSkipped: number;
+    taskFeedbackSkipped: number;
+  } | null;
+  queuedNotificationPreviews: ProgramQueuedNotificationPreview[];
   sent: number;
   skipped: number;
   errors: string[];
@@ -207,6 +228,7 @@ async function maybeSendDailyRoutine(
 async function maybeSendDayBeforeStart(
   enrollment: ActiveEnrollmentRecord,
   dateKey: string,
+  now: Date,
   dryRun: boolean,
   previews: ScheduledEmailPreview[],
 ) {
@@ -215,6 +237,26 @@ async function maybeSendDayBeforeStart(
   }
 
   if (!isDayBeforeStart(enrollment, dateKey)) {
+    return false;
+  }
+
+  if (!isProgramStillBeforeFirstWorkDay(enrollment, now)) {
+    if (dryRun) {
+      const firstName = getPlayerFirstName(enrollment.user.name, enrollment.user.email);
+      const email = buildDayBeforeStartEmail({
+        firstName,
+        knownFor: enrollment.knownFor,
+      });
+      previews.push({
+        type: "DAY_BEFORE_START",
+        recipient: "player",
+        enrollmentId: enrollment.id,
+        to: enrollment.user.email,
+        subject: email.subject,
+        dateKey,
+        staleReason: "would skip (stale): program already started",
+      });
+    }
     return false;
   }
 
@@ -342,6 +384,24 @@ async function maybeSendSetupReminder(
   }
 
   if (!isSetupReminderDue(enrollment.createdAt, now)) {
+    return false;
+  }
+
+  const daysSinceSignup = getChicagoDaysSinceDate(enrollment.createdAt, now);
+  if (daysSinceSignup > getProgramStaleSetupReminderMaxDays()) {
+    if (dryRun) {
+      const firstName = getPlayerFirstName(enrollment.user.name, enrollment.user.email);
+      const email = buildSetupReminderEmail({ firstName });
+      previews.push({
+        type: "SETUP_REMINDER",
+        recipient: "player",
+        enrollmentId: enrollment.id,
+        to: enrollment.user.email,
+        subject: email.subject,
+        dateKey: SETUP_REMINDER_DATE_KEY,
+        staleReason: `would skip (stale): setup reminder ${daysSinceSignup} days after signup`,
+      });
+    }
     return false;
   }
 
@@ -711,6 +771,9 @@ export async function runProgramEmailScheduler(params?: {
   const errors: string[] = [];
   let sent = 0;
   let skipped = 0;
+  let parentConsentReminderPreviews: ParentConsentReminderPreview[] = [];
+  let staleQueueSkipSummary: ProgramEmailRunResult["staleQueueSkipSummary"] = null;
+  let queuedNotificationPreviews: ProgramQueuedNotificationPreview[] = [];
 
   const enrollments = await loadActiveEnrollments(now);
   const morningSevenWindow = PROGRAM_SCHEDULE_WINDOWS.find((window) => window.id === "morning-seven");
@@ -737,27 +800,34 @@ export async function runProgramEmailScheduler(params?: {
     }
   };
 
+  if (dryRun) {
+    parentConsentReminderPreviews = await loadParentConsentReminderPreviews(now);
+    queuedNotificationPreviews = await buildProgramQueuedNotificationPreviews(now);
+  }
+
   await trySend("parent-consent-reminders", async () => {
+    if (dryRun) {
+      return parentConsentReminderPreviews.length > 0;
+    }
     const sentReminders = await sendDueParentConsentReminders(now);
     return sentReminders > 0;
   });
 
-  if (
-    morningSevenWindow &&
-    isInSendWindow(hour, morningSevenWindow.startHour, morningSevenWindow.endHour)
-  ) {
-    if (!dryRun && isMorningPlayerPushWindow(now)) {
-      await trySend("queued-player-message-pushes", async () => {
-        await processQueuedPlayerCoachReplyNotifications(now);
-        await processQueuedCoachVideoNotifications(now);
-        await processQueuedTaskFeedbackNotifications(now);
-        return false;
-      });
+  if (morningSevenWindow && isInSendWindow(hour, morningSevenWindow.startHour, morningSevenWindow.endHour)) {
+    if (!dryRun) {
+      staleQueueSkipSummary = await skipStaleProgramQueuedNotifications(now);
+
+      if (isMorningPlayerPushWindow(now)) {
+        await trySend("queued-player-notifications", async () => {
+          await processProgramQueuedNotificationsAfterStalePass(now);
+          return false;
+        });
+      }
     }
 
     for (const enrollment of enrollments) {
       await trySend(`day-before-start:${enrollment.id}`, () =>
-        maybeSendDayBeforeStart(enrollment, dateKey, dryRun, previews),
+        maybeSendDayBeforeStart(enrollment, dateKey, now, dryRun, previews),
       );
     }
 
@@ -790,10 +860,7 @@ export async function runProgramEmailScheduler(params?: {
     }
   }
 
-  if (
-    goneQuietWindow &&
-    isInSendWindow(hour, goneQuietWindow.startHour, goneQuietWindow.endHour)
-  ) {
+  if (goneQuietWindow && isInSendWindow(hour, goneQuietWindow.startHour, goneQuietWindow.endHour)) {
     for (const enrollment of enrollments) {
       await trySend(`gone-quiet:${enrollment.id}`, () =>
         maybeSendGoneQuiet(enrollment, dateKey, now, dryRun, previews),
@@ -816,10 +883,7 @@ export async function runProgramEmailScheduler(params?: {
     }
   }
 
-  if (
-    coachNightlyWindow &&
-    isInSendWindow(hour, coachNightlyWindow.startHour, coachNightlyWindow.endHour)
-  ) {
+  if (coachNightlyWindow && isInSendWindow(hour, coachNightlyWindow.startHour, coachNightlyWindow.endHour)) {
     await trySend("coach-daily-summary", () =>
       maybeSendCoachDailySummary(dateKey, now, dryRun, previews),
     );
@@ -855,6 +919,11 @@ export async function runProgramEmailScheduler(params?: {
     trySend,
   });
 
+  if (dryRun) {
+    sent = 0;
+    skipped = 0;
+  }
+
   return {
     dateKey,
     hour,
@@ -863,6 +932,9 @@ export async function runProgramEmailScheduler(params?: {
     previews,
     pushPreviews,
     coachPushPreviews,
+    parentConsentReminderPreviews,
+    staleQueueSkipSummary,
+    queuedNotificationPreviews,
     sent: dryRun ? 0 : sent,
     skipped,
     errors,

@@ -9,6 +9,7 @@ import {
   type MarketingEmailRecipient,
 } from "@/lib/marketing-email-templates";
 import type { MarketingEmailTypeValue } from "@/lib/marketing-email-shared";
+import { getMarketingEmailSubjectLine } from "@/lib/marketing-email-subject-shared";
 import { assertCompanyMailingAddressForMarketing } from "@/lib/marketing-email-guard-server";
 import { resolveUserMarketingDeliveryEmail } from "@/lib/marketing-recipient-server";
 import { prisma } from "@/lib/prisma";
@@ -53,9 +54,10 @@ export async function sendMarketingEmail(params: {
   }
 
   const content = buildMarketingEmailContent(params.type, params.recipient, params.submission);
+  const logicalSubject = getMarketingEmailSubjectLine(params.type);
   const subject = params.subjectPrefix
-    ? `${params.subjectPrefix}${content.subject}`
-    : content.subject;
+    ? `${params.subjectPrefix}${logicalSubject}`
+    : logicalSubject;
   const fromEmail = process.env.NOTIFICATION_EMAIL;
   if (!fromEmail) {
     throw new Error("NOTIFICATION_EMAIL is required for marketing emails.");
@@ -83,6 +85,8 @@ export async function sendMarketingEmail(params: {
         type: params.type as MarketingEmailType,
         dedupeKey,
         anchorSubmissionId: params.submission?.submissionId ?? null,
+        subject: logicalSubject,
+        deliveryToEmail: delivery.toEmail,
       },
     });
   }

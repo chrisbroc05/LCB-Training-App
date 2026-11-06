@@ -211,7 +211,10 @@ export async function reconcileDeferredParentAccountSignupConsent(userId: string
   await fallbackDeferredParentAccountSignupConsent(userId, "deferral_expired");
 }
 
-export async function runDeferredParentAccountSignupFallbacks(now = new Date()) {
+export async function runDeferredParentAccountSignupFallbacks(
+  now = new Date(),
+  dryRun = false,
+): Promise<{ scanned: number; applied: number }> {
   const cutoff = new Date(now.getTime() - PARENT_ACCOUNT_SIGNUP_CHECKOUT_DEFERRAL_MS);
   const users = await prisma.user.findMany({
     where: {
@@ -223,6 +226,10 @@ export async function runDeferredParentAccountSignupFallbacks(now = new Date()) 
     },
     select: { id: true },
   });
+
+  if (dryRun) {
+    return { scanned: users.length, applied: 0 };
+  }
 
   let applied = 0;
   for (const user of users) {
@@ -890,6 +897,78 @@ export async function sendMinorLegalParentConsentEmailIfNeeded(userId: string) {
 export async function finalizeMinorLegalAcceptanceSideEffects(userId: string) {
   await applyMinorLegalParentConsentRecords(userId);
   await sendMinorLegalParentConsentEmailIfNeeded(userId);
+}
+
+export type ParentConsentReminderPreview = {
+  channel: "parent-consent-reminder";
+  userId: string;
+  to: string;
+  subject: string;
+};
+
+/** Same eligibility as sendDueParentConsentReminders; for cron dry run previews only. */
+export async function loadParentConsentReminderPreviews(now = new Date()) {
+  const twoDaysMs = 2 * 24 * 60 * 60 * 1000;
+  const cutoff = new Date(now.getTime() - twoDaysMs);
+
+  const users = await prisma.user.findMany({
+    where: {
+      playerAge: { lt: 18 },
+      acceptedAsParent: true,
+      parentConsentEmail: { not: null },
+      parentConsentConfirmedAt: null,
+      parentConsentEmailSentAt: { lte: cutoff },
+      parentConsentReminderSentAt: null,
+    },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      accountRole: true,
+      playerFirstName: true,
+      playerLastName: true,
+      acceptedByName: true,
+      termsAcceptedAt: true,
+      parentConsentEmail: true,
+      parentConsentMethod: true,
+    },
+  });
+
+  const { buildParentConsentConfirmEmail } = await import("@/lib/parent-consent-email-shared");
+
+  const previews: ParentConsentReminderPreview[] = [];
+
+  for (const user of users) {
+    if (
+      !user.parentConsentEmail?.trim() ||
+      !user.termsAcceptedAt ||
+      !user.acceptedByName ||
+      user.parentConsentMethod === PARENT_CONSENT_METHOD_ACCOUNT_SIGNUP
+    ) {
+      continue;
+    }
+
+    const playerName =
+      combinePlayerName(user.playerFirstName ?? "", user.playerLastName ?? "") || user.name;
+    const email = buildParentConsentConfirmEmail({
+      userId: user.id,
+      playerName,
+      playerEmail: user.email,
+      agreedByName: user.acceptedByName,
+      agreedAt: user.termsAcceptedAt,
+      isReminder: true,
+      audience: user.accountRole === "PARENT" ? "parent_account_holder" : "third_party_parent",
+    });
+
+    previews.push({
+      channel: "parent-consent-reminder",
+      userId: user.id,
+      to: user.parentConsentEmail.trim(),
+      subject: email.subject,
+    });
+  }
+
+  return previews;
 }
 
 export async function sendDueParentConsentReminders(now = new Date()) {

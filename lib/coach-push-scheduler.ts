@@ -45,7 +45,7 @@ export async function maybeSendCoachNightlySummaryPush(params: {
   });
 
   if (params.dryRun) {
-    return true;
+    return false;
   }
 
   const result = await sendCoachAlertPush({
@@ -98,7 +98,7 @@ export async function maybeSendCoachDailySignupSummaryPush(params: {
   });
 
   if (params.dryRun) {
-    return true;
+    return false;
   }
 
   const { sendCoachSignupAlertPushForMode } = await import("@/lib/coach-push-send");

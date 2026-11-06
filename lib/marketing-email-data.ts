@@ -6,7 +6,11 @@ import {
   FOLLOWUP_DAY_OFFSETS,
   isMarketingEmailInWindow,
 } from "@/lib/marketing-email-shared";
-import { isOnOrAfterMarketingEmailsStart } from "@/lib/marketing-emails-start-shared";
+import {
+  getFollowupSequenceCutoff,
+  getOrgTrialReminderMaxSignupAgeDays,
+  isOnOrAfterMarketingEmailsStart,
+} from "@/lib/marketing-emails-start-shared";
 import type {
   FollowupSubmissionContext,
   MarketingEmailRecipient,
@@ -21,6 +25,7 @@ import {
 import { isOrgTrialWindowActive } from "@/lib/org-shared";
 import type { DatabaseTier } from "@/lib/membership";
 import { prisma } from "@/lib/prisma";
+import { resolveUserMarketingDeliveryEmail } from "@/lib/marketing-recipient-server";
 
 export type MarketingFollowupAnchor = {
   userId: string;
@@ -194,6 +199,11 @@ export async function loadMarketingFollowupAnchors(_now = new Date()) {
       continue;
     }
 
+    const followupCutoff = getFollowupSequenceCutoff();
+    if (followupCutoff && submission.respondedAt < followupCutoff) {
+      continue;
+    }
+
     anchors.push({
       userId: user.id,
       email: user.email,
@@ -316,6 +326,9 @@ export async function loadOrgTrialSubmissionReminderCandidates(now = new Date())
       if (!isOrgTrialSubmissionReminderDue(user.signupDate, now)) {
         return false;
       }
+      if (user.organization.trialStartsAt && user.signupDate < user.organization.trialStartsAt) {
+        return false;
+      }
       const access = buildClubReportAccessFields({
         id: user.id,
         orgTeamId: user.orgTeamId,
@@ -362,6 +375,7 @@ export async function loadUserMarketingRecipient(
       email: true,
       name: true,
       playerFirstName: true,
+      playerAge: true,
       accountRole: true,
       accountHolderName: true,
       membershipTier: true,
@@ -371,6 +385,13 @@ export async function loadUserMarketingRecipient(
       membershipLevelExpiresAt: true,
       marketingEmailsSuppressed: true,
       isTestAccount: true,
+      parentConsentEmail: true,
+      programEnrollment: {
+        select: {
+          parentEmail: true,
+          parentEmailsEnabled: true,
+        },
+      },
     },
   });
 
@@ -378,9 +399,14 @@ export async function loadUserMarketingRecipient(
     return null;
   }
 
+  const delivery = await resolveUserMarketingDeliveryEmail(user.id);
+  if (delivery.skipped) {
+    return null;
+  }
+
   const recipient: MarketingEmailRecipient = {
     userId: user.id,
-    email: user.email,
+    email: delivery.toEmail,
     firstName: getFirstName(user),
     playerFirstName: getPlayerFirstName({
       playerFirstName: user.playerFirstName,

@@ -21,6 +21,7 @@ import {
   hasSetupReminderBeenSent,
   isDayBeforeStart,
   isSetupReminderDue,
+  isProgramStillBeforeFirstWorkDay,
   loadActiveEnrollments,
   loadSetupIncompleteEnrollments,
   type ActiveEnrollmentRecord,
@@ -31,7 +32,8 @@ import {
   sendPushToUser,
   userHasPushSubscriptions,
 } from "@/lib/push-send";
-import { getProgramDay, PROGRAM_DAY_COUNT } from "@/lib/program-schedule";
+import { getChicagoDaysSinceDate, getProgramDay, PROGRAM_DAY_COUNT } from "@/lib/program-schedule";
+import { getProgramStaleSetupReminderMaxDays } from "@/lib/program-cron-stale-shared";
 import {
   buildOverridesForWeekAndDay,
   loadEnrollmentPlanOverrideBundle,
@@ -49,6 +51,7 @@ export type ScheduledPushPreview = {
   body: string;
   url: string;
   dateKey: string;
+  staleReason?: string;
 };
 
 async function enrollmentFinishedToday(enrollment: ActiveEnrollmentRecord, now: Date) {
@@ -171,11 +174,29 @@ async function maybeSendDailyWorkPush(
 async function maybeSendDayBeforeStartPush(
   enrollment: ActiveEnrollmentRecord,
   dateKey: string,
+  now: Date,
   dryRun: boolean,
   previews: ScheduledPushPreview[],
 ) {
   const hasPush = await userHasPushSubscriptions(enrollment.userId);
   if (!hasPush || !isDayBeforeStart(enrollment, dateKey)) {
+    return false;
+  }
+
+  if (!isProgramStillBeforeFirstWorkDay(enrollment, now)) {
+    if (dryRun) {
+      previews.push({
+        channel: "push",
+        type: "DAY_BEFORE_START",
+        userId: enrollment.userId,
+        enrollmentId: enrollment.id,
+        title: "Your program starts tomorrow",
+        body: "Day 1 is tomorrow. Get some sleep.",
+        url: "/dashboard/today",
+        dateKey,
+        staleReason: "would skip (stale): program already started",
+      });
+    }
     return false;
   }
 
@@ -307,6 +328,24 @@ async function maybeSendSetupReminderPush(
     return false;
   }
 
+  const daysSinceSignup = getChicagoDaysSinceDate(enrollment.createdAt, now);
+  if (daysSinceSignup > getProgramStaleSetupReminderMaxDays()) {
+    if (dryRun) {
+      previews.push({
+        channel: "push",
+        type: "SETUP_REMINDER",
+        userId: enrollment.userId,
+        enrollmentId: enrollment.id,
+        title: SETUP_REMINDER_PUSH_TITLE,
+        body: SETUP_REMINDER_PUSH_BODY,
+        url: "/program/start",
+        dateKey: SETUP_REMINDER_DATE_KEY,
+        staleReason: `would skip (stale): setup reminder ${daysSinceSignup} days after signup`,
+      });
+    }
+    return false;
+  }
+
   if (await hasSetupReminderBeenSent(enrollment.id, enrollment.userId)) {
     return false;
   }
@@ -420,7 +459,13 @@ export async function runScheduledPushJobs(params: {
   ) {
     for (const enrollment of enrollments) {
       await params.trySend(`push-day-before:${enrollment.id}`, () =>
-        maybeSendDayBeforeStartPush(enrollment, params.dateKey, params.dryRun, params.previews),
+        maybeSendDayBeforeStartPush(
+          enrollment,
+          params.dateKey,
+          params.now,
+          params.dryRun,
+          params.previews,
+        ),
       );
     }
 

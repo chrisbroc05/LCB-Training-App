@@ -14,6 +14,9 @@ assert.equal(isOrgTrialSubmissionReminderDue(signup, day1), false);
 assert.equal(isOrgTrialSubmissionReminderDue(signup, day2), true);
 assert.equal(getMarketingEmailAgeDays(signup, day2), 2);
 
+const day31 = new Date(signup.getTime() + 31 * 24 * 60 * 60 * 1000);
+assert.equal(isOrgTrialSubmissionReminderDue(signup, day31), false);
+
 assert.equal(
   shouldOfferFreeSubmissionReminder({
     organizationId: "org",

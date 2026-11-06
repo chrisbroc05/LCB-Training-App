@@ -28,7 +28,17 @@ export { shouldRunCommissionMonthlyReportToday } from "@/lib/membership-emails-c
 
 const RENEWAL_REMINDER_DAYS = 30;
 
-export async function runAnnualRenewalReminderEmails(params: { now?: Date; dryRun?: boolean } = {}) {
+export type AnnualRenewalReminderPreview = {
+  channel: "annual-renewal-reminder";
+  userId: string;
+  to: string;
+  subject: string;
+};
+
+export async function runAnnualRenewalReminderEmails(params: {
+  now?: Date;
+  dryRun?: boolean;
+} = {}) {
   const now = params.now ?? new Date();
   const windowStart = new Date(now);
   windowStart.setUTCDate(windowStart.getUTCDate() + RENEWAL_REMINDER_DAYS - 1);
@@ -48,6 +58,7 @@ export async function runAnnualRenewalReminderEmails(params: { now?: Date; dryRu
 
   let sent = 0;
   let skipped = 0;
+  const previews: AnnualRenewalReminderPreview[] = [];
 
   for (const sub of subs) {
     const email = sub.user.email?.trim();
@@ -71,21 +82,37 @@ export async function runAnnualRenewalReminderEmails(params: { now?: Date; dryRu
       renewalDateLabel: renewalLabel,
     });
 
-    if (!params.dryRun) {
-      await sendNotificationEmail({ from: process.env.NOTIFICATION_EMAIL, to: email, subject, text: body });
-      await prisma.membershipEmailLog.create({
-        data: {
-          userId: sub.userId,
-          type: "ANNUAL_RENEWAL_REMINDER",
-          dedupeKey,
-        },
+    if (params.dryRun) {
+      previews.push({
+        channel: "annual-renewal-reminder",
+        userId: sub.userId,
+        to: email,
+        subject,
       });
+      sent += 1;
+      continue;
     }
+
+    await sendNotificationEmail({ from: process.env.NOTIFICATION_EMAIL, to: email, subject, text: body });
+    await prisma.membershipEmailLog.create({
+      data: {
+        userId: sub.userId,
+        type: "ANNUAL_RENEWAL_REMINDER",
+        dedupeKey,
+      },
+    });
     sent += 1;
   }
 
-  return { sent, skipped };
+  return { sent, skipped, previews };
 }
+
+export type CommissionMonthlyReportPreview = {
+  channel: "commission-monthly-report";
+  to: string;
+  subject: string;
+  monthKey: string;
+};
 
 export async function runCommissionMonthlyReportEmail(params: { now?: Date; dryRun?: boolean } = {}) {
   const now = params.now ?? new Date();
@@ -97,7 +124,12 @@ export async function runCommissionMonthlyReportEmail(params: { now?: Date; dryR
 
   const adminEmail = process.env.ADMIN_EMAIL?.trim();
   if (!adminEmail) {
-    return { sent: 0, skipped: 0, errors: ["ADMIN_EMAIL missing"] as string[] };
+    return {
+      sent: 0,
+      skipped: 0,
+      errors: ["ADMIN_EMAIL missing"] as string[],
+      preview: null as CommissionMonthlyReportPreview | null,
+    };
   }
 
   const dedupeKey = buildCommissionReportDedupeKey(monthKey);
@@ -105,7 +137,7 @@ export async function runCommissionMonthlyReportEmail(params: { now?: Date; dryR
     where: { dedupeKey, type: "COMMISSION_MONTHLY_REPORT" },
   });
   if (existing) {
-    return { sent: 0, skipped: 1, errors: [] as string[] };
+    return { sent: 0, skipped: 1, errors: [] as string[], preview: null };
   }
 
   const orgs = await prisma.organization.findMany({
@@ -115,7 +147,7 @@ export async function runCommissionMonthlyReportEmail(params: { now?: Date; dryR
   });
 
   if (orgs.length === 0) {
-    return { sent: 0, skipped: 1, errors: [] as string[] };
+    return { sent: 0, skipped: 1, errors: [] as string[], preview: null };
   }
 
   const orgLines: Array<{
@@ -235,27 +267,39 @@ export async function runCommissionMonthlyReportEmail(params: { now?: Date; dryR
     commissionsUrl,
   });
 
-  if (!params.dryRun) {
-    await sendNotificationEmail({
-      from: process.env.NOTIFICATION_EMAIL,
-      to: adminEmail,
-      subject,
-      text: body,
-    });
-    const systemUser = await prisma.user.findFirst({
-      where: { email: adminEmail },
-      select: { id: true },
-    });
-    if (systemUser) {
-      await prisma.membershipEmailLog.create({
-        data: {
-          userId: systemUser.id,
-          type: "COMMISSION_MONTHLY_REPORT",
-          dedupeKey,
-        },
-      });
-    }
+  if (params.dryRun) {
+    return {
+      sent: 0,
+      skipped: 0,
+      errors: [] as string[],
+      preview: {
+        channel: "commission-monthly-report",
+        to: adminEmail,
+        subject,
+        monthKey,
+      } satisfies CommissionMonthlyReportPreview,
+    };
   }
 
-  return { sent: 1, skipped: 0, errors: [] as string[] };
+  await sendNotificationEmail({
+    from: process.env.NOTIFICATION_EMAIL,
+    to: adminEmail,
+    subject,
+    text: body,
+  });
+  const systemUser = await prisma.user.findFirst({
+    where: { email: adminEmail },
+    select: { id: true },
+  });
+  if (systemUser) {
+    await prisma.membershipEmailLog.create({
+      data: {
+        userId: systemUser.id,
+        type: "COMMISSION_MONTHLY_REPORT",
+        dedupeKey,
+      },
+    });
+  }
+
+  return { sent: 1, skipped: 0, errors: [] as string[], preview: null };
 }

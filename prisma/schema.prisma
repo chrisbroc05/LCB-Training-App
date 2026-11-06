@@ -562,6 +562,8 @@ model MarketingEmailLog {
   type               MarketingEmailType
   dedupeKey          String             @unique
   anchorSubmissionId String?
+  subject            String?
+  deliveryToEmail    String?
   sentAt             DateTime           @default(now())
 
   @@index([userId, type])

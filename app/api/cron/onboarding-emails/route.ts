@@ -25,41 +25,56 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const url = new URL(request.url);
+  const dryRun = url.searchParams.get("dryRun") === "1";
+  const skipSideEffects = dryRun || url.searchParams.get("skipSideEffects") === "1";
+
   try {
     const now = new Date();
-    const [result, leadResult, renewalResult, commissionResult, parentDeferralFallback, feeRetry] =
-      await Promise.all([
-      runMarketingEmailScheduler({ dryRun: false }),
-      runLeadEmailScheduler(),
-      runAnnualRenewalReminderEmails({ now }),
-      shouldRunCommissionMonthlyReportToday(now)
-        ? runCommissionMonthlyReportEmail({ now })
-        : Promise.resolve({ sent: 0, skipped: 0, errors: [] as string[] }),
-      runDeferredParentAccountSignupFallbacks(now),
-      runPendingCommissionFeeResolution({ limit: 25 }).catch((error) => {
-        console.error("Commission fee retry batch failed", error);
-        return {
-          scanned: 0,
-          resolved: 0,
-          stillPending: 0,
-          errors: [error instanceof Error ? error.message : String(error)],
-        };
-      }),
-    ]);
+    const marketingResult = await runMarketingEmailScheduler({ dryRun, now });
+    const leadResult = await runLeadEmailScheduler({ now, dryRun });
+    const renewalResult = await runAnnualRenewalReminderEmails({ now, dryRun });
+    const commissionResult = shouldRunCommissionMonthlyReportToday(now)
+      ? await runCommissionMonthlyReportEmail({ now, dryRun })
+      : { sent: 0, skipped: 0, errors: [] as string[], preview: null };
+    const parentDeferralFallback = skipSideEffects
+      ? { scanned: 0, applied: 0 }
+      : await runDeferredParentAccountSignupFallbacks(now, false);
+    const feeRetry = skipSideEffects
+      ? { scanned: 0, resolved: 0, stillPending: 0, errors: [] as string[] }
+      : await runPendingCommissionFeeResolution({ limit: 25 }).catch((error) => {
+          console.error("Commission fee retry batch failed", error);
+          return {
+            scanned: 0,
+            resolved: 0,
+            stillPending: 0,
+            errors: [error instanceof Error ? error.message : String(error)],
+          };
+        });
+
     return NextResponse.json({
       success: true,
-      sent: result.sent,
-      skipped: result.skipped,
-      errors: result.errors,
-      leadSent: leadResult.sent,
-      leadSkipped: leadResult.skipped,
-      leadErrors: leadResult.errors,
-      leadFollowUpBlockedMissingAddress: leadResult.blockedMissingAddress,
-      annualRenewalSent: renewalResult.sent,
-      annualRenewalSkipped: renewalResult.skipped,
-      commissionReportSent: commissionResult.sent,
-      commissionReportSkipped: commissionResult.skipped,
-      commissionReportErrors: commissionResult.errors,
+      dryRun,
+      skipSideEffects,
+      marketing: {
+        sent: marketingResult.sent,
+        skipped: marketingResult.skipped,
+        errors: marketingResult.errors,
+        previews: marketingResult.previews,
+      },
+      lead: {
+        sent: leadResult.sent,
+        skipped: leadResult.skipped,
+        errors: leadResult.errors,
+        followUpBlockedMissingAddress: leadResult.blockedMissingAddress,
+        previews: leadResult.previews,
+      },
+      annualRenewal: {
+        sent: renewalResult.sent,
+        skipped: renewalResult.skipped,
+        previews: renewalResult.previews ?? [],
+      },
+      commissionMonthlyReport: commissionResult,
       parentDeferralFallbackScanned: parentDeferralFallback.scanned,
       parentDeferralFallbackApplied: parentDeferralFallback.applied,
       commissionFeeRetryScanned: feeRetry.scanned,
@@ -68,7 +83,7 @@ export async function POST(request: Request) {
       commissionFeeRetryErrors: feeRetry.errors ?? [],
     });
   } catch (error) {
-    console.error("Failed to run marketing email scheduler", error);
-    return NextResponse.json({ error: "Unable to run marketing emails." }, { status: 500 });
+    console.error("Failed to run onboarding email cron", error);
+    return NextResponse.json({ error: "Unable to run onboarding email cron." }, { status: 500 });
   }
 }

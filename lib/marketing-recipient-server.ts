@@ -12,6 +12,7 @@ export type UserMarketingDelivery = {
 
 function resolveParentMarketingEmail(user: {
   email: string;
+  accountRole: string | null;
   parentConsentEmail: string | null;
   programEnrollment: {
     parentEmail: string | null;
@@ -47,6 +48,7 @@ export async function resolveUserMarketingDeliveryEmail(
     select: {
       id: true,
       email: true,
+      accountRole: true,
       playerAge: true,
       parentConsentEmail: true,
       programEnrollment: {
@@ -65,6 +67,10 @@ export async function resolveUserMarketingDeliveryEmail(
   const age = user.playerAge;
   if (age == null || age >= 18) {
     return { skipped: false, toEmail: user.email };
+  }
+
+  if (user.accountRole === "PARENT") {
+    return { skipped: false, toEmail: user.email.trim() };
   }
 
   const parentEmail = resolveParentMarketingEmail(user);

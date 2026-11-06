@@ -46,7 +46,7 @@ export const MARKETING_EMAIL_WINDOWS: Partial<
   Record<MarketingEmailTypeValue, { minDays: number; maxDays: number }>
 > = {
   FREE_SUBMISSION_REMINDER: { minDays: 2, maxDays: 3 },
-  ORG_TRIAL_SUBMISSION_REMINDER: { minDays: 2, maxDays: 3650 },
+  ORG_TRIAL_SUBMISSION_REMINDER: { minDays: 2, maxDays: 30 },
   FOLLOWUP_DRILLS_DAY_2: { minDays: 2, maxDays: 3 },
   FOLLOWUP_OTHER_SIX_DAY_4: { minDays: 4, maxDays: 5 },
   FOLLOWUP_SAMPLE_DAY_DAY_7: { minDays: 7, maxDays: 8 },

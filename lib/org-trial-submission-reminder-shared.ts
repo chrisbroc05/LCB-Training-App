@@ -1,10 +1,13 @@
 import { getMarketingEmailAgeDays } from "@/lib/marketing-email-shared";
+import { getOrgTrialReminderMaxSignupAgeDays } from "@/lib/marketing-emails-start-shared";
 import { isOrgTrialWindowActive } from "@/lib/org-shared";
 
 export const ORG_TRIAL_SUBMISSION_REMINDER_MIN_DAYS = 2;
 
 export function isOrgTrialSubmissionReminderDue(signupDate: Date, now = new Date()): boolean {
-  return getMarketingEmailAgeDays(signupDate, now) >= ORG_TRIAL_SUBMISSION_REMINDER_MIN_DAYS;
+  const ageDays = getMarketingEmailAgeDays(signupDate, now);
+  const maxDays = getOrgTrialReminderMaxSignupAgeDays();
+  return ageDays >= ORG_TRIAL_SUBMISSION_REMINDER_MIN_DAYS && ageDays <= maxDays;
 }
 
 export function shouldOfferFreeSubmissionReminder(params: {

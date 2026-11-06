@@ -14,7 +14,6 @@ import {
   loadUserMarketingRecipient,
 } from "@/lib/marketing-email-data";
 import {
-  buildMarketingEmailContent,
   buildMarketingTestSubmissionContext,
   type FollowupSubmissionContext,
   type MarketingEmailRecipient,
@@ -24,6 +23,8 @@ import {
   hasMarketingEmailBeenSent,
   sendMarketingEmail,
 } from "@/lib/marketing-email-send";
+import { resolveUserMarketingDeliveryEmail } from "@/lib/marketing-recipient-server";
+import { getMarketingEmailSubjectLine } from "@/lib/marketing-email-subject-shared";
 
 export type MarketingEmailPreview = {
   channel: "marketing-email";
@@ -68,19 +69,18 @@ async function previewOrSend(params: {
     return { sent: false, skipped: true };
   }
 
-  const content = buildMarketingEmailContent(
-    params.type,
-    params.recipient,
-    params.submission,
-  );
+  const delivery = await resolveUserMarketingDeliveryEmail(params.recipient.userId);
+  if (delivery.skipped) {
+    return { sent: false, skipped: true };
+  }
 
   params.previews.push({
     channel: "marketing-email",
     type: params.type,
     userId: params.recipient.userId,
     firstName: params.recipient.firstName,
-    to: params.recipient.email,
-    subject: content.subject,
+    to: delivery.toEmail,
+    subject: getMarketingEmailSubjectLine(params.type),
     anchorSubmissionId: params.submission?.submissionId ?? null,
     anchorDate: params.anchorDate.toISOString(),
     ageDays: getMarketingEmailAgeDays(params.anchorDate),
@@ -115,11 +115,17 @@ export async function runMarketingEmailScheduler(params?: {
   let sent = 0;
   let skipped = 0;
 
-  if (!dryRun && !isCompanyMailingAddressConfigured()) {
-    console.warn(
-      "[marketing-email-scheduler] COMPANY_MAILING_ADDRESS is not set. Skipping user marketing emails.",
-    );
-    return { dryRun, previews, sent: 0, skipped: 0, errors: [] };
+  if (!isCompanyMailingAddressConfigured()) {
+    if (dryRun) {
+      errors.push(
+        "COMPANY_MAILING_ADDRESS is not set (marketing previews only; real sends would be skipped).",
+      );
+    } else {
+      console.warn(
+        "[marketing-email-scheduler] COMPANY_MAILING_ADDRESS is not set. Skipping user marketing emails.",
+      );
+      return { dryRun, previews, sent: 0, skipped: 0, errors: [] };
+    }
   }
 
   const reminderCandidates = await loadFreeSubmissionReminderCandidates(now);

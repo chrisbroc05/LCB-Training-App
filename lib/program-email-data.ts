@@ -694,6 +694,16 @@ export function isDayBeforeStart(enrollment: ActiveEnrollmentRecord, dateKey: st
   return tomorrowFromToday === startKey;
 }
 
+/** True if the program has not reached day 1 yet (still before or on start calendar day as schedule defines). */
+export function isProgramStillBeforeFirstWorkDay(enrollment: ActiveEnrollmentRecord, now = new Date()) {
+  if (!enrollment.startDate) {
+    return false;
+  }
+
+  const schedule = getProgramDay({ startDate: enrollment.startDate }, now);
+  return schedule.programDay <= 0;
+}
+
 export async function enrollmentNeedsVideoReminder(enrollment: ActiveEnrollmentRecord, now = new Date()) {
   return !(await hasWeeklyVideoSent(enrollment.userId, enrollment.startDate, now));
 }

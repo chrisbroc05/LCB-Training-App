@@ -15,11 +15,20 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const INVITE_MIN_DAYS = 3;
 const INVITE_MAX_DAYS = 4;
 
+export type LeadEmailSchedulerPreview = {
+  channel: "lead-email";
+  type: typeof LEAD_INVITE_TYPE;
+  leadId: string;
+  to: string;
+  subject: string;
+};
+
 export type LeadEmailSchedulerResult = {
   sent: number;
   skipped: number;
   errors: string[];
   blockedMissingAddress: boolean;
+  previews: LeadEmailSchedulerPreview[];
 };
 
 function isInInviteWindow(createdAt: Date, now: Date) {
@@ -27,17 +36,30 @@ function isInInviteWindow(createdAt: Date, now: Date) {
   return ageDays >= INVITE_MIN_DAYS && ageDays <= INVITE_MAX_DAYS;
 }
 
-export async function runLeadEmailScheduler(params?: { now?: Date }): Promise<LeadEmailSchedulerResult> {
+export async function runLeadEmailScheduler(params?: {
+  now?: Date;
+  dryRun?: boolean;
+}): Promise<LeadEmailSchedulerResult> {
   const now = params?.now ?? new Date();
+  const dryRun = params?.dryRun ?? false;
   const errors: string[] = [];
   let sent = 0;
   let skipped = 0;
+  const previews: LeadEmailSchedulerPreview[] = [];
 
+  let blockedMissingAddress = false;
   if (!isCompanyMailingAddressConfigured()) {
-    console.warn(
-      "[lead-email-scheduler] COMPANY_MAILING_ADDRESS is not set. Skipping lead follow-up emails.",
-    );
-    return { sent: 0, skipped: 0, errors: [], blockedMissingAddress: true };
+    blockedMissingAddress = true;
+    if (dryRun) {
+      errors.push(
+        "COMPANY_MAILING_ADDRESS is not set (lead previews only; real sends would be skipped).",
+      );
+    } else {
+      console.warn(
+        "[lead-email-scheduler] COMPANY_MAILING_ADDRESS is not set. Skipping lead follow-up emails.",
+      );
+      return { sent: 0, skipped: 0, errors: [], blockedMissingAddress: true, previews: [] };
+    }
   }
 
   await syncAdminEmailLeadMarketingExclusions();
@@ -77,6 +99,16 @@ export async function runLeadEmailScheduler(params?: { now?: Date }): Promise<Le
 
     try {
       const resourceTitle = await getLeadLatestResourceTitle(lead.id);
+      previews.push({
+        channel: "lead-email",
+        type: LEAD_INVITE_TYPE,
+        leadId: lead.id,
+        to: lead.email,
+        subject: "Your free swing breakdown",
+      });
+      if (dryRun) {
+        continue;
+      }
       await sendLeadFreeAccountInviteEmail({
         toEmail: lead.email,
         firstName: lead.firstName,
@@ -98,5 +130,5 @@ export async function runLeadEmailScheduler(params?: { now?: Date }): Promise<Le
     }
   }
 
-  return { sent, skipped, errors, blockedMissingAddress: false };
+  return { sent, skipped, errors, blockedMissingAddress, previews };
 }

@@ -111,6 +111,14 @@ export type MemberDetail = {
     createdAt: string;
     status: string;
   }>;
+  marketingEmailsSent: Array<{
+    id: string;
+    type: string;
+    typeLabel: string;
+    subject: string | null;
+    deliveryToEmail: string | null;
+    sentAt: string;
+  }>;
   playbook: {
     overallComplete: boolean;
     completedAt: string | null;
@@ -490,6 +498,49 @@ export default function MemberDetailContent({
                 <p className="mt-1 text-xs text-zinc-500">{formatOptionalDateTime(checkin.createdAt)}</p>
               </div>
             ))}
+          </div>
+        )}
+      </div>
+
+      <div className="rounded-xl border border-[#2b3650] bg-[#0b1324]/70 p-4">
+        <p className="text-sm font-semibold text-zinc-100">Marketing emails sent</p>
+        <p className="mt-1 text-xs text-zinc-500">
+          Logged marketing pipeline sends (welcome, reminders, follow-ups). Older rows may omit subject or
+          delivery address.
+        </p>
+        {detail.marketingEmailsSent.length === 0 ? (
+          <p className="mt-3 text-sm text-zinc-400">No marketing emails logged for this account.</p>
+        ) : (
+          <div className="mt-3 overflow-x-auto">
+            <table className="w-full min-w-[560px] border-collapse text-left text-sm text-zinc-200">
+              <thead>
+                <tr className="border-b border-[#2b3650] text-xs font-semibold uppercase tracking-wide text-zinc-400">
+                  <th className="py-2 pr-3">Type</th>
+                  <th className="py-2 pr-3">Subject</th>
+                  <th className="py-2 pr-3">Sent to</th>
+                  <th className="py-2">Sent</th>
+                </tr>
+              </thead>
+              <tbody>
+                {detail.marketingEmailsSent.map((row) => (
+                  <tr key={row.id} className="border-b border-[#2b3650]/60">
+                    <td className="py-2 pr-3 align-top">
+                      <span className="text-zinc-100">{row.typeLabel}</span>
+                      <span className="ml-2 font-mono text-xs text-zinc-500">({row.type})</span>
+                    </td>
+                    <td className="py-2 pr-3 align-top text-zinc-300">
+                      {row.subject?.trim() || "-"}
+                    </td>
+                    <td className="py-2 pr-3 align-top font-mono text-xs text-zinc-400">
+                      {row.deliveryToEmail?.trim() || "-"}
+                    </td>
+                    <td className="py-2 align-top text-xs text-zinc-500">
+                      {formatOptionalDateTime(row.sentAt)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
