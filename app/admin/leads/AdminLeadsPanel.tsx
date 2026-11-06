@@ -32,6 +32,7 @@ type PurchaseRow = {
 };
 
 type QuizDashboard = {
+  quizChallengeLeadCount?: number;
   rows: Array<{
     id: string;
     leadId: string | null;
@@ -74,6 +75,13 @@ type AdminLeadsPanelProps = {
   quizDashboard?: QuizDashboard;
   view?: "leads" | "sales" | "combined";
 };
+
+function formatLeadSourceLabel(source: string) {
+  if (source === "quiz") {
+    return "Quiz";
+  }
+  return source;
+}
 
 function buildPurchasedSlugsByEmail(purchases: PurchaseRow[]) {
   const map = new Map<string, Set<string>>();
@@ -137,7 +145,7 @@ export default function AdminLeadsPanel({
         lead.firstName,
         lead.email,
         lead.role,
-        lead.source,
+        formatLeadSourceLabel(lead.source),
         lead.resources.map((resource) => resource.resourceSlug).join("|"),
         formatResourceFunnel(lead, purchased),
         lead.isBuyer ? "yes" : "no",
@@ -252,7 +260,7 @@ export default function AdminLeadsPanel({
                       </Link>
                     </td>
                     <td className="px-2 py-2">{lead.role}</td>
-                    <td className="px-2 py-2">{lead.source}</td>
+                    <td className="px-2 py-2">{formatLeadSourceLabel(lead.source)}</td>
                     <td className="px-2 py-2">
                       {lead.resources.map((resource) => resource.resourceSlug).join(", ") || "-"}
                     </td>

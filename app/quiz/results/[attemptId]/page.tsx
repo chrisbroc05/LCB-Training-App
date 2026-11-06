@@ -1,12 +1,11 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { getServerSession } from "next-auth";
 import QuizResultsClient, {
   type ReviewItem,
 } from "@/app/quiz/results/[attemptId]/QuizResultsClient";
-import {
-  assertCanAccessAttempt,
-  resolveQuizAccessReadonly,
-} from "@/lib/player-iq-quiz-server";
+import { authOptions } from "@/lib/auth";
+import { assertCanAccessAttempt, resolveQuizAccessReadonly } from "@/lib/player-iq-quiz-server";
 import {
   getAnswerFeedback,
   getLowestPlayerIqCategory,
@@ -19,15 +18,19 @@ import {
 } from "@/lib/player-iq-quiz-shared";
 import type { LeadRoleValue } from "@/lib/resources-shared";
 import { LEAD_COOKIE_NAME } from "@/lib/resources-lead-shared";
+import { QUIZ_ATTEMPT_COOKIE_NAME } from "@/lib/quiz-session-cookies";
 import { prisma } from "@/lib/prisma";
 
 type PageProps = { params: Promise<{ attemptId: string }> };
 
 export default async function QuizResultsPage({ params }: PageProps) {
   const { attemptId } = await params;
+  const authSession = await getServerSession(authOptions);
+  const isLoggedIn = Boolean(authSession?.user?.id);
   const cookieStore = await cookies();
   const leadIdFromCookie = cookieStore.get(LEAD_COOKIE_NAME)?.value ?? null;
-  const access = await resolveQuizAccessReadonly({ leadIdFromCookie });
+  const quizAttemptIdFromCookie = cookieStore.get(QUIZ_ATTEMPT_COOKIE_NAME)?.value ?? null;
+  const access = await resolveQuizAccessReadonly({ leadIdFromCookie, quizAttemptIdFromCookie });
   const gate = await assertCanAccessAttempt(attemptId, access);
 
   if (!gate.ok) {
@@ -38,7 +41,9 @@ export default async function QuizResultsPage({ params }: PageProps) {
     where: { id: attemptId },
     include: {
       lead: { select: { firstName: true, email: true } },
-      user: { select: { name: true, email: true, playerFirstName: true, accountHolderName: true } },
+      user: {
+        select: { name: true, email: true, playerFirstName: true, accountHolderName: true },
+      },
     },
   });
 
@@ -87,6 +92,7 @@ export default async function QuizResultsPage({ params }: PageProps) {
         categoryScores={categoryScores}
         lowestCategory={getLowestPlayerIqCategory(categoryScores)}
         review={review}
+        isLoggedIn={isLoggedIn}
       />
     </div>
   );

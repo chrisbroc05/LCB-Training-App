@@ -1,4 +1,5 @@
 import type { LeadRoleValue } from "@/lib/resources-shared";
+import { getPublicAppUrl } from "@/lib/public-app-url";
 
 export const PLAYER_IQ_QUIZ_RESOURCE_SLUG = "player-iq-quiz";
 
@@ -56,11 +57,24 @@ export const PLAYER_IQ_LEVEL_BANDS: { min: number; max: number; level: PlayerIqL
 ];
 
 export const PLAYER_IQ_LEVEL_DISPLAY: Record<PlayerIqLevel, string> = {
-  ROOKIE: "ROOKIE",
-  STARTER: "STARTER",
-  ALL_CONFERENCE: "ALL-CONFERENCE",
-  MEMORABLE: "MEMORABLE",
+  ROOKIE: "Rookie",
+  STARTER: "Starter",
+  ALL_CONFERENCE: "All-Conference",
+  MEMORABLE: "Memorable",
 };
+
+/** Title-style label for results headers (e.g. "8/15 - Starter"). */
+export function formatPlayerIqResultsHeadline(score: number, level: PlayerIqLevel): string {
+  return `${score}/15 - ${PLAYER_IQ_LEVEL_DISPLAY[level]}`;
+}
+
+export function formatPlayerIqResultsGreeting(firstName: string): string {
+  const trimmed = firstName.trim();
+  if (!trimmed || trimmed.toLowerCase() === "player") {
+    return "Here's where you stand.";
+  }
+  return `Nice work, ${trimmed}. Here's where you stand.`;
+}
 
 const LEVEL_MESSAGES: Record<
   PlayerIqLevel,
@@ -119,7 +133,7 @@ export function getPlayerIqCta(level: PlayerIqLevel, role: LeadRoleValue): Playe
 
   if (level === "ROOKIE" || level === "STARTER") {
     return {
-      primaryLabel: "Get My Free Swing Analysis",
+      primaryLabel: "Get Your Free Swing Breakdown",
       primaryHref: "free-swing-analysis",
     };
   }
@@ -531,13 +545,22 @@ export function formatCategoryBreakdown(categoryScores: PlayerIqCategoryScores) 
   return `Mindset ${categoryScores.mindset}/5, Game IQ ${categoryScores.gameIq}/5, Training ${categoryScores.training}/5`;
 }
 
-export function buildResultsTitle(firstName: string, score: number, level: PlayerIqLevel) {
-  return `${firstName}, you scored ${score}/15: ${PLAYER_IQ_LEVEL_DISPLAY[level]}`;
+const CATEGORY_ORDER: PlayerIqCategory[] = ["mindset", "gameIq", "training"];
+
+export function getCategoriesForResultsCards(categoryScores: PlayerIqCategoryScores) {
+  const lowest = getLowestPlayerIqCategory(categoryScores);
+  return CATEGORY_ORDER.map((key) => ({
+    key,
+    label: PLAYER_IQ_CATEGORY_LABELS[key],
+    score: categoryScores[key],
+    max: 5,
+    isFocus: key === lowest,
+  }));
 }
 
-export const PLAYER_IQ_SHARE_TEXT =
-  "I scored [X]/15 on Coach Broc's Player IQ Quiz. Think you can beat it?";
-
-export function buildShareMessage(score: number) {
-  return PLAYER_IQ_SHARE_TEXT.replace("[X]", String(score));
+export function buildQuizChallengeSharePayload(score: number) {
+  const base = getPublicAppUrl();
+  const url = `${base}/quiz?ref=challenge`;
+  const message = `I scored ${score}/15 on Coach Broc's Player IQ Quiz. Think you can beat me?`;
+  return { message, url, fullText: `${message} ${url}` };
 }

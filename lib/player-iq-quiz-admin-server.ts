@@ -5,10 +5,15 @@ import {
   type PlayerIqAnswers,
   type PlayerIqLevel,
 } from "@/lib/player-iq-quiz-shared";
+import { QUIZ_REFERRAL_CHALLENGE } from "@/lib/quiz-session-cookies";
 import { ADMIN_ROUTES } from "@/lib/admin-routes-shared";
 import { prisma } from "@/lib/prisma";
 
 export async function loadQuizAdminDashboard() {
+  const quizChallengeLeadCount = await prisma.lead.count({
+    where: { source: "quiz", quizChallengeRef: QUIZ_REFERRAL_CHALLENGE },
+  });
+
   const attempts = await prisma.quizAttempt.findMany({
     where: { completedAt: { not: null } },
     orderBy: { completedAt: "desc" },
@@ -92,6 +97,7 @@ export async function loadQuizAdminDashboard() {
     averageScore: Math.round(averageScore * 10) / 10,
     levelCounts,
     questionStats,
+    quizChallengeLeadCount,
   };
 }
 

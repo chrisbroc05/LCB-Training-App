@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import QuizPageClient from "@/app/quiz/QuizPageClient";
 import { PLAYER_IQ_QUIZ_CARD_DESCRIPTION } from "@/lib/player-iq-quiz-shared";
 import { getPublicAppUrl } from "@/lib/public-app-url";
@@ -29,7 +30,9 @@ export const metadata: Metadata = {
 export default function QuizPage() {
   return (
     <div className="min-h-screen bg-black">
-      <QuizPageClient />
+      <Suspense fallback={<div className="mx-auto max-w-lg px-4 py-16 text-center text-zinc-400">Loading...</div>}>
+        <QuizPageClient />
+      </Suspense>
     </div>
   );
 }

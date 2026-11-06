@@ -21,6 +21,7 @@
     "test:daily-plan": "npx --yes tsx scripts/test-daily-plan.ts",
     "test:strength-extra-work": "npx --yes tsx scripts/test-strength-extra-work.ts",
     "test:quiz": "npx --yes tsx scripts/test-player-iq-quiz.ts",
+    "test:quiz-session": "npx --yes tsx scripts/test-quiz-session-response-shared.ts",
     "test:coach-daily-summary-business": "npx --yes tsx scripts/test-coach-daily-summary-business.ts",
     "test:coach-signup-alert-shared": "npx --yes tsx scripts/test-coach-signup-alert-shared.ts",
     "test:media-consent-shared": "npx --yes tsx scripts/test-media-consent-shared.ts",

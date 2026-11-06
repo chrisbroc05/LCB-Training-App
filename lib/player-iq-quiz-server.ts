@@ -3,8 +3,8 @@ import "server-only";
 import type { LeadRole } from "@prisma/client";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { normalizeLeadEmail } from "@/lib/leads-server";
-import { upsertLeadForResourceDownload } from "@/lib/leads-server";
+import { normalizeLeadCaptureInput } from "@/lib/lead-capture-shared";
+import { normalizeLeadEmail, upsertLeadForResourceDownload } from "@/lib/leads-server";
 import {
   buildOptionOrderForAttempt,
   PLAYER_IQ_QUIZ_RESOURCE_SLUG,
@@ -17,12 +17,18 @@ import {
 } from "@/lib/player-iq-quiz-shared";
 import { prisma } from "@/lib/prisma";
 import type { LeadRoleValue } from "@/lib/resources-shared";
+import { QUIZ_REFERRAL_CHALLENGE } from "@/lib/quiz-session-cookies";
+
+export const QUIZ_LEAD_SOURCE = "quiz";
+
 export type QuizAccessContext = {
   leadId: string | null;
   userId: string | null;
   firstName: string;
   email: string;
   role: LeadRoleValue;
+  /** Anonymous in-progress attempt bound via httpOnly cookie (no lead yet). */
+  boundAnonymousAttemptId: string | null;
 };
 
 async function readAccessForUser(userId: string, email: string): Promise<QuizAccessContext | null> {
@@ -54,15 +60,56 @@ async function readAccessForUser(userId: string, email: string): Promise<QuizAcc
     firstName,
     email: normalizedEmail,
     role,
+    boundAnonymousAttemptId: null,
   };
 }
 
-export async function resolveQuizAccessReadonly(params: {
-  leadIdFromCookie?: string | null;
-}): Promise<QuizAccessContext | null> {
+/**
+ * For /quiz page session UX: only logged-in users get a personalized greeting.
+ * Do not use lcb_lead_id here - it would show another visitor's name from a prior device capture.
+ */
+export async function resolveQuizSessionForPage(): Promise<
+  QuizAccessContext | null
+> {
   const session = await getServerSession(authOptions);
   if (session?.user?.id && session.user.email) {
     return readAccessForUser(session.user.id, session.user.email);
+  }
+  return null;
+}
+
+type ResolveQuizAccessParams = {
+  leadIdFromCookie?: string | null;
+  quizAttemptIdFromCookie?: string | null;
+};
+
+/**
+ * For completing attempts and viewing results: session, lead cookie (after capture), or anonymous attempt cookie.
+ */
+export async function resolveQuizAccessReadonly(
+  params: ResolveQuizAccessParams,
+): Promise<QuizAccessContext | null> {
+  const session = await getServerSession(authOptions);
+  if (session?.user?.id && session.user.email) {
+    return readAccessForUser(session.user.id, session.user.email);
+  }
+
+  const attemptIdCookie = params.quizAttemptIdFromCookie?.trim();
+  if (attemptIdCookie) {
+    const attempt = await prisma.quizAttempt.findUnique({
+      where: { id: attemptIdCookie },
+      select: { id: true, leadId: true, userId: true },
+    });
+    if (attempt && attempt.leadId === null && attempt.userId === null) {
+      return {
+        leadId: null,
+        userId: null,
+        firstName: "Player",
+        email: "",
+        role: "PLAYER",
+        boundAnonymousAttemptId: attempt.id,
+      };
+    }
   }
 
   if (params.leadIdFromCookie) {
@@ -84,6 +131,7 @@ export async function resolveQuizAccessReadonly(params: {
         firstName: lead.firstName,
         email: lead.email,
         role: lead.role as LeadRoleValue,
+        boundAnonymousAttemptId: null,
       };
     }
   }
@@ -91,67 +139,49 @@ export async function resolveQuizAccessReadonly(params: {
   return null;
 }
 
-export async function ensureQuizAccessForStart(params: {
-  leadIdFromCookie?: string | null;
-}): Promise<QuizAccessContext | null> {
-  const session = await getServerSession(authOptions);
-  if (session?.user?.id && session.user.email) {
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: {
-        email: true,
-        name: true,
-        playerFirstName: true,
-        accountRole: true,
-        accountHolderName: true,
-      },
-    });
-    const email = normalizeLeadEmail(session.user.email);
-    const firstName =
-      user?.playerFirstName?.trim() ||
-      user?.accountHolderName?.trim()?.split(/\s+/)[0] ||
-      user?.name?.trim()?.split(/\s+/)[0] ||
-      "Player";
-    const role: LeadRoleValue = user?.accountRole === "PARENT" ? "PARENT" : "PLAYER";
-
-    const { lead } = await upsertLeadForResourceDownload({
-      email,
-      firstName,
-      role,
-      resourceSlug: PLAYER_IQ_QUIZ_RESOURCE_SLUG,
-    });
-
-    return {
-      leadId: lead.id,
-      userId: session.user.id,
-      firstName,
-      email,
-      role,
-    };
-  }
-
-  const readonly = await resolveQuizAccessReadonly(params);
-  if (!readonly?.leadId) {
-    return null;
-  }
-
-  await prisma.leadResource.create({
+export async function createAnonymousQuizAttempt(params?: {
+  quizReferralSource?: string | null;
+}): Promise<{
+  attemptId: string;
+  questions: ReturnType<typeof buildQuizQuestionsPayload>;
+}> {
+  const created = await prisma.quizAttempt.create({
     data: {
-      leadId: readonly.leadId,
-      resourceSlug: PLAYER_IQ_QUIZ_RESOURCE_SLUG,
+      leadId: null,
+      userId: null,
+      role: "PLAYER" as LeadRole,
+      optionOrder: {},
+      answers: {},
+      ...(params?.quizReferralSource
+        ? { quizReferralSource: params.quizReferralSource }
+        : {}),
     },
+    select: { id: true },
   });
 
-  return readonly;
+  const optionOrder = buildOptionOrderForAttempt(created.id);
+  const attempt = await prisma.quizAttempt.update({
+    where: { id: created.id },
+    data: { optionOrder },
+    select: { id: true, optionOrder: true },
+  });
+
+  const order = attempt.optionOrder as Record<string, string[]>;
+  return {
+    attemptId: attempt.id,
+    questions: buildQuizQuestionsPayload(order),
+  };
 }
 
-export async function resolveQuizAccess(params: {
-  leadIdFromCookie?: string | null;
-}): Promise<QuizAccessContext | null> {
-  return resolveQuizAccessReadonly(params);
-}
-
-export async function createQuizAttemptForAccess(access: QuizAccessContext) {
+export async function createQuizAttemptForLoggedInUser(
+  access: QuizAccessContext,
+  options?: { quizReferralSource?: string | null },
+): Promise<{
+  attemptId: string;
+  questions: ReturnType<typeof buildQuizQuestionsPayload>;
+  firstName: string;
+  role: LeadRoleValue;
+}> {
   const created = await prisma.quizAttempt.create({
     data: {
       leadId: access.leadId,
@@ -159,19 +189,31 @@ export async function createQuizAttemptForAccess(access: QuizAccessContext) {
       role: access.role as LeadRole,
       optionOrder: {},
       answers: {},
+      ...(options?.quizReferralSource
+        ? { quizReferralSource: options.quizReferralSource }
+        : {}),
     },
     select: { id: true },
   });
 
   const optionOrder = buildOptionOrderForAttempt(created.id);
-
   const attempt = await prisma.quizAttempt.update({
     where: { id: created.id },
     data: { optionOrder },
-    select: { id: true, optionOrder: true, role: true },
+    select: { id: true, optionOrder: true },
   });
 
-  return attempt;
+  const order = attempt.optionOrder as Record<string, string[]>;
+  return {
+    attemptId: attempt.id,
+    questions: buildQuizQuestionsPayload(order),
+    firstName: access.firstName,
+    role: access.role,
+  };
+}
+
+export async function resolveQuizAccess(params: ResolveQuizAccessParams): Promise<QuizAccessContext | null> {
+  return resolveQuizAccessReadonly(params);
 }
 
 export function buildQuizQuestionsPayload(optionOrder: Record<string, string[]>) {
@@ -214,22 +256,126 @@ export async function assertCanAccessAttempt(
     return { ok: true as const, attempt };
   }
 
+  if (
+    access.boundAnonymousAttemptId &&
+    attempt.id === access.boundAnonymousAttemptId &&
+    attempt.leadId === null &&
+    attempt.userId === null
+  ) {
+    return { ok: true as const, attempt };
+  }
+
   return { ok: false as const, error: "UNAUTHORIZED" };
 }
+
+type CompleteQuizLeadFields = {
+  firstName: string;
+  email: string;
+  role: LeadRoleValue;
+  playerAge13Plus?: boolean | null;
+  parentEmail?: string | null;
+};
 
 export async function completeQuizAttempt(params: {
   attemptId: string;
   answers: PlayerIqAnswers;
   access: QuizAccessContext;
+  /** Required when finishing an anonymous attempt (creates lead + links attempt). */
+  leadFields?: CompleteQuizLeadFields | null;
 }) {
   const gate = await assertCanAccessAttempt(params.attemptId, params.access);
   if (!gate.ok) {
     return gate;
   }
 
-  const attempt = gate.attempt;
-  if (attempt.completedAt) {
+  const lockedAttempt = gate.attempt;
+  if (lockedAttempt.completedAt) {
     return { ok: false as const, error: "ALREADY_COMPLETED" };
+  }
+
+  let access = params.access;
+
+  const attemptReferral = await prisma.quizAttempt.findUnique({
+    where: { id: params.attemptId },
+    select: { quizReferralSource: true },
+  });
+  const quizChallengeRefForLead =
+    attemptReferral?.quizReferralSource === QUIZ_REFERRAL_CHALLENGE
+      ? QUIZ_REFERRAL_CHALLENGE
+      : null;
+
+  if (!access.userId && access.boundAnonymousAttemptId) {
+    const raw = params.leadFields;
+    if (!raw) {
+      return { ok: false as const, error: "LEAD_FIELDS_REQUIRED" };
+    }
+    const normalized = normalizeLeadCaptureInput({
+      firstName: raw.firstName,
+      email: raw.email,
+      role: raw.role,
+      playerAge13Plus: raw.playerAge13Plus,
+      parentEmail: raw.parentEmail,
+    });
+    if (!normalized.ok) {
+      return { ok: false as const, error: "LEAD_INVALID", message: normalized.error };
+    }
+
+    const { lead } = await upsertLeadForResourceDownload({
+      email: normalized.value.email,
+      firstName: normalized.value.firstName,
+      role: normalized.value.role,
+      resourceSlug: PLAYER_IQ_QUIZ_RESOURCE_SLUG,
+      source: QUIZ_LEAD_SOURCE,
+      emailProvidedByParent: normalized.value.emailProvidedByParent,
+      ...(quizChallengeRefForLead ? { quizChallengeRef: quizChallengeRefForLead } : {}),
+    });
+
+    const existingResource = await prisma.leadResource.findFirst({
+      where: { leadId: lead.id, resourceSlug: PLAYER_IQ_QUIZ_RESOURCE_SLUG },
+      select: { id: true },
+    });
+    if (!existingResource) {
+      await prisma.leadResource.create({
+        data: { leadId: lead.id, resourceSlug: PLAYER_IQ_QUIZ_RESOURCE_SLUG },
+      });
+    }
+
+    await prisma.quizAttempt.update({
+      where: { id: params.attemptId },
+      data: {
+        leadId: lead.id,
+        role: normalized.value.role as LeadRole,
+      },
+    });
+
+    access = {
+      leadId: lead.id,
+      userId: null,
+      firstName: normalized.value.firstName,
+      email: normalizeLeadEmail(normalized.value.email),
+      role: normalized.value.role,
+      boundAnonymousAttemptId: null,
+    };
+  } else if (access.userId) {
+    await upsertLeadForResourceDownload({
+      email: access.email,
+      firstName: access.firstName,
+      role: access.role,
+      resourceSlug: PLAYER_IQ_QUIZ_RESOURCE_SLUG,
+      source: QUIZ_LEAD_SOURCE,
+      ...(quizChallengeRefForLead ? { quizChallengeRef: quizChallengeRefForLead } : {}),
+    });
+    const leadRow = await prisma.lead.findUnique({
+      where: { email: access.email },
+      select: { id: true },
+    });
+    if (leadRow) {
+      await prisma.quizAttempt.update({
+        where: { id: params.attemptId },
+        data: { leadId: leadRow.id },
+      });
+      access = { ...access, leadId: leadRow.id };
+    }
   }
 
   const { score, categoryScores, level, lowestCategory } = scorePlayerIqQuiz(params.answers);
@@ -245,6 +391,17 @@ export async function completeQuizAttempt(params: {
     },
   });
 
+  if (access.userId) {
+    await prisma.user.update({
+      where: { id: access.userId },
+      data: {
+        lastPlayerIqQuizScore: score,
+        lastPlayerIqQuizLevel: level,
+        lastPlayerIqQuizCompletedAt: new Date(),
+      },
+    });
+  }
+
   return {
     ok: true as const,
     attempt: updated,
@@ -252,19 +409,6 @@ export async function completeQuizAttempt(params: {
     categoryScores: categoryScores as PlayerIqCategoryScores,
     level: level as PlayerIqLevel,
     lowestCategory,
+    access,
   };
-}
-
-export async function ensureLeadFromQuizForm(params: {
-  firstName: string;
-  email: string;
-  role: LeadRoleValue;
-}) {
-  const { lead } = await upsertLeadForResourceDownload({
-    email: params.email,
-    firstName: params.firstName,
-    role: params.role,
-    resourceSlug: PLAYER_IQ_QUIZ_RESOURCE_SLUG,
-  });
-  return lead;
 }

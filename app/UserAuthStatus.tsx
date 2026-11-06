@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { signOut } from "next-auth/react";
+import { clearMarketingCookiesOnClient } from "@/lib/clear-marketing-cookies-client";
 import { formatDatabaseTierLabel, type DatabaseTier } from "@/lib/membership";
 
 type UserAuthStatusProps = {
@@ -32,7 +33,11 @@ export default function UserAuthStatus({
     return (
       <button
         type="button"
-        onClick={() => signOut({ callbackUrl: "/auth" })}
+        onClick={() => {
+          void clearMarketingCookiesOnClient().finally(() => {
+            void signOut({ callbackUrl: "/auth" });
+          });
+        }}
         className="rounded-full border border-[#22c55e]/70 bg-[#22c55e]/10 px-3 py-1.5 text-xs font-medium text-[#8df0b1] transition hover:bg-[#22c55e]/20 sm:px-4 sm:py-2 sm:text-sm"
       >
         Log Out
@@ -51,7 +56,11 @@ export default function UserAuthStatus({
       </div>
       <button
         type="button"
-        onClick={() => signOut({ callbackUrl: "/auth" })}
+        onClick={() => {
+          void clearMarketingCookiesOnClient().finally(() => {
+            void signOut({ callbackUrl: "/auth" });
+          });
+        }}
         className="rounded-full border border-[#22c55e]/70 bg-[#22c55e]/10 px-3 py-1.5 text-xs font-medium text-[#8df0b1] transition hover:bg-[#22c55e]/20 sm:px-4 sm:py-2 sm:text-sm"
       >
         Log Out

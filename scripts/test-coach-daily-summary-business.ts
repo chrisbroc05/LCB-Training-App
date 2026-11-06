@@ -26,7 +26,7 @@ function testSubjectWithBusiness() {
         {
           name: "Sam",
           email: "sam@example.com",
-          roleLabel: "Player (13+)",
+          roleLabel: "Player",
           firstResourceLabel: "The Player IQ Quiz",
         },
         {
@@ -98,7 +98,7 @@ function testEmailIncludesBusinessSections() {
         {
           name: "Jordan",
           email: "jordan@example.com",
-          roleLabel: "Player (13+)",
+          roleLabel: "Player",
           firstResourceLabel: "The Player IQ Quiz",
         },
       ],

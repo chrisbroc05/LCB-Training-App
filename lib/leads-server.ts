@@ -46,6 +46,8 @@ export async function upsertLeadForResourceDownload(params: {
   resourceSlug: string;
   source?: string;
   emailProvidedByParent?: boolean;
+  /** When set (e.g. challenge share), stored on the lead for analytics. */
+  quizChallengeRef?: string | null;
 }) {
   const email = normalizeLeadEmail(params.email);
   const marketingAutoExclude = buildLeadMarketingAutoExcludeData(email);
@@ -64,6 +66,7 @@ export async function upsertLeadForResourceDownload(params: {
       firstResourceSlug: params.resourceSlug,
       userId: existingUser?.id ?? null,
       emailProvidedByParent: params.emailProvidedByParent ?? false,
+      ...(params.quizChallengeRef ? { quizChallengeRef: params.quizChallengeRef } : {}),
       ...(marketingAutoExclude ?? {}),
     },
     update: {
@@ -71,6 +74,11 @@ export async function upsertLeadForResourceDownload(params: {
       role: toPrismaLeadRole(params.role),
       userId: existingUser?.id ?? undefined,
       ...(params.emailProvidedByParent ? { emailProvidedByParent: true } : {}),
+      /** Quiz funnel takes precedence so a later resource download does not downgrade source. */
+      ...(params.source === "quiz" ? { source: "quiz" } : {}),
+      ...(params.source === "quiz" && params.quizChallengeRef
+        ? { quizChallengeRef: params.quizChallengeRef }
+        : {}),
       ...(marketingAutoExclude ?? {}),
     },
   });

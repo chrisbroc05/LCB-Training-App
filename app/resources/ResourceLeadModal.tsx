@@ -92,9 +92,10 @@ export default function ResourceLeadModal({
               className="mt-2 w-full rounded-xl border border-[#2b3650] bg-[#0A1628] px-4 py-3.5 text-base text-white"
             />
           </label>
-          <label className="block text-sm text-zinc-300">
-            I am a:
+          <fieldset className="space-y-2">
+            <legend className="text-sm text-zinc-300">Are you the player or the parent?</legend>
             <select
+              aria-label="Are you the player or the parent?"
               value={role}
               onChange={(event) => {
                 setRole(event.target.value as LeadRoleValue);
@@ -108,7 +109,7 @@ export default function ResourceLeadModal({
                 </option>
               ))}
             </select>
-          </label>
+          </fieldset>
           {role === "PLAYER" ? (
             <fieldset className="space-y-2">
               <legend className="text-sm text-zinc-300">Are you 13 or older?</legend>

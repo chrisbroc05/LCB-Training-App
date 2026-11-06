@@ -2,7 +2,9 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import QuizLeadCaptureForm from "@/app/quiz/QuizLeadCaptureForm";
 import { getAnswerFeedback, type PlayerIqAnswers } from "@/lib/player-iq-quiz-shared";
+import type { LeadRoleValue } from "@/lib/resources-shared";
 
 export type QuizQuestionPayload = {
   id: string;
@@ -15,11 +17,12 @@ export type QuizQuestionPayload = {
 type QuizRunnerProps = {
   attemptId: string;
   questions: QuizQuestionPayload[];
+  isLoggedIn: boolean;
 };
 
-type Step = "question" | "feedback";
+type Step = "question" | "feedback" | "lead";
 
-export default function QuizRunner({ attemptId, questions }: QuizRunnerProps) {
+export default function QuizRunner({ attemptId, questions, isLoggedIn }: QuizRunnerProps) {
   const router = useRouter();
   const [index, setIndex] = useState(0);
   const [step, setStep] = useState<Step>("question");
@@ -50,6 +53,49 @@ export default function QuizRunner({ attemptId, questions }: QuizRunnerProps) {
     setStep("feedback");
   };
 
+  const completeQuiz = async (
+    payload:
+      | { answers: PlayerIqAnswers }
+      | {
+          answers: PlayerIqAnswers;
+          firstName: string;
+          email: string;
+          role: LeadRoleValue;
+          playerAge13Plus?: boolean | null;
+          parentEmail?: string | null;
+        },
+  ) => {
+    setSubmitting(true);
+    setError("");
+    const body =
+      "firstName" in payload
+        ? {
+            answers: payload.answers,
+            firstName: payload.firstName,
+            email: payload.email,
+            role: payload.role,
+            playerAge13Plus: payload.playerAge13Plus,
+            parentEmail: payload.parentEmail,
+          }
+        : { answers: payload.answers };
+
+    const response = await fetch(`/api/quiz/attempt/${attemptId}/complete`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(body),
+    });
+    setSubmitting(false);
+
+    if (!response.ok) {
+      const data = (await response.json().catch(() => ({}))) as { error?: string };
+      setError(data.error ?? "Unable to save results.");
+      return;
+    }
+
+    router.push(`/quiz/results/${attemptId}`);
+  };
+
   const handleNext = async () => {
     if (index < questions.length - 1) {
       setIndex((value) => value + 1);
@@ -57,30 +103,56 @@ export default function QuizRunner({ attemptId, questions }: QuizRunnerProps) {
       return;
     }
 
-    setSubmitting(true);
-    setError("");
-    const response = await fetch(`/api/quiz/attempt/${attemptId}/complete`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ answers: { ...answers, [question.id]: answers[question.id] } }),
-    });
-    setSubmitting(false);
-
-    if (!response.ok) {
-      const payload = (await response.json().catch(() => ({}))) as { error?: string };
-      setError(payload.error ?? "Unable to save results.");
+    const finalAnswers = { ...answers };
+    if (!isLoggedIn) {
+      setStep("lead");
       return;
     }
 
-    router.push(`/quiz/results/${attemptId}`);
+    await completeQuiz({ answers: finalAnswers });
   };
+
+  const lastQuestionFeedback = () => {
+    const last = questions[questions.length - 1];
+    if (!last) {
+      return;
+    }
+    setIndex(questions.length - 1);
+    setStep("feedback");
+  };
+
+  if (step === "lead") {
+    return (
+      <div className="mx-auto w-full max-w-lg px-4 py-8">
+        <QuizLeadCaptureForm
+          submitting={submitting}
+          error={error}
+          onBack={() => {
+            setError("");
+            lastQuestionFeedback();
+          }}
+          onSubmit={(fields) => {
+            void completeQuiz({
+              answers: { ...answers },
+              firstName: fields.firstName,
+              email: fields.email,
+              role: fields.role,
+              playerAge13Plus: fields.playerAge13Plus,
+              parentEmail: fields.parentEmail,
+            });
+          }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto w-full max-w-lg px-4 py-8">
       <div className="mb-6">
         <div className="flex items-center justify-between text-sm font-medium text-zinc-400">
-          <span>Question {progress} of {questions.length}</span>
+          <span>
+            Question {progress} of {questions.length}
+          </span>
           <span className="text-[#52B788]">{question.categoryLabel}</span>
         </div>
         <div className="mt-2 h-2 overflow-hidden rounded-full bg-[#18243a]">
@@ -119,7 +191,8 @@ export default function QuizRunner({ attemptId, questions }: QuizRunnerProps) {
           </p>
           {!feedback.correct ? (
             <p className="text-sm text-zinc-300">
-              Correct answer: <span className="font-medium text-white">{feedback.correctOptionText}</span>
+              Correct answer:{" "}
+              <span className="font-medium text-white">{feedback.correctOptionText}</span>
             </p>
           ) : null}
           <p className="text-sm leading-relaxed text-zinc-300">{feedback.why}</p>
@@ -133,7 +206,9 @@ export default function QuizRunner({ attemptId, questions }: QuizRunnerProps) {
               ? "Saving..."
               : index < questions.length - 1
                 ? "Next"
-                : "See my results"}
+                : isLoggedIn
+                  ? "See my results"
+                  : "Continue"}
           </button>
           {error ? <p className="text-sm text-red-400">{error}</p> : null}
         </div>

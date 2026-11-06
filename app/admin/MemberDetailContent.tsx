@@ -30,6 +30,7 @@ export type MemberDetail = {
   membershipLevel: MembershipLevelKey | null;
   membershipLevelExpiresAt: string | null;
   planDisplayLabel: string;
+  planBadgeLabel: string;
   planExpiryLabel: string | null;
   baseTierLabel: string;
   productAccessCompact: string;
@@ -231,7 +232,8 @@ export default function MemberDetailContent({
         <div className="mt-3 flex flex-wrap items-center gap-3">
           <div className="flex flex-col gap-1">
             <AdminMemberPlanBadge
-              planDisplayLabel={detail.planDisplayLabel}
+              planBadgeLabel={detail.planBadgeLabel}
+              planTooltipLabel={detail.planDisplayLabel}
               planExpiryLabel={detail.planExpiryLabel}
             />
             <p className="text-xs text-zinc-500">Base tier: {detail.baseTierLabel}</p>

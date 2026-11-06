@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { signOut } from "next-auth/react";
+import { clearMarketingCookiesOnClient } from "@/lib/clear-marketing-cookies-client";
 
 type AppHeaderAccountMenuProps = {
   isAdmin: boolean;
@@ -51,7 +52,9 @@ export default function AppHeaderAccountMenu({
 
   const handleLogout = () => {
     close();
-    void signOut({ callbackUrl: "/auth" });
+    void clearMarketingCookiesOnClient().finally(() => {
+      void signOut({ callbackUrl: "/auth" });
+    });
   };
 
   return (

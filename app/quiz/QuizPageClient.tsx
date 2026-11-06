@@ -1,21 +1,19 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import ResourceLeadModal from "@/app/resources/ResourceLeadModal";
+import { useSearchParams } from "next/navigation";
 import QuizRunner, { type QuizQuestionPayload } from "@/app/quiz/QuizRunner";
-import { getResourceDefinition } from "@/lib/resources-shared";
-import type { ResourceLeadActionResult } from "@/lib/resources-lead-shared";
 import {
   PLAYER_IQ_QUIZ_CARD_DESCRIPTION,
   PLAYER_IQ_QUIZ_CARD_TITLE,
   PLAYER_IQ_QUIZ_LANDING_SUBLINE,
-  PLAYER_IQ_QUIZ_RESOURCE_SLUG,
 } from "@/lib/player-iq-quiz-shared";
+import { QUIZ_REFERRAL_CHALLENGE } from "@/lib/quiz-session-cookies";
 
 type SessionState =
   | { status: "loading" }
   | { status: "guest" }
-  | { status: "ready"; firstName: string };
+  | { status: "loggedIn"; firstName: string };
 
 type ActiveQuiz = {
   attemptId: string;
@@ -23,22 +21,21 @@ type ActiveQuiz = {
 };
 
 export default function QuizPageClient() {
+  const searchParams = useSearchParams();
   const [session, setSession] = useState<SessionState>({ status: "loading" });
-  const [leadModalOpen, setLeadModalOpen] = useState(false);
   const [starting, setStarting] = useState(false);
   const [activeQuiz, setActiveQuiz] = useState<ActiveQuiz | null>(null);
   const [error, setError] = useState("");
-
-  const quizResource = getResourceDefinition(PLAYER_IQ_QUIZ_RESOURCE_SLUG);
 
   const refreshSession = useCallback(async () => {
     const response = await fetch("/api/quiz/session", { credentials: "include" });
     const data = (await response.json()) as {
       hasAccess?: boolean;
+      loggedIn?: boolean;
       firstName?: string;
     };
-    if (data.hasAccess && data.firstName) {
-      setSession({ status: "ready", firstName: data.firstName });
+    if (data.loggedIn && data.firstName) {
+      setSession({ status: "loggedIn", firstName: data.firstName });
       return;
     }
     setSession({ status: "guest" });
@@ -51,9 +48,14 @@ export default function QuizPageClient() {
   const startQuiz = async () => {
     setStarting(true);
     setError("");
+    const refParam = searchParams.get("ref")?.trim().toLowerCase();
+    const refBody = refParam === QUIZ_REFERRAL_CHALLENGE ? QUIZ_REFERRAL_CHALLENGE : undefined;
+
     const response = await fetch("/api/quiz/attempt/start", {
       method: "POST",
       credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(refBody ? { ref: refBody } : {}),
     });
     const data = (await response.json().catch(() => ({}))) as {
       error?: string;
@@ -70,15 +72,13 @@ export default function QuizPageClient() {
     setActiveQuiz({ attemptId: data.attemptId, questions: data.questions });
   };
 
-  const handleLeadSuccess = (_result: ResourceLeadActionResult) => {
-    void refreshSession().then(() => {
-      void startQuiz();
-    });
-  };
-
   if (activeQuiz) {
     return (
-      <QuizRunner attemptId={activeQuiz.attemptId} questions={activeQuiz.questions} />
+      <QuizRunner
+        attemptId={activeQuiz.attemptId}
+        questions={activeQuiz.questions}
+        isLoggedIn={session.status === "loggedIn"}
+      />
     );
   }
 
@@ -97,34 +97,22 @@ export default function QuizPageClient() {
       </p>
       <p className="mt-3 text-sm font-medium text-zinc-400">{PLAYER_IQ_QUIZ_LANDING_SUBLINE}</p>
 
-      {session.status === "ready" ? (
-        <p className="mt-6 text-sm text-zinc-400">Hi {session.firstName}. Ready when you are.</p>
+      {session.status === "loggedIn" ? (
+        <p className="mt-6 text-sm text-zinc-400">
+          Hi {session.firstName}. Ready when you are.
+        </p>
       ) : null}
 
       <button
         type="button"
         disabled={starting}
-        onClick={() => {
-          if (session.status === "guest") {
-            setLeadModalOpen(true);
-            return;
-          }
-          void startQuiz();
-        }}
+        onClick={() => void startQuiz()}
         className="mt-8 min-h-[52px] w-full rounded-full bg-[#2D6A4F] py-3.5 text-base font-semibold text-white hover:bg-[#52B788] disabled:opacity-60"
       >
         {starting ? "Starting..." : "Start"}
       </button>
 
       {error ? <p className="mt-4 text-sm text-red-400">{error}</p> : null}
-
-      {leadModalOpen && quizResource ? (
-        <ResourceLeadModal
-          resource={quizResource}
-          onClose={() => setLeadModalOpen(false)}
-          onSuccess={handleLeadSuccess}
-        />
-      ) : null}
     </div>
   );
 }

@@ -47,6 +47,7 @@ type MemberSummary = {
     trialEndsAt: string | null;
   } | null;
   planDisplayLabel: string;
+  planBadgeLabel: string;
   planExpiryLabel: string | null;
   productAccessCompact: string;
   signupDate: string;
@@ -250,6 +251,7 @@ export default function MembersPanel() {
           membershipLevelExpiresAt:
             updatedMember.membershipLevelExpiresAt ?? member.membershipLevelExpiresAt,
           planDisplayLabel: updatedMember.planDisplayLabel ?? member.planDisplayLabel,
+          planBadgeLabel: updatedMember.planBadgeLabel ?? member.planBadgeLabel,
           planExpiryLabel: updatedMember.planExpiryLabel ?? member.planExpiryLabel,
           assessmentCallBooked: updatedMember.assessmentCallBooked,
           assessmentCallDate: updatedMember.assessmentCallDate,
@@ -591,11 +593,14 @@ export default function MembersPanel() {
 
   return (
     <>
-      <div className="mt-6 grid gap-4 sm:gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
-        <section className="rounded-2xl border border-[#18243a] bg-black/30 p-3 sm:p-4">
-          <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-            <div className="w-full flex-1">
-              <label className="block text-sm font-medium text-zinc-200" htmlFor="member-search">
+      <div className="mt-6 grid gap-4 min-[1280px]:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] min-[1280px]:gap-6">
+        <section className="min-w-0 rounded-2xl border border-[#18243a] bg-black/30 p-3 sm:p-4">
+          <div className="grid min-w-0 grid-cols-1 gap-3">
+            <div className="min-w-0">
+              <label
+                className="block whitespace-nowrap text-sm font-medium text-zinc-200"
+                htmlFor="member-search"
+              >
                 Search members
               </label>
               <input
@@ -604,69 +609,76 @@ export default function MembersPanel() {
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
                 placeholder="Search by name or email"
-                className="mt-2 w-full rounded-lg border border-[#2b3650] bg-[#0b1324]/80 px-3 py-2 text-sm text-zinc-100"
+                className="mt-2 w-full min-w-0 rounded-lg border border-[#2b3650] bg-[#0b1324]/80 px-3 py-2 text-sm text-zinc-100"
               />
             </div>
-            <div className="w-full md:w-auto">
-              <label
-                className="block text-sm font-medium text-zinc-200"
-                htmlFor="member-level-filter"
-              >
-                Level
-              </label>
-              <select
-                id="member-level-filter"
-                value={levelFilter}
-                onChange={(event) =>
-                  setLevelFilter(event.target.value as AdminMemberLevelFilter)
-                }
-                className="mt-2 w-full min-w-0 rounded-lg border border-[#2b3650] bg-[#0b1324]/80 px-3 py-2 text-sm text-zinc-100 md:min-w-[160px]"
-              >
-                {ADMIN_MEMBER_LEVEL_FILTERS.map((filter) => (
-                  <option key={filter} value={filter}>
-                    {adminMemberLevelFilterLabel(filter)}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="w-full md:w-auto">
-              <label className="block text-sm font-medium text-zinc-200" htmlFor="member-media-filter">
-                Media
-              </label>
-              <select
-                id="member-media-filter"
-                value={mediaFilter}
-                onChange={(event) => setMediaFilter(event.target.value as MediaDisplayFilter)}
-                className="mt-2 w-full min-w-0 rounded-lg border border-[#2b3650] bg-[#0b1324]/80 px-3 py-2 text-sm text-zinc-100 md:min-w-[160px]"
-              >
-                {MEDIA_DISPLAY_FILTER_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="w-full md:w-auto">
-              <label
-                className="block text-sm font-medium text-zinc-200"
-                htmlFor="member-org-filter"
-              >
-                Organization
-              </label>
-              <select
-                id="member-org-filter"
-                value={orgFilter}
-                onChange={(event) => setOrgFilter(event.target.value)}
-                className="mt-2 w-full min-w-0 rounded-lg border border-[#2b3650] bg-[#0b1324]/80 px-3 py-2 text-sm text-zinc-100 md:min-w-[160px]"
-              >
-                <option value="ALL">All orgs</option>
-                <option value="NONE">No organization</option>
-                {orgOptions.map(([id, name]) => (
-                  <option key={id} value={id}>
-                    {name}
-                  </option>
-                ))}
-              </select>
+            <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-3">
+              <div className="min-w-0">
+                <label
+                  className="block whitespace-nowrap text-sm font-medium text-zinc-200"
+                  htmlFor="member-level-filter"
+                >
+                  Level
+                </label>
+                <select
+                  id="member-level-filter"
+                  value={levelFilter}
+                  onChange={(event) =>
+                    setLevelFilter(event.target.value as AdminMemberLevelFilter)
+                  }
+                  className="mt-2 w-full min-w-0 rounded-lg border border-[#2b3650] bg-[#0b1324]/80 px-3 py-2 text-sm text-zinc-100"
+                >
+                  {ADMIN_MEMBER_LEVEL_FILTERS.map((filter) => (
+                    <option key={filter} value={filter}>
+                      {adminMemberLevelFilterLabel(filter)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="min-w-0">
+                <label
+                  className="block whitespace-nowrap text-sm font-medium text-zinc-200"
+                  htmlFor="member-media-filter"
+                >
+                  Media
+                </label>
+                <select
+                  id="member-media-filter"
+                  value={mediaFilter}
+                  onChange={(event) =>
+                    setMediaFilter(event.target.value as MediaDisplayFilter)
+                  }
+                  className="mt-2 w-full min-w-0 rounded-lg border border-[#2b3650] bg-[#0b1324]/80 px-3 py-2 text-sm text-zinc-100"
+                >
+                  {MEDIA_DISPLAY_FILTER_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="min-w-0">
+                <label
+                  className="block whitespace-nowrap text-sm font-medium text-zinc-200"
+                  htmlFor="member-org-filter"
+                >
+                  Organization
+                </label>
+                <select
+                  id="member-org-filter"
+                  value={orgFilter}
+                  onChange={(event) => setOrgFilter(event.target.value)}
+                  className="mt-2 w-full min-w-0 rounded-lg border border-[#2b3650] bg-[#0b1324]/80 px-3 py-2 text-sm text-zinc-100"
+                >
+                  <option value="ALL">All orgs</option>
+                  <option value="NONE">No organization</option>
+                  {orgOptions.map(([id, name]) => (
+                    <option key={id} value={id}>
+                      {name}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
 
@@ -697,7 +709,8 @@ export default function MembersPanel() {
                         <div className="flex flex-col items-end gap-2">
                           <MediaDisplayBadge status={member.mediaDisplayStatus} />
                           <AdminMemberPlanBadge
-                            planDisplayLabel={member.planDisplayLabel}
+                            planBadgeLabel={member.planBadgeLabel}
+                            planTooltipLabel={member.planDisplayLabel}
                             planExpiryLabel={member.planExpiryLabel}
                           />
                         </div>
@@ -716,8 +729,8 @@ export default function MembersPanel() {
                 })}
               </div>
 
-              <div className="mt-4 hidden overflow-x-auto md:block">
-                <table className="min-w-full text-left text-sm">
+              <div className="mt-4 hidden min-w-0 overflow-x-auto md:block">
+                <table className="min-w-full table-fixed text-left text-sm">
                   <thead>
                     <tr className="border-b border-[#2b3650] text-xs uppercase tracking-wide text-zinc-400">
                       <th className="px-3 py-3 font-semibold">Name</th>
@@ -747,15 +760,23 @@ export default function MembersPanel() {
                           <td className="px-3 py-3 font-medium text-zinc-100">
                             {member.name?.trim() || "Unnamed member"}
                           </td>
-                          <td className="px-3 py-3 text-zinc-300">{member.email}</td>
+                          <td className="max-w-0 px-3 py-3 text-zinc-300">
+                            <span
+                              className="block truncate"
+                              title={member.email}
+                            >
+                              {member.email}
+                            </span>
+                          </td>
                           <td className="px-3 py-3">
                             <MediaDisplayBadge status={member.mediaDisplayStatus} />
                           </td>
-                          <td className="px-3 py-3">
+                          <td className="w-[140px] max-w-[min(180px,22vw)] px-3 py-3 align-top">
                             <AdminMemberPlanBadge
-                          planDisplayLabel={member.planDisplayLabel}
-                          planExpiryLabel={member.planExpiryLabel}
-                        />
+                              planBadgeLabel={member.planBadgeLabel}
+                              planTooltipLabel={member.planDisplayLabel}
+                              planExpiryLabel={member.planExpiryLabel}
+                            />
                           </td>
                           <td className="px-3 py-3 text-xs text-zinc-400">
                             {member.productAccessCompact}
@@ -785,7 +806,7 @@ export default function MembersPanel() {
           )}
         </section>
 
-        <aside className="hidden rounded-2xl border border-[#18243a] bg-black/30 p-4 sm:p-5 md:block">
+        <aside className="hidden min-w-0 min-[1280px]:block rounded-2xl border border-[#18243a] bg-black/30 p-4 sm:p-5">
           {!selectedId ? (
             <p className="text-sm text-zinc-400">Select a member to view details.</p>
           ) : loadingDetail ? (
@@ -797,6 +818,18 @@ export default function MembersPanel() {
           )}
         </aside>
       </div>
+
+      <aside className="mt-4 hidden min-w-0 rounded-2xl border border-[#18243a] bg-black/30 p-4 sm:p-5 md:block min-[1280px]:hidden">
+        {!selectedId ? (
+          <p className="text-sm text-zinc-400">Select a member to view details.</p>
+        ) : loadingDetail ? (
+          <p className="text-sm text-zinc-400">Loading member details...</p>
+        ) : !detail ? (
+          <p className="text-sm text-zinc-400">Unable to load member details.</p>
+        ) : (
+          <MemberDetailContent {...detailContentProps(false)!} />
+        )}
+      </aside>
 
       {isMobile ? (
         <MobileBottomSheet

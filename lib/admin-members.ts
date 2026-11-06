@@ -29,6 +29,7 @@ import { getTwelveWeekProgramEndDate } from "@/lib/twelve-week-program";
 import { formatAccountRoleLabel, formatSignedUpBy, getPlayerFullName } from "@/lib/account-shared";
 import { formatCommissionEligibilityLabel } from "@/lib/commission-eligibility-shared";
 import {
+  formatAdminMemberPlanBadgeLabel,
   formatAdminMemberPlanLabel,
   formatAdminMembershipLevelExpiry,
 } from "@/lib/member-plan-labels-shared";
@@ -214,6 +215,7 @@ export function serializeAdminMemberSummary(user: AdminMemberListRecord) {
     membershipLevel: user.membershipLevel as import("@/lib/membership-levels-shared").MembershipLevelKey | null,
     membershipLevelExpiresAt: user.membershipLevelExpiresAt?.toISOString() ?? null,
     planDisplayLabel: formatAdminMemberPlanLabel(accessFields),
+    planBadgeLabel: formatAdminMemberPlanBadgeLabel(accessFields),
     planExpiryLabel: formatAdminMembershipLevelExpiry(user.membershipLevelExpiresAt),
     baseTierLabel: formatAdminBaseTierLabel(user.membershipTier),
     productAccessCompact: formatMemberProductAccessCompact(

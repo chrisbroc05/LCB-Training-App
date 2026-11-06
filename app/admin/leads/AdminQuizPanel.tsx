@@ -32,6 +32,7 @@ type AdminQuizPanelProps = {
   averageScore: number;
   levelCounts: Record<string, number>;
   questionStats: QuestionStat[];
+  quizChallengeLeadCount?: number;
 };
 
 export default function AdminQuizPanel({
@@ -40,6 +41,7 @@ export default function AdminQuizPanel({
   averageScore,
   levelCounts,
   questionStats,
+  quizChallengeLeadCount = 0,
 }: AdminQuizPanelProps) {
   const completedRows = useMemo(
     () => rows.filter((row) => row.completedAt),
@@ -52,6 +54,9 @@ export default function AdminQuizPanel({
         <div>
           <p className="text-sm text-zinc-400">
             {totalCompleted} completed | average score {averageScore}
+          </p>
+          <p className="mt-1 text-xs text-zinc-500">
+            Quiz leads from challenge share (ref=challenge): {quizChallengeLeadCount}
           </p>
         </div>
         <a

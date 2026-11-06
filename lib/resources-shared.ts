@@ -11,7 +11,7 @@ export type ResourceBadge = "START HERE" | "COACH'S PICK" | "BEST VALUE";
 export type LeadRoleValue = "PLAYER" | "PARENT" | "COACH";
 
 export const LEAD_ROLE_OPTIONS: { value: LeadRoleValue; label: string }[] = [
-  { value: "PLAYER", label: "Player (13+)" },
+  { value: "PLAYER", label: "Player" },
   { value: "PARENT", label: "Parent" },
   { value: "COACH", label: "Coach" },
 ];

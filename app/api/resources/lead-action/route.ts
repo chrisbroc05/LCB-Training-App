@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { performResourceLeadAction } from "@/lib/resources-lead-action-server";
 import { LEAD_COOKIE_MAX_AGE_SECONDS, LEAD_COOKIE_NAME } from "@/lib/resources-lead-shared";
 import type { LeadRoleValue } from "@/lib/resources-shared";
+import { QUIZ_ATTEMPT_COOKIE_NAME } from "@/lib/quiz-session-cookies";
 
 type Body = {
   resourceSlug?: string;
@@ -18,6 +19,13 @@ function appendLeadCookie(response: NextResponse, leadId: string) {
     maxAge: LEAD_COOKIE_MAX_AGE_SECONDS,
     path: "/",
     sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+  });
+  response.cookies.set(QUIZ_ATTEMPT_COOKIE_NAME, "", {
+    maxAge: 0,
+    path: "/",
+    sameSite: "lax",
+    httpOnly: true,
     secure: process.env.NODE_ENV === "production",
   });
 }

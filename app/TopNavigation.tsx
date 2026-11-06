@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
+import { clearMarketingCookiesOnClient } from "@/lib/clear-marketing-cookies-client";
 import { getHomepagePlansHref } from "@/lib/homepage-plans-link";
 import { shouldUseMobileAppChrome } from "@/lib/mobile-ui";
 
@@ -416,7 +417,9 @@ export default function TopNavigation({
 
   const handleLogout = () => {
     closeMenus();
-    void signOut({ callbackUrl: "/auth" });
+    void clearMarketingCookiesOnClient().finally(() => {
+      void signOut({ callbackUrl: "/auth" });
+    });
   };
 
   if (isAdmin && pathname.startsWith("/admin")) {

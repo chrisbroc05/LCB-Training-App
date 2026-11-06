@@ -2,7 +2,11 @@
  * User-facing and admin plan labels (client-safe).
  */
 
-import { formatEffectiveAccessLabel, type AccessUserFields } from "@/lib/access-shared";
+import {
+  formatEffectiveAccessLabel,
+  resolveEffectiveLevel,
+  type AccessUserFields,
+} from "@/lib/access-shared";
 import { formatDatabaseTierLabel, type DatabaseTier } from "@/lib/membership";
 
 /** Single effective plan label everywhere in the app. */
@@ -13,6 +17,28 @@ export function formatMemberPlanLabel(user: AccessUserFields, now = new Date()):
 /** Admin list/detail primary pill (effective plan only). */
 export function formatAdminMemberPlanLabel(user: AccessUserFields, now = new Date()): string {
   return formatEffectiveAccessLabel(user, now);
+}
+
+/** Short single-line badge for dense admin tables (org trial maps to initials + " Trial"). */
+export function formatAdminMemberPlanBadgeLabel(user: AccessUserFields, now = new Date()): string {
+  const full = formatEffectiveAccessLabel(user, now);
+  const effective = resolveEffectiveLevel(user, now);
+  if (effective !== "ORG_TRIAL") {
+    return full;
+  }
+  const name = user.orgName?.trim();
+  if (!name) {
+    return full;
+  }
+  const words = name.split(/\s+/).filter(Boolean);
+  if (words.length >= 2) {
+    const initials = words.map((w) => w[0]!.toUpperCase()).join("");
+    return `${initials} Trial`;
+  }
+  if (name.length > 14) {
+    return `${name.slice(0, 12).trim()}... Trial`;
+  }
+  return full;
 }
 
 /** Admin member detail: Stripe/legacy tier row under the plan pill. */
