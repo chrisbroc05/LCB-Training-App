@@ -1,5 +1,6 @@
 "use client";
 
+import { adminFetchJson } from "@/lib/admin-fetch-shared";
 import { useEffect, useState } from "react";
 import AdminProgramEmailTools from "@/app/admin/program/AdminProgramEmailTools";
 
@@ -15,14 +16,15 @@ export default function AdminProgramEmailToolsSection() {
   useEffect(() => {
     const load = async () => {
       setLoading(true);
-      const response = await fetch("/api/admin/program/overview");
-      const data = (await response.json().catch(() => ({}))) as {
-        players?: Array<{ enrollmentId: string; name: string }>;
-      };
+      const res = await adminFetchJson<{ players?: Array<{ enrollmentId: string; name: string }> }>(
+        "/api/admin/program/overview",
+        { cache: "no-store" },
+        { context: "admin-program-overview-email-tools" },
+      );
       setLoading(false);
-      if (response.ok && data.players) {
+      if (res.ok && res.data.players) {
         setPlayers(
-          data.players.map((player) => ({
+          res.data.players.map((player) => ({
             enrollmentId: player.enrollmentId,
             name: player.name,
           })),

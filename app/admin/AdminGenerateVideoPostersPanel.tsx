@@ -1,4 +1,5 @@
 "use client";
+import { adminFetchJson } from "@/lib/admin-fetch-shared";
 
 import { useState } from "react";
 import { appendVideoPreviewTimeFragment } from "@/lib/video-playback-shared";
@@ -27,15 +28,15 @@ export default function AdminGenerateVideoPostersPanel() {
   };
 
   const processItem = async (item: VideoPosterBackfillItem) => {
-    const playbackResponse = await fetch("/api/video-url", {
+    const playbackResponseResult = await adminFetchJson("/api/video-url", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ r2Key: item.videoR2Key }),
     });
-    if (!playbackResponse.ok) {
+    if (!playbackResponseResult.ok) {
       throw new Error("Unable to load video for poster capture.");
     }
-    const playback = (await playbackResponse.json()) as { playbackUrl?: string };
+    const playback = (playbackResponseResult.data) as { playbackUrl?: string };
     if (!playback.playbackUrl) {
       throw new Error("Missing playback URL.");
     }
@@ -50,7 +51,7 @@ export default function AdminGenerateVideoPostersPanel() {
       throw new Error("Poster capture failed.");
     }
 
-    const applyResponse = await fetch("/api/admin/video-posters/apply", {
+    const applyRes = await adminFetchJson("/api/admin/video-posters/apply", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -59,11 +60,10 @@ export default function AdminGenerateVideoPostersPanel() {
         videoR2Key: item.videoR2Key,
         posterR2Key,
       }),
-    });
+    }, { context: "admin-video-poster-apply", okUserMessage: "Unable to save poster." });
 
-    if (!applyResponse.ok) {
-      const payload = (await applyResponse.json().catch(() => ({}))) as { error?: string };
-      throw new Error(payload.error ?? "Unable to save poster.");
+    if (!applyRes.ok) {
+      throw new Error(applyRes.userMessage);
     }
   };
 
@@ -73,9 +73,13 @@ export default function AdminGenerateVideoPostersPanel() {
     setProcessedCount(0);
 
     try {
-      const backlogResponse = await fetch("/api/admin/video-posters/backlog");
-      const backlogPayload = (await backlogResponse.json()) as { items?: VideoPosterBackfillItem[] };
-      const items = backlogPayload.items ?? [];
+      const backlogResponseResult = await adminFetchJson<{ items?: VideoPosterBackfillItem[] }>(
+        "/api/admin/video-posters/backlog",
+      );
+      if (!backlogResponseResult.ok) {
+        throw new Error(backlogResponseResult.userMessage);
+      }
+      const items = backlogResponseResult.data.items ?? [];
       if (items.length === 0) {
         appendLog("No videos missing posters.");
         return;

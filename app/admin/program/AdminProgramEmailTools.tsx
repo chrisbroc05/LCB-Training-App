@@ -1,5 +1,6 @@
 "use client";
 
+import { adminFetchJson } from "@/lib/admin-fetch-shared";
 import { useEffect, useState } from "react";
 import { MARKETING_EMAIL_LABELS, MARKETING_EMAIL_TYPES } from "@/lib/marketing-email-shared";
 import { formatScheduleWindow, PROGRAM_SCHEDULE_WINDOWS } from "@/lib/program-schedule-windows";
@@ -131,13 +132,7 @@ export default function AdminProgramEmailTools({ players }: AdminProgramEmailToo
     setError("");
     setSuccess("");
 
-    const response = await fetch("/api/admin/program/emails", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "dryRun" }),
-    });
-
-    const data = (await response.json().catch(() => ({}))) as {
+    const res = await adminFetchJson<{
       previews?: DryRunEmailPreview[];
       pushPreviews?: DryRunPushPreview[];
       coachPushPreviews?: DryRunCoachPushPreview[];
@@ -146,15 +141,24 @@ export default function AdminProgramEmailTools({ players }: AdminProgramEmailToo
       hour?: number;
       activeWindows?: string[];
       error?: string;
-    };
+    }>(
+      "/api/admin/program/emails",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "dryRun" }),
+      },
+      { context: "admin-program-emails-dry-run", okUserMessage: "Dry run failed." },
+    );
 
     setLoadingDryRun(false);
 
-    if (!response.ok) {
-      setError(data.error ?? "Dry run failed.");
+    if (!res.ok) {
+      setError(res.userMessage);
       return;
     }
 
+    const data = res.data;
     const combined: DryRunPreview[] = [
       ...(data.previews ?? []),
       ...(data.pushPreviews ?? []),
@@ -186,30 +190,29 @@ export default function AdminProgramEmailTools({ players }: AdminProgramEmailToo
     setError("");
     setSuccess("");
 
-    const response = await fetch("/api/admin/program/emails", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "sendTest",
-        type,
-        enrollmentId: selectedEnrollmentId,
-        toEmail: testEmail.trim(),
-      }),
-    });
-
-    const data = (await response.json().catch(() => ({}))) as {
-      subject?: string;
-      error?: string;
-    };
+    const res = await adminFetchJson<{ subject?: string; error?: string }>(
+      "/api/admin/program/emails",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "sendTest",
+          type,
+          enrollmentId: selectedEnrollmentId,
+          toEmail: testEmail.trim(),
+        }),
+      },
+      { context: "admin-program-emails-send-test", okUserMessage: "Test send failed." },
+    );
 
     setSendingType(null);
 
-    if (!response.ok) {
-      setError(data.error ?? "Test send failed.");
+    if (!res.ok) {
+      setError(res.userMessage);
       return;
     }
 
-    setSuccess(`Sent test: ${data.subject ?? type}`);
+    setSuccess(`Sent test: ${res.data.subject ?? type}`);
   };
 
   const sendTestPush = async () => {
@@ -222,23 +225,23 @@ export default function AdminProgramEmailTools({ players }: AdminProgramEmailToo
     setError("");
     setSuccess("");
 
-    const response = await fetch("/api/admin/program/emails", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "sendTestPush",
-        enrollmentId: selectedEnrollmentId,
-      }),
-    });
-
-    const data = (await response.json().catch(() => ({}))) as {
-      error?: string;
-    };
+    const res = await adminFetchJson<{ error?: string }>(
+      "/api/admin/program/emails",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "sendTestPush",
+          enrollmentId: selectedEnrollmentId,
+        }),
+      },
+      { context: "admin-program-emails-send-test-push", okUserMessage: "Test push failed." },
+    );
 
     setSendingPushTest(false);
 
-    if (!response.ok) {
-      setError(data.error ?? "Test push failed.");
+    if (!res.ok) {
+      setError(res.userMessage);
       return;
     }
 
@@ -250,25 +253,25 @@ export default function AdminProgramEmailTools({ players }: AdminProgramEmailToo
     setError("");
     setSuccess("");
 
-    const response = await fetch("/api/admin/program/emails", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "sendTestCoachAlert",
-        coachAlertType,
-        enrollmentId: selectedEnrollmentId || undefined,
-        playerName: selectedPlayer?.name ?? "Test Player",
-      }),
-    });
-
-    const data = (await response.json().catch(() => ({}))) as {
-      error?: string;
-    };
+    const res = await adminFetchJson<{ error?: string }>(
+      "/api/admin/program/emails",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "sendTestCoachAlert",
+          coachAlertType,
+          enrollmentId: selectedEnrollmentId || undefined,
+          playerName: selectedPlayer?.name ?? "Test Player",
+        }),
+      },
+      { context: "admin-program-emails-coach-alert-test", okUserMessage: "Test coach alert failed." },
+    );
 
     setSendingCoachAlertType(null);
 
-    if (!response.ok) {
-      setError(data.error ?? "Test coach alert failed.");
+    if (!res.ok) {
+      setError(res.userMessage);
       return;
     }
 
@@ -285,30 +288,29 @@ export default function AdminProgramEmailTools({ players }: AdminProgramEmailToo
     setError("");
     setSuccess("");
 
-    const response = await fetch("/api/admin/program/emails", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "sendTestCoachEmail",
-        coachEmailType,
-        enrollmentId: selectedEnrollmentId || undefined,
-        toEmail: testEmail.trim(),
-      }),
-    });
-
-    const data = (await response.json().catch(() => ({}))) as {
-      subject?: string;
-      error?: string;
-    };
+    const res = await adminFetchJson<{ subject?: string; error?: string }>(
+      "/api/admin/program/emails",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "sendTestCoachEmail",
+          coachEmailType,
+          enrollmentId: selectedEnrollmentId || undefined,
+          toEmail: testEmail.trim(),
+        }),
+      },
+      { context: "admin-program-emails-coach-email-test", okUserMessage: "Test coach email failed." },
+    );
 
     setSendingCoachEmailType(null);
 
-    if (!response.ok) {
-      setError(data.error ?? "Test coach email failed.");
+    if (!res.ok) {
+      setError(res.userMessage);
       return;
     }
 
-    setSuccess(`Sent test: ${data.subject ?? coachEmailType}`);
+    setSuccess(`Sent test: ${res.data.subject ?? coachEmailType}`);
   };
 
   const sendTestMessageNotification = async (messageTestType: string) => {
@@ -330,31 +332,35 @@ export default function AdminProgramEmailTools({ players }: AdminProgramEmailToo
       return;
     }
 
-    const response = await fetch("/api/admin/program/emails", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "sendTestMessageNotification",
-        messageTestType,
-        enrollmentId: selectedEnrollmentId,
-        toEmail: testEmail.trim(),
-        playerName: selectedPlayer?.name ?? "Test Player",
-      }),
-    });
-
-    const data = (await response.json().catch(() => ({}))) as {
-      subject?: string;
-      error?: string;
-    };
+    const res = await adminFetchJson<{ subject?: string; error?: string }>(
+      "/api/admin/program/emails",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "sendTestMessageNotification",
+          messageTestType,
+          enrollmentId: selectedEnrollmentId,
+          toEmail: testEmail.trim(),
+          playerName: selectedPlayer?.name ?? "Test Player",
+        }),
+      },
+      {
+        context: "admin-program-emails-message-notification-test",
+        okUserMessage: "Test message notification failed.",
+      },
+    );
 
     setSendingMessageTestType(null);
 
-    if (!response.ok) {
-      setError(data.error ?? "Test message notification failed.");
+    if (!res.ok) {
+      setError(res.userMessage);
       return;
     }
 
-    setSuccess(data.subject ? `Sent test: ${data.subject}` : "Test message notification sent.");
+    setSuccess(
+      res.data.subject ? `Sent test: ${res.data.subject}` : "Test message notification sent.",
+    );
   };
 
   const sendTestMarketing = async (type: string) => {
@@ -367,29 +373,28 @@ export default function AdminProgramEmailTools({ players }: AdminProgramEmailToo
     setError("");
     setSuccess("");
 
-    const response = await fetch("/api/admin/program/emails", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "sendTestMarketing",
-        type,
-        toEmail: testEmail.trim(),
-      }),
-    });
-
-    const data = (await response.json().catch(() => ({}))) as {
-      subject?: string;
-      error?: string;
-    };
+    const res = await adminFetchJson<{ subject?: string; error?: string }>(
+      "/api/admin/program/emails",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "sendTestMarketing",
+          type,
+          toEmail: testEmail.trim(),
+        }),
+      },
+      { context: "admin-program-emails-marketing-test", okUserMessage: "Test marketing send failed." },
+    );
 
     setSendingMarketingType(null);
 
-    if (!response.ok) {
-      setError(data.error ?? "Test marketing send failed.");
+    if (!res.ok) {
+      setError(res.userMessage);
       return;
     }
 
-    setSuccess(`Sent test: ${data.subject ?? type}`);
+    setSuccess(`Sent test: ${res.data.subject ?? type}`);
   };
 
   return (

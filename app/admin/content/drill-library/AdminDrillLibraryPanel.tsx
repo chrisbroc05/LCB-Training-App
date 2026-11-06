@@ -1,4 +1,5 @@
 "use client";
+import { adminFetchJson } from "@/lib/admin-fetch-shared";
 
 import { useCallback, useEffect, useState } from "react";
 
@@ -19,12 +20,13 @@ export default function AdminDrillLibraryPanel() {
     setLoading(true);
     setError("");
     try {
-      const response = await fetch("/api/admin/drill-library");
-      const data = (await response.json()) as { videos?: DrillCatalogRow[]; error?: string };
-      if (!response.ok) {
-        throw new Error(data.error ?? "Unable to load drills.");
+      const responseResult = await adminFetchJson<{ videos?: DrillCatalogRow[]; error?: string }>(
+        "/api/admin/drill-library",
+      );
+      if (!responseResult.ok) {
+        throw new Error(responseResult.userMessage);
       }
-      setVideos(data.videos ?? []);
+      setVideos(responseResult.data.videos ?? []);
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Unable to load drills.");
     } finally {
@@ -40,14 +42,13 @@ export default function AdminDrillLibraryPanel() {
     setSavingId(vimeoId);
     setError("");
     try {
-      const response = await fetch("/api/admin/drill-library", {
+      const responseResult = await adminFetchJson<{ error?: string }>("/api/admin/drill-library", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ vimeoId, isStarterDrill }),
       });
-      const data = (await response.json()) as { error?: string };
-      if (!response.ok) {
-        throw new Error(data.error ?? "Unable to save.");
+      if (!responseResult.ok) {
+        throw new Error(responseResult.userMessage);
       }
       setVideos((current) =>
         current.map((video) =>

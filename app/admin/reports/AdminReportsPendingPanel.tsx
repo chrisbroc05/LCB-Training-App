@@ -1,4 +1,5 @@
 "use client";
+import { adminFetchJson } from "@/lib/admin-fetch-shared";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AdminDrillPicker from "@/app/components/admin/AdminDrillPicker";
@@ -71,13 +72,13 @@ export default function AdminReportsPendingPanel(props: { initialSelectedId?: st
 
   const loadQueue = useCallback(async () => {
     setLoading(true);
-    const response = await fetch("/api/admin/reports");
+    const responseResult = await adminFetchJson("/api/admin/reports");
     setLoading(false);
-    if (!response.ok) {
+    if (!responseResult.ok) {
       setItems([]);
       return;
     }
-    const data = (await response.json()) as { submissions: QuickReportListItem[] };
+    const data = (responseResult.data) as { submissions: QuickReportListItem[] };
     setItems(data.submissions);
     setSelectedId((current) => {
       const preferred = current ?? props.initialSelectedId ?? null;
@@ -111,18 +112,18 @@ export default function AdminReportsPendingPanel(props: { initialSelectedId?: st
     let cancelled = false;
     const loadDetail = async () => {
       setLoadingDetail(true);
-      const response = await fetch(`/api/admin/submissions/swing/${selectedId}`, {
+      const responseResult = await adminFetchJson(`/api/admin/submissions/swing/${selectedId}`, {
         cache: "no-store",
       });
       if (cancelled) {
         return;
       }
       setLoadingDetail(false);
-      if (!response.ok) {
+      if (!responseResult.ok) {
         setDetail(null);
         return;
       }
-      const data = (await response.json()) as { submission: AdminWrittenReportSubmissionDetail };
+      const data = (responseResult.data) as { submission: AdminWrittenReportSubmissionDetail };
       setDetail(data.submission);
     };
 
@@ -152,7 +153,7 @@ export default function AdminReportsPendingPanel(props: { initialSelectedId?: st
 
     setSending(true);
     setSendError("");
-    const response = await fetch(`/api/admin/reports/${selectedId}/send`, {
+    const res = await adminFetchJson(`/api/admin/reports/${selectedId}/send`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -161,12 +162,11 @@ export default function AdminReportsPendingPanel(props: { initialSelectedId?: st
         libraryDrillIds,
         recommendedFixItSlug: recommendedFixItSlug || null,
       }),
-    });
+    }, { context: "admin-report-send", okUserMessage: "Unable to send report." });
     setSending(false);
 
-    const data = (await response.json().catch(() => ({}))) as { error?: string };
-    if (!response.ok) {
-      setSendError(data.error ?? "Unable to send report.");
+    if (!res.ok) {
+      setSendError(res.userMessage);
       return;
     }
 

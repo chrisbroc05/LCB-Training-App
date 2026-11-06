@@ -1,5 +1,6 @@
 "use client";
 
+import { adminFetchJson } from "@/lib/admin-fetch-shared";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
@@ -211,11 +212,12 @@ export default function AdminProgramPlayerProfile({ enrollmentId }: { enrollment
   const [showPastGoals, setShowPastGoals] = useState(false);
 
   const loadProfile = useCallback(async () => {
-    const response = await fetch(`/api/admin/program/enrollments/${enrollmentId}`);
-    const data = (await response.json().catch(() => ({}))) as {
-      profile?: ProfilePayload;
-    };
-    setProfile(data.profile ?? null);
+    const res = await adminFetchJson<{ profile?: ProfilePayload }>(
+      `/api/admin/program/enrollments/${enrollmentId}`,
+      { cache: "no-store" },
+      { context: "admin-program-player-profile-load" },
+    );
+    setProfile(res.ok ? res.data.profile ?? null : null);
   }, [enrollmentId]);
 
   useEffect(() => {
@@ -228,15 +230,18 @@ export default function AdminProgramPlayerProfile({ enrollmentId }: { enrollment
 
   const openMessage = (draft?: string) => {
     void (async () => {
-      const response = await fetch("/api/admin/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ enrollmentId }),
-      });
-      const data = (await response.json().catch(() => ({}))) as { conversationId?: string };
-      if (response.ok && data.conversationId) {
+      const res = await adminFetchJson<{ conversationId?: string }>(
+        "/api/admin/messages",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ enrollmentId }),
+        },
+        { context: "admin-program-profile-open-message" },
+      );
+      if (res.ok && res.data.conversationId) {
         const query = draft ? `?draft=${encodeURIComponent(draft)}` : "";
-        router.push(`/admin/messages/${data.conversationId}${query}`);
+        router.push(`/admin/messages/${res.data.conversationId}${query}`);
       }
     })();
   };
@@ -245,28 +250,28 @@ export default function AdminProgramPlayerProfile({ enrollmentId }: { enrollment
     if (!newNote.trim()) {
       return;
     }
-    await fetch(`/api/admin/program/enrollments/${enrollmentId}/coach-notes`, {
+    await adminFetchJson(`/api/admin/program/enrollments/${enrollmentId}/coach-notes`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ body: newNote }),
-    });
+    }, { context: "admin-program-coach-note-create" });
     setNewNote("");
     await loadProfile();
   };
 
   const updateNote = async (noteId: string, patch: { pinned?: boolean; body?: string }) => {
-    await fetch(`/api/admin/program/enrollments/${enrollmentId}/coach-notes/${noteId}`, {
+    await adminFetchJson(`/api/admin/program/enrollments/${enrollmentId}/coach-notes/${noteId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(patch),
-    });
+    }, { context: "admin-program-coach-note-patch" });
     await loadProfile();
   };
 
   const deleteNote = async (noteId: string) => {
-    await fetch(`/api/admin/program/enrollments/${enrollmentId}/coach-notes/${noteId}`, {
+    await adminFetchJson(`/api/admin/program/enrollments/${enrollmentId}/coach-notes/${noteId}`, {
       method: "DELETE",
-    });
+    }, { context: "admin-program-coach-note-delete" });
     await loadProfile();
   };
 

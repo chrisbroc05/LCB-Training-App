@@ -1,4 +1,5 @@
 "use client";
+import { adminFetchJson } from "@/lib/admin-fetch-shared";
 
 import { useEffect, useState } from "react";
 import { isR2VideoReference, parseR2VideoReference } from "@/lib/r2";
@@ -39,17 +40,17 @@ async function fetchPresignedDownload(storedVideo: string): Promise<PresignedDow
     throw new Error("Missing R2 key.");
   }
 
-  const response = await fetch("/api/admin/video-download-url", {
+  const responseResult = await adminFetchJson("/api/admin/video-download-url", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ r2Key }),
   });
 
-  if (!response.ok) {
+  if (!responseResult.ok) {
     throw new Error("Unable to prepare video download.");
   }
 
-  return (await response.json()) as PresignedDownloadResponse;
+  return (responseResult.data) as PresignedDownloadResponse;
 }
 
 function fetchVideoBlobWithProgress(

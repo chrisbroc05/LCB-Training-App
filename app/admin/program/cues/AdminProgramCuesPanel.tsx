@@ -1,5 +1,6 @@
 "use client";
 
+import { adminFetchJson } from "@/lib/admin-fetch-shared";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import RecommendDrillsPicker from "@/app/admin/RecommendDrillsPicker";
@@ -66,15 +67,15 @@ export default function AdminProgramCuesPanel() {
     setLoading(true);
     setError("");
     try {
-      const response = await fetch("/api/admin/program/cues");
-      const data = (await response.json().catch(() => ({}))) as {
-        cues?: CoachCueRecord[];
-        error?: string;
-      };
-      if (!response.ok || !data.cues) {
-        throw new Error(data.error ?? "Unable to load hitting focuses.");
+      const res = await adminFetchJson<{ cues?: CoachCueRecord[]; error?: string }>(
+        "/api/admin/program/cues",
+        { cache: "no-store" },
+        { context: "admin-program-cues-list", okUserMessage: "Unable to load hitting focuses." },
+      );
+      if (!res.ok || !res.data.cues) {
+        throw new Error(res.ok ? "Unable to load hitting focuses." : res.userMessage);
       }
-      setCues(data.cues);
+      setCues(res.data.cues);
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Unable to load hitting focuses.");
     } finally {
@@ -91,14 +92,13 @@ export default function AdminProgramCuesPanel() {
     setSaving(true);
     setError("");
     try {
-      const response = await fetch("/api/admin/program/cues", {
+      const res = await adminFetchJson("/api/admin/program/cues", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ label, drillIds }),
-      });
-      const data = (await response.json().catch(() => ({}))) as { error?: string };
-      if (!response.ok) {
-        throw new Error(data.error ?? "Unable to create focus.");
+      }, { context: "admin-program-cues-create", okUserMessage: "Unable to create focus." });
+      if (!res.ok) {
+        throw new Error(res.userMessage);
       }
       setLabel("");
       setDrillIds([]);
@@ -112,14 +112,13 @@ export default function AdminProgramCuesPanel() {
 
   const updateCue = async (id: string, patch: Partial<CoachCueRecord>) => {
     setError("");
-    const response = await fetch(`/api/admin/program/cues/${id}`, {
+    const res = await adminFetchJson(`/api/admin/program/cues/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(patch),
-    });
-    const data = (await response.json().catch(() => ({}))) as { error?: string };
-    if (!response.ok) {
-      setError(data.error ?? "Unable to update focus.");
+    }, { context: "admin-program-cues-patch", okUserMessage: "Unable to update focus." });
+    if (!res.ok) {
+      setError(res.userMessage);
       return;
     }
     await loadCues();

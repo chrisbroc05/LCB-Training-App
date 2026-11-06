@@ -1,4 +1,5 @@
 "use client";
+import { adminFetchJson } from "@/lib/admin-fetch-shared";
 
 import { useCallback, useMemo, useState } from "react";
 
@@ -35,17 +36,19 @@ export default function AdminLegacyLeadInvitePanel() {
     setLoading(true);
     setMessage("");
     try {
-      const response = await fetch("/api/admin/leads/legacy-invite", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "preview", listLimit: 50 }),
-      });
-      const data = (await response.json()) as { preview?: Preview; error?: string };
-      if (!response.ok) {
-        setMessage(data.error ?? "Preview failed.");
+      const responseResult = await adminFetchJson<{ preview?: Preview; error?: string }>(
+        "/api/admin/leads/legacy-invite",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "preview", listLimit: 50 }),
+        },
+      );
+      if (!responseResult.ok) {
+        setMessage(responseResult.userMessage);
         return;
       }
-      const nextPreview = data.preview ?? null;
+      const nextPreview = responseResult.data.preview ?? null;
       setPreview(nextPreview);
       if (nextPreview) {
         syncCheckedFromPreview(nextPreview);
@@ -86,14 +89,13 @@ export default function AdminLegacyLeadInvitePanel() {
     setLoading(true);
     setMessage("");
     try {
-      const response = await fetch("/api/admin/leads/legacy-invite", {
+      const responseResult = await adminFetchJson("/api/admin/leads/legacy-invite", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "exclude", leadId, reason: reason.trim() || undefined }),
       });
-      const data = (await response.json()) as { error?: string };
-      if (!response.ok) {
-        setMessage(data.error ?? "Exclude failed.");
+      if (!responseResult.ok) {
+        setMessage(responseResult.userMessage);
         return;
       }
       setMessage("Lead excluded from marketing.");
@@ -119,24 +121,25 @@ export default function AdminLegacyLeadInvitePanel() {
     setLoading(true);
     setMessage("");
     try {
-      const response = await fetch("/api/admin/leads/legacy-invite", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "send", confirm: true, leadIds: ids }),
-      });
-      const data = (await response.json()) as {
+      const responseResult = await adminFetchJson<{
         sent?: number;
         skipped?: number;
         errors?: string[];
         error?: string;
-      };
-      if (!response.ok) {
-        setMessage(data.error ?? "Send failed.");
+      }>("/api/admin/leads/legacy-invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "send", confirm: true, leadIds: ids }),
+      });
+      if (!responseResult.ok) {
+        setMessage(responseResult.userMessage);
         return;
       }
+      const data = responseResult.data;
       setMessage(`Sent ${data.sent ?? 0}, skipped ${data.skipped ?? 0}.`);
-      if (data.errors?.length) {
-        setMessage((prev) => `${prev} Errors: ${data.errors!.join("; ")}`);
+      const errors = data.errors;
+      if (errors && errors.length > 0) {
+        setMessage((prev) => `${prev} Errors: ${errors.join("; ")}`);
       }
       await loadPreview();
     } finally {

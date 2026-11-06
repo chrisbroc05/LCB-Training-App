@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { adminFetchJson } from "@/lib/admin-fetch-shared";
 import type { MemberDetail } from "@/app/admin/MemberDetailContent";
 
 type AdminMemberCommissionPanelProps = {
@@ -25,22 +26,22 @@ export default function AdminMemberCommissionPanel({
     setLoading(true);
     setError("");
     try {
-      const response = await fetch(`/api/admin/members/${memberId}/commission-override`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          countForCommission,
-          note: note.trim() || null,
-        }),
-      });
-      const data = (await response.json().catch(() => ({}))) as {
-        error?: string;
-        member?: MemberDetail;
-      };
-      if (!response.ok || !data.member) {
-        throw new Error(data.error ?? "Unable to save commission override.");
+      const res = await adminFetchJson<{ error?: string; member?: MemberDetail }>(
+        `/api/admin/members/${memberId}/commission-override`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            countForCommission,
+            note: note.trim() || null,
+          }),
+        },
+        { context: "admin-commission-override", okUserMessage: "Unable to save commission override." },
+      );
+      if (!res.ok || !res.data.member) {
+        throw new Error(res.ok ? "Unable to save commission override." : res.userMessage);
       }
-      onUpdated(data.member);
+      onUpdated(res.data.member);
     } catch (saveError) {
       setError(
         saveError instanceof Error ? saveError.message : "Unable to save commission override.",

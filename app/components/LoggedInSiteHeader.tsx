@@ -2,6 +2,7 @@
 
 import AppHeaderBar from "@/app/components/AppHeaderBar";
 import TopNavigation from "@/app/TopNavigation";
+import { usePathname } from "next/navigation";
 import type { DatabaseTier } from "@/lib/membership";
 import type { OrgTrialHeaderSummary } from "@/lib/layout-access-server";
 
@@ -30,6 +31,9 @@ export default function LoggedInSiteHeader({
   hasProgramEnrollment,
   orgTrialHeader,
 }: LoggedInSiteHeaderProps) {
+  const pathname = usePathname();
+  const showMemberNav = !pathname.startsWith("/admin");
+
   return (
     <header className="logged-in-site-header border-b border-[#18243a] bg-black md:bg-black/95 md:backdrop-blur">
       <div className="mx-auto w-full max-w-6xl px-4 py-3 sm:px-6">
@@ -44,18 +48,20 @@ export default function LoggedInSiteHeader({
             isAdmin={isAdmin}
           />
         </div>
-        <div className="mt-3 border-t border-[#18243a] pt-3">
-          <TopNavigation
-            isLoggedIn
-            isAdmin={isAdmin}
-            hasDrillLibraryAccess={hasDrillLibraryAccess}
-            hasPlaybookAccess={hasPlaybookAccess}
-            hasMemberDownloadsAccess={hasMemberDownloadsAccess}
-            hasCoachingAccess={hasCoachingAccess}
-            hasProgramEnrollment={hasProgramEnrollment}
-            userDisplayName={userDisplayName}
-          />
-        </div>
+        {showMemberNav ? (
+          <div className="mt-3 border-t border-[#18243a] pt-3">
+            <TopNavigation
+              isLoggedIn
+              isAdmin={isAdmin}
+              hasDrillLibraryAccess={hasDrillLibraryAccess}
+              hasPlaybookAccess={hasPlaybookAccess}
+              hasMemberDownloadsAccess={hasMemberDownloadsAccess}
+              hasCoachingAccess={hasCoachingAccess}
+              hasProgramEnrollment={hasProgramEnrollment}
+              userDisplayName={userDisplayName}
+            />
+          </div>
+        ) : null}
       </div>
     </header>
   );

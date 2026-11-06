@@ -1,5 +1,6 @@
 "use client";
 
+import { adminFetchJson } from "@/lib/admin-fetch-shared";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { formatDate, formatDateTime } from "@/lib/format-date";
@@ -62,22 +63,24 @@ export default function AdminWaiversPanel() {
       params.set("media", mediaFilter);
     }
 
-    const response = await fetch(`/api/admin/waivers?${params.toString()}`, { cache: "no-store" });
-    const data = (await response.json().catch(() => ({}))) as {
+    const res = await adminFetchJson<{
       agreements?: UnifiedAgreementRecord[];
       teams?: string[];
       error?: string;
-    };
+    }>(`/api/admin/waivers?${params.toString()}`, { cache: "no-store" }, {
+      context: "admin-waivers-list",
+      okUserMessage: "Unable to load agreements.",
+    });
 
     setLoading(false);
 
-    if (!response.ok) {
-      setError(data.error ?? "Unable to load agreements.");
+    if (!res.ok) {
+      setError(res.userMessage);
       return;
     }
 
-    setAgreements(data.agreements ?? []);
-    setTeamOptions(data.teams ?? []);
+    setAgreements(res.data.agreements ?? []);
+    setTeamOptions(res.data.teams ?? []);
   }, [teamFilter, search, sourceFilter, mediaFilter]);
 
   const sendResignLink = async (record: UnifiedAgreementRecord) => {
@@ -88,16 +91,15 @@ export default function AdminWaiversPanel() {
 
     setResignBusy(true);
     setResignMessage("");
-    const response = await fetch("/api/admin/waivers/send-resign-link", {
+    const resignRes = await adminFetchJson("/api/admin/waivers/send-resign-link", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ waiverSignatureId: record.waiverSignatureId }),
-    });
+    }, { context: "admin-waivers-resign", okUserMessage: "Could not send email." });
     setResignBusy(false);
 
-    if (!response.ok) {
-      const data = (await response.json().catch(() => ({}))) as { error?: string };
-      setResignMessage(data.error ?? "Could not send email.");
+    if (!resignRes.ok) {
+      setResignMessage(resignRes.userMessage);
       return;
     }
 

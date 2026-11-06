@@ -1,4 +1,5 @@
 "use client";
+import { adminFetchJson } from "@/lib/admin-fetch-shared";
 
 import { useEffect, useState } from "react";
 import type { CoachAlertSettingsState } from "@/lib/coach-push-shared";
@@ -64,15 +65,15 @@ export default function AdminProgramCoachAlerts() {
 
   const loadState = async () => {
     setIsLoading(true);
-    const response = await fetch("/api/admin/coach-alerts");
+    const responseResult = await adminFetchJson("/api/admin/coach-alerts");
     setIsLoading(false);
 
-    if (!response.ok) {
+    if (!responseResult.ok) {
       setErrorMessage("Unable to load coach alert settings.");
       return;
     }
 
-    const data = (await response.json()) as CoachAlertsState;
+    const data = (responseResult.data) as CoachAlertsState;
     setState(data);
   };
 
@@ -85,21 +86,20 @@ export default function AdminProgramCoachAlerts() {
     setErrorMessage("");
     setSuccessMessage("");
 
-    const response = await fetch("/api/admin/coach-alerts", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    const data = (await response.json().catch(() => ({}))) as {
-      error?: string;
-      settings?: CoachAlertSettingsState;
-    };
+    const res = await adminFetchJson<{ error?: string; settings?: CoachAlertSettingsState }>(
+      "/api/admin/coach-alerts",
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      },
+      { context: "admin-coach-alerts-save", okUserMessage: "Unable to save coach alert settings." },
+    );
 
     setIsSaving(false);
 
-    if (!response.ok || !data.settings) {
-      setErrorMessage(data.error ?? "Unable to save coach alert settings.");
+    if (!res.ok || !res.data.settings) {
+      setErrorMessage(res.ok ? "Unable to save coach alert settings." : res.userMessage);
       return false;
     }
 
@@ -107,7 +107,7 @@ export default function AdminProgramCoachAlerts() {
       current
         ? {
             ...current,
-            settings: data.settings!,
+            settings: res.data.settings!,
           }
         : current,
     );
@@ -150,21 +150,24 @@ export default function AdminProgramCoachAlerts() {
       return false;
     }
 
-    const response = await fetch("/api/push/subscribe", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        endpoint: json.endpoint,
-        keys: {
-          p256dh: json.keys.p256dh,
-          auth: json.keys.auth,
-        },
-      }),
-    });
+    const subscribeRes = await adminFetchJson(
+      "/api/push/subscribe",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          endpoint: json.endpoint,
+          keys: {
+            p256dh: json.keys.p256dh,
+            auth: json.keys.auth,
+          },
+        }),
+      },
+      { context: "admin-push-subscribe", okUserMessage: "Unable to turn on coach alerts." },
+    );
 
-    if (!response.ok) {
-      const data = (await response.json().catch(() => ({}))) as { error?: string };
-      setErrorMessage(data.error ?? "Unable to turn on coach alerts.");
+    if (!subscribeRes.ok) {
+      setErrorMessage(subscribeRes.userMessage);
       return false;
     }
 
@@ -187,13 +190,15 @@ export default function AdminProgramCoachAlerts() {
     setErrorMessage("");
     setSuccessMessage("");
 
-    const response = await fetch("/api/push/test", { method: "POST" });
-    const data = (await response.json().catch(() => ({}))) as { error?: string };
+    const testRes = await adminFetchJson("/api/push/test", { method: "POST" }, {
+      context: "admin-push-test",
+      okUserMessage: "Unable to send test push.",
+    });
 
     setIsSaving(false);
 
-    if (!response.ok) {
-      setErrorMessage(data.error ?? "Unable to send test push.");
+    if (!testRes.ok) {
+      setErrorMessage(testRes.userMessage);
       return;
     }
 

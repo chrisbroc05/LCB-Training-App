@@ -1,4 +1,5 @@
 "use client";
+import { adminFetchJson } from "@/lib/admin-fetch-shared";
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -108,14 +109,14 @@ export default function AdminReportsSentPanel() {
   const loadSent = useCallback(async () => {
     setLoading(true);
     const url = queryString ? `/api/admin/reports/sent?${queryString}` : "/api/admin/reports/sent";
-    const response = await fetch(url);
+    const responseResult = await adminFetchJson(url);
     setLoading(false);
-    if (!response.ok) {
+    if (!responseResult.ok) {
       setReports([]);
       setSummary(null);
       return;
     }
-    const data = (await response.json()) as {
+    const data = (responseResult.data) as {
       summary: SentSummary;
       reports: SentReportRow[];
       organizations: OrgOption[];
@@ -150,29 +151,29 @@ export default function AdminReportsSentPanel() {
   const openPdf = async (submissionId: string) => {
     setActionBusy(`pdf-${submissionId}`);
     setActionError("");
-    const response = await fetch(
+    const res = await adminFetchJson<{ downloadUrl?: string; error?: string }>(
       `/api/player-evaluations/download?submissionId=${encodeURIComponent(submissionId)}`,
+      { cache: "no-store" },
+      { context: "admin-report-open-pdf", okUserMessage: "Unable to open PDF." },
     );
     setActionBusy(null);
-    const data = (await response.json().catch(() => ({}))) as {
-      downloadUrl?: string;
-      error?: string;
-    };
-    if (!response.ok || !data.downloadUrl) {
-      setActionError(data.error ?? "Unable to open PDF.");
+    if (!res.ok || !res.data.downloadUrl) {
+      setActionError(res.ok ? "Unable to open PDF." : res.userMessage);
       return;
     }
-    window.open(data.downloadUrl, "_blank", "noopener,noreferrer");
+    window.open(res.data.downloadUrl, "_blank", "noopener,noreferrer");
   };
 
   const resendEmail = async (submissionId: string) => {
     setActionBusy(`resend-${submissionId}`);
     setActionError("");
-    const response = await fetch(`/api/admin/reports/${submissionId}/resend`, { method: "POST" });
+    const res = await adminFetchJson(`/api/admin/reports/${submissionId}/resend`, { method: "POST" }, {
+      context: "admin-report-resend",
+      okUserMessage: "Unable to resend email.",
+    });
     setActionBusy(null);
-    const data = (await response.json().catch(() => ({}))) as { error?: string };
-    if (!response.ok) {
-      setActionError(data.error ?? "Unable to resend email.");
+    if (!res.ok) {
+      setActionError(res.userMessage);
       return;
     }
   };
@@ -184,7 +185,7 @@ export default function AdminReportsSentPanel() {
     }
     setActionBusy(`regen-${submissionId}`);
     setActionError("");
-    const response = await fetch(`/api/admin/reports/${submissionId}/regenerate`, {
+    const res = await adminFetchJson(`/api/admin/reports/${submissionId}/regenerate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -192,11 +193,10 @@ export default function AdminReportsSentPanel() {
         libraryDrillIds: editLibraryDrillIds,
         recommendedFixItSlug: editFixItSlug || null,
       }),
-    });
+    }, { context: "admin-report-regenerate", okUserMessage: "Unable to regenerate PDF." });
     setActionBusy(null);
-    const data = (await response.json().catch(() => ({}))) as { error?: string };
-    if (!response.ok) {
-      setActionError(data.error ?? "Unable to regenerate PDF.");
+    if (!res.ok) {
+      setActionError(res.userMessage);
       return;
     }
     cancelEdit();

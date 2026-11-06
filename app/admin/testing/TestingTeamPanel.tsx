@@ -2,6 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import {
+  adminFetchJson,
+  ADMIN_FETCH_COULD_NOT_LOAD_JSON,
+} from "@/lib/admin-fetch-shared";
 import type { TestSessionSummary } from "@/lib/testing-shared";
 
 type TeamDetail = {
@@ -19,12 +23,19 @@ export default function TestingTeamPanel({ teamId }: { teamId: string }) {
 
   async function loadDetail() {
     setError(null);
-    const response = await fetch(`/api/admin/testing/teams/${teamId}`, { cache: "no-store" });
-    const data = (await response.json()) as TeamDetail & { error?: string };
-    if (!response.ok) {
-      throw new Error(data.error ?? "Failed to load team.");
+    const res = await adminFetchJson<TeamDetail & { error?: string }>(
+      `/api/admin/testing/teams/${encodeURIComponent(teamId)}`,
+      { cache: "no-store" },
+      {
+        context: "testing-team-detail",
+        okUserMessage: "Couldn't load testing results. Try again.",
+        notJsonUserMessage: ADMIN_FETCH_COULD_NOT_LOAD_JSON,
+      },
+    );
+    if (!res.ok) {
+      throw new Error(res.userMessage);
     }
-    setDetail(data);
+    setDetail(res.data);
   }
 
   useEffect(() => {

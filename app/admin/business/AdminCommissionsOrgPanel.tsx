@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { adminFetchJson } from "@/lib/admin-fetch-shared";
 import Link from "next/link";
 import type { AdminCommissionOrgDetail } from "@/lib/admin-commissions-shared";
 import { COMMISSION_PAYOUT_METHODS } from "@/lib/admin-commissions-shared";
@@ -60,26 +61,26 @@ export default function AdminCommissionsOrgPanel({ initialSummary }: AdminCommis
         payoutAmountDollars.trim() === ""
           ? selectedPayoutMonth.amountDueCents
           : Math.round(Number.parseFloat(payoutAmountDollars) * 100);
-      const response = await fetch("/api/admin/commissions/payout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          organizationId: summary.org.id,
-          monthKey: payoutMonthKey,
-          paidAt: payoutDate,
-          method: payoutMethod,
-          note: payoutNote.trim() || null,
-          amountCents,
-        }),
-      });
-      const data = (await response.json().catch(() => ({}))) as {
-        error?: string;
-        summary?: AdminCommissionOrgDetail;
-      };
-      if (!response.ok || !data.summary) {
-        throw new Error(data.error ?? "Unable to record payout.");
+      const res = await adminFetchJson<{ error?: string; summary?: AdminCommissionOrgDetail }>(
+        "/api/admin/commissions/payout",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            organizationId: summary.org.id,
+            monthKey: payoutMonthKey,
+            paidAt: payoutDate,
+            method: payoutMethod,
+            note: payoutNote.trim() || null,
+            amountCents,
+          }),
+        },
+        { context: "admin-commissions-payout", okUserMessage: "Unable to record payout." },
+      );
+      if (!res.ok || !res.data.summary) {
+        throw new Error(res.ok ? "Unable to record payout." : res.userMessage);
       }
-      refreshSummary(data.summary);
+      refreshSummary(res.data.summary);
       setPayoutAmountDollars("");
       setPayoutNote("");
     } catch (error) {
@@ -92,24 +93,24 @@ export default function AdminCommissionsOrgPanel({ initialSummary }: AdminCommis
   const handleFamilyOverride = async (userId: string, countForCommission: boolean, note: string) => {
     setFamilyError("");
     try {
-      const response = await fetch("/api/admin/commissions/override", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId,
-          organizationId: summary.org.id,
-          countForCommission,
-          note: note.trim() || null,
-        }),
-      });
-      const data = (await response.json().catch(() => ({}))) as {
-        error?: string;
-        summary?: AdminCommissionOrgDetail;
-      };
-      if (!response.ok || !data.summary) {
-        throw new Error(data.error ?? "Unable to update override.");
+      const res = await adminFetchJson<{ error?: string; summary?: AdminCommissionOrgDetail }>(
+        "/api/admin/commissions/override",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId,
+            organizationId: summary.org.id,
+            countForCommission,
+            note: note.trim() || null,
+          }),
+        },
+        { context: "admin-commissions-override", okUserMessage: "Unable to update override." },
+      );
+      if (!res.ok || !res.data.summary) {
+        throw new Error(res.ok ? "Unable to update override." : res.userMessage);
       }
-      refreshSummary(data.summary);
+      refreshSummary(res.data.summary);
     } catch (error) {
       setFamilyError(error instanceof Error ? error.message : "Unable to update override.");
     }

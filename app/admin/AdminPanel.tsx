@@ -1,4 +1,5 @@
 "use client";
+import { adminFetchJson, readAdminJsonResponse } from "@/lib/admin-fetch-shared";
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -182,14 +183,14 @@ export default function AdminPanel({ mode = "full" }: AdminPanelProps) {
 
     const loadList = async () => {
       setLoadingList(true);
-      const response = await fetch(`/api/admin/submissions?type=${tab}`);
+      const responseResult = await adminFetchJson(`/api/admin/submissions?type=${tab}`);
       setLoadingList(false);
-      if (!response.ok) {
+      if (!responseResult.ok) {
         setItems([]);
         return;
       }
 
-      const data = (await response.json()) as { submissions: SubmissionListItem[] };
+      const data = (responseResult.data) as { submissions: SubmissionListItem[] };
       setItems(data.submissions);
       const submissionId =
         searchParams.get("submissionId") ?? searchParams.get("id");
@@ -214,13 +215,13 @@ export default function AdminPanel({ mode = "full" }: AdminPanelProps) {
 
     const loadDetail = async () => {
       setLoadingDetail(true);
-      const response = await fetch(`/api/admin/submissions/${tab}/${selectedId}`);
+      const responseResult = await adminFetchJson(`/api/admin/submissions/${tab}/${selectedId}`);
       setLoadingDetail(false);
-      if (!response.ok) {
+      if (!responseResult.ok) {
         setDetail(null);
         return;
       }
-      const data = (await response.json()) as { submission: SubmissionDetail };
+      const data = (responseResult.data) as { submission: SubmissionDetail };
       setDetail(data.submission);
       setWrittenResponse("");
       setManualVideoUrl("");
@@ -339,10 +340,13 @@ export default function AdminPanel({ mode = "full" }: AdminPanelProps) {
       method: "POST",
       body: formData,
     });
-
-    if (!response.ok) {
-      const data = (await response.json().catch(() => ({}))) as { error?: string };
-      setSendError(data.error ?? "Unable to send response.");
+    const parsed = await readAdminJsonResponse<{ error?: string }>(
+      response,
+      response.url || `/api/admin/submissions/${tab}/${detail.id}/respond`,
+      { context: "admin-submission-respond", okUserMessage: "Unable to send response." },
+    );
+    if (!parsed.ok) {
+      setSendError(parsed.userMessage);
       return;
     }
 
@@ -365,9 +369,9 @@ export default function AdminPanel({ mode = "full" }: AdminPanelProps) {
     setResponseSummary(summaryParts.join(" "));
     setShowResponseModal(true);
 
-    const refreshed = await fetch(`/api/admin/submissions/${tab}/${detail.id}`);
-    if (refreshed.ok) {
-      const data = (await refreshed.json()) as { submission: SubmissionDetail };
+    const refreshedResult = await adminFetchJson(`/api/admin/submissions/${tab}/${detail.id}`);
+    if (refreshedResult.ok) {
+      const data = (refreshedResult.data) as { submission: SubmissionDetail };
       setDetail(data.submission);
     } else {
       setDetail({
@@ -486,16 +490,17 @@ export default function AdminPanel({ mode = "full" }: AdminPanelProps) {
           fileSize: file.size,
         }),
       });
-
-      const uploadUrlPayload = (await uploadUrlResponse.json().catch(() => ({}))) as {
-        error?: string;
-      } & PresignedSwingUploadResponse;
-
-      if (!uploadUrlResponse.ok) {
-        throw new Error(uploadUrlPayload.error ?? "Unable to prepare response video upload.");
+      const uploadParsed = await readAdminJsonResponse<
+        { error?: string } & PresignedSwingUploadResponse
+      >(uploadUrlResponse, uploadUrlResponse.url || "/api/admin/response-upload-url", {
+        context: "admin-response-upload-url",
+        okUserMessage: "Unable to prepare response video upload.",
+      });
+      if (!uploadParsed.ok) {
+        throw new Error(uploadParsed.userMessage);
       }
 
-      const presignedUpload = uploadUrlPayload;
+      const presignedUpload = uploadParsed.data;
 
       setResponseUploadPreparing(false);
       setResponseUploadProgress(0);
@@ -560,11 +565,13 @@ export default function AdminPanel({ mode = "full" }: AdminPanelProps) {
           method: "POST",
           body: formData,
         });
-
-        const payload = (await response.json().catch(() => ({}))) as { error?: string };
-
-        if (!response.ok) {
-          throw new Error(payload.error ?? "Unable to clear uploaded video.");
+        const cleared = await readAdminJsonResponse<{ error?: string }>(
+          response,
+          response.url || "/api/admin/clear-response-video",
+          { context: "admin-clear-response-video", okUserMessage: "Unable to clear uploaded video." },
+        );
+        if (!cleared.ok) {
+          throw new Error(cleared.userMessage);
         }
 
         setDetail({

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { MemberDetail } from "@/app/admin/MemberDetailContent";
+import { adminFetchJson } from "@/lib/admin-fetch-shared";
 
 type AdminMemberClubReportPanelProps = {
   memberId: string;
@@ -24,19 +25,19 @@ export default function AdminMemberClubReportPanel({
     setLoading(true);
     setError("");
     try {
-      const response = await fetch(`/api/admin/members/${memberId}/club-report-excluded`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ excluded }),
-      });
-      const data = (await response.json().catch(() => ({}))) as {
-        error?: string;
-        member?: MemberDetail;
-      };
-      if (!response.ok || !data.member) {
-        throw new Error(data.error ?? "Unable to save club report setting.");
+      const res = await adminFetchJson<{ error?: string; member?: MemberDetail }>(
+        `/api/admin/members/${memberId}/club-report-excluded`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ excluded }),
+        },
+        { context: "admin-club-report-excluded", okUserMessage: "Unable to save club report setting." },
+      );
+      if (!res.ok || !res.data.member) {
+        throw new Error(res.ok ? "Unable to save club report setting." : res.userMessage);
       }
-      onUpdated(data.member);
+      onUpdated(res.data.member);
     } catch (saveError) {
       setError(
         saveError instanceof Error ? saveError.message : "Unable to save club report setting.",

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { adminFetchJson } from "@/lib/admin-fetch-shared";
 import AdminTodayInsightsSections from "@/app/admin/AdminTodayInsightsSections";
 import { ADMIN_ROUTES } from "@/lib/admin-routes-shared";
 import type { AdminTodaySnapshot } from "@/lib/admin-today-shared";
@@ -33,14 +34,16 @@ export default function AdminTodayPanel() {
     const load = async () => {
       setLoading(true);
       setError("");
-      const response = await fetch("/api/admin/today", { cache: "no-store" });
+      const res = await adminFetchJson<AdminTodaySnapshot>("/api/admin/today", { cache: "no-store" }, {
+        context: "admin-today",
+        okUserMessage: "Couldn't load Today summary. Try again.",
+      });
       setLoading(false);
-      if (!response.ok) {
-        setError("Unable to load Today summary.");
+      if (!res.ok) {
+        setError(res.userMessage);
         return;
       }
-      const snapshot = (await response.json()) as AdminTodaySnapshot;
-      setData(snapshot);
+      setData(res.data);
     };
     void load();
   }, []);

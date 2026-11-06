@@ -25,7 +25,12 @@ export async function GET(request: Request) {
   const entry = await getStationEntryData(session.id, stationKey);
 
   if (!entry) {
-    return jsonNoStore({ error: "Entry data not found." }, { status: 404 });
+    return jsonNoStore(
+      {
+        error: "That test station is not configured or was renamed. Pick another station in the sidebar.",
+      },
+      { status: 404 },
+    );
   }
 
   return jsonNoStore(entry);

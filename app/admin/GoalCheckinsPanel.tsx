@@ -1,4 +1,5 @@
 "use client";
+import { adminFetchJson } from "@/lib/admin-fetch-shared";
 
 import { useEffect, useState } from "react";
 import { GoalItemCategoryBadge } from "@/app/goal-setting/GoalTrackerList";
@@ -48,14 +49,14 @@ export default function GoalCheckinsPanel() {
   useEffect(() => {
     const loadList = async () => {
       setLoadingList(true);
-      const response = await fetch("/api/admin/goal-checkins");
+      const responseResult = await adminFetchJson("/api/admin/goal-checkins");
       setLoadingList(false);
-      if (!response.ok) {
+      if (!responseResult.ok) {
         setItems([]);
         return;
       }
 
-      const data = (await response.json()) as { submissions: GoalCheckinListItem[] };
+      const data = (responseResult.data) as { submissions: GoalCheckinListItem[] };
       setItems(data.submissions);
       setSelectedId(null);
       setDetail(null);
@@ -75,14 +76,14 @@ export default function GoalCheckinsPanel() {
 
     const loadDetail = async () => {
       setLoadingDetail(true);
-      const response = await fetch(`/api/admin/goal-checkins/${selectedId}`);
+      const responseResult = await adminFetchJson(`/api/admin/goal-checkins/${selectedId}`);
       setLoadingDetail(false);
-      if (!response.ok) {
+      if (!responseResult.ok) {
         setDetail(null);
         return;
       }
 
-      const data = (await response.json()) as { submission: GoalCheckinDetail };
+      const data = (responseResult.data) as { submission: GoalCheckinDetail };
       setDetail(data.submission);
       setCoachResponse("");
       setSendError("");
@@ -105,17 +106,16 @@ export default function GoalCheckinsPanel() {
       return;
     }
 
-    const response = await fetch(`/api/admin/goal-checkins/${detail.id}/respond`, {
+    const respondResult = await adminFetchJson(`/api/admin/goal-checkins/${detail.id}/respond`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ coachResponse: trimmedResponse }),
-    });
+    }, { context: "admin-goal-checkin-respond", okUserMessage: "Unable to send response." });
 
-    if (!response.ok) {
-      const data = (await response.json().catch(() => ({}))) as { error?: string };
-      setSendError(data.error ?? "Unable to send response.");
+    if (!respondResult.ok) {
+      setSendError(respondResult.userMessage);
       return;
     }
 
@@ -124,9 +124,9 @@ export default function GoalCheckinsPanel() {
     );
     setShowResponseModal(true);
 
-    const refreshed = await fetch(`/api/admin/goal-checkins/${detail.id}`);
-    if (refreshed.ok) {
-      const data = (await refreshed.json()) as { submission: GoalCheckinDetail };
+    const refreshedResult = await adminFetchJson(`/api/admin/goal-checkins/${detail.id}`);
+    if (refreshedResult.ok) {
+      const data = (refreshedResult.data) as { submission: GoalCheckinDetail };
       setDetail(data.submission);
     }
 

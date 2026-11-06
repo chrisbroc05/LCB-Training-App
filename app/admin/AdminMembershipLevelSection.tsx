@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { adminFetchJson } from "@/lib/admin-fetch-shared";
 import {
   MEMBERSHIP_LEVEL_KEYS,
   formatMembershipLevelLabel,
@@ -32,40 +33,41 @@ export default function AdminMembershipLevelSection({
     setError("");
     setSuccess("");
     try {
-      const response = await fetch(`/api/admin/members/${detail.id}/membership-level`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          membershipLevel: levelDraft || null,
-          membershipLevelExpiresAt: expiresDraft ? `${expiresDraft}T23:59:59.000Z` : null,
-        }),
-      });
-      const data = (await response.json().catch(() => ({}))) as {
-        error?: string;
-        member?: MemberDetail;
-      };
-      if (!response.ok || !data.member) {
-        setError(data.error ?? "Unable to update membership level.");
+      const res = await adminFetchJson<{ error?: string; member?: MemberDetail }>(
+        `/api/admin/members/${detail.id}/membership-level`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            membershipLevel: levelDraft || null,
+            membershipLevelExpiresAt: expiresDraft ? `${expiresDraft}T23:59:59.000Z` : null,
+          }),
+        },
+        { context: "admin-membership-level", okUserMessage: "Unable to update membership level." },
+      );
+      if (!res.ok || !res.data.member) {
+        setError(res.ok ? "Unable to update membership level." : res.userMessage);
         return;
       }
 
+      const member = res.data.member;
       const expectedLevel = levelDraft ? (levelDraft as MembershipLevelKey) : null;
-      if (data.member.membershipLevel !== expectedLevel) {
+      if (member.membershipLevel !== expectedLevel) {
         setError(
-          `Save did not persist (expected level ${expectedLevel ?? "none"}, got ${data.member.membershipLevel ?? "none"}). Refresh and try again.`,
+          `Save did not persist (expected level ${expectedLevel ?? "none"}, got ${member.membershipLevel ?? "none"}). Refresh and try again.`,
         );
         return;
       }
 
       const expectedExpiresPrefix = expiresDraft || null;
-      const savedExpires = data.member.membershipLevelExpiresAt?.slice(0, 10) ?? null;
+      const savedExpires = member.membershipLevelExpiresAt?.slice(0, 10) ?? null;
       if (expectedExpiresPrefix !== savedExpires) {
         setError("Membership level expiry did not save correctly. Refresh and try again.");
         return;
       }
 
-      onUpdated(data.member);
-      setSuccess(`Saved: ${data.member.planDisplayLabel}${data.member.planExpiryLabel ? ` (${data.member.planExpiryLabel})` : ""}.`);
+      onUpdated(member);
+      setSuccess(`Saved: ${member.planDisplayLabel}${member.planExpiryLabel ? ` (${member.planExpiryLabel})` : ""}.`);
     } catch {
       setError("Unable to update membership level right now.");
     } finally {

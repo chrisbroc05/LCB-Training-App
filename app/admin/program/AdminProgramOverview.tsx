@@ -1,5 +1,6 @@
 "use client";
 
+import { adminFetchJson } from "@/lib/admin-fetch-shared";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -61,17 +62,18 @@ function MessageButton({ enrollmentId }: { enrollmentId: string }) {
       onClick={() => {
         setOpening(true);
         void (async () => {
-          const response = await fetch("/api/admin/messages", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ enrollmentId }),
-          });
-          const data = (await response.json().catch(() => ({}))) as {
-            conversationId?: string;
-          };
+          const res = await adminFetchJson<{ conversationId?: string }>(
+            "/api/admin/messages",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ enrollmentId }),
+            },
+            { context: "admin-program-overview-open-message" },
+          );
           setOpening(false);
-          if (response.ok && data.conversationId) {
-            router.push(`/admin/messages/${data.conversationId}`);
+          if (res.ok && res.data.conversationId) {
+            router.push(`/admin/messages/${res.data.conversationId}`);
           }
         })();
       }}
@@ -95,19 +97,21 @@ export default function AdminProgramOverview() {
     setError("");
     try {
       const query = includeTestAccounts ? "?showTestAccounts=true" : "";
-      const response = await fetch(`/api/admin/program/overview${query}`);
-      const data = (await response.json().catch(() => ({}))) as {
+      const res = await adminFetchJson<{
         waitingOnSetup?: WaitingOnSetupPlayer[];
         players?: PlayerCard[];
         latestNotes?: LatestNote[];
         error?: string;
-      };
-      if (!response.ok || !data.players) {
-        throw new Error(data.error ?? "Unable to load program overview.");
+      }>(`/api/admin/program/overview${query}`, { cache: "no-store" }, {
+        context: "admin-program-overview",
+        okUserMessage: "Unable to load program overview.",
+      });
+      if (!res.ok || !res.data.players) {
+        throw new Error(res.ok ? "Unable to load program overview." : res.userMessage);
       }
-      setWaitingOnSetup(data.waitingOnSetup ?? []);
-      setPlayers(data.players);
-      setLatestNotes(data.latestNotes ?? []);
+      setWaitingOnSetup(res.data.waitingOnSetup ?? []);
+      setPlayers(res.data.players);
+      setLatestNotes(res.data.latestNotes ?? []);
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Unable to load program overview.");
     } finally {

@@ -1,4 +1,5 @@
 "use client";
+import { adminFetchJson } from "@/lib/admin-fetch-shared";
 
 import { useCallback, useEffect, useState } from "react";
 import { FREE_SWING_ANALYSIS_RESPONSE_OPTIONS } from "@/lib/free-swing-analysis-response-shared";
@@ -14,13 +15,13 @@ export default function AdminFreeSwingResponseSetting() {
   const load = useCallback(async () => {
     setLoading(true);
     setError("");
-    const response = await fetch("/api/admin/coaching-settings");
+    const responseResult = await adminFetchJson("/api/admin/coaching-settings");
     setLoading(false);
-    if (!response.ok) {
+    if (!responseResult.ok) {
       setError("Unable to load coaching settings.");
       return;
     }
-    const data = (await response.json()) as { freeSwingAnalysisResponseMode?: FreeSwingAnalysisResponseMode };
+    const data = (responseResult.data) as { freeSwingAnalysisResponseMode?: FreeSwingAnalysisResponseMode };
     if (data.freeSwingAnalysisResponseMode) {
       setMode(data.freeSwingAnalysisResponseMode);
     }
@@ -34,15 +35,14 @@ export default function AdminFreeSwingResponseSetting() {
     setSaving(true);
     setError("");
     setSaved(false);
-    const response = await fetch("/api/admin/coaching-settings", {
+    const res = await adminFetchJson("/api/admin/coaching-settings", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ freeSwingAnalysisResponseMode: mode }),
-    });
+    }, { context: "admin-coaching-settings-save", okUserMessage: "Unable to save." });
     setSaving(false);
-    if (!response.ok) {
-      const data = (await response.json().catch(() => ({}))) as { error?: string };
-      setError(data.error ?? "Unable to save.");
+    if (!res.ok) {
+      setError(res.userMessage);
       return;
     }
     setSaved(true);

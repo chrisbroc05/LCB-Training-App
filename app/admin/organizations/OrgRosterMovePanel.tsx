@@ -1,4 +1,5 @@
 "use client";
+import { adminFetchJson } from "@/lib/admin-fetch-shared";
 
 import { useState } from "react";
 
@@ -30,14 +31,15 @@ export default function OrgRosterMovePanel({
   async function loadMembers() {
     setLoading(true);
     setError(null);
-    const response = await fetch(`/api/admin/organizations/${organizationId}/members`);
-    const data = (await response.json()) as { members?: OrgMember[]; error?: string };
-    if (!response.ok) {
-      setError(data.error ?? "Could not load members.");
+    const responseResult = await adminFetchJson<{ members?: OrgMember[]; error?: string }>(
+      `/api/admin/organizations/${organizationId}/members`,
+    );
+    if (!responseResult.ok) {
+      setError(responseResult.userMessage);
       setLoading(false);
       return;
     }
-    setMembers(data.members ?? []);
+    setMembers(responseResult.data.members ?? []);
     setLoading(false);
   }
 
@@ -46,7 +48,7 @@ export default function OrgRosterMovePanel({
       return;
     }
     setError(null);
-    const response = await fetch(`/api/admin/organizations/${organizationId}/members/move`, {
+    const responseResult = await adminFetchJson(`/api/admin/organizations/${organizationId}/members/move`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -54,9 +56,8 @@ export default function OrgRosterMovePanel({
         orgTeamId: teamId || null,
       }),
     });
-    const data = (await response.json()) as { error?: string };
-    if (!response.ok) {
-      setError(data.error ?? "Could not move members.");
+    if (!responseResult.ok) {
+      setError(responseResult.userMessage);
       return;
     }
     setSelected([]);

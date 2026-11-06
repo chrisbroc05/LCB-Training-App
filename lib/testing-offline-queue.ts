@@ -10,6 +10,8 @@ export type PendingTestResult = {
   createdAt: string;
 };
 
+import { readAdminJsonResponse } from "@/lib/admin-fetch-shared";
+
 const STORAGE_KEY = "lcb-testing-pending-results";
 
 function readQueue(): PendingTestResult[] {
@@ -75,7 +77,8 @@ export async function flushPendingTestResults() {
 
   for (const item of queue) {
     try {
-      const response = await fetch(`/api/admin/testing/sessions/${item.sessionId}/results`, {
+      const url = `/api/admin/testing/sessions/${item.sessionId}/results`;
+      const response = await fetch(url, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -87,7 +90,12 @@ export async function flushPendingTestResults() {
           notes: item.notes,
         }),
       });
-      if (!response.ok) {
+      const parsed = await readAdminJsonResponse<Record<string, unknown>>(
+        response,
+        response.url || url,
+        { context: "testing-offline-flush" },
+      );
+      if (!parsed.ok) {
         failed += 1;
         continue;
       }

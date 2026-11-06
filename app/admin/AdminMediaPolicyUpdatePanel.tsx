@@ -1,4 +1,5 @@
 "use client";
+import { adminFetchJson } from "@/lib/admin-fetch-shared";
 
 import { useEffect, useState } from "react";
 
@@ -19,13 +20,13 @@ export default function AdminMediaPolicyUpdatePanel() {
   const loadPreview = async () => {
     setLoading(true);
     setError("");
-    const response = await fetch("/api/admin/media-policy-update", { cache: "no-store" });
+    const responseResult = await adminFetchJson("/api/admin/media-policy-update", { cache: "no-store" });
     setLoading(false);
-    if (!response.ok) {
+    if (!responseResult.ok) {
       setError("Unable to load media update email preview.");
       return;
     }
-    const data = (await response.json()) as PreviewState;
+    const data = (responseResult.data) as PreviewState;
     setPreview(data);
   };
 
@@ -37,25 +38,24 @@ export default function AdminMediaPolicyUpdatePanel() {
     setSending(true);
     setError("");
     setResultMessage("");
-    const response = await fetch("/api/admin/media-policy-update", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ confirm: true }),
-    });
+    const res = await adminFetchJson<{ error?: string; sent?: number }>(
+      "/api/admin/media-policy-update",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirm: true }),
+      },
+      { context: "admin-media-policy-send", okUserMessage: "Send failed." },
+    );
     setSending(false);
     setConfirmOpen(false);
 
-    const data = (await response.json().catch(() => ({}))) as {
-      error?: string;
-      sent?: number;
-    };
-
-    if (!response.ok) {
-      setError(data.error ?? "Send failed.");
+    if (!res.ok) {
+      setError(res.userMessage);
       return;
     }
 
-    setResultMessage(`Sent ${data.sent ?? 0} email(s).`);
+    setResultMessage(`Sent ${res.data.sent ?? 0} email(s).`);
     void loadPreview();
   };
 

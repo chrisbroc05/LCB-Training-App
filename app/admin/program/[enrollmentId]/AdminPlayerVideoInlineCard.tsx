@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { adminFetchJson } from "@/lib/admin-fetch-shared";
 import R2PresignedVideoPlayer from "@/app/components/R2PresignedVideoPlayer";
 import { formatDateTime } from "@/lib/format-date";
 
@@ -28,19 +29,19 @@ export default function AdminPlayerVideoInlineCard({
     setDownloading(true);
     setDownloadError("");
     try {
-      const response = await fetch("/api/admin/video-download-url", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ r2Key: videoKey }),
-      });
-      const data = (await response.json().catch(() => ({}))) as {
-        downloadUrl?: string;
-        error?: string;
-      };
-      if (!response.ok || !data.downloadUrl) {
-        throw new Error(data.error ?? "Unable to download.");
+      const res = await adminFetchJson<{ downloadUrl?: string; error?: string }>(
+        "/api/admin/video-download-url",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ r2Key: videoKey }),
+        },
+        { context: "admin-player-video-download", okUserMessage: "Unable to download." },
+      );
+      if (!res.ok || !res.data.downloadUrl) {
+        throw new Error(res.ok ? "Unable to download." : res.userMessage);
       }
-      window.open(data.downloadUrl, "_blank", "noopener,noreferrer");
+      window.open(res.data.downloadUrl, "_blank", "noopener,noreferrer");
     } catch (error) {
       setDownloadError(error instanceof Error ? error.message : "Unable to download.");
     } finally {

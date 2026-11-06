@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { adminFetchJson } from "@/lib/admin-fetch-shared";
 import { FIX_IT_PLANS } from "@/lib/fix-it-plans-shared";
 import type { MemberDetail } from "@/app/admin/MemberDetailContent";
 
@@ -32,23 +33,26 @@ export default function AdminFixItGrantPanel({
     setSuccess("");
 
     try {
-      const response = await fetch(`/api/admin/members/${memberId}/fix-it-grant`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ resourceSlug }),
-      });
-      const data = (await response.json().catch(() => ({}))) as {
+      const res = await adminFetchJson<{
         error?: string;
         message?: string;
         member?: MemberDetail;
-      };
+      }>(
+        `/api/admin/members/${memberId}/fix-it-grant`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ resourceSlug }),
+        },
+        { context: "admin-fix-it-grant", okUserMessage: "Unable to grant Fix-It access." },
+      );
 
-      if (!response.ok || !data.member) {
-        throw new Error(data.error ?? "Unable to grant Fix-It access.");
+      if (!res.ok || !res.data.member) {
+        throw new Error(res.ok ? "Unable to grant Fix-It access." : res.userMessage);
       }
 
-      onUpdated(data.member);
-      setSuccess(data.message ?? "Granted.");
+      onUpdated(res.data.member);
+      setSuccess(res.data.message ?? "Granted.");
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Unable to grant Fix-It access.");
     } finally {

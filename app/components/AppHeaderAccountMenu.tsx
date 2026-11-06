@@ -27,6 +27,7 @@ export default function AppHeaderAccountMenu({
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const onMemberPages = !pathname.startsWith("/admin");
+  const onAdminPortal = isAdmin && pathname.startsWith("/admin");
 
   useEffect(() => {
     if (!open) {
@@ -79,6 +80,11 @@ export default function AppHeaderAccountMenu({
           {isAdmin && onMemberPages ? (
             <Link href="/admin" onClick={close} className={menuItemClass(false)} role="menuitem">
               Admin
+            </Link>
+          ) : null}
+          {onAdminPortal ? (
+            <Link href="/dashboard" onClick={close} className={menuItemClass(false)} role="menuitem">
+              Member site
             </Link>
           ) : null}
           <Link

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { adminFetchJson } from "@/lib/admin-fetch-shared";
 import {
   ADMIN_GRANT_PRODUCTS,
   getAdminGrantProductLabel,
@@ -35,28 +36,31 @@ export default function AdminGrantAccessByEmailPanel({
     setSuccess("");
 
     try {
-      const response = await fetch("/api/admin/grant-product-access", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: email.trim(),
-          action,
-          product,
-          stripePaidOn: stripePaidOn.trim() || undefined,
-          skipEmail: showEmailOptions ? skipEmail : undefined,
-        }),
-      });
-
-      const data = (await response.json().catch(() => ({}))) as {
+      const res = await adminFetchJson<{
         error?: string;
         message?: string;
         user?: { email: string };
-      };
+      }>(
+        "/api/admin/grant-product-access",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: email.trim(),
+            action,
+            product,
+            stripePaidOn: stripePaidOn.trim() || undefined,
+            skipEmail: showEmailOptions ? skipEmail : undefined,
+          }),
+        },
+        { context: "admin-grant-product-by-email", okUserMessage: "Unable to update product access." },
+      );
 
-      if (!response.ok) {
-        throw new Error(data.error ?? "Unable to update product access.");
+      if (!res.ok) {
+        throw new Error(res.userMessage);
       }
 
+      const data = res.data;
       setSuccess(data.message ?? `Updated access for ${data.user?.email ?? email}.`);
       if (action === "grant") {
         setEmail("");

@@ -3,6 +3,10 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  adminFetchJson,
+  ADMIN_FETCH_COULD_NOT_LOAD_JSON,
+} from "@/lib/admin-fetch-shared";
+import {
   computeBestAttempt,
   feetInchesToInches,
   formatMetricValue,
@@ -193,7 +197,7 @@ export default function TestingWorkspacePanel() {
   const [teamOptions, setTeamOptions] = useState<TestTeamOption[]>([]);
   const [teamSlug, setTeamSlug] = useState("");
   const [date, setDate] = useState(todayIso());
-  const [stationKey, setStationKey] = useState("speed_power");
+  const [stationKey, setStationKey] = useState("");
   const [workspace, setWorkspace] = useState<WorkspaceData | null>(null);
   const [entry, setEntry] = useState<EntryData | null>(null);
   const [drafts, setDrafts] = useState<Record<string, DraftSlot>>({});
@@ -210,9 +214,18 @@ export default function TestingWorkspacePanel() {
   const [error, setError] = useState<string | null>(null);
 
   const loadTeamOptions = useCallback(async () => {
-    const response = await fetch("/api/admin/testing/teams", { cache: "no-store" });
-    const data = (await response.json()) as { teams?: TestTeamOption[] };
-    const teams = data.teams ?? [];
+    const res = await adminFetchJson<{ teams?: TestTeamOption[] }>(
+      "/api/admin/testing/teams",
+      { cache: "no-store" },
+      {
+        context: "testing-team-list",
+        notJsonUserMessage: ADMIN_FETCH_COULD_NOT_LOAD_JSON,
+      },
+    );
+    if (!res.ok) {
+      throw new Error(res.userMessage);
+    }
+    const teams = res.data.teams ?? [];
     setTeamOptions(teams);
     setTeamSlug((current) => current || teams[0]?.teamSlug || "");
   }, []);
@@ -221,29 +234,51 @@ export default function TestingWorkspacePanel() {
     if (!teamSlug) {
       return;
     }
-    const response = await fetch(
+    const res = await adminFetchJson<WorkspaceData & { error?: string }>(
       `/api/admin/testing/workspace?teamSlug=${encodeURIComponent(teamSlug)}&date=${encodeURIComponent(date)}`,
       { cache: "no-store" },
+      {
+        context: "testing-workspace",
+        okUserMessage: "Couldn't load testing workspace. Try again.",
+        notJsonUserMessage: ADMIN_FETCH_COULD_NOT_LOAD_JSON,
+      },
     );
-    const data = (await response.json()) as WorkspaceData & { error?: string };
-    if (!response.ok) {
-      throw new Error(data.error ?? "Failed to load team.");
+    if (!res.ok) {
+      throw new Error(res.userMessage);
     }
-    setWorkspace(data);
+    setWorkspace(res.data);
   }, [teamSlug, date]);
+
+  useEffect(() => {
+    if (!workspace?.stations?.length) {
+      return;
+    }
+    setStationKey((current) => {
+      const keys = new Set(workspace.stations.map((s) => s.key));
+      if (current && keys.has(current)) {
+        return current;
+      }
+      return workspace.stations[0]?.key ?? current;
+    });
+  }, [workspace]);
 
   const loadEntry = useCallback(async () => {
     if (!teamSlug || !stationKey) {
       return;
     }
-    const response = await fetch(
+    const res = await adminFetchJson<EntryData & { error?: string }>(
       `/api/admin/testing/entry?teamSlug=${encodeURIComponent(teamSlug)}&date=${encodeURIComponent(date)}&stationKey=${encodeURIComponent(stationKey)}`,
       { cache: "no-store" },
+      {
+        context: "testing-entry",
+        okUserMessage: "Couldn't load testing results. Try again.",
+        notJsonUserMessage: ADMIN_FETCH_COULD_NOT_LOAD_JSON,
+      },
     );
-    const data = (await response.json()) as EntryData & { error?: string };
-    if (!response.ok) {
-      throw new Error(data.error ?? "Failed to load entry data.");
+    if (!res.ok) {
+      throw new Error(res.userMessage);
     }
+    const data = res.data;
     setEntry(data);
     const nextDrafts: Record<string, DraftSlot> = {};
     for (const player of data.players) {
@@ -400,19 +435,27 @@ export default function TestingWorkspacePanel() {
     if (!newTeamName.trim()) {
       return;
     }
-    const response = await fetch("/api/admin/testing/teams", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: newTeamName.trim() }),
-    });
-    const data = (await response.json()) as { team?: TestTeamOption; error?: string };
-    if (!response.ok || !data.team) {
-      setError(data.error ?? "Failed to create team.");
+    const res = await adminFetchJson<{ team?: TestTeamOption; error?: string }>(
+      "/api/admin/testing/teams",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newTeamName.trim() }),
+      },
+      { context: "testing-create-team", notJsonUserMessage: ADMIN_FETCH_COULD_NOT_LOAD_JSON },
+    );
+    if (!res.ok) {
+      setError(res.userMessage);
+      return;
+    }
+    const { team, error: err } = res.data;
+    if (!team) {
+      setError(err ?? "Failed to create team.");
       return;
     }
     setNewTeamName("");
     setShowNewTeam(false);
-    setTeamSlug(data.team.teamSlug);
+    setTeamSlug(team.teamSlug);
     await loadTeamOptions();
   }
 
@@ -420,17 +463,25 @@ export default function TestingWorkspacePanel() {
     if (!workspace?.team.id) {
       return;
     }
-    const response = await fetch(`/api/admin/testing/teams/${workspace.team.id}/players`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        firstName: addFirst,
-        lastName: addLast,
-        age: addAge ? Number(addAge) : null,
-      }),
-    });
-    const data = (await response.json()) as { player?: TestPlayerSummary; error?: string };
-    if (!response.ok || !data.player) {
+    const res = await adminFetchJson<{ player?: TestPlayerSummary; error?: string }>(
+      `/api/admin/testing/teams/${workspace.team.id}/players`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          firstName: addFirst,
+          lastName: addLast,
+          age: addAge ? Number(addAge) : null,
+        }),
+      },
+      { context: "testing-add-player", notJsonUserMessage: ADMIN_FETCH_COULD_NOT_LOAD_JSON },
+    );
+    if (!res.ok) {
+      setError(res.userMessage);
+      return;
+    }
+    const data = res.data;
+    if (!data.player) {
       setError(data.error ?? "Failed to add player.");
       return;
     }
@@ -453,17 +504,25 @@ export default function TestingWorkspacePanel() {
 
     setError(null);
     try {
-      const response = await fetch(`/api/admin/testing/sessions/${entry.session.id}/results`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          playerId,
-          metricKey: metric.key,
-          attempts,
-        }),
-      });
-      if (!response.ok) {
-        throw new Error("Network save failed.");
+      const saveRes = await adminFetchJson(
+        `/api/admin/testing/sessions/${entry.session.id}/results`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            playerId,
+            metricKey: metric.key,
+            attempts,
+          }),
+        },
+        {
+          context: "testing-save-result",
+          okUserMessage: "Couldn't save testing result. Try again.",
+          notJsonUserMessage: ADMIN_FETCH_COULD_NOT_LOAD_JSON,
+        },
+      );
+      if (!saveRes.ok) {
+        throw new Error(saveRes.userMessage);
       }
       setSyncState("saved");
       await loadEntry();

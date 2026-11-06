@@ -1,4 +1,5 @@
 "use client";
+import { adminFetchJson } from "@/lib/admin-fetch-shared";
 
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -136,15 +137,15 @@ export default function MembersPanel() {
   useEffect(() => {
     const loadMembers = async () => {
       setLoadingList(true);
-      const response = await fetch("/api/admin/members");
+      const responseResult = await adminFetchJson("/api/admin/members");
       setLoadingList(false);
 
-      if (!response.ok) {
+      if (!responseResult.ok) {
         setMembers([]);
         return;
       }
 
-      const data = (await response.json()) as { members: MemberSummary[] };
+      const data = (responseResult.data) as { members: MemberSummary[] };
       setMembers(data.members);
     };
 
@@ -165,15 +166,15 @@ export default function MembersPanel() {
 
     const loadDetail = async () => {
       setLoadingDetail(true);
-      const response = await fetch(`/api/admin/members/${selectedId}`);
+      const responseResult = await adminFetchJson(`/api/admin/members/${selectedId}`);
       setLoadingDetail(false);
 
-      if (!response.ok) {
+      if (!responseResult.ok) {
         setDetail(null);
         return;
       }
 
-      const data = (await response.json()) as { member: MemberDetail };
+      const data = (responseResult.data) as { member: MemberDetail };
       setDetail(data.member);
       setTierDraft(data.member.membershipTier);
       setNotesDraft(data.member.adminNotes ?? "");
@@ -272,24 +273,23 @@ export default function MembersPanel() {
     setTierSuccess("");
 
     try {
-      const response = await fetch(`/api/admin/members/${detail.id}/tier`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ membershipTier: tierDraft }),
-      });
+      const res = await adminFetchJson<{ error?: string; member?: MemberDetail }>(
+        `/api/admin/members/${detail.id}/tier`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ membershipTier: tierDraft }),
+        },
+        { context: "admin-members-tier", okUserMessage: "Unable to update membership tier." },
+      );
 
-      const data = (await response.json().catch(() => ({}))) as {
-        error?: string;
-        member?: MemberDetail;
-      };
-
-      if (!response.ok || !data.member) {
-        setTierError(data.error ?? "Unable to update membership tier.");
+      if (!res.ok || !res.data.member) {
+        setTierError(res.ok ? "Unable to update membership tier." : res.userMessage);
         return;
       }
 
-      setDetail(data.member);
-      updateMemberInList(data.member);
+      setDetail(res.data.member);
+      updateMemberInList(res.data.member);
       setTierSuccess("Membership tier updated.");
     } catch {
       setTierError("Unable to update membership tier right now.");
@@ -308,16 +308,14 @@ export default function MembersPanel() {
     setPlaybookNotesSuccess("");
 
     try {
-      const response = await fetch(`/api/admin/members/${detail.id}/playbook-notes`, {
+      const res = await adminFetchJson(`/api/admin/members/${detail.id}/playbook-notes`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ coachNotes: playbookNotesDraft }),
-      });
+      }, { context: "admin-members-playbook-notes", okUserMessage: "Unable to save playbook notes." });
 
-      const data = (await response.json().catch(() => ({}))) as { error?: string };
-
-      if (!response.ok) {
-        setPlaybookNotesError(data.error ?? "Unable to save playbook notes.");
+      if (!res.ok) {
+        setPlaybookNotesError(res.userMessage);
         return;
       }
 
@@ -339,24 +337,23 @@ export default function MembersPanel() {
     setNotesSuccess("");
 
     try {
-      const response = await fetch(`/api/admin/members/${detail.id}/notes`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ notes: notesDraft }),
-      });
+      const res = await adminFetchJson<{ error?: string; member?: MemberDetail }>(
+        `/api/admin/members/${detail.id}/notes`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ notes: notesDraft }),
+        },
+        { context: "admin-members-notes", okUserMessage: "Unable to save admin notes." },
+      );
 
-      const data = (await response.json().catch(() => ({}))) as {
-        error?: string;
-        member?: MemberDetail;
-      };
-
-      if (!response.ok || !data.member) {
-        setNotesError(data.error ?? "Unable to save admin notes.");
+      if (!res.ok || !res.data.member) {
+        setNotesError(res.ok ? "Unable to save admin notes." : res.userMessage);
         return;
       }
 
-      setDetail(data.member);
-      setNotesDraft(data.member.adminNotes ?? "");
+      setDetail(res.data.member);
+      setNotesDraft(res.data.member.adminNotes ?? "");
       setNotesSuccess("Admin notes saved.");
     } catch {
       setNotesError("Unable to save admin notes right now.");
@@ -383,34 +380,36 @@ export default function MembersPanel() {
     setCallSuccess("");
 
     try {
-      const response = await fetch("/api/admin/mark-call-booked", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: detail.id,
-          callDate,
-          callTime,
-          callType: getCallType(detail.membershipTier),
-        }),
-      });
-
-      const data = (await response.json().catch(() => ({}))) as {
+      const markRes = await adminFetchJson<{
         error?: string;
         user?: {
           id: string;
           assessmentCallBooked: boolean;
           assessmentCallDate: string | null;
         };
-      };
+      }>(
+        "/api/admin/mark-call-booked",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: detail.id,
+            callDate,
+            callTime,
+            callType: getCallType(detail.membershipTier),
+          }),
+        },
+        { context: "admin-mark-call-booked", okUserMessage: "Unable to save call booking." },
+      );
 
-      if (!response.ok || !data.user) {
-        setCallError(data.error ?? "Unable to save call booking.");
+      if (!markRes.ok || !markRes.data.user) {
+        setCallError(markRes.ok ? "Unable to save call booking." : markRes.userMessage);
         return;
       }
 
-      const detailResponse = await fetch(`/api/admin/members/${detail.id}`);
-      if (detailResponse.ok) {
-        const detailData = (await detailResponse.json()) as { member: MemberDetail };
+      const detailResponseResult = await adminFetchJson(`/api/admin/members/${detail.id}`);
+      if (detailResponseResult.ok) {
+        const detailData = (detailResponseResult.data) as { member: MemberDetail };
         setDetail(detailData.member);
         updateMemberInList(detailData.member);
       }
@@ -438,7 +437,7 @@ export default function MembersPanel() {
     setCallSuccess("");
 
     try {
-      const response = await fetch("/api/admin/mark-call-booked", {
+      const clearRes = await adminFetchJson("/api/admin/mark-call-booked", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -446,18 +445,16 @@ export default function MembersPanel() {
           callType: getCallType(detail.membershipTier),
           clear: true,
         }),
-      });
+      }, { context: "admin-clear-call-booked", okUserMessage: "Unable to clear call booking." });
 
-      const data = (await response.json().catch(() => ({}))) as { error?: string };
-
-      if (!response.ok) {
-        setCallError(data.error ?? "Unable to clear call booking.");
+      if (!clearRes.ok) {
+        setCallError(clearRes.userMessage);
         return;
       }
 
-      const detailResponse = await fetch(`/api/admin/members/${detail.id}`);
-      if (detailResponse.ok) {
-        const detailData = (await detailResponse.json()) as { member: MemberDetail };
+      const detailResponseResult = await adminFetchJson(`/api/admin/members/${detail.id}`);
+      if (detailResponseResult.ok) {
+        const detailData = (detailResponseResult.data) as { member: MemberDetail };
         setDetail(detailData.member);
         updateMemberInList(detailData.member);
       }

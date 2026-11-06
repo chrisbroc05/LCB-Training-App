@@ -1,4 +1,5 @@
 "use client";
+import { adminFetchJson } from "@/lib/admin-fetch-shared";
 
 import { useEffect, useMemo, useState } from "react";
 import { formatOptionalDateTime } from "@/lib/format-date";
@@ -34,15 +35,15 @@ export default function PlaybookReflectionsPanel() {
   useEffect(() => {
     const loadMembers = async () => {
       setLoadingList(true);
-      const response = await fetch("/api/admin/playbook-reflections");
+      const responseResult = await adminFetchJson("/api/admin/playbook-reflections");
       setLoadingList(false);
 
-      if (!response.ok) {
+      if (!responseResult.ok) {
         setMembers([]);
         return;
       }
 
-      const data = (await response.json()) as { members: PlaybookReflectionMember[] };
+      const data = (responseResult.data) as { members: PlaybookReflectionMember[] };
       setMembers(data.members);
     };
 

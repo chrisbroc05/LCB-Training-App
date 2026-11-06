@@ -2,6 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import {
+  adminFetchJson,
+  ADMIN_FETCH_COULD_NOT_LOAD_JSON,
+} from "@/lib/admin-fetch-shared";
 import { formatMetricValue, type TestMetricRecord } from "@/lib/testing-shared";
 
 type PlayerProfile = {
@@ -84,15 +88,22 @@ export default function TestingPlayerProfile({ playerId }: { playerId: string })
 
   useEffect(() => {
     async function loadProfile() {
-      const response = await fetch(`/api/admin/testing/players/${playerId}`, {
-        cache: "no-store",
-      });
-      const data = (await response.json()) as PlayerProfile & { error?: string };
-      if (!response.ok) {
-        setError(data.error ?? "Failed to load player.");
+      const res = await adminFetchJson<PlayerProfile & { error?: string }>(
+        `/api/admin/testing/players/${encodeURIComponent(playerId)}`,
+        {
+          cache: "no-store",
+        },
+        {
+          context: "testing-player-profile",
+          okUserMessage: "Couldn't load testing results. Try again.",
+          notJsonUserMessage: ADMIN_FETCH_COULD_NOT_LOAD_JSON,
+        },
+      );
+      if (!res.ok) {
+        setError(res.userMessage);
         return;
       }
-      setProfile(data);
+      setProfile(res.data);
     }
     void loadProfile();
   }, [playerId]);

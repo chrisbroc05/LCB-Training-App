@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { adminFetchJson } from "@/lib/admin-fetch-shared";
 import { formatOptionalDate } from "@/lib/format-date";
 import type { MemberDetail } from "@/app/admin/MemberDetailContent";
 
@@ -28,20 +29,17 @@ export default function AdminMembershipSubscriptionPanel({
     setRefundBusy(true);
     setRefundError("");
     try {
-      const response = await fetch(
+      const res = await adminFetchJson<{ error?: string; member?: MemberDetail }>(
         `/api/admin/members/${detail.id}/refund-annual-membership`,
         { method: "POST" },
+        { context: "admin-refund-annual", okUserMessage: "Unable to process refund." },
       );
-      const data = (await response.json().catch(() => ({}))) as {
-        error?: string;
-        member?: MemberDetail;
-      };
-      if (!response.ok || !data.member) {
-        setRefundError(data.error ?? "Unable to process refund.");
+      if (!res.ok || !res.data.member) {
+        setRefundError(res.ok ? "Unable to process refund." : res.userMessage);
         return;
       }
       setConfirmOpen(false);
-      onMemberUpdated(data.member);
+      onMemberUpdated(res.data.member);
     } catch {
       setRefundError("Unable to process refund right now.");
     } finally {

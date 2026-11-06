@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import MessageChatView, { type MessageChatItem } from "@/components/MessageChatView";
 import { setCoachUnreadCount } from "@/lib/messaging-unread-client";
+import { adminFetchJson } from "@/lib/admin-fetch-shared";
 
 export default function AdminConversationPage() {
   const params = useParams<{ conversationId: string }>();
@@ -19,19 +20,22 @@ export default function AdminConversationPage() {
   const [error, setError] = useState("");
 
   const loadMessages = useCallback(async () => {
-    const response = await fetch(`/api/admin/messages/${conversationId}`);
-    const data = (await response.json().catch(() => ({}))) as {
+    const res = await adminFetchJson<{
       conversation?: { playerName: string; enrollmentId: string };
       messages?: MessageChatItem[];
       error?: string;
-    };
+    }>(`/api/admin/messages/${conversationId}`, { cache: "no-store" }, {
+      context: "admin-messages-load",
+      okUserMessage: "Unable to load conversation.",
+    });
 
-    if (!response.ok) {
-      setError(data.error ?? "Unable to load conversation.");
+    if (!res.ok) {
+      setError(res.userMessage);
       setLoading(false);
       return;
     }
 
+    const data = res.data;
     setPlayerName(data.conversation?.playerName ?? "Player");
     setEnrollmentId(data.conversation?.enrollmentId ?? "");
     setMessages(data.messages ?? []);
@@ -44,18 +48,21 @@ export default function AdminConversationPage() {
   }, [loadMessages]);
 
   const markRead = useCallback(async () => {
-    const response = await fetch(`/api/admin/messages/${conversationId}`, {
-      method: "PATCH",
-      cache: "no-store",
-    });
+    const res = await adminFetchJson<{ unreadCount?: number }>(
+      `/api/admin/messages/${conversationId}`,
+      {
+        method: "PATCH",
+        cache: "no-store",
+      },
+      { context: "admin-messages-mark-read" },
+    );
 
-    if (!response.ok) {
+    if (!res.ok) {
       return;
     }
 
-    const data = (await response.json().catch(() => ({}))) as { unreadCount?: number };
-    if (typeof data.unreadCount === "number") {
-      setCoachUnreadCount(data.unreadCount);
+    if (typeof res.data.unreadCount === "number") {
+      setCoachUnreadCount(res.data.unreadCount);
     }
   }, [conversationId]);
 
@@ -63,26 +70,25 @@ export default function AdminConversationPage() {
     setSending(true);
     setError("");
 
-    const response = await fetch(`/api/admin/messages/${conversationId}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ body }),
-    });
-
-    const data = (await response.json().catch(() => ({}))) as {
-      message?: MessageChatItem;
-      error?: string;
-    };
+    const res = await adminFetchJson<{ message?: MessageChatItem; error?: string }>(
+      `/api/admin/messages/${conversationId}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ body }),
+      },
+      { context: "admin-messages-send", okUserMessage: "Unable to send message." },
+    );
 
     setSending(false);
 
-    if (!response.ok) {
-      setError(data.error ?? "Unable to send message.");
+    if (!res.ok) {
+      setError(res.userMessage);
       return;
     }
 
-    if (data.message) {
-      setMessages((current) => [...current, data.message!]);
+    if (res.data.message) {
+      setMessages((current) => [...current, res.data.message!]);
     }
   };
 

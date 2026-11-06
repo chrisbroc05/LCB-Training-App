@@ -3,6 +3,10 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
+  adminFetchJson,
+  ADMIN_FETCH_COULD_NOT_LOAD_JSON,
+} from "@/lib/admin-fetch-shared";
+import {
   formatMetricValue,
   METRICS_EXCLUDED_FROM_RANKINGS,
   type TestMetricRecord,
@@ -37,15 +41,22 @@ export default function TestingSessionGrid({
 
   useEffect(() => {
     async function loadGrid() {
-      const response = await fetch(`/api/admin/testing/sessions/${sessionId}`, {
-        cache: "no-store",
-      });
-      const data = (await response.json()) as GridData & { error?: string };
-      if (!response.ok) {
-        setError(data.error ?? "Failed to load session results.");
+      const res = await adminFetchJson<GridData & { error?: string }>(
+        `/api/admin/testing/sessions/${encodeURIComponent(sessionId)}`,
+        {
+          cache: "no-store",
+        },
+        {
+          context: "testing-session-grid",
+          okUserMessage: "Couldn't load testing results. Try again.",
+          notJsonUserMessage: ADMIN_FETCH_COULD_NOT_LOAD_JSON,
+        },
+      );
+      if (!res.ok) {
+        setError(res.userMessage);
         return;
       }
-      setGrid(data);
+      setGrid(res.data);
     }
     void loadGrid();
   }, [sessionId]);

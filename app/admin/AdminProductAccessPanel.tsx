@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { adminFetchJson } from "@/lib/admin-fetch-shared";
 import {
   ADMIN_GRANT_PRODUCTS,
   getAdminGrantProductLabel,
@@ -42,31 +43,33 @@ export default function AdminProductAccessPanel({
     setSuccess("");
 
     try {
-      const response = await fetch(`/api/admin/members/${memberId}/product-access`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action,
-          product,
-          stripePaidOn: stripePaidOn.trim() || undefined,
-          skipEmail: showEmailOptions ? skipEmail : undefined,
-          playbookLegacyAccess:
-            action === "grant" && product === "playbook" ? playbookLegacyAccess : undefined,
-        }),
-      });
-
-      const data = (await response.json().catch(() => ({}))) as {
+      const res = await adminFetchJson<{
         error?: string;
         message?: string;
         member?: MemberDetail;
-      };
+      }>(
+        `/api/admin/members/${memberId}/product-access`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action,
+            product,
+            stripePaidOn: stripePaidOn.trim() || undefined,
+            skipEmail: showEmailOptions ? skipEmail : undefined,
+            playbookLegacyAccess:
+              action === "grant" && product === "playbook" ? playbookLegacyAccess : undefined,
+          }),
+        },
+        { context: "admin-product-access", okUserMessage: "Unable to update product access." },
+      );
 
-      if (!response.ok || !data.member) {
-        throw new Error(data.error ?? "Unable to update product access.");
+      if (!res.ok || !res.data.member) {
+        throw new Error(res.ok ? "Unable to update product access." : res.userMessage);
       }
 
-      onUpdated(data.member);
-      setSuccess(data.message ?? "Updated.");
+      onUpdated(res.data.member);
+      setSuccess(res.data.message ?? "Updated.");
       if (action === "grant") {
         setStripePaidOn("");
       }

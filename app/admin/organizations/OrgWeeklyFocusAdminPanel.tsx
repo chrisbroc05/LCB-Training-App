@@ -1,4 +1,5 @@
 "use client";
+import { adminFetchJson } from "@/lib/admin-fetch-shared";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AdminDrillPicker from "@/app/components/admin/AdminDrillPicker";
@@ -53,18 +54,16 @@ export default function OrgWeeklyFocusAdminPanel({
   const loadFocuses = useCallback(
     async (week?: string) => {
       const query = week ? `?week=${encodeURIComponent(week)}` : "";
-      const response = await fetch(
-        `/api/admin/organizations/${organizationId}/weekly-focus${query}`,
-      );
-      const data = (await response.json()) as {
+      const responseResult = await adminFetchJson<{
         focuses?: FocusRecord[];
         teamPreview?: TeamPreviewRow[];
         defaultWeekStart?: string;
         error?: string;
-      };
-      if (!response.ok) {
-        throw new Error(data.error ?? "Could not load weekly focus.");
+      }>(`/api/admin/organizations/${organizationId}/weekly-focus${query}`);
+      if (!responseResult.ok) {
+        throw new Error(responseResult.userMessage);
       }
+      const data = responseResult.data;
       setFocuses(data.focuses ?? []);
       setTeamPreview(data.teamPreview ?? []);
       if (data.defaultWeekStart && !week) {
@@ -146,7 +145,12 @@ export default function OrgWeeklyFocusAdminPanel({
       return;
     }
 
-    const response = await fetch(`/api/admin/organizations/${organizationId}/weekly-focus`, {
+    const responseResult = await adminFetchJson<{
+      error?: string;
+      focuses?: FocusRecord[];
+      teamPreview?: TeamPreviewRow[];
+      defaultWeekStart?: string;
+    }>(`/api/admin/organizations/${organizationId}/weekly-focus`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -158,19 +162,14 @@ export default function OrgWeeklyFocusAdminPanel({
         drillIds: form.drillIds,
       }),
     });
-    const data = (await response.json()) as {
-      error?: string;
-      focuses?: FocusRecord[];
-      teamPreview?: TeamPreviewRow[];
-      defaultWeekStart?: string;
-    };
 
-    if (!response.ok) {
+    if (!responseResult.ok) {
       setStatus(null);
-      setError(data.error ?? "Could not save weekly focus.");
+      setError(responseResult.userMessage);
       return;
     }
 
+    const data = responseResult.data;
     setFocuses(data.focuses ?? []);
     setTeamPreview(data.teamPreview ?? []);
     setStatus("Saved");
@@ -182,19 +181,16 @@ export default function OrgWeeklyFocusAdminPanel({
       return;
     }
     setError(null);
-    const response = await fetch(
-      `/api/admin/organizations/${organizationId}/weekly-focus/${focusId}`,
-      { method: "DELETE" },
-    );
-    const data = (await response.json()) as {
+    const responseResult = await adminFetchJson<{
       error?: string;
       focuses?: FocusRecord[];
       teamPreview?: TeamPreviewRow[];
-    };
-    if (!response.ok) {
-      setError(data.error ?? "Could not delete weekly focus.");
+    }>(`/api/admin/organizations/${organizationId}/weekly-focus/${focusId}`, { method: "DELETE" });
+    if (!responseResult.ok) {
+      setError(responseResult.userMessage);
       return;
     }
+    const data = responseResult.data;
     setFocuses(data.focuses ?? []);
     setTeamPreview(data.teamPreview ?? []);
     setStatus("Deleted");

@@ -1,4 +1,5 @@
 "use client";
+import { adminFetchJson } from "@/lib/admin-fetch-shared";
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
@@ -33,16 +34,15 @@ export default function AdminOrganizationsPanel() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch("/api/admin/organizations");
-      const data = (await response.json()) as {
+      const responseResult = await adminFetchJson<{
         organizations?: AdminOrganizationRecord[];
         error?: string;
-      };
-      if (!response.ok) {
-        setError(data.error ?? "Could not load organizations.");
+      }>("/api/admin/organizations");
+      if (!responseResult.ok) {
+        setError(responseResult.userMessage);
         return;
       }
-      setOrganizations(data.organizations ?? []);
+      setOrganizations(responseResult.data.organizations ?? []);
     } catch {
       setError("Could not load organizations.");
     } finally {
@@ -59,14 +59,13 @@ export default function AdminOrganizationsPanel() {
     if (!name) {
       return;
     }
-    const response = await fetch("/api/admin/organizations", {
+    const responseResult = await adminFetchJson<{ error?: string }>("/api/admin/organizations", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name }),
     });
-    if (!response.ok) {
-      const data = (await response.json()) as { error?: string };
-      setError(data.error ?? "Could not create organization.");
+    if (!responseResult.ok) {
+      setError(responseResult.userMessage);
       return;
     }
     setNewName("");
@@ -75,14 +74,13 @@ export default function AdminOrganizationsPanel() {
 
   async function patchOrganization(id: string, body: Record<string, unknown>) {
     setSaveNotes((current) => ({ ...current, [id]: "Saving..." }));
-    const response = await fetch(`/api/admin/organizations/${id}`, {
+    const responseResult = await adminFetchJson(`/api/admin/organizations/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
-    if (!response.ok) {
-      const data = (await response.json()) as { error?: string };
-      const message = data.error ?? "Could not save organization.";
+    if (!responseResult.ok) {
+      const message = responseResult.userMessage;
       setSaveNotes((current) => ({ ...current, [id]: message }));
       setError(message);
       return;
@@ -92,42 +90,39 @@ export default function AdminOrganizationsPanel() {
   }
 
   async function deactivateTeam(orgId: string, teamId: string, teamName: string) {
-    const response = await fetch(`/api/admin/organizations/${orgId}/teams`, {
+    const responseResult = await adminFetchJson(`/api/admin/organizations/${orgId}/teams`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id: teamId, name: teamName, active: false }),
     });
-    if (!response.ok) {
-      const data = (await response.json()) as { error?: string };
-      setError(data.error ?? "Could not deactivate team.");
+    if (!responseResult.ok) {
+      setError(responseResult.userMessage);
       return;
     }
     await load();
   }
 
   async function addCode(orgId: string, code: string) {
-    const response = await fetch(`/api/admin/organizations/${orgId}/codes`, {
+    const responseResult = await adminFetchJson(`/api/admin/organizations/${orgId}/codes`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ code }),
     });
-    if (!response.ok) {
-      const data = (await response.json()) as { error?: string };
-      setError(data.error ?? "Could not save code.");
+    if (!responseResult.ok) {
+      setError(responseResult.userMessage);
       return;
     }
     await load();
   }
 
   async function addTeam(orgId: string, name: string) {
-    const response = await fetch(`/api/admin/organizations/${orgId}/teams`, {
+    const responseResult = await adminFetchJson(`/api/admin/organizations/${orgId}/teams`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name }),
     });
-    if (!response.ok) {
-      const data = (await response.json()) as { error?: string };
-      setError(data.error ?? "Could not save team.");
+    if (!responseResult.ok) {
+      setError(responseResult.userMessage);
       return;
     }
     await load();
@@ -139,7 +134,13 @@ export default function AdminOrganizationsPanel() {
     setBulkTeamNotes((current) => ({ ...current, [orgId]: "" }));
     setError(null);
 
-    const response = await fetch(`/api/admin/organizations/${orgId}/teams/bulk`, {
+    const responseResult = await adminFetchJson<{
+      added?: number;
+      reactivated?: number;
+      skipped?: number;
+      summary?: string;
+      organizations?: AdminOrganizationRecord[];
+    }>(`/api/admin/organizations/${orgId}/teams/bulk`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text }),
@@ -147,21 +148,14 @@ export default function AdminOrganizationsPanel() {
 
     setBulkTeamBusy((current) => ({ ...current, [orgId]: false }));
 
-    const data = (await response.json()) as {
-      error?: string;
-      summary?: string;
-      added?: number;
-      reactivated?: number;
-      skipped?: number;
-      organizations?: AdminOrganizationRecord[];
-    };
-
-    if (!response.ok) {
-      const message = data.error ?? "Could not bulk add teams.";
+    if (!responseResult.ok) {
+      const message = responseResult.userMessage;
       setBulkTeamNotes((current) => ({ ...current, [orgId]: message }));
       setError(message);
       return;
     }
+
+    const data = responseResult.data;
 
     const summary =
       data.summary ??

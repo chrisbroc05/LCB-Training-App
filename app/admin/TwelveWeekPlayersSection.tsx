@@ -1,6 +1,7 @@
 "use client";
 
 import AdminGrantAccessByEmailPanel from "@/app/admin/AdminGrantAccessByEmailPanel";
+import { adminFetchJson } from "@/lib/admin-fetch-shared";
 import { useEffect, useState } from "react";
 
 type TwelveWeekEnrollmentRecord = {
@@ -48,20 +49,22 @@ export default function TwelveWeekPlayersSection({
     setError("");
 
     try {
-      const response = await fetch("/api/admin/program-enrollments");
-      const data = (await response.json().catch(() => ({}))) as {
+      const res = await adminFetchJson<{
         enrollments?: TwelveWeekEnrollmentRecord[];
         error?: string;
-      };
+      }>("/api/admin/program-enrollments", { cache: "no-store" }, {
+        context: "admin-program-enrollments-list",
+        okUserMessage: "Unable to load 12-week players.",
+      });
 
-      if (!response.ok || !data.enrollments) {
-        throw new Error(data.error ?? "Unable to load 12-week players.");
+      if (!res.ok || !res.data.enrollments) {
+        throw new Error(res.ok ? "Unable to load 12-week players." : res.userMessage);
       }
 
-      setEnrollments(data.enrollments);
+      setEnrollments(res.data.enrollments);
       setStartDateDrafts(
         Object.fromEntries(
-          data.enrollments.map((enrollment) => [
+          res.data.enrollments.map((enrollment) => [
             enrollment.id,
             enrollment.startDate ?? "",
           ]),
@@ -90,23 +93,25 @@ export default function TwelveWeekPlayersSection({
     setSuccess("");
 
     try {
-      const response = await fetch(`/api/admin/program-enrollments/${enrollmentId}/start-date`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ startDate }),
-      });
-
-      const data = (await response.json().catch(() => ({}))) as {
+      const patchRes = await adminFetchJson<{
         error?: string;
         enrollment?: { currentProgramDay: number; startDate: string | null };
-      };
+      }>(
+        `/api/admin/program-enrollments/${enrollmentId}/start-date`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ startDate }),
+        },
+        { context: "admin-program-start-date", okUserMessage: "Unable to update start date." },
+      );
 
-      if (!response.ok) {
-        throw new Error(data.error ?? "Unable to update start date.");
+      if (!patchRes.ok) {
+        throw new Error(patchRes.userMessage);
       }
 
       setSuccess(
-        `Start date saved. Current program day: ${data.enrollment?.currentProgramDay ?? "n/a"}.`,
+        `Start date saved. Current program day: ${patchRes.data.enrollment?.currentProgramDay ?? "n/a"}.`,
       );
       await loadEnrollments();
     } catch (saveError) {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { adminFetchJson } from "@/lib/admin-fetch-shared";
 import {
   formatAssessmentCallDateTime,
   toAssessmentCallInputValues,
@@ -68,23 +69,25 @@ export default function FreeMembersSection({
     setError("");
 
     try {
-      const response = await fetch("/api/admin/mark-call-booked", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, callDate, callTime }),
-      });
-
-      const data = (await response.json().catch(() => ({}))) as {
+      const res = await adminFetchJson<{
         error?: string;
         user?: {
           id: string;
           assessmentCallBooked: boolean;
           assessmentCallDate: string | null;
         };
-      };
+      }>(
+        "/api/admin/mark-call-booked",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId, callDate, callTime }),
+        },
+        { context: "admin-free-member-mark-call", okUserMessage: "Unable to save call booking." },
+      );
 
-      if (!response.ok || !data.user) {
-        setError(data.error ?? "Unable to save call booking.");
+      if (!res.ok || !res.data.user) {
+        setError(res.ok ? "Unable to save call booking." : res.userMessage);
         return;
       }
 
@@ -93,8 +96,8 @@ export default function FreeMembersSection({
           member.id === userId
             ? {
                 ...member,
-                assessmentCallBooked: data.user!.assessmentCallBooked,
-                assessmentCallDate: data.user!.assessmentCallDate,
+                assessmentCallBooked: res.data.user!.assessmentCallBooked,
+                assessmentCallDate: res.data.user!.assessmentCallDate,
               }
             : member,
         ),

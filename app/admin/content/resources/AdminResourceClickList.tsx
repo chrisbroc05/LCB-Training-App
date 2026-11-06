@@ -1,4 +1,5 @@
 "use client";
+import { adminFetchJson } from "@/lib/admin-fetch-shared";
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
@@ -22,15 +23,15 @@ export default function AdminResourceClickList(props: { slug: string; title: str
 
   const load = useCallback(async () => {
     setLoading(true);
-    const response = await fetch(
+    const responseResult = await adminFetchJson(
       `/api/admin/resource-stats/${encodeURIComponent(props.slug)}?range=${range}`,
       { cache: "no-store" },
     );
     setLoading(false);
-    if (!response.ok) {
+    if (!responseResult.ok) {
       return;
     }
-    const data = (await response.json()) as { rows: AdminResourceClickRow[] };
+    const data = (responseResult.data) as { rows: AdminResourceClickRow[] };
     setRows(data.rows);
   }, [props.slug, range]);
 

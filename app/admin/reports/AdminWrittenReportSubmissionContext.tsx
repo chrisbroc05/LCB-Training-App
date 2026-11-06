@@ -1,4 +1,5 @@
 "use client";
+import { adminFetchJson, readAdminJsonResponse } from "@/lib/admin-fetch-shared";
 
 import { useEffect, useMemo, useState } from "react";
 import R2PresignedVideoPlayer from "@/app/components/R2PresignedVideoPlayer";
@@ -116,11 +117,15 @@ function AdminSubmissionVideoLinkRow(props: {
       body: JSON.stringify({ r2Key }),
     })
       .then(async (response) => {
-        if (!response.ok) {
-          const payload = (await response.json().catch(() => ({}))) as { error?: string };
-          throw new Error(payload.error ?? "Unable to load video.");
+        const parsed = await readAdminJsonResponse<{ playbackUrl: string }>(
+          response,
+          response.url || "/api/video-url",
+          { context: "written-report-open-url", okUserMessage: "Unable to load video." },
+        );
+        if (!parsed.ok) {
+          throw new Error(parsed.userMessage);
         }
-        return (await response.json()) as { playbackUrl: string };
+        return parsed.data;
       })
       .then((payload) => {
         if (!cancelled) {
@@ -151,17 +156,17 @@ function AdminSubmissionVideoLinkRow(props: {
       return;
     }
 
-    const response = await fetch("/api/admin/video-download-url", {
+    const responseResult = await adminFetchJson("/api/admin/video-download-url", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ r2Key }),
     });
 
-    if (!response.ok) {
+    if (!responseResult.ok) {
       return;
     }
 
-    const payload = (await response.json()) as { downloadUrl: string };
+    const payload = (responseResult.data) as { downloadUrl: string };
     window.open(payload.downloadUrl, "_blank", "noopener,noreferrer");
   };
 

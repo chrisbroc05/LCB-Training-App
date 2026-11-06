@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { readAdminJsonResponse } from "@/lib/admin-fetch-shared";
 import {
   COACH_VIDEO_DRILL_CATEGORY_OPTIONS,
   COACH_VIDEO_NOTE_MAX_LENGTH,
@@ -87,14 +88,16 @@ export default function SendCoachVideoPanel({
           fileSize: file.size,
         }),
       });
-
-      const uploadUrlPayload = (await uploadUrlResponse.json().catch(() => ({}))) as {
-        error?: string;
-      } & PresignedSwingUploadResponse;
-
-      if (!uploadUrlResponse.ok) {
-        throw new Error(uploadUrlPayload.error ?? "Unable to prepare video upload.");
+      const uploadParsed = await readAdminJsonResponse<
+        { error?: string } & PresignedSwingUploadResponse
+      >(uploadUrlResponse, uploadUrlResponse.url || "/api/admin/coach-videos/upload-url", {
+        context: "admin-coach-video-upload-url",
+        okUserMessage: "Unable to prepare video upload.",
+      });
+      if (!uploadParsed.ok) {
+        throw new Error(uploadParsed.userMessage);
       }
+      const uploadUrlPayload = uploadParsed.data;
 
       setUploadPreparing(false);
       setUploadProgress(0);
@@ -136,11 +139,13 @@ export default function SendCoachVideoPanel({
           videoSizeBytes: file.size,
         }),
       });
-
-      const createPayload = (await createResponse.json().catch(() => ({}))) as { error?: string };
-
-      if (!createResponse.ok) {
-        throw new Error(createPayload.error ?? "Unable to send video.");
+      const createParsed = await readAdminJsonResponse<{ error?: string }>(
+        createResponse,
+        createResponse.url || "/api/admin/coach-videos",
+        { context: "admin-coach-video-create", okUserMessage: "Unable to send video." },
+      );
+      if (!createParsed.ok) {
+        throw new Error(createParsed.userMessage);
       }
 
       setSuccess(`Video sent to ${playerLabel}.`);

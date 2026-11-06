@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { adminFetchJson } from "@/lib/admin-fetch-shared";
 
 type AdminAllAccessCapPanelProps = {
   initialCap: number;
@@ -19,19 +20,23 @@ export default function AdminAllAccessCapPanel({
     setBusy(true);
     setMessage("");
     try {
-      const response = await fetch("/api/admin/platform-coaching-settings", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ allAccessProgramCap: Number(cap) }),
-      });
-      const data = (await response.json().catch(() => ({}))) as {
+      const res = await adminFetchJson<{
         error?: string;
         allAccessProgramCap?: number;
-      };
-      if (!response.ok) {
-        setMessage(data.error ?? "Could not save cap.");
+      }>(
+        "/api/admin/platform-coaching-settings",
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ allAccessProgramCap: Number(cap) }),
+        },
+        { context: "admin-all-access-cap", okUserMessage: "Could not save cap." },
+      );
+      if (!res.ok) {
+        setMessage(res.userMessage);
         return;
       }
+      const data = res.data;
       if (data.allAccessProgramCap != null) {
         setCap(String(data.allAccessProgramCap));
       }

@@ -1,4 +1,5 @@
 "use client";
+import { adminFetchJson } from "@/lib/admin-fetch-shared";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import MediaDisplayBadge from "@/app/admin/components/MediaDisplayBadge";
@@ -24,13 +25,13 @@ export default function AdminMediaRosterPanel() {
     if (mediaFilter !== "ALL") {
       params.set("media", mediaFilter);
     }
-    const response = await fetch(`/api/admin/waivers?${params.toString()}`, { cache: "no-store" });
+    const responseResult = await adminFetchJson(`/api/admin/waivers?${params.toString()}`, { cache: "no-store" });
     setLoading(false);
-    if (!response.ok) {
+    if (!responseResult.ok) {
       setRecords([]);
       return;
     }
-    const data = (await response.json()) as {
+    const data = (responseResult.data) as {
       agreements?: UnifiedAgreementRecord[];
       teams?: string[];
     };

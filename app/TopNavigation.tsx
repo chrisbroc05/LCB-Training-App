@@ -423,17 +423,7 @@ export default function TopNavigation({
   };
 
   if (isAdmin && pathname.startsWith("/admin")) {
-    return (
-      <div className="flex flex-wrap items-center justify-end gap-2 md:justify-self-end">
-        <button
-          type="button"
-          onClick={handleLogout}
-          className="rounded-lg px-3 py-2 text-sm text-zinc-200 transition hover:bg-[#1a253a] hover:text-[#9df3bd]"
-        >
-          Logout
-        </button>
-      </div>
-    );
+    return null;
   }
 
   if (!isLoggedIn) {

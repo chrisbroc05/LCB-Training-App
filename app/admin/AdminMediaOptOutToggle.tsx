@@ -3,6 +3,7 @@
 import { useState } from "react";
 import MediaDisplayBadge from "@/app/admin/components/MediaDisplayBadge";
 import type { MediaDisplayStatus } from "@/lib/media-consent-shared";
+import { adminFetchJson } from "@/lib/admin-fetch-shared";
 
 type AdminMediaOptOutToggleProps = {
   memberId?: string;
@@ -25,22 +26,29 @@ export default function AdminMediaOptOutToggle(props: AdminMediaOptOutToggleProp
       ? `/api/admin/members/${props.memberId}/media-opt-out`
       : `/api/admin/waivers/${props.waiverSignatureId}/media-opt-out`;
 
-    const response = await fetch(url, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ mediaOptOutAll: next }),
-    });
-
-    const data = (await response.json().catch(() => ({}))) as {
+    const res = await adminFetchJson<{
       error?: string;
       mediaOptOutAll?: boolean;
       mediaDisplayStatus?: MediaDisplayStatus;
-    };
+    }>(
+      url,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mediaOptOutAll: next }),
+      },
+      { context: "admin-media-opt-out", okUserMessage: "Unable to save." },
+    );
 
     setSaving(false);
 
-    if (!response.ok || typeof data.mediaOptOutAll !== "boolean" || !data.mediaDisplayStatus) {
-      setError(data.error ?? "Unable to save.");
+    if (!res.ok) {
+      setError(res.userMessage);
+      return;
+    }
+    const data = res.data;
+    if (typeof data.mediaOptOutAll !== "boolean" || !data.mediaDisplayStatus) {
+      setError("Unable to save.");
       return;
     }
 

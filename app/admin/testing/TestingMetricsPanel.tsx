@@ -1,6 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import {
+  adminFetchJson,
+  ADMIN_FETCH_COULD_NOT_LOAD_JSON,
+} from "@/lib/admin-fetch-shared";
 import type { TestBetterIs, TestMetricRecord, TestStationRecord } from "@/lib/testing-shared";
 
 export default function TestingMetricsPanel() {
@@ -27,18 +31,31 @@ export default function TestingMetricsPanel() {
   });
 
   async function loadAll() {
-    const [metricsResponse, stationsResponse] = await Promise.all([
-      fetch("/api/admin/testing/metrics", { cache: "no-store" }),
-      fetch("/api/admin/testing/stations", { cache: "no-store" }),
+    const [metricsRes, stationsRes] = await Promise.all([
+      adminFetchJson<{ metrics?: TestMetricRecord[]; error?: string }>("/api/admin/testing/metrics", {
+        cache: "no-store",
+      }, {
+        context: "testing-metrics-list",
+        okUserMessage: "Couldn't load testing metrics. Try again.",
+        notJsonUserMessage: ADMIN_FETCH_COULD_NOT_LOAD_JSON,
+      }),
+      adminFetchJson<{ stations?: TestStationRecord[]; error?: string }>("/api/admin/testing/stations", {
+        cache: "no-store",
+      }, {
+        context: "testing-stations-list",
+        notJsonUserMessage: ADMIN_FETCH_COULD_NOT_LOAD_JSON,
+      }),
     ]);
-    const metricsData = (await metricsResponse.json()) as { metrics?: TestMetricRecord[]; error?: string };
-    const stationsData = (await stationsResponse.json()) as { stations?: TestStationRecord[]; error?: string };
-    if (!metricsResponse.ok) {
-      setError(metricsData.error ?? "Failed to load metrics.");
+    if (!metricsRes.ok) {
+      setError(metricsRes.userMessage);
       return;
     }
-    setMetrics(metricsData.metrics ?? []);
-    setStations(stationsData.stations ?? []);
+    if (!stationsRes.ok) {
+      setError(stationsRes.userMessage);
+      return;
+    }
+    setMetrics(metricsRes.data.metrics ?? []);
+    setStations(stationsRes.data.stations ?? []);
   }
 
   useEffect(() => {
@@ -47,24 +64,31 @@ export default function TestingMetricsPanel() {
 
   async function saveMetric(event: React.FormEvent) {
     event.preventDefault();
-    const response = await fetch("/api/admin/testing/metrics", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        key: form.key,
-        label: form.label,
-        unit: form.unit,
-        decimals: Number(form.decimals),
-        betterIs: form.betterIs,
-        category: form.category,
-        sortOrder: Number(form.sortOrder),
-        inputType: form.inputType,
-        active: form.active,
-      }),
-    });
-    const data = (await response.json()) as { error?: string };
-    if (!response.ok) {
-      setError(data.error ?? "Failed to save metric.");
+    const res = await adminFetchJson<{ error?: string }>(
+      "/api/admin/testing/metrics",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          key: form.key,
+          label: form.label,
+          unit: form.unit,
+          decimals: Number(form.decimals),
+          betterIs: form.betterIs,
+          category: form.category,
+          sortOrder: Number(form.sortOrder),
+          inputType: form.inputType,
+          active: form.active,
+        }),
+      },
+      {
+        context: "testing-save-metric",
+        okUserMessage: "Couldn't save metric. Try again.",
+        notJsonUserMessage: ADMIN_FETCH_COULD_NOT_LOAD_JSON,
+      },
+    );
+    if (!res.ok) {
+      setError(res.userMessage);
       return;
     }
     setForm({
@@ -83,20 +107,27 @@ export default function TestingMetricsPanel() {
 
   async function saveStation(event: React.FormEvent) {
     event.preventDefault();
-    const response = await fetch("/api/admin/testing/stations", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        key: stationForm.key,
-        label: stationForm.label,
-        sortOrder: Number(stationForm.sortOrder),
-        active: stationForm.active,
-        metricKeys: stationForm.metricKeys,
-      }),
-    });
-    const data = (await response.json()) as { error?: string };
-    if (!response.ok) {
-      setError(data.error ?? "Failed to save station.");
+    const res = await adminFetchJson<{ error?: string }>(
+      "/api/admin/testing/stations",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          key: stationForm.key,
+          label: stationForm.label,
+          sortOrder: Number(stationForm.sortOrder),
+          active: stationForm.active,
+          metricKeys: stationForm.metricKeys,
+        }),
+      },
+      {
+        context: "testing-save-station",
+        okUserMessage: "Couldn't save station. Try again.",
+        notJsonUserMessage: ADMIN_FETCH_COULD_NOT_LOAD_JSON,
+      },
+    );
+    if (!res.ok) {
+      setError(res.userMessage);
       return;
     }
     setStationForm({ key: "", label: "", sortOrder: "50", active: true, metricKeys: [] });

@@ -1,4 +1,5 @@
 "use client";
+import { adminFetchJson } from "@/lib/admin-fetch-shared";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -335,11 +336,11 @@ export default function AdminProgramPlayerPanel({
     liked?: boolean;
     comment?: string | null;
   }) => {
-    await fetch(`/api/admin/program/enrollments/${enrollmentId}/task-feedback`, {
+    await adminFetchJson(`/api/admin/program/enrollments/${enrollmentId}/task-feedback`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(params),
-    });
+    }, { context: "admin-program-task-feedback" });
     await loadDetail(selectedWeek);
     onFeedbackChange?.();
   };
@@ -348,17 +349,18 @@ export default function AdminProgramPlayerPanel({
     setError("");
     try {
       const weekQuery = week != null && week >= 1 && week <= 12 ? `?week=${week}` : "";
-      const response = await fetch(
+      const res = await adminFetchJson<PlayerDetail & { error?: string }>(
         `/api/admin/program/enrollments/${enrollmentId}${weekQuery}`,
+        { cache: "no-store" },
+        { context: "admin-program-enrollment-detail", okUserMessage: "Unable to load player." },
       );
-      const data = (await response.json().catch(() => ({}))) as PlayerDetail & { error?: string };
-      if (!response.ok || !data.enrollment) {
-        throw new Error(data.error ?? "Unable to load player.");
+      if (!res.ok || !res.data.enrollment) {
+        throw new Error(res.ok ? "Unable to load player." : res.userMessage);
       }
-      setDetail(data);
-      setSelectedWeek(data.selectedWeek);
-      setFocusCueId(data.focus.override?.cueId ?? "");
-      setFocusNote(data.focus.override?.note ?? "");
+      setDetail(res.data);
+      setSelectedWeek(res.data.selectedWeek);
+      setFocusCueId(res.data.focus.override?.cueId ?? "");
+      setFocusNote(res.data.focus.override?.note ?? "");
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Unable to load player.");
     } finally {
@@ -372,14 +374,17 @@ export default function AdminProgramPlayerPanel({
   }, [loadDetail]);
 
   const patchEnrollment = async (patch: Record<string, unknown>) => {
-    const response = await fetch(`/api/admin/program/enrollments/${enrollmentId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(patch),
-    });
-    const data = (await response.json().catch(() => ({}))) as { error?: string };
-    if (!response.ok) {
-      setError(data.error ?? "Unable to update enrollment.");
+    const res = await adminFetchJson<{ error?: string }>(
+      `/api/admin/program/enrollments/${enrollmentId}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      },
+      { context: "admin-program-enrollment-patch", okUserMessage: "Unable to update enrollment." },
+    );
+    if (!res.ok) {
+      setError(res.userMessage);
       return;
     }
     await loadDetail(selectedWeek);
@@ -394,7 +399,7 @@ export default function AdminProgramPlayerPanel({
       detail.focus.override?.cueLabel ?? detail.focus.defaultCueLabel;
     const savingForNextWeek = focusTarget === "next_week";
 
-    const response = await fetch(
+    const res = await adminFetchJson(
       `/api/admin/program/enrollments/${enrollmentId}/focus-override`,
       {
         method: "POST",
@@ -405,10 +410,10 @@ export default function AdminProgramPlayerPanel({
           target: focusTarget,
         }),
       },
+      { context: "admin-program-focus-override-save", okUserMessage: "Unable to save focus override." },
     );
-    const data = (await response.json().catch(() => ({}))) as { error?: string };
-    if (!response.ok) {
-      setError(data.error ?? "Unable to save focus override.");
+    if (!res.ok) {
+      setError(res.userMessage);
       return;
     }
 
@@ -440,13 +445,13 @@ export default function AdminProgramPlayerPanel({
       return;
     }
 
-    const response = await fetch(
+    const res = await adminFetchJson(
       `/api/admin/program/enrollments/${enrollmentId}/focus-override?weekNumber=${detail.focus.nextWeekOverride.weekNumber}`,
       { method: "DELETE" },
+      { context: "admin-program-focus-override-delete-next", okUserMessage: "Unable to remove next week focus." },
     );
-    if (!response.ok) {
-      const data = (await response.json().catch(() => ({}))) as { error?: string };
-      setError(data.error ?? "Unable to remove next week focus.");
+    if (!res.ok) {
+      setError(res.userMessage);
       return;
     }
 
@@ -458,13 +463,13 @@ export default function AdminProgramPlayerPanel({
     if (!detail) {
       return;
     }
-    const response = await fetch(
+    const res = await adminFetchJson(
       `/api/admin/program/enrollments/${enrollmentId}/focus-override?weekNumber=${detail.focus.weekNumber}`,
       { method: "DELETE" },
+      { context: "admin-program-focus-override-reset", okUserMessage: "Unable to reset focus." },
     );
-    if (!response.ok) {
-      const data = (await response.json().catch(() => ({}))) as { error?: string };
-      setError(data.error ?? "Unable to reset focus.");
+    if (!res.ok) {
+      setError(res.userMessage);
       return;
     }
     setFocusSuccess("");
@@ -485,24 +490,24 @@ export default function AdminProgramPlayerPanel({
       replacesTaskKey: taskForm.replacesTaskKey,
     };
 
-    const response = taskForm.editingTaskId
-      ? await fetch(
+    const res = taskForm.editingTaskId
+      ? await adminFetchJson(
           `/api/admin/program/enrollments/${enrollmentId}/custom-tasks/${taskForm.editingTaskId}`,
           {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
           },
+          { context: "admin-program-custom-task-patch", okUserMessage: "Unable to save custom task." },
         )
-      : await fetch(`/api/admin/program/enrollments/${enrollmentId}/custom-tasks`, {
+      : await adminFetchJson(`/api/admin/program/enrollments/${enrollmentId}/custom-tasks`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
-        });
+        }, { context: "admin-program-custom-task-create", okUserMessage: "Unable to save custom task." });
 
-    const data = (await response.json().catch(() => ({}))) as { error?: string };
-    if (!response.ok) {
-      setError(data.error ?? "Unable to save custom task.");
+    if (!res.ok) {
+      setError(res.userMessage);
       return;
     }
 
@@ -511,13 +516,13 @@ export default function AdminProgramPlayerPanel({
   };
 
   const deleteCustomTask = async (taskId: string) => {
-    const response = await fetch(
+    const res = await adminFetchJson(
       `/api/admin/program/enrollments/${enrollmentId}/custom-tasks/${taskId}`,
       { method: "DELETE" },
+      { context: "admin-program-custom-task-delete", okUserMessage: "Unable to delete custom task." },
     );
-    if (!response.ok) {
-      const data = (await response.json().catch(() => ({}))) as { error?: string };
-      setError(data.error ?? "Unable to delete custom task.");
+    if (!res.ok) {
+      setError(res.userMessage);
       return;
     }
     await loadDetail(selectedWeek);
@@ -590,17 +595,18 @@ export default function AdminProgramPlayerPanel({
               onClick={() => {
                 setOpeningMessage(true);
                 void (async () => {
-                  const response = await fetch("/api/admin/messages", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ enrollmentId }),
-                  });
-                  const data = (await response.json().catch(() => ({}))) as {
-                    conversationId?: string;
-                  };
+                  const msgRes = await adminFetchJson<{ conversationId?: string }>(
+                    "/api/admin/messages",
+                    {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ enrollmentId }),
+                    },
+                    { context: "admin-open-message-thread" },
+                  );
                   setOpeningMessage(false);
-                  if (response.ok && data.conversationId) {
-                    router.push(`/admin/messages/${data.conversationId}`);
+                  if (msgRes.ok && msgRes.data.conversationId) {
+                    router.push(`/admin/messages/${msgRes.data.conversationId}`);
                   }
                 })();
               }}
@@ -637,13 +643,13 @@ export default function AdminProgramPlayerPanel({
               const isTestAccount = event.target.checked;
               setSavingTestAccount(true);
               void (async () => {
-                const response = await fetch(`/api/admin/program/enrollments/${enrollmentId}`, {
+                const responseResult = await adminFetchJson(`/api/admin/program/enrollments/${enrollmentId}`, {
                   method: "PATCH",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({ isTestAccount }),
                 });
                 setSavingTestAccount(false);
-                if (response.ok) {
+                if (responseResult.ok) {
                   await loadDetail(selectedWeek);
                 }
               })();
@@ -778,13 +784,13 @@ export default function AdminProgramPlayerPanel({
                 const isTestAccount = event.target.checked;
                 setSavingTestAccount(true);
                 void (async () => {
-                  const response = await fetch(`/api/admin/program/enrollments/${enrollmentId}`, {
+                  const responseResult = await adminFetchJson(`/api/admin/program/enrollments/${enrollmentId}`, {
                     method: "PATCH",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ isTestAccount }),
                   });
                   setSavingTestAccount(false);
-                  if (response.ok) {
+                  if (responseResult.ok) {
                     await loadDetail(selectedWeek);
                   }
                 })();
@@ -899,7 +905,7 @@ export default function AdminProgramPlayerPanel({
                   type="button"
                   onClick={() =>
                     void (async () => {
-                      const response = await fetch(
+                      const responseResult = await adminFetchJson(
                         `/api/admin/program/enrollments/${enrollmentId}/tracks`,
                         {
                           method: "PATCH",
@@ -911,7 +917,7 @@ export default function AdminProgramPlayerPanel({
                           }),
                         },
                       );
-                      if (response.ok) {
+                      if (responseResult.ok) {
                         await loadDetail(selectedWeek);
                       }
                     })()
@@ -932,7 +938,7 @@ export default function AdminProgramPlayerPanel({
                   defaultValue={track.note}
                   onBlur={(event) => {
                     const note = event.target.value;
-                    void fetch(`/api/admin/program/enrollments/${enrollmentId}/tracks`, {
+                    void adminFetchJson(`/api/admin/program/enrollments/${enrollmentId}/tracks`, {
                       method: "PATCH",
                       headers: { "Content-Type": "application/json" },
                       body: JSON.stringify({
@@ -940,7 +946,7 @@ export default function AdminProgramPlayerPanel({
                         active: track.active,
                         note,
                       }),
-                    });
+                    }, { context: "admin-program-track-note-blur" });
                   }}
                   className="mt-1 w-full rounded-lg border border-[#2b3650] bg-black/30 px-3 py-2 text-sm text-zinc-200"
                   placeholder="Coach note for this track"

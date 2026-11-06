@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { adminFetchJson } from "@/lib/admin-fetch-shared";
 import {
   ADMIN_MOBILE_TABS,
   ADMIN_NAV_SECTIONS,
@@ -43,12 +44,13 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
 
   useEffect(() => {
     const load = async () => {
-      const response = await fetch("/api/admin/nav-counts", { cache: "no-store" });
-      if (!response.ok) {
+      const res = await adminFetchJson<NavCounts>("/api/admin/nav-counts", { cache: "no-store" }, {
+        context: "admin-nav-counts",
+      });
+      if (!res.ok) {
         return;
       }
-      const data = (await response.json()) as NavCounts;
-      setNavCounts(data);
+      setNavCounts(res.data);
     };
     void load();
   }, [pathname]);
@@ -76,10 +78,10 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
                     coachingBadge > 0;
                   return (
                     <Link key={item.href} href={item.href} className={navLinkClass(active)}>
-                      <span className="flex items-center justify-between gap-2">
-                        <span>{item.label}</span>
+                      <span className="flex min-w-0 items-center justify-between gap-2 pl-0.5">
+                        <span className="min-w-0 truncate">{item.label}</span>
                         {showBadge ? (
-                          <span className="rounded-full bg-[#22c55e] px-2 py-0.5 text-xs font-semibold text-black">
+                          <span className="shrink-0 rounded-full bg-[#22c55e] px-2 py-0.5 text-xs font-semibold text-black">
                             {coachingBadge > 99 ? "99+" : coachingBadge}
                           </span>
                         ) : null}
