@@ -20,13 +20,52 @@ import {
   type ParentSignupDeferralFallbackReason,
 } from "@/lib/parent-consent-shared";
 import { combinePlayerName } from "@/lib/account-shared";
-import { getChicagoTodayDateKey } from "@/lib/program-schedule";
+import { getChicagoDaysSinceDate, getChicagoTodayDateKey } from "@/lib/program-schedule";
 import {
   sendParentConsentConfirmEmail,
   sendPlayerParentConfirmedEmail,
 } from "@/lib/parent-consent-email";
 import { sendPushToUserSafe } from "@/lib/push-send";
 import { findMatchingWaiverSignatureForUser } from "@/lib/waiver-sign-server";
+
+/** Automated cron reminders after initial parent email: days 1, 3, and 7 (Chicago calendar). */
+export const PARENT_CONSENT_REMINDER_DAY_OFFSETS = [1, 3, 7] as const;
+
+const MAX_PARENT_CONSENT_REMINDER_SENDS = PARENT_CONSENT_REMINDER_DAY_OFFSETS.length;
+
+function isDueParentConsentCronReminder(params: {
+  parentConsentEmailSentAt: Date;
+  parentConsentReminderCount: number;
+  parentConsentReminderSentAt: Date | null;
+  now: Date;
+}) {
+  if (params.parentConsentReminderCount >= MAX_PARENT_CONSENT_REMINDER_SENDS) {
+    return false;
+  }
+
+  const nextSlotDays = PARENT_CONSENT_REMINDER_DAY_OFFSETS[params.parentConsentReminderCount];
+  if (nextSlotDays === undefined) {
+    return false;
+  }
+
+  const daysSinceInitial = getChicagoDaysSinceDate(params.parentConsentEmailSentAt, params.now);
+  // Use >= so a missed exact-day cron still catches up on the next run.
+  if (daysSinceInitial < nextSlotDays) {
+    return false;
+  }
+
+  if (params.parentConsentReminderSentAt) {
+    const daysSinceLastReminder = getChicagoDaysSinceDate(
+      params.parentConsentReminderSentAt,
+      params.now,
+    );
+    if (daysSinceLastReminder < 1) {
+      return false;
+    }
+  }
+
+  return true;
+}
 
 export type LegalAcceptanceInput = {
   acceptedByName: string;
@@ -53,11 +92,8 @@ async function applySecondEmailFromParentConsent(userId: string, params: {
     return;
   }
 
-  const normalizedParentEmail = params.parentConsentEmail.trim().toLowerCase();
-  if (
-    user.accountRole === "PARENT" ||
-    normalizedParentEmail === user.email.trim().toLowerCase()
-  ) {
+  // Parent-account holders already receive mail at the account address.
+  if (user.accountRole === "PARENT") {
     return;
   }
 
@@ -77,7 +113,7 @@ async function applySecondEmailFromParentConsent(userId: string, params: {
     where: { id: enrollment.id },
     data: {
       parentName: params.parentConsentName,
-      parentEmail: params.parentConsentEmail,
+      parentEmail: params.parentConsentEmail.trim(),
       parentEmailsEnabled: true,
     },
   });
@@ -118,6 +154,7 @@ async function maybeSendParentConsentEmail(user: {
       data: {
         parentConsentEmailSentAt: new Date(),
         parentConsentReminderSentAt: null,
+        parentConsentReminderCount: 0,
       },
     });
   } catch (error) {
@@ -466,6 +503,11 @@ export async function saveLegalAcceptance(userId: string, input: LegalAcceptance
           ? null
           : undefined
         : null,
+      parentConsentReminderCount: isMinor
+        ? shouldResetParentConfirmation
+          ? 0
+          : undefined
+        : 0,
       mediaConsent: input.mediaConsent,
       mediaConsentUpdatedAt: now,
     },
@@ -638,6 +680,7 @@ export async function resendParentConsentEmailForUser(userId: string) {
       parentConsentManualResendCount: nextCount,
       parentConsentEmailSentAt: new Date(),
       parentConsentReminderSentAt: null,
+      parentConsentReminderCount: 0,
     },
   });
 
@@ -688,6 +731,7 @@ export async function updateParentConsentEmailForUser(userId: string, nextEmail:
       parentConsentConfirmedAt: null,
       parentConsentEmailSentAt: null,
       parentConsentReminderSentAt: null,
+      parentConsentReminderCount: 0,
       parentConsentManualResendDayKey: todayKey,
       parentConsentManualResendCount: 0,
     },
@@ -908,17 +952,15 @@ export type ParentConsentReminderPreview = {
 
 /** Same eligibility as sendDueParentConsentReminders; for cron dry run previews only. */
 export async function loadParentConsentReminderPreviews(now = new Date()) {
-  const twoDaysMs = 2 * 24 * 60 * 60 * 1000;
-  const cutoff = new Date(now.getTime() - twoDaysMs);
-
   const users = await prisma.user.findMany({
     where: {
       playerAge: { lt: 18 },
       acceptedAsParent: true,
       parentConsentEmail: { not: null },
       parentConsentConfirmedAt: null,
-      parentConsentEmailSentAt: { lte: cutoff },
-      parentConsentReminderSentAt: null,
+      parentConsentEmailSentAt: { not: null },
+      parentConsentMethod: { not: PARENT_CONSENT_METHOD_ACCOUNT_SIGNUP },
+      parentConsentReminderCount: { lt: MAX_PARENT_CONSENT_REMINDER_SENDS },
     },
     select: {
       id: true,
@@ -931,6 +973,9 @@ export async function loadParentConsentReminderPreviews(now = new Date()) {
       termsAcceptedAt: true,
       parentConsentEmail: true,
       parentConsentMethod: true,
+      parentConsentEmailSentAt: true,
+      parentConsentReminderSentAt: true,
+      parentConsentReminderCount: true,
     },
   });
 
@@ -943,7 +988,18 @@ export async function loadParentConsentReminderPreviews(now = new Date()) {
       !user.parentConsentEmail?.trim() ||
       !user.termsAcceptedAt ||
       !user.acceptedByName ||
-      user.parentConsentMethod === PARENT_CONSENT_METHOD_ACCOUNT_SIGNUP
+      !user.parentConsentEmailSentAt
+    ) {
+      continue;
+    }
+
+    if (
+      !isDueParentConsentCronReminder({
+        parentConsentEmailSentAt: user.parentConsentEmailSentAt,
+        parentConsentReminderCount: user.parentConsentReminderCount,
+        parentConsentReminderSentAt: user.parentConsentReminderSentAt,
+        now,
+      })
     ) {
       continue;
     }
@@ -972,17 +1028,15 @@ export async function loadParentConsentReminderPreviews(now = new Date()) {
 }
 
 export async function sendDueParentConsentReminders(now = new Date()) {
-  const twoDaysMs = 2 * 24 * 60 * 60 * 1000;
-  const cutoff = new Date(now.getTime() - twoDaysMs);
-
   const users = await prisma.user.findMany({
     where: {
       playerAge: { lt: 18 },
       acceptedAsParent: true,
       parentConsentEmail: { not: null },
       parentConsentConfirmedAt: null,
-      parentConsentEmailSentAt: { lte: cutoff },
-      parentConsentReminderSentAt: null,
+      parentConsentEmailSentAt: { not: null },
+      parentConsentMethod: { not: PARENT_CONSENT_METHOD_ACCOUNT_SIGNUP },
+      parentConsentReminderCount: { lt: MAX_PARENT_CONSENT_REMINDER_SENDS },
     },
     select: {
       id: true,
@@ -995,6 +1049,9 @@ export async function sendDueParentConsentReminders(now = new Date()) {
       termsAcceptedAt: true,
       parentConsentEmail: true,
       parentConsentMethod: true,
+      parentConsentEmailSentAt: true,
+      parentConsentReminderSentAt: true,
+      parentConsentReminderCount: true,
     },
   });
 
@@ -1005,7 +1062,18 @@ export async function sendDueParentConsentReminders(now = new Date()) {
       !user.parentConsentEmail?.trim() ||
       !user.termsAcceptedAt ||
       !user.acceptedByName ||
-      user.parentConsentMethod === PARENT_CONSENT_METHOD_ACCOUNT_SIGNUP
+      !user.parentConsentEmailSentAt
+    ) {
+      continue;
+    }
+
+    if (
+      !isDueParentConsentCronReminder({
+        parentConsentEmailSentAt: user.parentConsentEmailSentAt,
+        parentConsentReminderCount: user.parentConsentReminderCount,
+        parentConsentReminderSentAt: user.parentConsentReminderSentAt,
+        now,
+      })
     ) {
       continue;
     }
@@ -1027,6 +1095,7 @@ export async function sendDueParentConsentReminders(now = new Date()) {
         where: { id: user.id },
         data: {
           parentConsentReminderSentAt: now,
+          parentConsentReminderCount: { increment: 1 },
         },
       });
 

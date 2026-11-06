@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { ProgramEmailType, ProgramEnrollment } from "@prisma/client";
+import type { AccountRole, ProgramEmailType, ProgramEnrollment } from "@prisma/client";
 import { findDailyTask, getDailyPlan, getTaskKeysForDay } from "@/lib/program-daily-plan";
 import { isGoneQuiet } from "@/lib/program-gone-quiet";
 import {
@@ -39,6 +39,11 @@ export type ActiveEnrollmentRecord = ProgramEnrollment & {
     id: string;
     name: string | null;
     email: string;
+    accountRole: AccountRole;
+    playerAge: number | null;
+    acceptedAsParent: boolean;
+    parentConsentEmail: string | null;
+    marketingEmailsSuppressed: boolean;
   };
   taskCompletions: Array<{
     programDay: number;
@@ -47,6 +52,45 @@ export type ActiveEnrollmentRecord = ProgramEnrollment & {
     completedAt: Date;
   }>;
 };
+
+/**
+ * Parent/guardian address for program parent emails (weekly recap, etc.).
+ * Prefers enrollment.parentEmail; falls back to consent email / parent account email
+ * when second-email was never copied onto the enrollment (common for minors).
+ */
+export function resolveEnrollmentParentEmail(enrollment: ActiveEnrollmentRecord): string | null {
+  if (!enrollment.parentEmailsEnabled) {
+    return null;
+  }
+
+  const accountEmail = enrollment.user.email.trim().toLowerCase();
+  const storedParent = enrollment.parentEmail?.trim() ?? "";
+  if (storedParent) {
+    return storedParent;
+  }
+
+  if (enrollment.user.accountRole === "PARENT") {
+    return enrollment.user.email.trim();
+  }
+
+  const consentEmail = enrollment.user.parentConsentEmail?.trim() ?? "";
+  if (!consentEmail) {
+    return null;
+  }
+
+  const consentNormalized = consentEmail.toLowerCase();
+  if (consentNormalized !== accountEmail) {
+    return consentEmail;
+  }
+
+  // Parent confirmed using the same inbox as the player account -- still deliver parent emails there.
+  const age = enrollment.user.playerAge;
+  if (enrollment.user.acceptedAsParent && age != null && age < 18) {
+    return consentEmail;
+  }
+
+  return null;
+}
 
 export async function loadActiveEnrollments(
   now = new Date(),
@@ -64,6 +108,11 @@ export async function loadActiveEnrollments(
           id: true,
           name: true,
           email: true,
+          accountRole: true,
+          playerAge: true,
+          acceptedAsParent: true,
+          parentConsentEmail: true,
+          marketingEmailsSuppressed: true,
         },
       },
       taskCompletions: {
@@ -282,6 +331,7 @@ async function hasWeeklyVideoSentForProgramWeek(userId: string, weekNumber: numb
 export async function buildWeeklyRecapData(
   enrollment: ActiveEnrollmentRecord,
   recapWeekNumber: number,
+  now = new Date(),
 ) {
   const planInput = toEnrollmentPlanInput(enrollment);
   if (!planInput || !enrollment.startDate || recapWeekNumber < 1 || recapWeekNumber > 12) {
@@ -321,10 +371,13 @@ export async function buildWeeklyRecapData(
     }
   }
 
-  const schedule = getProgramDay({
-    startDate: enrollment.startDate,
-    planMode: enrollment.planMode,
-  });
+  const schedule = getProgramDay(
+    {
+      startDate: enrollment.startDate,
+      planMode: enrollment.planMode,
+    },
+    now,
+  );
   const completedWorkDays = getCompletedWorkDays(
     enrollment,
     planInput,

@@ -15,6 +15,7 @@ import {
   isProgramStillBeforeFirstWorkDay,
   loadActiveEnrollments,
   loadSetupIncompleteEnrollments,
+  resolveEnrollmentParentEmail,
   shouldSendGoneQuietEmail,
   type ActiveEnrollmentRecord,
 } from "@/lib/program-email-data";
@@ -33,7 +34,7 @@ import {
 } from "@/lib/program-email-templates";
 import { isGoneQuiet } from "@/lib/program-gone-quiet";
 import { buildParentUnsubscribeUrl } from "@/lib/program-parent-token";
-import { computeProgramStreak, getDayOfWeekForProgramDay } from "@/lib/program-streak-shared";
+import { computeProgramStreak } from "@/lib/program-streak-shared";
 import {
   getChicagoDaysSinceDate,
   getProgramDay,
@@ -151,6 +152,7 @@ async function getStreakForEnrollment(enrollment: ActiveEnrollmentRecord, now: D
 async function maybeSendDailyRoutine(
   enrollment: ActiveEnrollmentRecord,
   dateKey: string,
+  now: Date,
   dryRun: boolean,
   previews: ScheduledEmailPreview[],
 ) {
@@ -162,7 +164,11 @@ async function maybeSendDailyRoutine(
     return false;
   }
 
-  const schedule = getProgramDay({ startDate: enrollment.startDate });
+  if (!enrollment.startDate) {
+    return false;
+  }
+
+  const schedule = getProgramDay({ startDate: enrollment.startDate }, now);
   if (
     schedule.isBeforeStart ||
     schedule.isComplete ||
@@ -192,12 +198,13 @@ async function maybeSendDailyRoutine(
     schedule.programDay,
   );
   const coachWeekBox = await getEnrollmentCoachWeekBox(enrollment, dayInfo);
-  const streak = await getStreakForEnrollment(enrollment, new Date());
+  const streak = await getStreakForEnrollment(enrollment, now);
 
   const email = buildDailyRoutineEmail({
     firstName,
     weekNumber: schedule.weekNumber,
-    dayOfWeek: schedule.dayOfWeek,
+    programDay: schedule.programDay,
+    startDate: enrollment.startDate,
     tasks,
     streak,
     knownFor: enrollment.knownFor,
@@ -518,7 +525,8 @@ async function maybeSendParentSaturdayVideo(
   dryRun: boolean,
   previews: ScheduledEmailPreview[],
 ) {
-  if (!enrollment.parentEmail?.trim() || !enrollment.parentEmailsEnabled) {
+  const parentTo = resolveEnrollmentParentEmail(enrollment);
+  if (!parentTo) {
     return false;
   }
 
@@ -553,14 +561,14 @@ async function maybeSendParentSaturdayVideo(
     type,
     recipient: "parent",
     enrollmentId: enrollment.id,
-    to: enrollment.parentEmail.trim(),
+    to: parentTo,
     subject: email.subject,
     dateKey,
   });
 
   if (!dryRun) {
     await sendProgramEmail({
-      to: enrollment.parentEmail.trim(),
+      to: parentTo,
       subject: email.subject,
       html: email.html,
       text: email.text,
@@ -581,7 +589,8 @@ async function maybeSendParentGoneQuiet(
   dryRun: boolean,
   previews: ScheduledEmailPreview[],
 ) {
-  if (!enrollment.parentEmail?.trim() || !enrollment.parentEmailsEnabled) {
+  const parentTo = resolveEnrollmentParentEmail(enrollment);
+  if (!parentTo) {
     return false;
   }
 
@@ -619,14 +628,14 @@ async function maybeSendParentGoneQuiet(
     type,
     recipient: "parent",
     enrollmentId: enrollment.id,
-    to: enrollment.parentEmail.trim(),
+    to: parentTo,
     subject: email.subject,
     dateKey,
   });
 
   if (!dryRun) {
     await sendProgramEmail({
-      to: enrollment.parentEmail.trim(),
+      to: parentTo,
       subject: email.subject,
       html: email.html,
       text: email.text,
@@ -647,7 +656,8 @@ async function maybeSendParentWeeklyRecap(
   dryRun: boolean,
   previews: ScheduledEmailPreview[],
 ) {
-  if (!enrollment.parentEmail?.trim() || !enrollment.parentEmailsEnabled) {
+  const parentTo = resolveEnrollmentParentEmail(enrollment);
+  if (!parentTo) {
     return false;
   }
 
@@ -680,14 +690,14 @@ async function maybeSendParentWeeklyRecap(
     type,
     recipient: "parent",
     enrollmentId: enrollment.id,
-    to: enrollment.parentEmail.trim(),
+    to: parentTo,
     subject: email.subject,
     dateKey,
   });
 
   if (!dryRun) {
     await sendProgramEmail({
-      to: enrollment.parentEmail.trim(),
+      to: parentTo,
       subject: email.subject,
       html: email.html,
       text: email.text,
@@ -839,7 +849,7 @@ export async function runProgramEmailScheduler(params?: {
 
     for (const enrollment of enrollments) {
       await trySend(`daily-routine:${enrollment.id}`, () =>
-        maybeSendDailyRoutine(enrollment, dateKey, dryRun, previews),
+        maybeSendDailyRoutine(enrollment, dateKey, now, dryRun, previews),
       );
     }
 
@@ -983,7 +993,8 @@ export async function sendTestProgramEmail(params: {
       const email = buildDailyRoutineEmail({
         firstName,
         weekNumber: dayInfo.weekNumber,
-        dayOfWeek: dayInfo.dayOfWeek,
+        programDay,
+        startDate: enrollment.startDate!,
         tasks: await getEnrollmentTasksForProgramDay(enrollment, programDay),
         streak: await getStreakForEnrollment(enrollment, now),
         knownFor: enrollment.knownFor,

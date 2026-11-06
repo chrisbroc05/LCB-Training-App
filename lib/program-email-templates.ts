@@ -19,6 +19,7 @@ import {
   escapeHtml,
   getPublicAppUrl,
 } from "@/lib/email-layout";
+import { getWeekdayNameForProgramDay } from "@/lib/program-schedule";
 import { formatTaskLineForEmail, getTaskCategoryLabel } from "@/lib/program-email-task-label";
 
 export function getPlayerFirstName(name: string | null | undefined, email: string) {
@@ -105,26 +106,17 @@ function buildParentUnsubscribeFooterText(unsubscribeUrl: string) {
   return `\nTurn off second email: ${unsubscribeUrl}`;
 }
 
-const WEEKDAY_NAMES = [
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-  "Sunday",
-] as const;
-
 export function buildDailyRoutineEmail(params: {
   firstName: string;
   weekNumber: number;
-  dayOfWeek: number;
+  programDay: number;
+  startDate: Date;
   tasks: Array<{ type: string; title: string; target: string; focus?: string }>;
   streak: number;
   knownFor: string | null;
   coachWeekBox?: { focus: string; note: string } | null;
 }) {
-  const weekdayName = WEEKDAY_NAMES[params.dayOfWeek - 1] ?? "Day";
+  const weekdayName = getWeekdayNameForProgramDay(params.startDate, params.programDay);
   const subject = `Week ${params.weekNumber}, ${weekdayName}: your routine is ready`;
   const headline = `Today's work, ${params.firstName}.`;
   const intro =
