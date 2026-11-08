@@ -3,7 +3,7 @@
  */
 
 import type { CoachingReviewTrack } from "@prisma/client";
-import { REPORT_RECOMMENDED_FIX_IT_OPTIONS } from "@/lib/player-evaluation-cta-shared";
+import { recommendedProductSlugToLabel } from "@/lib/player-evaluation-cta-shared";
 
 export const ADMIN_SENT_REPORT_LEVEL_FILTERS = ["all", "core", "org_trial", "free"] as const;
 
@@ -51,9 +51,5 @@ export function parseAdminSentReportLevelFilter(value: string | null): AdminSent
 }
 
 export function fixItSlugToLabel(slug: string | null | undefined): string | null {
-  if (!slug) {
-    return null;
-  }
-  const match = REPORT_RECOMMENDED_FIX_IT_OPTIONS.find((option) => option.value === slug);
-  return match?.label ?? slug;
+  return recommendedProductSlugToLabel(slug);
 }

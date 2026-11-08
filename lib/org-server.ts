@@ -32,6 +32,9 @@ export const userOrgAccessSelect = {
       trialStartsAt: true,
       trialEndsAt: true,
       trialLockedCopy: true,
+      foundingOfferEnabled: true,
+      foundingOfferDeadline: true,
+      foundingOfferMonths: true,
     },
   },
 } as const;

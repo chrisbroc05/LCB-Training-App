@@ -13,6 +13,7 @@ type WrittenPlayerReportSectionProps = {
   recommendedDrillLines: string[];
   noteFromCoach: string | null;
   libraryDrillIds: string[];
+  libraryDrillTitles?: string[];
   submissionId: string;
   hasEvaluationPdf: boolean;
   drillThumbnailMap: Record<string, string | null>;
@@ -26,12 +27,15 @@ export default function WrittenPlayerReportSection({
   recommendedDrillLines,
   noteFromCoach,
   libraryDrillIds,
+  libraryDrillTitles = [],
   submissionId,
   hasEvaluationPdf,
   drillThumbnailMap,
 }: WrittenPlayerReportSectionProps) {
   const openHref = buildMemberPdfHref({ kind: "evaluation", submissionId });
   const downloadHref = buildMemberPdfHref({ kind: "evaluation", submissionId, download: true });
+  const typedDrills = recommendedDrillLines.filter((line) => line.trim());
+  const libraryTitles = libraryDrillTitles.filter((line) => line.trim());
 
   return (
     <div className="space-y-4">
@@ -75,14 +79,34 @@ export default function WrittenPlayerReportSection({
         </ul>
       </div>
 
-      <div className="rounded-xl border border-[#2b3650] bg-black/20 p-4">
-        <p className="text-sm font-semibold text-zinc-100">Recommended drills</p>
-        <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-zinc-300">
-          {recommendedDrillLines.map((line) => (
-            <li key={line}>{formatWrittenReportLineForDisplay(line)}</li>
-          ))}
-        </ul>
-      </div>
+      {typedDrills.length > 0 ? (
+        <div className="rounded-xl border border-[#2b3650] bg-black/20 p-4">
+          <p className="text-sm font-semibold text-zinc-100">Recommended drills</p>
+          <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-zinc-300">
+            {typedDrills.map((line) => (
+              <li key={line}>{formatWrittenReportLineForDisplay(line)}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      {libraryTitles.length > 0 || libraryDrillIds.length > 0 ? (
+        <div className="rounded-xl border border-[#2b3650] bg-black/20 p-4">
+          <p className="text-sm font-semibold text-zinc-100">Drill videos in your app:</p>
+          {libraryTitles.length > 0 ? (
+            <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-zinc-300">
+              {libraryTitles.map((line) => (
+                <li key={line}>{formatWrittenReportLineForDisplay(line)}</li>
+              ))}
+            </ul>
+          ) : null}
+          {libraryDrillIds.length > 0 ? (
+            <div className="mt-3">
+              <FocusDrillCards drillIds={libraryDrillIds} thumbnailMap={drillThumbnailMap} />
+            </div>
+          ) : null}
+        </div>
+      ) : null}
 
       {noteFromCoach ? (
         <div className="rounded-xl border border-[#2b3650] bg-black/20 p-4">
@@ -91,10 +115,6 @@ export default function WrittenPlayerReportSection({
             {formatWrittenReportLineForDisplay(noteFromCoach)}
           </p>
         </div>
-      ) : null}
-
-      {libraryDrillIds.length > 0 ? (
-        <FocusDrillCards drillIds={libraryDrillIds} thumbnailMap={drillThumbnailMap} />
       ) : null}
     </div>
   );

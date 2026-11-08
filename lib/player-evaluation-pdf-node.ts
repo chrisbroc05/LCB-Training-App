@@ -30,7 +30,10 @@ export type PlayerEvaluationPdfInput = {
   evalDateLabel: string;
   strengths: string[];
   areasToImprove: string[];
+  /** Typed drills from the report drills box. */
   recommendedDrills: string[];
+  /** Drill library titles attached from the admin picker. */
+  libraryDrillTitles?: string[];
   noteFromCoach: string;
   cta: PlayerEvaluationCtaContent;
   projectRoot?: string;
@@ -440,14 +443,30 @@ export function renderPlayerEvaluationPdfToBuffer(input: PlayerEvaluationPdfInpu
     drawSectionCell(doc, contentOriginX() + colW, y, colW, rightSpec, rightBodyOverride);
     y += rowH + 5;
 
-    const drillsSpec: SectionSpec = {
-      title: "Recommended Drills",
-      kind: "bullets",
-      bullets: input.recommendedDrills,
-    };
-    const drillsH = measureSectionCell(doc, contentWidth(), drillsSpec);
-    drawSectionCell(doc, contentOriginX(), y, contentWidth(), drillsSpec);
-    y += drillsH + 5;
+    const typedDrills = input.recommendedDrills.filter((line) => line.trim());
+    const libraryTitles = (input.libraryDrillTitles ?? []).filter((line) => line.trim());
+
+    if (typedDrills.length > 0) {
+      const drillsSpec: SectionSpec = {
+        title: "Recommended Drills",
+        kind: "bullets",
+        bullets: typedDrills,
+      };
+      const drillsH = measureSectionCell(doc, contentWidth(), drillsSpec);
+      drawSectionCell(doc, contentOriginX(), y, contentWidth(), drillsSpec);
+      y += drillsH + 5;
+    }
+
+    if (libraryTitles.length > 0) {
+      const librarySpec: SectionSpec = {
+        title: "Drill videos in your app:",
+        kind: "bullets",
+        bullets: libraryTitles,
+      };
+      const libraryH = measureSectionCell(doc, contentWidth(), librarySpec);
+      drawSectionCell(doc, contentOriginX(), y, contentWidth(), librarySpec);
+      y += libraryH + 5;
+    }
 
     const noteSpec: SectionSpec = {
       title: "Note from Coach Broc",
@@ -463,25 +482,50 @@ export function renderPlayerEvaluationPdfToBuffer(input: PlayerEvaluationPdfInpu
 
     const footerPad = 8;
     const footerColW = colW;
-    const leftFooter =
-      "Coach Broccolino\nEmail: chrisbroc05@gmail.com\nPhone: 847-208-9661";
-    const rightFooter =
-      "LCB Training\nWebsite: lcbtraining.com\nInstagram: @lcbtraining | TikTok: @cbroc05";
-    doc.font("Helvetica").fontSize(9.5);
-    const leftFooterH = doc.heightOfString(leftFooter, { width: footerColW - 20, align: "center" });
-    const rightFooterH = doc.heightOfString(rightFooter, { width: footerColW - 20, align: "center" });
+    const footerInnerPad = 10;
+    const leftTitle = "COACH BROC | LCB TRAINING";
+    const leftTagline = "Work Hard. Be Memorable.";
+    const rightLine1 = "847-208-9661 | chrisbroc05@gmail.com";
+    const rightLine2 = "lcbtraining.com | @lcbtraining";
+
+    doc.font("Helvetica-Bold").fontSize(9);
+    const leftTitleH = doc.heightOfString(leftTitle, {
+      width: footerColW - footerInnerPad * 2,
+      align: "left",
+    });
+    doc.font("Helvetica-Oblique").fontSize(8.5);
+    const leftTaglineH = doc.heightOfString(leftTagline, {
+      width: footerColW - footerInnerPad * 2,
+      align: "left",
+    });
+    doc.font("Helvetica").fontSize(8.5);
+    const rightLine1H = doc.heightOfString(rightLine1, {
+      width: footerColW - footerInnerPad * 2,
+      align: "right",
+    });
+    const rightLine2H = doc.heightOfString(rightLine2, {
+      width: footerColW - footerInnerPad * 2,
+      align: "right",
+    });
+    const leftFooterH = leftTitleH + 3 + leftTaglineH;
+    const rightFooterH = rightLine1H + 3 + rightLine2H;
     const footerHeight = Math.max(leftFooterH, rightFooterH) + footerPad * 2;
 
     doc.rect(contentOriginX(), y, contentWidth(), footerHeight).fill(navy);
-    doc.fillColor(white).font("Helvetica").fontSize(9.5);
-    doc.text(leftFooter, contentOriginX() + 10, y + footerPad, {
-      width: footerColW - 20,
-      align: "center",
-    });
-    doc.text(rightFooter, contentOriginX() + footerColW + 10, y + footerPad, {
-      width: footerColW - 20,
-      align: "center",
-    });
+
+    const leftX = contentOriginX() + footerInnerPad;
+    const rightX = contentOriginX() + footerColW + footerInnerPad;
+    const textY = y + footerPad;
+    const textW = footerColW - footerInnerPad * 2;
+
+    doc.fillColor(white).font("Helvetica-Bold").fontSize(9);
+    doc.text(leftTitle, leftX, textY, { width: textW, align: "left" });
+    doc.fillColor(green).font("Helvetica-Oblique").fontSize(8.5);
+    doc.text(leftTagline, leftX, textY + leftTitleH + 3, { width: textW, align: "left" });
+
+    doc.fillColor(white).font("Helvetica").fontSize(8.5);
+    doc.text(rightLine1, rightX, textY, { width: textW, align: "right" });
+    doc.text(rightLine2, rightX, textY + rightLine1H + 3, { width: textW, align: "right" });
 
     doc.end();
   });

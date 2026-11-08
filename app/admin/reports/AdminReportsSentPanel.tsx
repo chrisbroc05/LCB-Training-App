@@ -10,7 +10,8 @@ import {
   type AdminSentReportLevelFilter,
 } from "@/lib/admin-sent-reports-shared";
 import { formatDateTime } from "@/lib/format-date";
-import { REPORT_RECOMMENDED_FIX_IT_OPTIONS } from "@/lib/player-evaluation-cta-shared";
+import { buildMemberPdfHref } from "@/lib/member-pdf-href-shared";
+import { REPORT_RECOMMENDED_PRODUCT_OPTIONS } from "@/lib/player-evaluation-cta-shared";
 import type { WrittenReportSections } from "@/lib/written-report-parse-shared";
 
 type SentSummary = {
@@ -146,22 +147,6 @@ export default function AdminReportsSentPanel() {
     setEditLibraryDrillIds([]);
     setEditFixItSlug("");
     setActionError("");
-  };
-
-  const openPdf = async (submissionId: string) => {
-    setActionBusy(`pdf-${submissionId}`);
-    setActionError("");
-    const res = await adminFetchJson<{ downloadUrl?: string; error?: string }>(
-      `/api/player-evaluations/download?submissionId=${encodeURIComponent(submissionId)}`,
-      { cache: "no-store" },
-      { context: "admin-report-open-pdf", okUserMessage: "Unable to open PDF." },
-    );
-    setActionBusy(null);
-    if (!res.ok || !res.data.downloadUrl) {
-      setActionError(res.ok ? "Unable to open PDF." : res.userMessage);
-      return;
-    }
-    window.open(res.data.downloadUrl, "_blank", "noopener,noreferrer");
   };
 
   const resendEmail = async (submissionId: string) => {
@@ -358,21 +343,19 @@ export default function AdminReportsSentPanel() {
                 </div>
                 {fixItLabel ? (
                   <div className="sm:col-span-2">
-                    <dt className="text-zinc-500">Fix-It recommended</dt>
+                    <dt className="text-zinc-500">Recommended product</dt>
                     <dd className="text-zinc-200">{fixItLabel}</dd>
                   </div>
                 ) : null}
               </dl>
 
               <div className="mt-4 flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  disabled={actionBusy === `pdf-${row.id}`}
-                  onClick={() => void openPdf(row.id)}
-                  className="rounded-full border border-[#2b3650] px-3 py-1.5 text-xs font-semibold text-zinc-200 disabled:opacity-60"
+                <Link
+                  href={buildMemberPdfHref({ kind: "evaluation", submissionId: row.id })}
+                  className="rounded-full border border-[#2b3650] px-3 py-1.5 text-xs font-semibold text-zinc-200"
                 >
                   Open PDF
-                </button>
+                </Link>
                 <Link
                   href={`/profile?type=swing&id=${encodeURIComponent(row.id)}`}
                   className="rounded-full border border-[#2b3650] px-3 py-1.5 text-xs font-semibold text-zinc-200"
@@ -439,14 +422,14 @@ export default function AdminReportsSentPanel() {
                     onChange={setEditLibraryDrillIds}
                   />
                   <label className="block text-sm text-zinc-300">
-                    Recommended Fix-It plan
+                    Recommended product
                     <select
                       value={editFixItSlug}
                       onChange={(event) => setEditFixItSlug(event.target.value)}
                       className="mt-2 w-full rounded-lg border border-[#2b3650] bg-black/40 px-3 py-2 text-sm text-zinc-100"
                     >
-                      {REPORT_RECOMMENDED_FIX_IT_OPTIONS.map((option) => (
-                        <option key={option.label} value={option.value}>
+                      {REPORT_RECOMMENDED_PRODUCT_OPTIONS.map((option) => (
+                        <option key={option.label || "none"} value={option.value}>
                           {option.label}
                         </option>
                       ))}

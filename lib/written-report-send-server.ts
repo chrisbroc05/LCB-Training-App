@@ -29,7 +29,7 @@ import { mergeOrgIntoAccessFields, userOrgAccessSelect } from "@/lib/org-server"
 import { formatEffectiveAccessLabel } from "@/lib/access-shared";
 import { formatCoachingReviewTrackAdminLabel } from "@/lib/coaching-review-track-display-shared";
 import type { DatabaseTier } from "@/lib/membership";
-import type { ReportRecommendedFixItSlug } from "@/lib/player-evaluation-cta-shared";
+import type { ReportRecommendedProductSlug } from "@/lib/player-evaluation-cta-shared";
 
 function toCtaTrack(reviewTrack: CoachingReviewTrack): PlayerEvaluationCtaTrack {
   if (isQuickWrittenReportTrack(reviewTrack)) {
@@ -93,7 +93,7 @@ export async function sendQuickWrittenReportForSubmission(params: {
   submissionId: string;
   sections: WrittenReportSections;
   libraryDrillIds: string[];
-  recommendedFixItSlug?: ReportRecommendedFixItSlug | null;
+  recommendedFixItSlug?: ReportRecommendedProductSlug | null;
 }) {
   const existing = await prisma.swingAnalysisSubmission.findUnique({
     where: { id: params.submissionId },
@@ -260,7 +260,7 @@ export async function regenerateQuickWrittenReportForSubmission(params: {
   submissionId: string;
   sections: WrittenReportSections;
   libraryDrillIds: string[];
-  recommendedFixItSlug?: ReportRecommendedFixItSlug | null;
+  recommendedFixItSlug?: ReportRecommendedProductSlug | null;
   editedByAdminEmail: string;
 }) {
   const loaded = await loadCompletedQuickWrittenReport(params.submissionId);

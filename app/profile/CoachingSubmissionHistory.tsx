@@ -29,6 +29,7 @@ export type ProfileSubmission = {
     recommendedDrillLines: string[];
     noteFromCoach: string | null;
     libraryDrillIds: string[];
+    libraryDrillTitles: string[];
     hasEvaluationPdf: boolean;
   } | null;
 };

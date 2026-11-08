@@ -111,6 +111,9 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
               recommendedDrillLines: item.reportRecommendedDrillLines,
               noteFromCoach: item.reportNoteFromCoach,
               libraryDrillIds: item.reportLibraryDrillIds,
+              libraryDrillTitles: getDrillLibraryVideosByIds(item.reportLibraryDrillIds).map(
+                (video) => video.title,
+              ),
               hasEvaluationPdf: Boolean(item.evaluationPdfR2Key),
             }
           : null,

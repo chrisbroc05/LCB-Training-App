@@ -13,6 +13,7 @@ import {
 import { submissionHasWrittenPlayerReport } from "@/lib/quick-written-report-shared";
 import { formatDateWithYear } from "@/lib/format-date";
 import type { EffectiveAccessLevel } from "@/lib/access-shared";
+import { formatPlayerDisplayName } from "@/lib/player-name-display-shared";
 
 type ProfileSubmissionDetailPanelProps = {
   submission: ProfileSubmission;
@@ -84,6 +85,7 @@ export default function ProfileSubmissionDetailPanel({
                 recommendedDrillLines={submission.writtenReport.recommendedDrillLines}
                 noteFromCoach={submission.writtenReport.noteFromCoach}
                 libraryDrillIds={submission.writtenReport.libraryDrillIds}
+                libraryDrillTitles={submission.writtenReport.libraryDrillTitles}
                 submissionId={submission.id}
                 hasEvaluationPdf={submission.writtenReport.hasEvaluationPdf}
                 drillThumbnailMap={recommendedDrillThumbnailMap}
@@ -128,7 +130,9 @@ export default function ProfileSubmissionDetailPanel({
         </button>
         {showOriginal ? (
           <div className="mt-4 space-y-3 border-t border-[#2b3650] pt-4">
-            <p className="text-sm text-zinc-300">Player: {submission.playerName}</p>
+            <p className="text-sm text-zinc-300">
+              Player: {formatPlayerDisplayName(submission.playerName)}
+            </p>
             {submission.extraLines.map((line) => (
               <p key={line} className="text-sm text-zinc-300">
                 {line}
