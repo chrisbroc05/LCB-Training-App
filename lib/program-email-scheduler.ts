@@ -19,7 +19,11 @@ import {
   shouldSendGoneQuietEmail,
   type ActiveEnrollmentRecord,
 } from "@/lib/program-email-data";
-import { hasProgramEmailBeenSent, sendProgramEmail } from "@/lib/program-email-send";
+import {
+  hasProgramEmailBeenSent,
+  logProgramEmailSent,
+  sendProgramEmail,
+} from "@/lib/program-email-send";
 import {
   buildCoachDailySummaryEmail,
   buildDailyRoutineEmail,
@@ -32,7 +36,11 @@ import {
   buildSetupReminderEmail,
   getPlayerFirstName,
 } from "@/lib/program-email-templates";
-import { isGoneQuiet } from "@/lib/program-gone-quiet";
+import {
+  formatParentGoneQuietRecapNote,
+  getGoneQuietSilence,
+  isGoneQuiet,
+} from "@/lib/program-gone-quiet";
 import { buildParentUnsubscribeUrl } from "@/lib/program-parent-token";
 import { computeProgramStreak } from "@/lib/program-streak-shared";
 import {
@@ -491,7 +499,8 @@ async function maybeSendGoneQuiet(
   }
 
   const firstName = getPlayerFirstName(enrollment.user.name, enrollment.user.email);
-  const email = buildGoneQuietEmail({ firstName });
+  const silence = getGoneQuietSilence(enrollment.taskCompletions, now);
+  const email = buildGoneQuietEmail({ firstName, silence });
 
   previews.push({
     type,
@@ -516,6 +525,20 @@ async function maybeSendGoneQuiet(
   }
 
   return true;
+}
+
+function parentWouldGetWeeklyRecapTonight(
+  enrollment: ActiveEnrollmentRecord,
+  now: Date,
+  isSunday: boolean,
+) {
+  if (!isSunday || !resolveEnrollmentParentEmail(enrollment)) {
+    return false;
+  }
+
+  const schedule = getProgramDay({ startDate: enrollment.startDate }, now);
+  const recapWeekNumber = getRecapWeekNumber(schedule);
+  return Boolean(recapWeekNumber && recapWeekNumber >= 1);
 }
 
 async function maybeSendParentSaturdayVideo(
@@ -588,9 +611,15 @@ async function maybeSendParentGoneQuiet(
   now: Date,
   dryRun: boolean,
   previews: ScheduledEmailPreview[],
+  isSunday: boolean,
 ) {
   const parentTo = resolveEnrollmentParentEmail(enrollment);
   if (!parentTo) {
+    return false;
+  }
+
+  // Sunday evening also sends weekly recap -- fold gone-quiet into that email instead.
+  if (parentWouldGetWeeklyRecapTonight(enrollment, now, isSunday)) {
     return false;
   }
 
@@ -618,8 +647,10 @@ async function maybeSendParentGoneQuiet(
 
   const tasks = await getEnrollmentTasksForProgramDay(enrollment, schedule.programDay);
   const playerFirstName = getPlayerFirstName(enrollment.user.name, enrollment.user.email);
+  const silence = getGoneQuietSilence(enrollment.taskCompletions, now);
   const email = buildParentGoneQuietEmail({
     playerFirstName,
+    silence,
     tasks: tasks.map((task) => ({ title: task.title, target: task.target })),
     unsubscribeUrl: buildParentUnsubscribeUrl(enrollment.id),
   });
@@ -684,7 +715,25 @@ async function maybeSendParentWeeklyRecap(
     return false;
   }
 
-  const email = buildParentWeeklyRecapEmail(recapData);
+  const completionDays = new Set(enrollment.taskCompletions.map((item) => item.programDay));
+  const includeGoneQuiet =
+    Boolean(enrollment.startDate) &&
+    isGoneQuiet(enrollment.startDate!, schedule.programDay, completionDays) &&
+    (await shouldSendGoneQuietEmail({
+      enrollmentId: enrollment.id,
+      type: "PARENT_GONE_QUIET",
+    }));
+  const silence = includeGoneQuiet
+    ? getGoneQuietSilence(enrollment.taskCompletions, now)
+    : null;
+  const goneQuietNote = silence
+    ? formatParentGoneQuietRecapNote(recapData.playerFirstName, silence)
+    : null;
+
+  const email = buildParentWeeklyRecapEmail({
+    ...recapData,
+    goneQuietNote,
+  });
 
   previews.push({
     type,
@@ -706,6 +755,25 @@ async function maybeSendParentWeeklyRecap(
       type,
       dateKey,
     });
+
+    // Mark gone-quiet handled so standalone PARENT_GONE_QUIET does not also fire
+    // until the player logs work again (same cadence as a standalone send).
+    if (
+      includeGoneQuiet &&
+      !(await hasProgramEmailBeenSent({
+        enrollmentId: enrollment.id,
+        recipient: "parent",
+        type: "PARENT_GONE_QUIET",
+        dateKey,
+      }))
+    ) {
+      await logProgramEmailSent({
+        enrollmentId: enrollment.id,
+        recipient: "parent",
+        type: "PARENT_GONE_QUIET",
+        dateKey,
+      });
+    }
   }
 
   return true;
@@ -882,7 +950,7 @@ export async function runProgramEmailScheduler(params?: {
         maybeSendGoneQuiet(enrollment, dateKey, now, dryRun, previews),
       );
       await trySend(`parent-gone-quiet:${enrollment.id}`, () =>
-        maybeSendParentGoneQuiet(enrollment, dateKey, now, dryRun, previews),
+        maybeSendParentGoneQuiet(enrollment, dateKey, now, dryRun, previews, isSunday),
       );
     }
   }
@@ -1041,7 +1109,8 @@ export async function sendTestProgramEmail(params: {
       return email.subject;
     }
     case "GONE_QUIET": {
-      const email = buildGoneQuietEmail({ firstName });
+      const silence = getGoneQuietSilence(enrollment.taskCompletions, now);
+      const email = buildGoneQuietEmail({ firstName, silence });
       await sendProgramEmail({
         to: params.toEmail,
         subject: `[TEST] ${email.subject}`,
@@ -1076,8 +1145,10 @@ export async function sendTestProgramEmail(params: {
         enrollment,
         schedule.programDay > 0 ? schedule.programDay : 1,
       );
+      const silence = getGoneQuietSilence(enrollment.taskCompletions, now);
       const email = buildParentGoneQuietEmail({
         playerFirstName: firstName,
+        silence,
         tasks: tasks.map((task) => ({ title: task.title, target: task.target })),
         unsubscribeUrl: buildParentUnsubscribeUrl(enrollment.id),
       });

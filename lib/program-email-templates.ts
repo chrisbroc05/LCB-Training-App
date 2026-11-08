@@ -19,6 +19,11 @@ import {
   escapeHtml,
   getPublicAppUrl,
 } from "@/lib/email-layout";
+import {
+  formatParentGoneQuietSubject,
+  formatPlayerGoneQuietHeadline,
+  type GoneQuietSilence,
+} from "@/lib/program-gone-quiet";
 import { getWeekdayNameForProgramDay } from "@/lib/program-schedule";
 import { formatTaskLineForEmail, getTaskCategoryLabel } from "@/lib/program-email-task-label";
 
@@ -212,11 +217,16 @@ export function buildSetupReminderEmail(params: { firstName: string }) {
   };
 }
 
-export function buildGoneQuietEmail(params: { firstName: string }) {
+export function buildGoneQuietEmail(params: {
+  firstName: string;
+  silence: GoneQuietSilence;
+}) {
   const subject = `Haven't heard from you, ${params.firstName}`;
-  const headline = "Two days off. It happens.";
+  const headline = formatPlayerGoneQuietHeadline(params.silence);
   const body =
-    "What matters is what you do next. Open today's routine and get one thing done. Just one. Then leave me a note so I know you're back.";
+    params.silence.kind === "never_logged"
+      ? "Open today's routine and get one thing done. Just one. Then leave me a note so I know you're in."
+      : "What matters is what you do next. Open today's routine and get one thing done. Just one. Then leave me a note so I know you're back.";
   const todayUrl = getPublicAppUrl();
 
   const bodyContentHtml = `<h1 style="margin:0 0 16px 0; font-family:Arial, Helvetica, sans-serif; font-size:24px; line-height:1.3; color:#0A1628;">${escapeHtml(headline)}</h1>
@@ -254,10 +264,11 @@ export function buildParentSaturdayVideoEmail(params: {
 
 export function buildParentGoneQuietEmail(params: {
   playerFirstName: string;
+  silence: GoneQuietSilence;
   tasks: Array<{ title: string; target: string }>;
   unsubscribeUrl: string;
 }) {
-  const subject = `${params.playerFirstName} hasn't logged work in 2 days`;
+  const subject = formatParentGoneQuietSubject(params.playerFirstName, params.silence);
   const intro = `A little nudge goes a long way. Here's what's on ${params.playerFirstName}'s list today:`;
   const taskLines = params.tasks
     .map(
@@ -271,7 +282,7 @@ export function buildParentGoneQuietEmail(params: {
       ${buildParentUnsubscribeFooterHtml(params.unsubscribeUrl)}`;
 
   const taskText = params.tasks.map((task) => `- ${task.title} - ${task.target}`).join("\n");
-  const text = `${intro}\n${taskText}${buildParentUnsubscribeFooterText(params.unsubscribeUrl)}\n\n${buildEmailFooterText()}`;
+  const text = `${subject}\n\n${intro}\n${taskText}${buildParentUnsubscribeFooterText(params.unsubscribeUrl)}\n\n${buildEmailFooterText()}`;
 
   return {
     subject,
@@ -298,9 +309,16 @@ export function buildParentWeeklyRecapEmail(params: {
   coachTaskFeedbackThisWeek: number;
   parentMessagesUrl: string;
   unsubscribeUrl: string;
+  /** When Sunday would also send PARENT_GONE_QUIET, fold that note into the recap instead. */
+  goneQuietNote?: string | null;
 }) {
   const subject = `${params.playerFirstName}'s week ${params.weekNumber} recap`;
   const programUrl = `${getPublicAppUrl()}/program`;
+  const goneQuietNote = params.goneQuietNote?.trim() || null;
+  const goneQuietHtml = goneQuietNote
+    ? `${buildEmailSectionLabel("CHECK-IN")}
+      <p style="margin:0 0 16px 0; font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:1.5; color:#0A1628;">${escapeHtml(goneQuietNote)}</p>`
+    : "";
 
   const gamesHtml =
     params.gamesAndPractices.length > 0
@@ -329,6 +347,7 @@ export function buildParentWeeklyRecapEmail(params: {
       : `<p style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:1.5; color:#6B7280;">No notes this week.</p>`;
 
   const bodyContentHtml = `<h1 style="margin:0 0 16px 0; font-family:Arial, Helvetica, sans-serif; font-size:24px; line-height:1.3; color:#0A1628;">Week ${params.weekNumber} recap</h1>
+      ${goneQuietHtml}
       ${buildEmailSectionLabel("PROGRESS")}
       <p style="margin:0 0 8px 0; font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:1.5; color:#0A1628;">Tasks completed: ${params.tasksCompleted} of ${params.tasksTotal}</p>
       <p style="margin:0 0 8px 0; font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:1.5; color:#0A1628;">Current streak: ${params.streak} day${params.streak === 1 ? "" : "s"}</p>
@@ -372,7 +391,7 @@ export function buildParentWeeklyRecapEmail(params: {
       : "No notes this week.";
 
   const text = `Week ${params.weekNumber} recap for ${params.playerFirstName}
-
+${goneQuietNote ? `\nCHECK-IN\n${goneQuietNote}\n` : ""}
 PROGRESS
 Tasks completed: ${params.tasksCompleted} of ${params.tasksTotal}
 Current streak: ${params.streak} days

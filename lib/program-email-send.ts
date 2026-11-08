@@ -29,6 +29,30 @@ export async function hasProgramEmailBeenSent(params: {
   return Boolean(existing);
 }
 
+export async function logProgramEmailSent(params: {
+  enrollmentId?: string | null;
+  recipient: ProgramEmailRecipient;
+  type: ProgramEmailType;
+  dateKey: string;
+}) {
+  const dedupeKey = buildEmailDedupeKey({
+    enrollmentId: params.enrollmentId ?? null,
+    recipient: params.recipient,
+    type: params.type,
+    dateKey: params.dateKey,
+  });
+
+  await prisma.emailLog.create({
+    data: {
+      enrollmentId: params.enrollmentId ?? null,
+      recipient: params.recipient,
+      type: params.type,
+      dateKey: params.dateKey,
+      dedupeKey,
+    },
+  });
+}
+
 export async function sendProgramEmail(params: {
   to: string;
   subject: string;
@@ -55,21 +79,11 @@ export async function sendProgramEmail(params: {
   });
 
   if (!params.skipLog) {
-    const dedupeKey = buildEmailDedupeKey({
+    await logProgramEmailSent({
       enrollmentId: params.enrollmentId ?? null,
       recipient: params.recipient,
       type: params.type,
       dateKey: params.dateKey,
-    });
-
-    await prisma.emailLog.create({
-      data: {
-        enrollmentId: params.enrollmentId ?? null,
-        recipient: params.recipient,
-        type: params.type,
-        dateKey: params.dateKey,
-        dedupeKey,
-      },
     });
   }
 }
