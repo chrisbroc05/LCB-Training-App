@@ -12,6 +12,12 @@ const withPWA = require("next-pwa")({
   },
   runtimeCaching: [
     {
+      // Keep uptime probes out of the service worker cache.
+      urlPattern: /\/api\/health(?:\?.*)?$/,
+      handler: "NetworkOnly",
+      options: {},
+    },
+    {
       urlPattern: /^https:\/\/api\./,
       handler: "NetworkOnly",
       options: {},
