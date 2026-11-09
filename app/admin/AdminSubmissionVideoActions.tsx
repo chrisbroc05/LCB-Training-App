@@ -2,7 +2,7 @@
 import { adminFetchJson } from "@/lib/admin-fetch-shared";
 
 import { useEffect, useState } from "react";
-import { isR2VideoReference, parseR2VideoReference } from "@/lib/r2";
+import { isR2VideoReference, parseR2VideoReference } from "@/lib/r2-shared";
 
 type AdminSubmissionVideoActionsProps = {
   storedVideo: string;

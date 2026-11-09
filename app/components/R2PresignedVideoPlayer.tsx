@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { isR2VideoReference, parseR2VideoReference } from "@/lib/r2";
+import { isR2VideoReference, parseR2VideoReference } from "@/lib/r2-shared";
 import {
   appendVideoPreviewTimeFragment,
   R2_VIDEO_MAX_HEIGHT_PX,
@@ -62,9 +62,9 @@ export default function R2PresignedVideoPlayer({
 
     if (!response.ok) {
       if (response.status === 404) {
-        throw new Error("File missing");
+        throw new Error("Video unavailable, try again");
       }
-      throw new Error("Unable to load video.");
+      throw new Error("Video unavailable, try again");
     }
 
     const payload = (await response.json()) as PresignedPlaybackResponse;
@@ -109,7 +109,7 @@ export default function R2PresignedVideoPlayer({
   useEffect(() => {
     if (!r2Key) {
       setLoading(false);
-      setError("Unable to load video.");
+      setError("Video unavailable, try again");
       return;
     }
 
@@ -128,7 +128,7 @@ export default function R2PresignedVideoPlayer({
       })
       .catch(() => {
         if (!cancelled) {
-          setError("Unable to load video.");
+          setError("Video unavailable, try again");
           setLoading(false);
         }
       });
@@ -140,7 +140,7 @@ export default function R2PresignedVideoPlayer({
 
   const handleVideoError = () => {
     if (retriedRef.current) {
-      setError("Unable to play video.");
+      setError("Video unavailable, try again");
       return;
     }
 
@@ -156,7 +156,7 @@ export default function R2PresignedVideoPlayer({
         }
       })
       .catch(() => {
-        setError("Unable to play video.");
+        setError("Video unavailable, try again");
       });
   };
 
@@ -176,7 +176,7 @@ export default function R2PresignedVideoPlayer({
     const reference = rawReference?.trim() || storedVideo.trim() || null;
     return (
       <div className="px-4 py-3 text-sm text-red-300">
-        <p>{error ?? "Unable to load video."}</p>
+        <p>{error ?? "Video unavailable, try again"}</p>
         {reference ? (
           <p className="mt-2 break-all font-mono text-xs text-zinc-500">{reference}</p>
         ) : null}

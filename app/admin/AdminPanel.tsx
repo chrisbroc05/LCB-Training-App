@@ -16,7 +16,11 @@ import {
 import { toVimeoEmbedUrl } from "@/lib/vimeo";
 import AdminSubmissionVideoActions from "@/app/admin/AdminSubmissionVideoActions";
 import R2PresignedVideoPlayer from "@/app/components/R2PresignedVideoPlayer";
-import { getStreamableR2VideoUrl, isR2VideoReference, parseR2VideoReference } from "@/lib/r2";
+import {
+  getStreamableR2VideoUrl,
+  isR2VideoReference,
+  parseR2VideoReference,
+} from "@/lib/r2-shared";
 import {
   ADMIN_RESPONSE_VIDEO_MAX_SIZE_LABEL,
   ADMIN_RESPONSE_VIDEO_TOO_LARGE_MESSAGE,

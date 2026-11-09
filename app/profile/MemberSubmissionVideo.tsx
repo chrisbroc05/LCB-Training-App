@@ -5,7 +5,7 @@ import {
   getStreamableR2VideoUrl,
   isR2VideoReference,
   parseR2VideoReference,
-} from "@/lib/r2";
+} from "@/lib/r2-shared";
 
 function canInlineSubmissionVideo(url: string) {
   return (

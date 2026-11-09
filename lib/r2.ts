@@ -1,3 +1,5 @@
+import "server-only";
+
 import { randomUUID } from "crypto";
 import { Readable } from "stream";
 import {
@@ -5,98 +7,51 @@ import {
   HeadObjectCommand,
   ListObjectsV2Command,
   PutObjectCommand,
-  S3Client,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import {
+  getR2Client,
+  getR2Config,
+  getR2PlaybackClient,
+} from "@/lib/r2-s3-client-server";
+import {
+  ADMIN_VIDEO_DOWNLOAD_EXPIRY_SECONDS,
+  VIDEO_PLAYBACK_PRESIGNED_EXPIRY_SECONDS,
+  buildVideoPosterR2Key,
+  inferVideoContentTypeFromKey,
+  isValidR2ObjectKey,
+  sanitizeR2FileName,
+} from "@/lib/r2-shared";
 import { SUBMISSION_VIDEO_PRESIGNED_UPLOAD_EXPIRY_SECONDS } from "@/lib/submission-video-limits";
 
-export const R2_VIDEO_PREFIX = "r2:";
+export {
+  ADMIN_VIDEO_DOWNLOAD_EXPIRY_SECONDS,
+  R2_VIDEO_PREFIX,
+  VIDEO_PLAYBACK_PRESIGNED_EXPIRY_SECONDS,
+  buildVideoPosterR2Key,
+  formatR2VideoReference,
+  getAdminR2VideoUrl,
+  getStreamableR2VideoUrl,
+  inferVideoContentTypeFromKey,
+  isR2VideoReference,
+  isValidR2ObjectKey,
+  isVideoPosterR2Key,
+  parseR2VideoReference,
+} from "@/lib/r2-shared";
 
-export const ADMIN_VIDEO_DOWNLOAD_EXPIRY_SECONDS = 10 * 60;
+/** Reuse cached playback URLs until this long before expiry. */
+const PLAYBACK_URL_CACHE_REFRESH_BEFORE_EXPIRY_MS = 5 * 60 * 1000;
 
-export const VIDEO_PLAYBACK_PRESIGNED_EXPIRY_SECONDS = 60 * 60;
+type CachedPlaybackUrl = {
+  playbackUrl: string;
+  contentType: string;
+  expiresAtMs: number;
+};
 
-function getR2Config() {
-  const endpoint = process.env.CLOUDFLARE_R2_ENDPOINT;
-  const accessKeyId = process.env.CLOUDFLARE_R2_ACCESS_KEY_ID;
-  const secretAccessKey = process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY;
-  const bucketName = process.env.CLOUDFLARE_R2_BUCKET_NAME;
-
-  if (!endpoint || !accessKeyId || !secretAccessKey || !bucketName) {
-    throw new Error(
-      "CLOUDFLARE_R2_ENDPOINT, CLOUDFLARE_R2_ACCESS_KEY_ID, CLOUDFLARE_R2_SECRET_ACCESS_KEY, and CLOUDFLARE_R2_BUCKET_NAME are required.",
-    );
-  }
-
-  return { endpoint, accessKeyId, secretAccessKey, bucketName };
-}
-
-function getR2Client() {
-  const { endpoint, accessKeyId, secretAccessKey } = getR2Config();
-
-  return new S3Client({
-    region: "auto",
-    endpoint,
-    credentials: {
-      accessKeyId,
-      secretAccessKey,
-    },
-  });
-}
+const playbackUrlCache = new Map<string, CachedPlaybackUrl>();
 
 function sanitizeFileName(fileName: string) {
-  const baseName = fileName.split(/[/\\]/).pop() ?? "submission-video.mp4";
-  const sanitized = baseName.replace(/[^A-Za-z0-9._-]+/g, "-").replace(/^-+|-+$/g, "");
-  return sanitized || "submission-video.mp4";
-}
-
-export function formatR2VideoReference(key: string) {
-  return `${R2_VIDEO_PREFIX}${key}`;
-}
-
-export function parseR2VideoReference(value: string) {
-  if (!value.startsWith(R2_VIDEO_PREFIX)) {
-    return null;
-  }
-
-  const key = value.slice(R2_VIDEO_PREFIX.length).trim();
-  return key.length > 0 ? key : null;
-}
-
-export function getAdminR2VideoUrl(reference: string) {
-  const key = parseR2VideoReference(reference);
-  if (!key) {
-    return null;
-  }
-
-  return getStreamableR2VideoUrl(key);
-}
-
-export function getStreamableR2VideoUrl(key: string) {
-  return `/api/video/${key.split("/").map(encodeURIComponent).join("/")}`;
-}
-
-export function isValidR2ObjectKey(key: string) {
-  return (
-    (key.startsWith("submissions/") ||
-      key.startsWith("responses/") ||
-      key.startsWith("coach-videos/") ||
-      key.startsWith("evaluations/")) &&
-    !key.includes("..")
-  );
-}
-
-export function buildVideoPosterR2Key(videoKey: string): string {
-  const trimmed = videoKey.trim();
-  const dotIndex = trimmed.lastIndexOf(".");
-  if (dotIndex > trimmed.lastIndexOf("/")) {
-    return `${trimmed.slice(0, dotIndex)}.poster.jpg`;
-  }
-  return `${trimmed}.poster.jpg`;
-}
-
-export function isVideoPosterR2Key(key: string, videoKey: string) {
-  return key === buildVideoPosterR2Key(videoKey) && isValidR2ObjectKey(key);
+  return sanitizeR2FileName(fileName);
 }
 
 export async function createPresignedVideoPosterUploadUrl(params: {
@@ -348,21 +303,6 @@ export function getR2ObjectFileName(key: string) {
   return sanitizeFileName(key.split("/").pop() ?? "submission-video.mp4");
 }
 
-export function inferVideoContentTypeFromKey(key: string): string {
-  const extension = key.split(".").pop()?.toLowerCase() ?? "";
-  const contentTypeByExtension: Record<string, string> = {
-    mp4: "video/mp4",
-    mov: "video/quicktime",
-    m4v: "video/mp4",
-    webm: "video/webm",
-    avi: "video/x-msvideo",
-    mkv: "video/x-matroska",
-    ogv: "video/ogg",
-  };
-
-  return contentTypeByExtension[extension] ?? "video/mp4";
-}
-
 function resolveVideoContentType(storedContentType: string | undefined, key: string) {
   const normalized = storedContentType?.trim().toLowerCase() ?? "";
   if (normalized.startsWith("video/") && normalized !== "application/octet-stream") {
@@ -373,9 +313,19 @@ function resolveVideoContentType(storedContentType: string | undefined, key: str
 }
 
 export async function createPresignedR2VideoPlaybackUrl(key: string) {
+  const now = Date.now();
+  const cached = playbackUrlCache.get(key);
+  if (cached && cached.expiresAtMs - PLAYBACK_URL_CACHE_REFRESH_BEFORE_EXPIRY_MS > now) {
+    return {
+      playbackUrl: cached.playbackUrl,
+      contentType: cached.contentType,
+      expiresInSeconds: Math.max(1, Math.floor((cached.expiresAtMs - now) / 1000)),
+    };
+  }
+
   const { bucketName } = getR2Config();
-  const head = await headR2Object(key);
-  const contentType = resolveVideoContentType(head.ContentType, key);
+  // Presigning is local; do not HeadObject first (that was stalling pages on R2 timeouts).
+  const contentType = inferVideoContentTypeFromKey(key);
 
   const command = new GetObjectCommand({
     Bucket: bucketName,
@@ -383,8 +333,14 @@ export async function createPresignedR2VideoPlaybackUrl(key: string) {
     ResponseContentType: contentType,
   });
 
-  const playbackUrl = await getSignedUrl(getR2Client(), command, {
+  const playbackUrl = await getSignedUrl(getR2PlaybackClient(), command, {
     expiresIn: VIDEO_PLAYBACK_PRESIGNED_EXPIRY_SECONDS,
+  });
+
+  playbackUrlCache.set(key, {
+    playbackUrl,
+    contentType,
+    expiresAtMs: now + VIDEO_PLAYBACK_PRESIGNED_EXPIRY_SECONDS * 1000,
   });
 
   return {
@@ -417,10 +373,6 @@ export async function createPresignedR2VideoDownloadUrl(key: string) {
     contentType,
     expiresInSeconds: ADMIN_VIDEO_DOWNLOAD_EXPIRY_SECONDS,
   };
-}
-
-export function isR2VideoReference(value: string) {
-  return parseR2VideoReference(value) !== null;
 }
 
 export async function uploadSubmissionVideoToR2(file: File) {
