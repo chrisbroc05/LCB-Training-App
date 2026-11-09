@@ -562,6 +562,12 @@ export default function TestingWorkspacePanel() {
         </div>
         <div className="flex flex-wrap gap-2">
           <Link
+            href="/admin/testing/import"
+            className="rounded-full border border-[#2b3650] px-4 py-2 text-sm font-semibold text-zinc-300"
+          >
+            Import results from CSV
+          </Link>
+          <Link
             href="/admin/testing/metrics"
             className="rounded-full border border-[#2b3650] px-4 py-2 text-sm font-semibold text-zinc-300"
           >
