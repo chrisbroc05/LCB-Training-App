@@ -7,3 +7,6 @@ services:
     envVars:
       - key: NODE_VERSION
         value: 20.x
+      # Leave headroom under Render's 2 GB so GC can reclaim before OOM.
+      - key: NODE_OPTIONS
+        value: --max-old-space-size=1536

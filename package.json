@@ -10,7 +10,7 @@
     "db:migrate:dev": "prisma migrate deploy",
     "check:ascii": "tsx scripts/check-ascii.ts",
     "build": "npm run check:ascii && prisma generate && NODE_OPTIONS=--max-old-space-size=8192 next build --webpack",
-    "start": "next start",
+    "start": "NODE_OPTIONS=--max-old-space-size=1536 next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "prisma:generate": "prisma generate",

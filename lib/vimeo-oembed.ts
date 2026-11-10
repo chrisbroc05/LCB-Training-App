@@ -1,12 +1,9 @@
 import { extractVimeoVideoId } from "@/lib/drill-library-videos";
-
-type ThumbnailCacheEntry = {
-  thumbnailUrl: string | null;
-  expiresAt: number;
-};
+import { TtlLruCache } from "@/lib/ttl-lru-cache";
 
 const THUMBNAIL_CACHE_TTL_MS = 1000 * 60 * 60 * 24;
-const thumbnailCache = new Map<string, ThumbnailCacheEntry>();
+const THUMBNAIL_CACHE_MAX_ENTRIES = 500;
+const thumbnailCache = new TtlLruCache<string | null>(THUMBNAIL_CACHE_MAX_ENTRIES);
 
 type VimeoOEmbedResponse = {
   thumbnail_url?: string;
@@ -19,8 +16,8 @@ export async function fetchVimeoThumbnailUrl(videoUrl: string): Promise<string |
   }
 
   const cached = thumbnailCache.get(videoId);
-  if (cached && cached.expiresAt > Date.now()) {
-    return cached.thumbnailUrl;
+  if (cached !== undefined) {
+    return cached;
   }
 
   const oEmbedUrl = `https://vimeo.com/api/oembed.json?url=${encodeURIComponent(
@@ -33,27 +30,18 @@ export async function fetchVimeoThumbnailUrl(videoUrl: string): Promise<string |
     });
 
     if (!response.ok) {
-      thumbnailCache.set(videoId, {
-        thumbnailUrl: null,
-        expiresAt: Date.now() + THUMBNAIL_CACHE_TTL_MS,
-      });
+      thumbnailCache.set(videoId, null, Date.now() + THUMBNAIL_CACHE_TTL_MS);
       return null;
     }
 
     const payload = (await response.json()) as VimeoOEmbedResponse;
     const thumbnailUrl = payload.thumbnail_url ?? null;
 
-    thumbnailCache.set(videoId, {
-      thumbnailUrl,
-      expiresAt: Date.now() + THUMBNAIL_CACHE_TTL_MS,
-    });
+    thumbnailCache.set(videoId, thumbnailUrl, Date.now() + THUMBNAIL_CACHE_TTL_MS);
 
     return thumbnailUrl;
   } catch {
-    thumbnailCache.set(videoId, {
-      thumbnailUrl: null,
-      expiresAt: Date.now() + 60 * 1000,
-    });
+    thumbnailCache.set(videoId, null, Date.now() + 60 * 1000);
     return null;
   }
 }

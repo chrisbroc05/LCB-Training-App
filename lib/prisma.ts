@@ -7,24 +7,29 @@ const globalForPrisma = globalThis as unknown as {
   prismaPool?: Pool;
 };
 
+/** Keep the pool small on Render Starter (512 MB) so idle connections do not dominate RAM. */
+const PRISMA_POOL_MAX = 5;
+
+function createPrismaPool(connectionString: string) {
+  const useSsl =
+    !connectionString.includes("localhost") && !connectionString.includes("127.0.0.1");
+
+  return new Pool({
+    connectionString,
+    max: PRISMA_POOL_MAX,
+    idleTimeoutMillis: 30_000,
+    ...(useSsl ? { ssl: { rejectUnauthorized: false } } : {}),
+  });
+}
+
 function createPrismaClient() {
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) {
     throw new Error("DATABASE_URL is required to initialize Prisma.");
   }
 
-  const useSsl =
-    !connectionString.includes("localhost") &&
-    !connectionString.includes("127.0.0.1");
-  const pool =
-    globalForPrisma.prismaPool ??
-    new Pool({
-      connectionString,
-      ...(useSsl ? { ssl: { rejectUnauthorized: false } } : {}),
-    });
-  if (!globalForPrisma.prismaPool && process.env.NODE_ENV !== "production") {
-    globalForPrisma.prismaPool = pool;
-  }
+  const pool = globalForPrisma.prismaPool ?? createPrismaPool(connectionString);
+  globalForPrisma.prismaPool = pool;
 
   return new PrismaClient({
     adapter: new PrismaPg(pool),
@@ -32,8 +37,6 @@ function createPrismaClient() {
   });
 }
 
-export const prisma =
-  globalForPrisma.prisma ??
-  createPrismaClient();
+export const prisma = globalForPrisma.prisma ?? createPrismaClient();
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+globalForPrisma.prisma = prisma;

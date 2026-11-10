@@ -23,6 +23,7 @@ import {
   sanitizeR2FileName,
 } from "@/lib/r2-shared";
 import { SUBMISSION_VIDEO_PRESIGNED_UPLOAD_EXPIRY_SECONDS } from "@/lib/submission-video-limits";
+import { TtlLruCache } from "@/lib/ttl-lru-cache";
 
 export {
   ADMIN_VIDEO_DOWNLOAD_EXPIRY_SECONDS,
@@ -41,14 +42,13 @@ export {
 
 /** Reuse cached playback URLs until this long before expiry. */
 const PLAYBACK_URL_CACHE_REFRESH_BEFORE_EXPIRY_MS = 5 * 60 * 1000;
+const PLAYBACK_URL_CACHE_MAX_ENTRIES = 500;
 
-type CachedPlaybackUrl = {
+const playbackUrlCache = new TtlLruCache<{
   playbackUrl: string;
   contentType: string;
   expiresAtMs: number;
-};
-
-const playbackUrlCache = new Map<string, CachedPlaybackUrl>();
+}>(PLAYBACK_URL_CACHE_MAX_ENTRIES);
 
 function sanitizeFileName(fileName: string) {
   return sanitizeR2FileName(fileName);
@@ -337,11 +337,16 @@ export async function createPresignedR2VideoPlaybackUrl(key: string) {
     expiresIn: VIDEO_PLAYBACK_PRESIGNED_EXPIRY_SECONDS,
   });
 
-  playbackUrlCache.set(key, {
-    playbackUrl,
-    contentType,
-    expiresAtMs: now + VIDEO_PLAYBACK_PRESIGNED_EXPIRY_SECONDS * 1000,
-  });
+  const expiresAtMs = now + VIDEO_PLAYBACK_PRESIGNED_EXPIRY_SECONDS * 1000;
+  playbackUrlCache.set(
+    key,
+    {
+      playbackUrl,
+      contentType,
+      expiresAtMs,
+    },
+    expiresAtMs,
+  );
 
   return {
     playbackUrl,
