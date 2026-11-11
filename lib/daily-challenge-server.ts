@@ -617,6 +617,13 @@ export async function loadDailyLeaderboardForUser(
     ? `${user.organization?.name ?? "Club"} ${dailyChallengeAgeGroupLabel(ageGroup)}`
     : `LCB ${dailyChallengeAgeGroupLabel(ageGroup)}`;
 
+  const viewerNotice =
+    user.isTestAccount || user.clubReportExcluded
+      ? ({ kind: "account_excluded" } as const)
+      : user.hideFromLeaderboards
+        ? ({ kind: "hidden_setting" } as const)
+        : null;
+
   return {
     scope: orgScoped ? "org" : "overall",
     scopeLabel,
@@ -624,8 +631,9 @@ export async function loadDailyLeaderboardForUser(
     ageGroupLabel: dailyChallengeAgeGroupLabel(ageGroup),
     monthKey: monthPrefix,
     top: withRank.slice(0, 5),
-    self,
+    self: viewerNotice ? null : self,
     totalPlayers: withRank.length,
+    viewerNotice,
   };
 }
 

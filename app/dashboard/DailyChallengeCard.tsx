@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import DailyLeaderboardNotice from "@/app/dashboard/DailyLeaderboardNotice";
 import {
   dailyChallengeAgeGroupLabel,
   formatDailyChallengeDayDoneMessage,
@@ -318,6 +319,7 @@ export default function DailyChallengeCard({ variant = "primary" }: DailyChallen
                   )}
                 </p>
               ) : null}
+              <DailyLeaderboardNotice notice={leaderboard.viewerNotice} />
             </div>
           ) : null}
         </>

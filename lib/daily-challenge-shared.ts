@@ -72,6 +72,11 @@ export type DailyLeaderboardEntry = {
   isSelf: boolean;
 };
 
+export type DailyLeaderboardViewerNotice =
+  | { kind: "hidden_setting" }
+  | { kind: "account_excluded" }
+  | null;
+
 export type DailyLeaderboardPayload = {
   scope: "org" | "overall";
   scopeLabel: string;
@@ -81,6 +86,7 @@ export type DailyLeaderboardPayload = {
   top: DailyLeaderboardEntry[];
   self: DailyLeaderboardEntry | null;
   totalPlayers: number;
+  viewerNotice: DailyLeaderboardViewerNotice;
 };
 
 export function isDailyChallengeAgeGroup(value: string): value is DailyChallengeAgeGroupKey {
@@ -218,9 +224,27 @@ export function formatDailyLeaderboardStats(completedThisMonth: number, streak: 
 
 export function formatDailyChallengeDayDoneMessage(streak: number) {
   if (streak <= 1) {
-    return "That's today done. Come back tomorrow for your next challenge and start a streak!";
+    return "That's today done. Come back tomorrow to make it 2 days in a row!";
   }
-  return `That's today done. Come back tomorrow for your next challenge and keep your ${streak}-day streak going!`;
+  return `That's today done. Come back tomorrow and keep your ${streak}-day streak going!`;
+}
+
+export function dailyLeaderboardViewerNoticeCopy(
+  notice: DailyLeaderboardViewerNotice,
+): { primary: string; secondary: string | null } | null {
+  if (!notice) {
+    return null;
+  }
+  if (notice.kind === "hidden_setting") {
+    return {
+      primary: "You're not shown on the leaderboard",
+      secondary: "Change this in Account settings.",
+    };
+  }
+  return {
+    primary: "This account isn't shown on leaderboards.",
+    secondary: null,
+  };
 }
 
 export function isDailyChallengeQuestionAnswered(completion: {

@@ -134,6 +134,7 @@ function AuthContent() {
         (isPlaybookFlow && modeQuery !== "login");
   const [authMode, setAuthMode] = useState<AuthMode>(shouldStartOnSignup ? "signup" : "login");
   const checkoutStatus = searchParams.get("checkout");
+  const passwordUpdated = searchParams.get("passwordUpdated") === "1";
   const billingQueryParam = searchParams.get("billing");
   const prefillEmailParam = searchParams.get("email")?.trim() ?? "";
   const prefillFirstNameParam = searchParams.get("firstName")?.trim() ?? "";
@@ -497,6 +498,12 @@ function AuthContent() {
   return (
     <div className="mx-auto flex w-full max-w-[760px] justify-center px-4 py-6 sm:px-6 sm:py-8">
       <section className="w-full rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-5 sm:p-7 md:p-9">
+        {passwordUpdated ? (
+          <section className="mb-6 rounded-xl border border-[#52B788]/40 bg-[#22c55e]/10 px-5 py-4 text-sm text-[#9df3bd]">
+            Your password was updated.
+          </section>
+        ) : null}
+
         {checkoutStatus === "cancelled" && isPlaybookFlow ? (
           <section className="mb-6 rounded-xl border border-yellow-500/40 bg-yellow-500/10 px-5 py-4 text-sm text-yellow-100">
             Checkout was cancelled. Your account is ready, and you can choose a plan again any time.

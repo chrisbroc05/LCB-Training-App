@@ -83,8 +83,18 @@ export const authOptions: NextAuthOptions = {
             membershipLevel: true,
             membershipLevelExpiresAt: true,
             pendingCheckoutTier: true,
+            passwordChangedAt: true,
           },
         });
+
+        if (
+          dbUser?.passwordChangedAt &&
+          typeof token.iat === "number" &&
+          dbUser.passwordChangedAt.getTime() / 1000 > token.iat
+        ) {
+          return { ...token, sub: undefined, error: "PasswordChanged" };
+        }
+
         token.membershipTier = dbUser?.membershipTier;
         token.membershipLevel = dbUser?.membershipLevel ?? null;
         token.membershipLevelExpiresAt = dbUser?.membershipLevelExpiresAt?.toISOString() ?? null;
@@ -101,6 +111,9 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
     async session({ session, token }) {
+      if (token.error === "PasswordChanged") {
+        return { ...session, user: undefined };
+      }
       if (session.user && token.sub) {
         session.user.id = token.sub;
         session.user.membershipTier =

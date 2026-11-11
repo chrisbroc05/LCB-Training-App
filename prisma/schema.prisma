@@ -258,6 +258,7 @@ model User {
   notifyWeeklyCheckin      Boolean              @default(true)
   notifyAnnouncements      Boolean              @default(true)
   hideFromLeaderboards     Boolean              @default(false)
+  passwordChangedAt        DateTime?
   termsVersion           String?
   termsAcceptedAt        DateTime?
   acceptedByName         String?
@@ -330,6 +331,7 @@ model User {
   orgCommissionLedger    OrgCommissionLedgerEntry[]
   membershipEmailLogs    MembershipEmailLog[]
   dailyChallengeCompletions DailyChallengeCompletion[]
+  passwordResetTokens       PasswordResetToken[]
 
   @@index([organizationId])
   @@index([commissionAttributionOrgId])
@@ -925,6 +927,27 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, createdAt])
+  @@index([expiresAt])
+}
+
+model PasswordResetAttempt {
+  id        String   @id @default(cuid())
+  key       String
+  createdAt DateTime @default(now())
+
+  @@index([key, createdAt])
 }
 
 model MentalGameSubmission {

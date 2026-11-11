@@ -36,6 +36,7 @@ import {
   isPrismaUniqueViolation,
   withPrismaRetryOnce,
 } from "@/lib/prisma-retry-shared";
+import { validatePassword } from "@/lib/password-shared";
 import { runSignupBackgroundTask } from "@/lib/signup-post-create-server";
 import {
   applyMatchingWaiverAcceptanceToUser,
@@ -78,11 +79,9 @@ export async function POST(request: Request) {
       );
     }
 
-    if (password.length < 8) {
-      return NextResponse.json(
-        { error: "Password must be at least 8 characters long." },
-        { status: 400 },
-      );
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      return NextResponse.json({ error: passwordError }, { status: 400 });
     }
 
     if (body.accountRole !== "PLAYER" && body.accountRole !== "PARENT") {

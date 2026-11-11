@@ -221,6 +221,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     typeof resolvedSearchParams.product === "string" ? resolvedSearchParams.product : null;
   const upgradeStatus =
     typeof resolvedSearchParams.upgrade === "string" ? resolvedSearchParams.upgrade : null;
+  const passwordUpdated = resolvedSearchParams.passwordUpdated === "1";
 
   const userRecord = await prisma.user.findUnique({
     where: { id: session.user.id },
@@ -420,6 +421,13 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
   return (
     <>
+      {passwordUpdated ? (
+        <div className="px-4 pt-2 md:mx-auto md:max-w-6xl md:px-6 md:pt-6">
+          <section className="rounded-xl border border-[#52B788]/40 bg-[#22c55e]/10 px-5 py-4 text-sm text-[#9df3bd]">
+            Your password was updated.
+          </section>
+        </div>
+      ) : null}
       <MobileDashboardView
         userId={session.user.id}
         membershipTier={membershipTier}

@@ -83,12 +83,12 @@ export default function GeneralAuthFlow({
         </form>
 
         <div className="mt-5 flex flex-col gap-2 text-center text-sm">
-          <a
-            href="mailto:chrisbroc05@gmail.com?subject=LCB%20Training%20Password%20Help"
+          <Link
+            href="/auth/forgot-password"
             className="text-zinc-300 underline-offset-2 transition hover:text-[#98b144] hover:underline"
           >
             Forgot password?
-          </a>
+          </Link>
           <p className="text-zinc-300">
             Don&apos;t have an account?{" "}
             <Link href={signupHref} className="underline-offset-2 transition hover:text-[#98b144] hover:underline">

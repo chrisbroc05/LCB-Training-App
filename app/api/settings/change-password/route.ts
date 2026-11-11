@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { validatePasswordConfirmation } from "@/lib/password-shared";
 
 type ChangePasswordBody = {
   currentPassword?: string;
@@ -31,15 +32,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Please complete all password fields." }, { status: 400 });
   }
 
-  if (newPassword.length < 8) {
-    return NextResponse.json(
-      { error: "New password must be at least 8 characters long." },
-      { status: 400 },
-    );
-  }
-
-  if (newPassword !== confirmPassword) {
-    return NextResponse.json({ error: "New password and confirmation do not match." }, { status: 400 });
+  const validationError = validatePasswordConfirmation(newPassword, confirmPassword);
+  if (validationError) {
+    return NextResponse.json({ error: validationError }, { status: 400 });
   }
 
   const user = await prisma.user.findUnique({
@@ -57,11 +52,17 @@ export async function POST(request: Request) {
   }
 
   const hashedPassword = await hash(newPassword, 12);
+  const now = new Date();
 
-  await prisma.user.update({
-    where: { id: session.user.id },
-    data: { password: hashedPassword },
-  });
+  await prisma.$transaction([
+    prisma.user.update({
+      where: { id: session.user.id },
+      data: { password: hashedPassword, passwordChangedAt: now },
+    }),
+    prisma.session.deleteMany({
+      where: { userId: session.user.id },
+    }),
+  ]);
 
   return NextResponse.json({ success: true, message: "Password updated successfully." });
 }

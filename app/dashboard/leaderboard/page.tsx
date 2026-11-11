@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import DailyLeaderboardNotice from "@/app/dashboard/DailyLeaderboardNotice";
 import {
   formatDailyLeaderboardStats,
   type DailyLeaderboardEntry,
@@ -65,6 +66,7 @@ export default function DailyLeaderboardPage() {
           </li>
         ))}
       </ul>
+      {summary ? <DailyLeaderboardNotice notice={summary.viewerNotice} className="mt-4 text-sm text-zinc-400" /> : null}
     </div>
   );
 }
