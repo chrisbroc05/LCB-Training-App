@@ -7,6 +7,10 @@ import {
   buildOrgJoinAuthSignupHref,
   buildOrgJoinWelcomePath,
 } from "@/lib/org-join-auth-shared";
+import {
+  ORG_TEAM_NOT_LISTED_LABEL,
+  ORG_TEAM_NOT_LISTED_VALUE,
+} from "@/lib/org-team-pick-shared";
 
 type JoinTeamOption = {
   id: string;
@@ -31,6 +35,7 @@ export default function JoinOrganizationForm({
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [canJoinAsSignedIn, setCanJoinAsSignedIn] = useState(isLoggedIn);
+  const requiresTeam = teams.length > 0;
 
   useEffect(() => {
     setCanJoinAsSignedIn(isLoggedIn);
@@ -60,14 +65,20 @@ export default function JoinOrganizationForm({
 
   async function handleJoin() {
     setError(null);
+    if (requiresTeam && !orgTeamId) {
+      setError("Pick your team, or choose My team isn't listed.");
+      return;
+    }
     setLoading(true);
     try {
+      const notListed = orgTeamId === ORG_TEAM_NOT_LISTED_VALUE;
       const response = await fetch("/api/org/join", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           code,
-          orgTeamId: orgTeamId || null,
+          orgTeamId: notListed ? null : orgTeamId || null,
+          notListed,
         }),
       });
       const data = (await response.json()) as { error?: string };
@@ -107,10 +118,11 @@ export default function JoinOrganizationForm({
 
   return (
     <div className="mt-6 space-y-4">
-      {teams.length > 0 ? (
+      {requiresTeam ? (
         <label className="block text-sm text-zinc-200">
           Pick your team
           <select
+            required
             value={orgTeamId}
             onChange={(event) => setOrgTeamId(event.target.value)}
             className="mt-1 w-full rounded-xl border border-[#2b3650] bg-[#0A1628]/80 px-4 py-3 text-sm text-zinc-100"
@@ -121,6 +133,7 @@ export default function JoinOrganizationForm({
                 {team.name}
               </option>
             ))}
+            <option value={ORG_TEAM_NOT_LISTED_VALUE}>{ORG_TEAM_NOT_LISTED_LABEL}</option>
           </select>
         </label>
       ) : null}

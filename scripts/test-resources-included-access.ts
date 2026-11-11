@@ -81,8 +81,15 @@ function testCoreGuidesExcludeMentalAndRecruiting() {
   assert.equal(canDownloadGuideFilename(access, "LCB_Recruiting_Guide.pdf"), false);
 }
 
+function testFreeSamplesAvailableToOrgTrial() {
+  const access = orgTrialUser();
+  assert.equal(canDownloadGuideFilename(access, "LCB_Rotational_Sample.pdf"), true);
+  assert.equal(canDownloadGuideFilename(access, "LCB_Mobility_Sample.pdf"), true);
+}
+
 assertIncludedAccessForUser("ORG_TRIAL", orgTrialUser());
 assertIncludedAccessForUser("CORE", coreUser());
 testCoreGuidesExcludeMentalAndRecruiting();
+testFreeSamplesAvailableToOrgTrial();
 
 console.log("test-resources-included-access: ok");

@@ -10,10 +10,10 @@ type OrgTrialTodayHomeProps = {
 export default function OrgTrialTodayHome({ userId }: OrgTrialTodayHomeProps) {
   return (
     <div className="space-y-4">
+      <OrgPickTeamBanner userId={userId} />
       <DailyChallengeCard />
       <OrgWeeklyFocusCard userId={userId} />
       <OrgTrialDashboardCard userId={userId} />
-      <OrgPickTeamBanner userId={userId} />
     </div>
   );
 }

@@ -551,6 +551,10 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         <InPersonEmergencyReminderCard layout="desktop" />
       ) : null}
 
+      <div className="mt-6">
+        <OrgPickTeamBanner userId={session.user.id} />
+      </div>
+
       {!isPersonalProgramMember ? (
         <div className="mt-6">
           <DailyChallengeCard />
@@ -575,9 +579,6 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           <div className="mt-8 space-y-4 sm:space-y-5">
             <OrgWeeklyFocusCard userId={session.user.id} />
             <OrgTrialDashboardCard userId={session.user.id} />
-            {effectiveLevel === "ORG_TRIAL" ? (
-              <OrgPickTeamBanner userId={session.user.id} />
-            ) : null}
             <DashboardMembershipCard
               planLabel={membershipCardLabel}
               isPaidMember={isPaidMember}

@@ -408,7 +408,11 @@ export async function listOrganizationMembers(orgId: string) {
       playerFirstName: true,
       playerLastName: true,
       name: true,
+      signupDate: true,
+      orgJoinedAt: true,
       orgTeamId: true,
+      orgTeamNotListedAt: true,
+      orgTeamPickNudgeSentAt: true,
       orgTeam: { select: { name: true } },
     },
   });
@@ -420,8 +424,12 @@ export async function listOrganizationMembers(orgId: string) {
       [member.playerFirstName, member.playerLastName].filter(Boolean).join(" ").trim() ||
       member.name?.trim() ||
       member.email,
+    signupDate: member.signupDate,
+    orgJoinedAt: member.orgJoinedAt,
     orgTeamId: member.orgTeamId,
     orgTeamName: member.orgTeam?.name ?? null,
+    orgTeamNotListedAt: member.orgTeamNotListedAt,
+    orgTeamPickNudgeSentAt: member.orgTeamPickNudgeSentAt,
   }));
 }
 

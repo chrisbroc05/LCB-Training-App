@@ -45,7 +45,9 @@ async function resolveLeadContext(params: {
   playerAge13Plus?: boolean | null;
   parentEmail?: string | null;
   resourceSlug: string;
+  source?: string | null;
 }) {
+  const source = params.source?.trim() || undefined;
   const session = await getServerSession(authOptions);
   if (session?.user?.id && session.user.email) {
     const user = await prisma.user.findUnique({
@@ -72,6 +74,7 @@ async function resolveLeadContext(params: {
       firstName,
       role,
       resourceSlug: params.resourceSlug,
+      source,
     });
     return { lead, firstName, email, userId: session.user.id };
   }
@@ -85,6 +88,12 @@ async function resolveLeadContext(params: {
       await prisma.leadResource.create({
         data: { leadId: lead.id, resourceSlug: params.resourceSlug },
       });
+      if (source && (source === "quiz" || source.startsWith("ig-"))) {
+        await prisma.lead.update({
+          where: { id: lead.id },
+          data: { source },
+        });
+      }
       return {
         lead,
         firstName: lead.firstName,
@@ -118,6 +127,7 @@ async function resolveLeadContext(params: {
     role: normalized.value.role,
     resourceSlug: params.resourceSlug,
     emailProvidedByParent: normalized.value.emailProvidedByParent,
+    source,
   });
   return {
     lead,
@@ -245,6 +255,7 @@ export async function performResourceLeadAction(
     leadId?: string;
     playerAge13Plus?: boolean | null;
     parentEmail?: string | null;
+    source?: string | null;
   },
 ): Promise<ResourceLeadActionResult> {
   const resourceSlug = body.resourceSlug?.trim() ?? "";
@@ -261,6 +272,7 @@ export async function performResourceLeadAction(
     playerAge13Plus: body.playerAge13Plus,
     parentEmail: body.parentEmail,
     resourceSlug,
+    source: body.source,
   });
 
   if (resource.type === "FREE_DOWNLOAD") {

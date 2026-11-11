@@ -114,6 +114,7 @@ export async function joinOrganizationForUser(params: {
   userId: string;
   codeRaw: string;
   orgTeamId?: string | null;
+  notListed?: boolean;
 }) {
   const match = await findOrganizationByJoinCode(params.codeRaw);
   if (!match) {
@@ -121,7 +122,19 @@ export async function joinOrganizationForUser(params: {
   }
 
   const org = match.organization;
-  let teamId: string | null = params.orgTeamId ?? null;
+  const activeTeamCount = await prisma.orgTeam.count({
+    where: { organizationId: org.id, active: true },
+  });
+  const notListed = params.notListed === true;
+  let teamId: string | null = notListed ? null : (params.orgTeamId ?? null);
+
+  if (activeTeamCount > 0 && !notListed && !teamId) {
+    return {
+      ok: false as const,
+      error: "Pick your team, or choose My team isn't listed.",
+    };
+  }
+
   if (teamId) {
     const team = await prisma.orgTeam.findFirst({
       where: { id: teamId, organizationId: org.id, active: true },
@@ -176,7 +189,8 @@ export async function joinOrganizationForUser(params: {
       organizationId: org.id,
       orgTeamId: teamId,
       orgJoinedAt: effectiveJoinedAt,
-      orgTeamChangedAt: teamId ? joinedAt : null,
+      orgTeamChangedAt: teamId || notListed ? joinedAt : null,
+      orgTeamNotListedAt: notListed ? joinedAt : null,
       commissionAttributionOrgId: attributionOrgId,
       commissionAttributionJoinedAt: attributionJoinedAt,
       ...(commissionEligible !== undefined ? { commissionEligible } : {}),

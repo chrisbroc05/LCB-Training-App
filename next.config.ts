@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { PUBLIC_PDF_FREE_LANDING_REDIRECTS } from "./lib/public-pdf-redirects-shared";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const withPWA = require("next-pwa")({
@@ -61,6 +62,7 @@ const nextConfig: NextConfig = {
         destination: "/resources",
         permanent: true,
       },
+      ...PUBLIC_PDF_FREE_LANDING_REDIRECTS,
     ];
   },
 };

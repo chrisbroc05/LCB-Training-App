@@ -25,7 +25,7 @@ function testNewBasicEntitlements() {
   for (const filename of PLAYBOOK_INCLUDED_GUIDE_FILENAMES) {
     assert.equal(canAccessWorkoutResourceFile(user, filename), true);
   }
-  assert.equal(canAccessWorkoutResourceFile(user, "LCB_Rotational_Sample.pdf"), false);
+  assert.equal(canAccessWorkoutResourceFile(user, "LCB_Rotational_Sample.pdf"), true);
   assert.equal(canAccessWorkoutResourceFile(user, "LCB_Recruiting_Guide.pdf"), false);
 
   const starter = new Set(["drill-a"]);

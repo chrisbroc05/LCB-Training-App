@@ -12,6 +12,7 @@ import {
 } from "@/lib/admin-organizations-shared";
 import { ADMIN_ROUTES } from "@/lib/admin-routes-shared";
 import { formatBulkOrgTeamResultSummary } from "@/lib/bulk-org-teams-shared";
+import OrgNoTeamMembersPanel from "@/app/admin/organizations/OrgNoTeamMembersPanel";
 import OrgRosterMovePanel from "@/app/admin/organizations/OrgRosterMovePanel";
 import OrgWeeklyFocusAdminPanel from "@/app/admin/organizations/OrgWeeklyFocusAdminPanel";
 import {
@@ -563,6 +564,8 @@ export default function AdminOrganizationsPanel() {
               ) : null}
             </div>
           </div>
+
+          <OrgNoTeamMembersPanel organizationId={org.id} />
 
           <OrgRosterMovePanel organizationId={org.id} teams={org.teams} onMoved={() => void load()} />
 

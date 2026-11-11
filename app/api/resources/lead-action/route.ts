@@ -12,6 +12,7 @@ type Body = {
   leadId?: string;
   playerAge13Plus?: boolean | null;
   parentEmail?: string | null;
+  source?: string | null;
 };
 
 function appendLeadCookie(response: NextResponse, leadId: string) {

@@ -3,6 +3,10 @@
 import { useCallback, useEffect, useState } from "react";
 import SettingsCard from "@/app/settings/SettingsCard";
 import { settingsBodyTextClass, settingsMutedTextClass } from "@/app/settings/settings-styles";
+import {
+  ORG_TEAM_NOT_LISTED_LABEL,
+  ORG_TEAM_NOT_LISTED_VALUE,
+} from "@/lib/org-team-pick-shared";
 
 type OrgTeamPayload = {
   id: string;
@@ -10,6 +14,7 @@ type OrgTeamPayload = {
   orgTeamId: string | null;
   orgTeamName: string | null;
   orgTeamActive: boolean | null;
+  orgTeamNotListed?: boolean;
   teams: Array<{ id: string; name: string }>;
 };
 
@@ -23,7 +28,11 @@ export default function OrgTeamSection() {
     const response = await fetch("/api/settings/org-team");
     const data = (await response.json()) as { organization: OrgTeamPayload | null };
     setOrganization(data.organization);
-    setTeamId(data.organization?.orgTeamId ?? "");
+    if (data.organization?.orgTeamNotListed) {
+      setTeamId(ORG_TEAM_NOT_LISTED_VALUE);
+    } else {
+      setTeamId(data.organization?.orgTeamId ?? "");
+    }
   }, []);
 
   useEffect(() => {
@@ -33,10 +42,15 @@ export default function OrgTeamSection() {
   async function saveTeam(nextTeamId: string) {
     setSaveState("saving");
     setError(null);
+    const notListed = nextTeamId === ORG_TEAM_NOT_LISTED_VALUE;
     const response = await fetch("/api/settings/org-team", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orgTeamId: nextTeamId || null }),
+      body: JSON.stringify(
+        notListed
+          ? { notListed: true }
+          : { orgTeamId: nextTeamId || null, notListed: false },
+      ),
     });
     const data = (await response.json()) as { error?: string };
     if (!response.ok) {
@@ -60,6 +74,7 @@ export default function OrgTeamSection() {
       <p className={settingsBodyTextClass}>
         {organization.name}
         {organization.orgTeamName ? ` - current team: ${organization.orgTeamName}` : ""}
+        {organization.orgTeamNotListed ? " - team not listed" : ""}
       </p>
       {inactiveTeam ? (
         <p className="mt-2 text-sm text-amber-200">
@@ -78,12 +93,13 @@ export default function OrgTeamSection() {
             }}
             className="mt-2 w-full rounded-xl border border-[#2b3650] bg-[#0A1628]/80 px-4 py-3 text-sm text-zinc-100"
           >
-            <option value="">No team selected</option>
+            <option value="">Choose a team</option>
             {organization.teams.map((team) => (
               <option key={team.id} value={team.id}>
                 {team.name}
               </option>
             ))}
+            <option value={ORG_TEAM_NOT_LISTED_VALUE}>{ORG_TEAM_NOT_LISTED_LABEL}</option>
           </select>
         </label>
       ) : (

@@ -15,7 +15,6 @@ import OrgPickTeamBanner from "@/app/dashboard/OrgPickTeamBanner";
 import OrgTrialDashboardCard from "@/app/dashboard/OrgTrialDashboardCard";
 import OrgWeeklyFocusCard from "@/app/dashboard/OrgWeeklyFocusCard";
 import DailyChallengeCard from "@/app/dashboard/DailyChallengeCard";
-import { resolveEffectiveLevel } from "@/lib/access-shared";
 import { shouldShowTwelveWeekDashboardUpsell } from "@/lib/dashboard-upgrade-copy-shared";
 
 type UnreadResponseNotification = {
@@ -75,7 +74,6 @@ export default function MobileDashboardView({
   keepBuildingCoaching,
 }: MobileDashboardViewProps) {
   const isEnrolled = isPersonalProgramMember;
-  const isOrgTrial = resolveEffectiveLevel(access) === "ORG_TRIAL";
   const showTwelveWeekCard =
     !isEnrolled && shouldShowTwelveWeekDashboardUpsell(access);
 
@@ -130,11 +128,12 @@ export default function MobileDashboardView({
 
       {showInPersonEmergencyReminder ? <InPersonEmergencyReminderCard /> : null}
 
+      <OrgPickTeamBanner userId={userId} />
+
       {!isEnrolled ? <DailyChallengeCard /> : null}
 
       <OrgWeeklyFocusCard userId={userId} />
       <OrgTrialDashboardCard userId={userId} />
-      {isOrgTrial ? <OrgPickTeamBanner userId={userId} /> : null}
 
       {hasProgramEnrollmentRow ? (
         <>

@@ -103,6 +103,7 @@ function testResourcesHubOrder() {
     "starter-mobility",
     "recruiting-guide",
     "rotational-sample",
+    "mobility-sample",
     "mental-game-workbook",
     "lessons-program-bundle",
     "remote-session",

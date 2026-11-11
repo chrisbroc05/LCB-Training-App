@@ -266,14 +266,21 @@ const CORE_GUIDE_FILENAMES = new Set([
   "LCB_Back_and_Arm_4Week_Starter.pdf",
 ]);
 
-const PLUS_EXTRA_GUIDE_FILENAMES = new Set([
-  ...PLAYBOOK_INCLUDED_GUIDE_FILENAMES,
+/** Free sample guides available to every account level (and via the public lead form). */
+const ALWAYS_FREE_GUIDE_FILENAMES = new Set([
   "LCB_Rotational_Sample.pdf",
+  "LCB_Mobility_Sample.pdf",
 ]);
+
+const PLUS_EXTRA_GUIDE_FILENAMES = new Set<string>([...PLAYBOOK_INCLUDED_GUIDE_FILENAMES]);
 
 const RECRUITING_GUIDE = "LCB_Recruiting_Guide.pdf";
 
 export function canDownloadGuideFilename(user: AccessUserFields, filename: string, now = new Date()): boolean {
+  if (ALWAYS_FREE_GUIDE_FILENAMES.has(filename)) {
+    return true;
+  }
+
   const effective = resolveEffectiveLevel(user, now);
 
   if (filename === RECRUITING_GUIDE) {
@@ -296,9 +303,6 @@ export function canDownloadGuideFilename(user: AccessUserFields, filename: strin
   }
 
   if (effective === "PLAYBOOK") {
-    if (filename === "LCB_Rotational_Sample.pdf") {
-      return user.playbookLegacyAccess;
-    }
     return PLAYBOOK_INCLUDED_GUIDE_FILENAMES.includes(
       filename as (typeof PLAYBOOK_INCLUDED_GUIDE_FILENAMES)[number],
     );

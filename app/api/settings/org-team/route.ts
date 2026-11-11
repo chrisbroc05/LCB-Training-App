@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { ORG_TEAM_NOT_LISTED_VALUE } from "@/lib/org-team-pick-shared";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
@@ -14,6 +15,7 @@ export async function GET() {
     select: {
       organizationId: true,
       orgTeamId: true,
+      orgTeamNotListedAt: true,
       organization: {
         select: {
           name: true,
@@ -39,6 +41,7 @@ export async function GET() {
       orgTeamId: user.orgTeamId,
       orgTeamName: user.orgTeam?.name ?? null,
       orgTeamActive: user.orgTeam?.active ?? null,
+      orgTeamNotListed: Boolean(user.orgTeamNotListedAt),
       teams: user.organization.teams,
     },
   });
@@ -50,7 +53,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = (await request.json()) as { orgTeamId?: string | null };
+  const body = (await request.json()) as {
+    orgTeamId?: string | null;
+    notListed?: boolean;
+  };
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
     select: { organizationId: true },
@@ -60,8 +66,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "You are not linked to an organization." }, { status: 400 });
   }
 
-  const orgTeamId = body.orgTeamId?.trim() || null;
-  if (orgTeamId) {
+  const rawTeamId = body.orgTeamId?.trim() || null;
+  const notListed =
+    body.notListed === true || rawTeamId === ORG_TEAM_NOT_LISTED_VALUE;
+  const orgTeamId = notListed ? null : rawTeamId;
+
+  if (!notListed && orgTeamId) {
     const team = await prisma.orgTeam.findFirst({
       where: { id: orgTeamId, organizationId: user.organizationId, active: true },
     });
@@ -70,14 +80,26 @@ export async function POST(request: Request) {
     }
   }
 
+  if (!notListed && !orgTeamId) {
+    return NextResponse.json(
+      { error: "Choose a team, or say your team isn't listed." },
+      { status: 400 },
+    );
+  }
+
   const changedAt = new Date();
   await prisma.user.update({
     where: { id: session.user.id },
     data: {
       orgTeamId,
-      orgTeamChangedAt: orgTeamId ? changedAt : null,
+      orgTeamChangedAt: orgTeamId || notListed ? changedAt : null,
+      orgTeamNotListedAt: notListed ? changedAt : null,
     },
   });
 
-  return NextResponse.json({ success: true, orgTeamId });
+  return NextResponse.json({
+    success: true,
+    orgTeamId,
+    notListed,
+  });
 }

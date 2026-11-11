@@ -154,6 +154,7 @@ enum PushNotificationType {
   SETUP_REMINDER
   COACH_TASK_FEEDBACK
   DAILY_CHALLENGE
+  ORG_TEAM_PICK
   TEST
 }
 
@@ -313,6 +314,8 @@ model User {
   orgTeamId              String?
   orgJoinedAt            DateTime?
   orgTeamChangedAt       DateTime?
+  orgTeamNotListedAt     DateTime?
+  orgTeamPickNudgeSentAt DateTime?
   commissionAttributionOrgId     String?
   commissionAttributionJoinedAt  DateTime?
   commissionEligible             Boolean        @default(true)

@@ -56,13 +56,17 @@ export async function upsertLeadForResourceDownload(params: {
     select: { id: true, name: true, accountRole: true, playerFirstName: true, accountHolderName: true },
   });
 
+  const source = params.source?.trim() || undefined;
+  const shouldStampSource =
+    source === "quiz" || Boolean(source && source.startsWith("ig-"));
+
   const lead = await prisma.lead.upsert({
     where: { email },
     create: {
       email,
       firstName: params.firstName.trim(),
       role: toPrismaLeadRole(params.role),
-      source: params.source ?? "resources",
+      source: source ?? "resources",
       firstResourceSlug: params.resourceSlug,
       userId: existingUser?.id ?? null,
       emailProvidedByParent: params.emailProvidedByParent ?? false,
@@ -74,8 +78,8 @@ export async function upsertLeadForResourceDownload(params: {
       role: toPrismaLeadRole(params.role),
       userId: existingUser?.id ?? undefined,
       ...(params.emailProvidedByParent ? { emailProvidedByParent: true } : {}),
-      /** Quiz funnel takes precedence so a later resource download does not downgrade source. */
-      ...(params.source === "quiz" ? { source: "quiz" } : {}),
+      /** Quiz and Instagram free-link sources take precedence over generic "resources". */
+      ...(shouldStampSource && source ? { source } : {}),
       ...(params.source === "quiz" && params.quizChallengeRef
         ? { quizChallengeRef: params.quizChallengeRef }
         : {}),

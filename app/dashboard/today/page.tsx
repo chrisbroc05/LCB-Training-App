@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { resolveEffectiveLevel } from "@/lib/access-shared";
 import { canAccessProgramDashboard } from "@/lib/program-access-shared";
 import { toAccessUserFields, userAccessSelect } from "@/lib/access-server";
+import OrgPickTeamBanner from "@/app/dashboard/OrgPickTeamBanner";
 import OrgTrialTodayHome from "@/app/dashboard/OrgTrialTodayHome";
 import ProgramTodaySetupPrompt from "@/app/dashboard/ProgramTodaySetupPrompt";
 import ProgramTodayView from "@/app/dashboard/ProgramTodayView";
@@ -59,7 +60,8 @@ export default async function ProgramTodayPage() {
   const showInPersonEmergencyReminder = needsInPersonEmergencyContactReminder(user);
 
   return (
-    <div className="mobile-card-stack px-4 pb-28 pt-2 md:mx-auto md:max-w-3xl md:px-6 md:pb-10 md:pt-6">
+    <div className="mobile-card-stack space-y-4 px-4 pb-28 pt-2 md:mx-auto md:max-w-3xl md:px-6 md:pb-10 md:pt-6">
+      <OrgPickTeamBanner userId={session.user.id} />
       {showInPersonEmergencyReminder ? <InPersonEmergencyReminderCard /> : null}
       <ProgramTodayView />
     </div>

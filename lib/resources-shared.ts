@@ -289,6 +289,18 @@ export const RESOURCE_DEFINITIONS: ResourceDefinition[] = [
     sortOrder: 140,
   },
   {
+    slug: "mobility-sample",
+    title: "Mobility Sample",
+    description:
+      "A free sample of my mobility work. Move better through your hips, upper back, and shoulders.",
+    tag: "FREE",
+    section: "START_HERE",
+    buttonLabel: "Get the Free PDF",
+    type: "FREE_DOWNLOAD",
+    downloadFileKeys: ["guides/LCB_Mobility_Sample.pdf"],
+    sortOrder: 145,
+  },
+  {
     slug: "mental-game-workbook",
     title: "Mental Game Workbook",
     description:

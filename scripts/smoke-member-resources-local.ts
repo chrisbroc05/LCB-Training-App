@@ -253,7 +253,7 @@ async function checkJoinTeamPickerGates() {
   });
   if (bannerUser?.organizationId === trialOrg.id && bannerUser.orgTeamId) {
     const homeHtml = await fetchPath(await signIn("player-org-trial@dev.lcbtraining.test"), "/dashboard");
-    if (homeHtml.text.includes("Pick your team")) {
+    if (homeHtml.text.includes("Which team are you on?")) {
       issues.push("Pick your team banner shown when user already has orgTeamId");
     } else {
       console.log("ok   dashboard org-trial with team (no pick-team banner)");
