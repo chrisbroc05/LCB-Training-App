@@ -3,12 +3,12 @@ import {
   type FoundingOfferOrgFields,
 } from "@/lib/founding-offer-shared";
 import { formatChicagoMonthDayLabel } from "@/lib/org-trial-dates-shared";
+import { ORG_TRIAL_JANUARY_UNLOCK_PLUS_LABEL } from "@/lib/org-trial-unlock-copy-shared";
 
 export const ORG_TRIAL_PLAYBOOK_DESCRIPTION =
   "The Next Level Playbook is my four-chapter interactive guide to the mental side of the game and how to train with a purpose. Players work through it at their own pace, with prompts and drills along the way. It's the same approach I use with every player I coach.";
 
-export const ORG_TRIAL_PLAYBOOK_UNLOCK_WITH_PLUS_LINE =
-  "The full Playbook unlocks in January with Plus.";
+export const ORG_TRIAL_PLAYBOOK_UNLOCK_WITH_PLUS_LINE = ORG_TRIAL_JANUARY_UNLOCK_PLUS_LABEL;
 
 const FOUNDING_PLUS_MONTHLY_PRICE_LABEL = "$15 a month";
 

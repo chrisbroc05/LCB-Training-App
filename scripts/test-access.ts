@@ -241,7 +241,7 @@ assert.equal(formatAdminMemberPlanLabel(orgTrialUser), "Central Baseball Trial")
 assert.equal(canAccessDrillLibraryBrowse(orgTrialUser), true);
 assert.equal(
   getDrillLockedSurfaceMessage(orgTrialUser),
-  "Full library unlocks with your club membership.",
+  "Unlocks in January with a Plus membership",
 );
 
 assert.equal(

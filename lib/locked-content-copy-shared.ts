@@ -8,6 +8,10 @@ import {
   getUpgradeLabelForLevel,
   isPublicMembershipLevelsEnabled,
 } from "@/lib/membership-levels-shared";
+import {
+  getOrgTrialLockedContentMessage,
+  type OrgTrialLockedContentSurface,
+} from "@/lib/org-trial-unlock-copy-shared";
 import { PLAYBOOK_NAME } from "@/lib/playbook-branding";
 
 function isCoreBand(effective: EffectiveAccessLevel): boolean {
@@ -31,9 +35,13 @@ export const PLAYBOOK_BUYER_LOCKED_DRILL_MESSAGE = `Unlocks with the 12-Week Pro
 
 export function getLockedContentMessage(
   effective: EffectiveAccessLevel,
-  _surface: "drill" | "workout" | "playbook" | "guide",
+  surface: "drill" | "workout" | "playbook" | "guide" | "recruiting",
   requiredLevel?: MembershipLevelKey,
 ): string {
+  if (effective === "ORG_TRIAL") {
+    return getOrgTrialLockedContentMessage(surface as OrgTrialLockedContentSurface);
+  }
+
   if (effective === "FREE" || effective === "PLAYBOOK") {
     return PLAYBOOK_BUYER_LOCKED_DRILL_MESSAGE;
   }

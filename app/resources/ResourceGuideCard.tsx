@@ -2,6 +2,7 @@ import Link from "next/link";
 import { buildMemberPdfHref, buildMemberPdfViewerHref } from "@/lib/my-resources-shared";
 import {
   canAccessWorkoutResourceFile,
+  getWorkoutResourceLockHref,
   getWorkoutResourceLockMessage,
   getWorkoutResourceUpgradeHref,
   getWorkoutResourceUpgradeLabel,
@@ -19,6 +20,8 @@ export default function ResourceGuideCard({
   entitlements,
 }: ResourceGuideCardProps) {
   const hasAccess = canAccessWorkoutResourceFile(entitlements, resource.filename);
+  const lockMessage = getWorkoutResourceLockMessage(resource, resource.title);
+  const lockHref = getWorkoutResourceLockHref(resource);
 
   return (
     <article className="resources-program-card">
@@ -45,7 +48,16 @@ export default function ResourceGuideCard({
       ) : (
         <div className="mt-4 space-y-3 border-t border-[#2b3650] pt-4">
           <div className="rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-100">
-            {getWorkoutResourceLockMessage(resource, resource.title)}
+            {lockHref ? (
+              <Link
+                href={lockHref}
+                className="font-semibold text-[#52B788] underline underline-offset-2"
+              >
+                {lockMessage}
+              </Link>
+            ) : (
+              lockMessage
+            )}
           </div>
           <Link
             href={getWorkoutResourceUpgradeHref(resource.requiredTier)}

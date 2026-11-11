@@ -4,11 +4,13 @@ import {
   getLockedContentMessage,
   shouldShowPlaybookStarterPromo,
 } from "@/lib/locked-content-copy-shared";
+import type { OrgTrialLockedContentSurface } from "@/lib/org-trial-unlock-copy-shared";
+import OrgTrialJanuaryUnlockLink from "@/app/components/OrgTrialJanuaryUnlockLink";
 import { PLAYBOOK_NAME } from "@/lib/playbook-branding";
 
 type LockedContentUpsellProps = {
   effective: EffectiveAccessLevel;
-  surface?: "drill" | "workout" | "playbook" | "guide";
+  surface?: "drill" | "workout" | "playbook" | "guide" | "recruiting";
   className?: string;
   customMessage?: string | null;
 };
@@ -19,6 +21,16 @@ export default function LockedContentUpsell({
   className = "mt-2 text-center text-sm leading-relaxed text-zinc-400",
   customMessage,
 }: LockedContentUpsellProps) {
+  if (effective === "ORG_TRIAL") {
+    return (
+      <OrgTrialJanuaryUnlockLink
+        surface={surface as OrgTrialLockedContentSurface}
+        className={className}
+        label={customMessage?.trim() || undefined}
+      />
+    );
+  }
+
   if (customMessage?.trim()) {
     return <p className={className}>{customMessage.trim()}</p>;
   }

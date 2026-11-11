@@ -8,6 +8,7 @@ import {
   PUBLIC_MEMBERSHIP_UPGRADE_GENERIC_LABEL,
 } from "@/lib/membership-levels-shared";
 import { shouldShowPlaybookCorePlusUpsell } from "@/lib/playbook-core-upsell-shared";
+import OrgTrialJanuaryUnlockLink from "@/app/components/OrgTrialJanuaryUnlockLink";
 import PlaybookCoreMemberUnlockActions from "@/app/playbook/PlaybookCoreMemberUnlockActions";
 import { ensurePlaybookProgress, serializePlaybookProgress } from "@/lib/playbook";
 import { prisma } from "@/lib/prisma";
@@ -41,7 +42,10 @@ export default async function DashboardPlaybookProgressCard({
         <article className={articleClassName}>
           <h2 className="text-lg font-semibold text-zinc-100 sm:text-xl">The Next Level Playbook</h2>
           <p className="mt-2 text-sm text-zinc-400">
-            {getOrgTrialPlaybookUnlockLine(access.orgTrialLockedCopy)}
+            <OrgTrialJanuaryUnlockLink
+              membership="PLUS"
+              label={getOrgTrialPlaybookUnlockLine(access.orgTrialLockedCopy)}
+            />
           </p>
           <Link
             href="/playbook"

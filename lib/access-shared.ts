@@ -464,12 +464,6 @@ export type LockedContentHint = {
 
 export function getDrillLockedSurfaceMessage(user: AccessUserFields, now = new Date()): string {
   const effective = resolveEffectiveLevel(user, now);
-  if (effective === "ORG_TRIAL") {
-    const custom = user.orgTrialLockedCopy?.trim();
-    if (custom) {
-      return custom;
-    }
-  }
   return getLockedContentMessage(effective, "drill");
 }
 

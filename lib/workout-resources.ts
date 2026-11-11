@@ -5,6 +5,12 @@ import {
 } from "@/lib/access-shared";
 import type { DatabaseTier } from "@/lib/membership";
 import { toPlaybookEntitlementFields, type PlaybookEntitlementFields } from "@/lib/playbook-entitlements-shared";
+import {
+  RECRUITING_GUIDE_LOCK_HREF,
+  RECRUITING_GUIDE_LOCK_LABEL,
+} from "@/lib/recruiting-guide-lock-copy-shared";
+
+export { RECRUITING_GUIDE_LOCK_HREF, RECRUITING_GUIDE_LOCK_LABEL };
 
 export type WorkoutResourceTier = "basic" | "memorable" | "elite";
 
@@ -178,13 +184,20 @@ export function getWorkoutResourceLockMessage(
     return `${title} is included with full Playbook (legacy) or the 12-Week Program.`;
   }
   if (resource.accessKind === "twelve_week_only") {
-    return "Included in the 12-Week Program.";
+    return RECRUITING_GUIDE_LOCK_LABEL;
   }
   if (resource.requiredTier === "basic") {
     return `${title} is included with The Playbook.`;
   }
 
   return "Included in the 12-Week Program.";
+}
+
+export function getWorkoutResourceLockHref(resource: WorkoutResource): string | null {
+  if (resource.accessKind === "twelve_week_only") {
+    return RECRUITING_GUIDE_LOCK_HREF;
+  }
+  return null;
 }
 
 export function listDownloadableWorkoutResourcesForUser(user: PlaybookEntitlementFields) {

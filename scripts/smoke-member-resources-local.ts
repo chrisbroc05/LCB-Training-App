@@ -68,7 +68,7 @@ function orgTrialPlaybookOk(text: string, status: number): string | null {
   }
   return missingExpected(status, text, [
     "four-chapter interactive guide",
-    "Unlocks in January with Plus",
+    "Unlocks in January with a Plus membership",
   ]);
 }
 

@@ -95,6 +95,7 @@ export default function SiteShell({
           hasDrillLibraryAccess={hasDrillLibraryAccess}
           hasPlaybookAccess={hasPlaybookAccess}
           hasProgramEnrollment={hasProgramEnrollment}
+          isOrgTrial={Boolean(orgTrialHeader)}
         />
       ) : null}
       {!onAdminRoute ? adminToggle : null}

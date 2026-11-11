@@ -13,6 +13,7 @@ type MobileBottomNavProps = {
   hasDrillLibraryAccess: boolean;
   hasPlaybookAccess: boolean;
   hasProgramEnrollment: boolean;
+  isOrgTrial?: boolean;
 };
 
 type NavTab = {
@@ -146,9 +147,9 @@ function LockIcon() {
   );
 }
 
-function getLockedUpgradeMessage(tabKey: NavTab["key"]) {
+function getLockedUpgradeMessage(tabKey: NavTab["key"], isOrgTrial: boolean) {
   if (tabKey === "playbook") {
-    return getMobilePlaybookTabLockedMessage();
+    return getMobilePlaybookTabLockedMessage(isOrgTrial);
   }
 
   return getMobileTrainTabLockedMessage();
@@ -162,6 +163,7 @@ export default function MobileBottomNav({
   hasDrillLibraryAccess,
   hasPlaybookAccess,
   hasProgramEnrollment,
+  isOrgTrial = false,
 }: MobileBottomNavProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -229,7 +231,7 @@ export default function MobileBottomNav({
   ) => {
     if (tab.locked) {
       event.preventDefault();
-      mobileApp?.openUpgradeSheet(getLockedUpgradeMessage(tab.key));
+      mobileApp?.openUpgradeSheet(getLockedUpgradeMessage(tab.key, isOrgTrial));
       return;
     }
 

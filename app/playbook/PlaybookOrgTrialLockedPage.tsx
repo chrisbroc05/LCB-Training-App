@@ -1,4 +1,5 @@
 import Link from "next/link";
+import OrgTrialJanuaryUnlockLink from "@/app/components/OrgTrialJanuaryUnlockLink";
 import { PLAYBOOK_NAME } from "@/lib/playbook-branding";
 import type { OrgTrialPlaybookLockedCopy } from "@/lib/org-trial-playbook-locked-shared";
 
@@ -17,7 +18,9 @@ export default function PlaybookOrgTrialLockedPage({ copy }: PlaybookOrgTrialLoc
           {PLAYBOOK_NAME}
         </h1>
         <p className="mt-6 text-base leading-relaxed text-zinc-300">{copy.description}</p>
-        <p className="mt-4 text-base leading-relaxed text-zinc-300">{copy.unlockLine}</p>
+        <p className="mt-4 text-base leading-relaxed text-zinc-300">
+          <OrgTrialJanuaryUnlockLink membership="PLUS" label={copy.unlockLine} />
+        </p>
         {copy.foundingLine ? (
           <p className="mt-3 text-base leading-relaxed text-zinc-300">{copy.foundingLine}</p>
         ) : null}

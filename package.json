@@ -51,6 +51,7 @@
     "test:resources-included-access": "npx --yes tsx scripts/test-resources-included-access.ts",
     "test:member-pdf-href": "npx --yes tsx scripts/test-member-pdf-href.ts",
     "test:org-trial-playbook-locked": "npx --yes tsx scripts/test-org-trial-playbook-locked-shared.ts",
+    "test:org-trial-unlock-copy": "npx --yes tsx scripts/test-org-trial-unlock-copy-shared.ts",
     "test:dev-environment-guard": "npx --yes tsx scripts/test-dev-environment-guard.ts",
     "test:subscriptions": "npx --yes tsx scripts/test-subscriptions.ts",
     "test:commission-ledger-shared": "npx --yes tsx scripts/test-commission-ledger-shared.ts",
