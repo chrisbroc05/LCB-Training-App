@@ -1,6 +1,6 @@
 /**
- * Membership comparison matrix derived from access-shared gates (client-safe).
- * Keep cells in sync with locking by calling the same helpers used in the app.
+ * Membership comparison: step-up cards + detail grid (client-safe).
+ * Grid cells stay tied to access-shared gates.
  */
 
 import {
@@ -44,6 +44,16 @@ export type MembershipFoundingPlusHighlight = {
   deadlineLabel: string;
   line: string;
 };
+
+export type MembershipStepUpCard = {
+  key: MembershipLevelKey;
+  displayName: string;
+  recommended: boolean;
+  includesPriorLabel: string | null;
+  bullets: string[];
+};
+
+export const MEMBERSHIP_COMPARISON_SUBTITLE = "Pick the level that fits your player.";
 
 export const MEMBERSHIP_COMPARISON_PLUS_EXTRA_REVIEW_NOTE = `Extra video reviews available for ${EXTRA_REVIEW_PRICE_DISPLAY}.`;
 
@@ -93,7 +103,6 @@ function hasStarterDrills(user: AccessUserFields): boolean {
 
 /**
  * Plus gets in-depth monthly only (not also Core's written every-6-weeks pool).
- * Confirmed via getReviewAllowance: CORE=quick_six_weeks, PLUS=in_depth_monthly, ALL_ACCESS=unlimited.
  */
 function swingFeedbackCell(level: MembershipLevelKey): MembershipComparisonCell {
   const allowance = getReviewAllowance(reviewUserForLevel(level));
@@ -123,7 +132,50 @@ function cellFromBoolean(included: boolean): MembershipComparisonCell {
   return included ? check() : dash();
 }
 
-/** Rows for Core / Plus / All-Access, driven by access-shared. */
+/** Step-up marketing cards (aligned with access rules). */
+export function listMembershipStepUpCards(): MembershipStepUpCard[] {
+  return [
+    {
+      key: "CORE",
+      displayName: MEMBERSHIP_LEVELS.CORE.displayName,
+      recommended: false,
+      includesPriorLabel: null,
+      bullets: [
+        "Starter drills and starter workouts",
+        "Starter guides",
+        "Written swing report from Coach Broc every 6 weeks",
+        "Daily Challenge + leaderboard",
+      ],
+    },
+    {
+      key: "PLUS",
+      displayName: MEMBERSHIP_LEVELS.PLUS.displayName,
+      recommended: true,
+      includesPriorLabel: "Everything in Core, plus:",
+      bullets: [
+        "Full drill library",
+        "Full workout programs",
+        "All guides + the Playbook",
+        "1 in-depth video review per month (replaces the written report)",
+        "Messaging with Coach Broc",
+        MEMBERSHIP_COMPARISON_PLUS_EXTRA_REVIEW_NOTE,
+      ],
+    },
+    {
+      key: "ALL_ACCESS",
+      displayName: MEMBERSHIP_LEVELS.ALL_ACCESS.displayName,
+      recommended: false,
+      includesPriorLabel: "Everything in Plus, plus:",
+      bullets: [
+        "A personalized daily plan",
+        "Weekly video review (replaces the monthly review)",
+        "College Baseball Recruiting Guide",
+      ],
+    },
+  ];
+}
+
+/** Detail grid rows for Core / Plus / All-Access, driven by access-shared. */
 export function listMembershipComparisonRows(): MembershipComparisonRow[] {
   const byLevel = Object.fromEntries(
     MEMBERSHIP_LEVEL_KEYS.map((level) => [level, accessUserForLevel(level)]),
@@ -262,6 +314,27 @@ export function buildMembershipFoundingPlusHighlight(params: {
   };
 }
 
+/**
+ * Founding note: logged-in org members with an active founding offer only.
+ * Never for logged-out visitors or members without an org founding window.
+ */
+export function resolveMembershipFoundingPlusHighlight(params: {
+  signedIn: boolean;
+  organizationId?: string | null;
+  orgName?: string | null;
+  founding?: FoundingOfferOrgFields | null;
+  now?: Date;
+}): MembershipFoundingPlusHighlight | null {
+  if (!params.signedIn || !params.organizationId) {
+    return null;
+  }
+  return buildMembershipFoundingPlusHighlight({
+    orgName: params.orgName,
+    founding: params.founding,
+    now: params.now,
+  });
+}
+
 export function formatMembershipComparisonCell(cell: MembershipComparisonCell): string {
   if (cell.kind === "check") {
     return "Yes";
@@ -270,4 +343,8 @@ export function formatMembershipComparisonCell(cell: MembershipComparisonCell): 
     return "-";
   }
   return cell.text ?? "-";
+}
+
+export function chooseMembershipLevelButtonLabel(level: MembershipLevelKey): string {
+  return `Choose ${MEMBERSHIP_LEVELS[level].displayName}`;
 }

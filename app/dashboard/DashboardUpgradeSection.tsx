@@ -1,4 +1,4 @@
-import MembershipComparisonTable from "@/app/components/MembershipComparisonTable";
+import MembershipLevelCards from "@/app/components/MembershipLevelCards";
 import { COACH_CALENDLY_URL } from "@/lib/coach-calendly-shared";
 import type { AccessUserFields } from "@/lib/access-shared";
 import { activeMembershipLevel } from "@/lib/access-shared";
@@ -29,21 +29,13 @@ export default function DashboardUpgradeSection({
     <section className="mt-10 rounded-3xl border border-[#18243a] bg-[#0A1628] px-5 py-8 sm:px-8 sm:py-10">
       {levelsLive ? (
         <div className="mx-auto max-w-5xl">
-          <div className="text-center">
-            <h2 className="text-2xl font-semibold leading-tight text-zinc-100 sm:text-3xl">
-              Membership levels
-            </h2>
-            <p className="mt-2 text-sm text-zinc-300 sm:text-base">
-              Compare Core, Plus, and All-Access. Features match what the app unlocks.
-            </p>
-          </div>
-          <div className="mt-8">
-            <MembershipComparisonTable
-              mode="dashboard"
-              currentLevel={currentLevel}
-              foundingPlusHighlight={foundingPlusHighlight}
-            />
-          </div>
+          <MembershipLevelCards
+            mode="dashboard"
+            signedIn
+            title="Membership levels"
+            currentLevel={currentLevel}
+            foundingPlusHighlight={foundingPlusHighlight}
+          />
         </div>
       ) : null}
 

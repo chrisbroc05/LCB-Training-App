@@ -1,56 +1,72 @@
 import Link from "next/link";
 import { getServerSession } from "next-auth";
+import MembershipLevelCards from "@/app/components/MembershipLevelCards";
 import { authOptions } from "@/lib/auth";
-import MembershipLevelCheckoutButton from "@/app/components/MembershipLevelCheckoutButton";
-import MembershipLevelSignupLink from "@/app/components/MembershipLevelSignupLink";
+import { toAccessUserFields, userAccessSelect } from "@/lib/access-server";
+import { activeMembershipLevel } from "@/lib/access-shared";
+import { resolveMembershipFoundingPlusHighlight } from "@/lib/membership-comparison-shared";
 import { listPublicMembershipLevelDefinitions } from "@/lib/membership-levels-shared";
 import { isAllAccessCheckoutAvailable } from "@/lib/membership-subscription-server";
+import { prisma } from "@/lib/prisma";
 import { TWELVE_WEEK_PROGRAM_PRICE_LABEL } from "@/lib/twelve-week-program";
 
 export default async function PublicMembershipLevelsSection() {
   const levels = listPublicMembershipLevelDefinitions();
   const session = await getServerSession(authOptions);
+  const signedIn = Boolean(session?.user?.id);
   const allAccessAvailable =
     levels.length > 0 ? await isAllAccessCheckoutAvailable() : false;
+
+  let currentLevel = null as ReturnType<typeof activeMembershipLevel>;
+  let clubOrgName: string | null = null;
+  let foundingPlusHighlight = null as ReturnType<
+    typeof resolveMembershipFoundingPlusHighlight
+  >;
+
+  if (session?.user?.id && levels.length > 0) {
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: userAccessSelect,
+    });
+    if (user) {
+      const access = toAccessUserFields(user);
+      currentLevel = activeMembershipLevel(access);
+      clubOrgName = access.orgName?.trim() ?? null;
+      foundingPlusHighlight = resolveMembershipFoundingPlusHighlight({
+        signedIn: true,
+        organizationId: access.organizationId,
+        orgName: access.orgName,
+        founding: user.organization
+          ? {
+              foundingOfferEnabled: user.organization.foundingOfferEnabled,
+              foundingOfferDeadline: user.organization.foundingOfferDeadline,
+              foundingOfferMonths: user.organization.foundingOfferMonths,
+            }
+          : null,
+      });
+    }
+  }
 
   return (
     <section id="plans" className="scroll-mt-site-header mt-14">
       <div className="mb-6 text-center">
         <h2 className="text-2xl font-semibold text-zinc-100 sm:text-3xl">Plans and Programs</h2>
-        {levels.length > 0 ? (
-          <p className="mt-2 text-zinc-300">Core, Plus, and All-Access. Billed monthly in the app.</p>
-        ) : (
-          <p className="mt-2 text-zinc-300">
-            Coaching built around how you train. Start with the 12-Week Program.
-          </p>
-        )}
       </div>
 
       {levels.length > 0 ? (
-        <div className="grid gap-5 md:grid-cols-3">
-          {levels.map((level) => (
-            <article
-              key={level.key}
-              className="rounded-2xl border border-[#18243a] bg-[#0b1324]/80 p-6 shadow-lg shadow-black/40"
-            >
-              <h3 className="text-xl font-semibold text-zinc-100">{level.displayName}</h3>
-              <p className="mt-1 text-sm font-medium text-[#52B788]">{level.tagline}</p>
-              <p className="mt-3 text-2xl font-bold text-[#98b144]">{level.priceDisplay}</p>
-              <p className="mt-3 text-sm leading-relaxed text-zinc-300">{level.shortDescription}</p>
-              <div className="mt-5">
-                {session?.user?.id ? (
-                  <MembershipLevelCheckoutButton
-                    level={level.key}
-                    capFullWaitlist={level.key === "ALL_ACCESS" && !allAccessAvailable}
-                  />
-                ) : (
-                  <MembershipLevelSignupLink level={level.key} />
-                )}
-              </div>
-            </article>
-          ))}
-        </div>
-      ) : null}
+        <MembershipLevelCards
+          mode="public"
+          signedIn={signedIn}
+          currentLevel={currentLevel}
+          foundingPlusHighlight={foundingPlusHighlight}
+          allAccessAvailable={allAccessAvailable}
+          clubOrgName={clubOrgName}
+        />
+      ) : (
+        <p className="text-center text-zinc-300">
+          Coaching built around how you train. Start with the 12-Week Program.
+        </p>
+      )}
 
       <article className="mt-6 w-full rounded-2xl border border-[#52B788]/50 bg-[#22c55e]/10 p-6 shadow-lg shadow-black/30 sm:p-8">
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#9df3bd]">

@@ -51,7 +51,7 @@ import {
   FOUNDING_PLUS_MONTHLY_DISCOUNT_DISPLAY,
   isActiveFoundingPlusMonthlyMember,
 } from "@/lib/founding-offer-shared";
-import { buildMembershipFoundingPlusHighlight } from "@/lib/membership-comparison-shared";
+import { resolveMembershipFoundingPlusHighlight } from "@/lib/membership-comparison-shared";
 import { loadExtraReviewUiState } from "@/lib/extra-review-server";
 import { mapExtraReviewUiState } from "@/lib/extra-review-ui-shared";
 import { activeMembershipLevel } from "@/lib/access-shared";
@@ -206,19 +206,18 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const calendlyBookingUrl = getCalendlyBookingUrl();
   const firstName = getFirstName(userRecord.name, session.user.email);
   const quickLinks = getQuickLinks();
-  const foundingPlusHighlight =
-    effectiveLevel === "ORG_TRIAL"
-      ? buildMembershipFoundingPlusHighlight({
-          orgName: access.orgName,
-          founding: userRecord.organization
-            ? {
-                foundingOfferEnabled: userRecord.organization.foundingOfferEnabled,
-                foundingOfferDeadline: userRecord.organization.foundingOfferDeadline,
-                foundingOfferMonths: userRecord.organization.foundingOfferMonths,
-              }
-            : null,
-        })
-      : null;
+  const foundingPlusHighlight = resolveMembershipFoundingPlusHighlight({
+    signedIn: true,
+    organizationId: access.organizationId,
+    orgName: access.orgName,
+    founding: userRecord.organization
+      ? {
+          foundingOfferEnabled: userRecord.organization.foundingOfferEnabled,
+          foundingOfferDeadline: userRecord.organization.foundingOfferDeadline,
+          foundingOfferMonths: userRecord.organization.foundingOfferMonths,
+        }
+      : null,
+  });
   const orgTrialSubmission =
     effectiveLevel === "ORG_TRIAL" && access.orgTrialQuickReportUsed
       ? await prisma.swingAnalysisSubmission.findFirst({
