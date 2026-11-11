@@ -46,6 +46,7 @@
     "test:resources": "npx --yes tsx scripts/test-resources.ts",
     "test:instagram-free-links": "npx --yes tsx scripts/test-instagram-free-links-shared.ts",
     "test:org-team-pick": "npx --yes tsx scripts/test-org-team-pick-shared.ts",
+    "test:membership-comparison": "npx --yes tsx scripts/test-membership-comparison-shared.ts",
     "test:resource-download-gate": "npx --yes tsx scripts/test-resource-download-gate.ts",
     "test:fix-it-plans": "npx --yes tsx scripts/test-fix-it-plans.ts",
     "test:video-poster-capture": "npx --yes tsx scripts/test-video-poster-capture-shared.ts",

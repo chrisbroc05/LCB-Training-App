@@ -103,7 +103,11 @@ export default async function UpgradePage({ searchParams }: UpgradePageProps) {
         )}
       </section>
 
-      <UpgradeMembershipLevelsSection />
+      <UpgradeMembershipLevelsSection
+        selectedLevel={
+          typeof resolvedSearchParams.level === "string" ? resolvedSearchParams.level : null
+        }
+      />
       <UpgradePricingSection />
       <UpgradePlaybookSection />
 

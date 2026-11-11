@@ -27,19 +27,14 @@ import { getCurrentMonthGoalCheckin } from "@/lib/goal-check-in";
 import { getCalendlyBookingUrl } from "@/lib/calendly-booking";
 import {
   canAccessCoachingNav,
-  canAccessWorkoutPrograms,
   isManualMembershipMember,
   isTwelveWeekProgramMember,
   type DatabaseTier,
 } from "@/lib/membership";
 import {
-  canAccessDrillLibraryBrowse,
-  canDownloadWorkoutPdfs,
   canMessageCoach,
   canViewPlaybook,
-  getWorkoutAccessMode,
   resolveEffectiveLevel,
-  type AccessUserFields,
 } from "@/lib/access-shared";
 import { toAccessUserFields, userAccessSelect } from "@/lib/access-server";
 import { formatMemberPlanLabel } from "@/lib/member-plan-labels-shared";
@@ -56,10 +51,10 @@ import {
   FOUNDING_PLUS_MONTHLY_DISCOUNT_DISPLAY,
   isActiveFoundingPlusMonthlyMember,
 } from "@/lib/founding-offer-shared";
+import { buildMembershipFoundingPlusHighlight } from "@/lib/membership-comparison-shared";
 import { loadExtraReviewUiState } from "@/lib/extra-review-server";
 import { mapExtraReviewUiState } from "@/lib/extra-review-ui-shared";
 import { activeMembershipLevel } from "@/lib/access-shared";
-import { getPlaybookLifetimeSubmissionLimit } from "@/lib/playbook-entitlements-shared";
 import { needsInPersonEmergencyContactReminder } from "@/lib/in-person-training-shared";
 import InPersonEmergencyReminderCard from "@/components/InPersonEmergencyReminderCard";
 import DailyChallengeCard from "@/app/dashboard/DailyChallengeCard";
@@ -82,125 +77,39 @@ function getFirstName(name: string | null | undefined, email: string | null | un
   return email?.split("@")[0] || "Member";
 }
 
-function getQuickLinks(access: AccessUserFields, hasFreeSubmissionRemaining: boolean): QuickLink[] {
-  const links: QuickLink[] = [];
-  const { membershipTier } = access;
-
-  if (canAccessDrillLibraryBrowse(access)) {
-    links.push({
+function getQuickLinks(): QuickLink[] {
+  return [
+    {
       href: "/drill-library",
       label: "Drill Library",
       description: "Hitting, fielding, and mindset drill videos.",
-    });
-  }
-
-  if (canViewPlaybook(access)) {
-    links.unshift({
-      href: "/playbook",
-      label: "The Next Level Playbook",
-      description: "Work through all four interactive chapters.",
-    });
-  }
-
-  if (getWorkoutAccessMode(access) === "starter_in_app") {
-    links.push({
+    },
+    {
       href: "/workouts/starters",
       label: "Starter Workouts",
       description: "Four-week workout plans in the app.",
-    });
-  }
-
-  if (canDownloadWorkoutPdfs(access)) {
-    links.push({
-      href: "/resources?tab=mine",
-      label: "My Resources",
-      description: "Download strength, speed, and mobility programs.",
-    });
-  } else if (canAccessWorkoutPrograms(membershipTier, access.playbookLegacyAccess, access.membershipLevel, access.membershipLevelExpiresAt)) {
-    links.push({
-      href: "/resources?tab=mine",
-      label: "My Resources",
-      description: "Download strength, speed, and mobility programs.",
-    });
-  }
-
-  if (
-    canMessageCoach(access) ||
-    membershipTier === "MEMORABLE" ||
-    membershipTier === "ELITE"
-  ) {
-    links.push({
-      href: "/coaching-submissions",
-      label: "Coaching Submissions",
-      description: "Submit swing videos or mindset requests for coach feedback.",
-    });
-    links.push({
-      href: "/goal-setting",
-      label: "Goal Check-In",
-      description: "Submit your monthly goals for personal review from Coach Broc.",
-    });
-  }
-
-  if (membershipTier === "FREE" && hasFreeSubmissionRemaining) {
-    links.push({
-      href: "/coaching-submissions",
-      label: "Coaching Submissions",
-      description: "Use your one free submission for swing video or mindset support.",
-    });
-  }
-
-  const phase2Level = activeMembershipLevel(access);
-  if (phase2Level === "CORE" || phase2Level === "PLUS") {
-    links.push({
-      href: "/coaching-submissions",
-      label: "Coaching Submissions",
-      description:
-        membershipTier === "BASIC"
-          ? "Swing reports and Playbook submissions are separate pools."
-          : "Submit swing videos or mindset requests for coach feedback.",
-    });
-  } else if (membershipTier === "BASIC") {
-    const limit = getPlaybookLifetimeSubmissionLimit(access);
-    links.push({
-      href: "/coaching-submissions",
-      label: "Coaching Submissions",
-      description:
-        limit != null
-          ? `Use your ${limit} lifetime Playbook submission${limit === 1 ? "" : "s"} for swing video or mindset support.`
-          : "Use your Playbook coaching submissions for swing video or mindset support.",
-    });
-  }
-
-  if (canAccessCoachingNav(membershipTier) || membershipTier === "BASIC") {
-    links.push({
+    },
+    {
       href: "/profile",
-      label: "My Submissions",
+      label: "My Swing Reports",
       description: "Track coaching requests and coach responses.",
-    });
-  }
-
-  links.push({
-    href: "/settings",
-    label: "Account",
-    description: "Manage membership, billing, and account details.",
-  });
-
-  if (membershipTier === "FREE" || membershipTier === "BASIC") {
-    links.push({
-      href: "/upgrade",
-      label: "Upgrade Membership",
-      description: "Unlock more training content and coaching support.",
-    });
-  }
-
-  const seen = new Set<string>();
-  return links.filter((link) => {
-    if (seen.has(link.href)) {
-      return false;
-    }
-    seen.add(link.href);
-    return true;
-  });
+    },
+    {
+      href: "/dashboard/leaderboard",
+      label: "Daily Challenge Leaderboard",
+      description: "See this month's Daily Challenge standings.",
+    },
+    {
+      href: "/resources",
+      label: "Resources",
+      description: "Guides, programs, and downloads.",
+    },
+    {
+      href: "/settings",
+      label: "Account",
+      description: "Manage membership, billing, and account details.",
+    },
+  ];
 }
 
 export default async function DashboardPage({ searchParams }: DashboardPageProps) {
@@ -296,7 +205,42 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const playbookWelcomeSummary = buildPlaybookPurchaseWelcomeSummary(access);
   const calendlyBookingUrl = getCalendlyBookingUrl();
   const firstName = getFirstName(userRecord.name, session.user.email);
-  const quickLinks = getQuickLinks(access, effectiveLevel === "FREE" && !freeSubmissionUsed);
+  const quickLinks = getQuickLinks();
+  const foundingPlusHighlight =
+    effectiveLevel === "ORG_TRIAL"
+      ? buildMembershipFoundingPlusHighlight({
+          orgName: access.orgName,
+          founding: userRecord.organization
+            ? {
+                foundingOfferEnabled: userRecord.organization.foundingOfferEnabled,
+                foundingOfferDeadline: userRecord.organization.foundingOfferDeadline,
+                foundingOfferMonths: userRecord.organization.foundingOfferMonths,
+              }
+            : null,
+        })
+      : null;
+  const orgTrialSubmission =
+    effectiveLevel === "ORG_TRIAL" && access.orgTrialQuickReportUsed
+      ? await prisma.swingAnalysisSubmission.findFirst({
+          where: {
+            userId: session.user.id,
+            reviewTrack: "ORG_TRIAL_QUICK",
+          },
+          orderBy: { createdAt: "desc" },
+          select: { id: true, createdAt: true, respondedAt: true, status: true },
+        })
+      : null;
+  const orgTrialReport = orgTrialSubmission
+    ? {
+        usedAt: orgTrialSubmission.createdAt,
+        viewHref:
+          orgTrialSubmission.status === "COMPLETED"
+            ? `/profile?type=swing&id=${orgTrialSubmission.id}`
+            : "/profile",
+      }
+    : access.orgTrialQuickReportUsed
+      ? { usedAt: null, viewHref: "/profile" }
+      : null;
   const isPaidMember = effectiveLevel !== "FREE";
   const hasSubscription = Boolean(userRecord.stripeSubscriptionId);
   const isManualMembership = isManualMembershipMember(
@@ -447,6 +391,8 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         hasProgramEnrollmentRow={hasProgramEnrollmentRow}
         showInPersonEmergencyReminder={showInPersonEmergencyReminder}
         keepBuildingCoaching={keepBuildingCoaching}
+        orgTrialReport={orgTrialReport}
+        foundingPlusHighlight={foundingPlusHighlight}
       />
 
       <div className="mx-auto hidden w-full max-w-6xl px-4 py-10 sm:px-6 sm:py-14 md:block md:py-20">
@@ -610,6 +556,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
               assessmentCallDate={userRecord.assessmentCallDate}
               keepBuildingCoaching={keepBuildingCoaching}
               extraReview={extraReviewCardProps}
+              orgTrialReport={orgTrialReport}
             />
           </div>
 
@@ -723,7 +670,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         <DashboardUpgradeSection
           membershipTier={membershipTier}
           access={access}
-          hideTwelveWeekUpsell={!isPersonalProgramMember && shouldShowTwelveWeekDashboardUpsell(access)}
+          foundingPlusHighlight={foundingPlusHighlight}
         />
       ) : null}
       </div>

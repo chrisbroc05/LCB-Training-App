@@ -9,6 +9,8 @@ import type { KeepBuildingCoachingContext } from "@/lib/coaching-keep-building-s
 import { canAccessCoachingNav, type DatabaseTier } from "@/lib/membership";
 import { MEMBERSHIP_LEVELS } from "@/lib/membership-levels-shared";
 import type { AccessUserFields } from "@/lib/access-shared";
+import type { MembershipFoundingPlusHighlight } from "@/lib/membership-comparison-shared";
+import type { OrgTrialReportContext } from "@/lib/home-coaching-status-shared";
 import InPersonEmergencyReminderCard from "@/components/InPersonEmergencyReminderCard";
 import DashboardTwelveWeekUpsellCard from "@/app/dashboard/DashboardTwelveWeekUpsellCard";
 import OrgPickTeamBanner from "@/app/dashboard/OrgPickTeamBanner";
@@ -51,6 +53,8 @@ type MobileDashboardViewProps = {
   isAllAccessProgramMember: boolean;
   showInPersonEmergencyReminder: boolean;
   keepBuildingCoaching: KeepBuildingCoachingContext | null;
+  orgTrialReport?: OrgTrialReportContext | null;
+  foundingPlusHighlight?: MembershipFoundingPlusHighlight | null;
 };
 
 export default function MobileDashboardView({
@@ -72,6 +76,8 @@ export default function MobileDashboardView({
   isAllAccessProgramMember,
   showInPersonEmergencyReminder,
   keepBuildingCoaching,
+  orgTrialReport = null,
+  foundingPlusHighlight = null,
 }: MobileDashboardViewProps) {
   const isEnrolled = isPersonalProgramMember;
   const showTwelveWeekCard =
@@ -159,6 +165,7 @@ export default function MobileDashboardView({
               coachingUser={coachingUser}
               unreadResponse={unreadResponse}
               keepBuilding={keepBuildingCoaching}
+              orgTrialReport={orgTrialReport}
             />
           ) : null}
 
@@ -179,7 +186,7 @@ export default function MobileDashboardView({
             <DashboardUpgradeSection
               membershipTier={membershipTier}
               access={access}
-              hideTwelveWeekUpsell={showTwelveWeekCard}
+              foundingPlusHighlight={foundingPlusHighlight}
             />
           </div>
         </>
