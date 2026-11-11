@@ -41,12 +41,13 @@ import {
 import { getTaskKeysForDay } from "@/lib/program-daily-plan";
 import { buildProgramDayInfoForProgramDay, toEnrollmentPlanInput } from "@/lib/program-today-server";
 import { prisma } from "@/lib/prisma";
+import { runDailyChallengePushJobs } from "@/lib/daily-challenge-server";
 
 export type ScheduledPushPreview = {
   channel: "push";
   type: PushNotificationType;
   userId: string;
-  enrollmentId: string;
+  enrollmentId?: string;
   title: string;
   body: string;
   url: string;
@@ -533,6 +534,15 @@ export async function runScheduledPushJobs(params: {
       );
     }
   }
+
+  await runDailyChallengePushJobs({
+    dryRun: params.dryRun,
+    now: params.now,
+    dateKey: params.dateKey,
+    hour: params.hour,
+    previews: params.previews,
+    trySend: params.trySend,
+  });
 }
 
 export { userHasPushSubscriptions };

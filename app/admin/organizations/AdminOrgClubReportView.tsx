@@ -156,7 +156,8 @@ export default function AdminOrgClubReportView({ report }: AdminOrgClubReportVie
                   <th className="py-2 pr-4 font-medium">Team</th>
                   <th className="py-2 pr-4 font-medium">Sign-ups</th>
                   <th className="py-2 pr-4 font-medium">Active (7d)</th>
-                  <th className="py-2 font-medium">Reports completed</th>
+                  <th className="py-2 pr-4 font-medium">Reports completed</th>
+                  <th className="py-2 font-medium">Challenges (month)</th>
                 </tr>
               </thead>
               <tbody>
@@ -165,7 +166,8 @@ export default function AdminOrgClubReportView({ report }: AdminOrgClubReportVie
                     <td className="py-2.5 pr-4">{team.teamName}</td>
                     <td className="py-2.5 pr-4">{team.signUps}</td>
                     <td className="py-2.5 pr-4">{team.activeLast7Days}</td>
-                    <td className="py-2.5">{team.reportsCompleted}</td>
+                    <td className="py-2.5 pr-4">{team.reportsCompleted}</td>
+                    <td className="py-2.5">{team.challengeCompletions}</td>
                   </tr>
                 ))}
               </tbody>

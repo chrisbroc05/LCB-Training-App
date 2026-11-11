@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import ProgramDayLogSection from "@/app/dashboard/ProgramDayLogSection";
+import DailyChallengeCard from "@/app/dashboard/DailyChallengeCard";
 import ProgramPushPrompt from "@/components/ProgramPushPrompt";
 import VideosFromCoachLink from "@/components/VideosFromCoachLink";
 import OwnLiftBottomSheet from "@/app/components/OwnLiftBottomSheet";
@@ -1188,6 +1189,10 @@ export default function ProgramTodayView() {
             ))}
           </div>
         </>
+      ) : null}
+
+      {!payload.isBeforeStart && !payload.isComplete && !viewingDifferentDay ? (
+        <DailyChallengeCard variant="bonus" />
       ) : null}
 
       {payload.seasonStats ? (

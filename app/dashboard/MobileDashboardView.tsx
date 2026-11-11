@@ -14,6 +14,7 @@ import DashboardTwelveWeekUpsellCard from "@/app/dashboard/DashboardTwelveWeekUp
 import OrgPickTeamBanner from "@/app/dashboard/OrgPickTeamBanner";
 import OrgTrialDashboardCard from "@/app/dashboard/OrgTrialDashboardCard";
 import OrgWeeklyFocusCard from "@/app/dashboard/OrgWeeklyFocusCard";
+import DailyChallengeCard from "@/app/dashboard/DailyChallengeCard";
 import { resolveEffectiveLevel } from "@/lib/access-shared";
 import { shouldShowTwelveWeekDashboardUpsell } from "@/lib/dashboard-upgrade-copy-shared";
 
@@ -128,6 +129,8 @@ export default function MobileDashboardView({
       )}
 
       {showInPersonEmergencyReminder ? <InPersonEmergencyReminderCard /> : null}
+
+      {!isEnrolled ? <DailyChallengeCard /> : null}
 
       <OrgWeeklyFocusCard userId={userId} />
       <OrgTrialDashboardCard userId={userId} />

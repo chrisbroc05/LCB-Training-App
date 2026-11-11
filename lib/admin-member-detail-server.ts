@@ -5,6 +5,7 @@ import {
   adminMemberDetailSelect,
   serializeAdminMemberDetail,
 } from "@/lib/admin-members";
+import { loadMemberDailyChallengeStats } from "@/lib/daily-challenge-server";
 import { syncMembershipSubscriptionPaymentsFromStripe } from "@/lib/membership-subscription-server";
 import { prisma } from "@/lib/prisma";
 
@@ -55,5 +56,18 @@ export async function loadAdminMemberDetailSerialized(userId: string) {
     });
   }
 
-  return serializeAdminMemberDetail(member, membershipPayments);
+  const [detail, challengeStats] = await Promise.all([
+    Promise.resolve(serializeAdminMemberDetail(member, membershipPayments)),
+    loadMemberDailyChallengeStats(userId),
+  ]);
+
+  return {
+    ...detail,
+    dailyChallenge: {
+      completedAllTime: challengeStats.completedAllTime,
+      completedThisMonth: challengeStats.completedThisMonth,
+      currentStreak: challengeStats.streak,
+      longestStreak: challengeStats.longestStreak,
+    },
+  };
 }

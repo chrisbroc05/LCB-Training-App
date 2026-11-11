@@ -62,6 +62,7 @@ import { activeMembershipLevel } from "@/lib/access-shared";
 import { getPlaybookLifetimeSubmissionLimit } from "@/lib/playbook-entitlements-shared";
 import { needsInPersonEmergencyContactReminder } from "@/lib/in-person-training-shared";
 import InPersonEmergencyReminderCard from "@/components/InPersonEmergencyReminderCard";
+import DailyChallengeCard from "@/app/dashboard/DailyChallengeCard";
 type DashboardPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
@@ -540,6 +541,12 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
       {showInPersonEmergencyReminder ? (
         <InPersonEmergencyReminderCard layout="desktop" />
+      ) : null}
+
+      {!isPersonalProgramMember ? (
+        <div className="mt-6">
+          <DailyChallengeCard />
+        </div>
       ) : null}
 
       {hasProgramEnrollmentRow ? (

@@ -19,6 +19,7 @@ export type ClubReportTeamRow = {
   signUps: number;
   activeLast7Days: number;
   reportsCompleted: number;
+  challengeCompletions: number;
 };
 
 export type ClubReportLevelCounts = Record<ClubReportLevelBucket, number>;

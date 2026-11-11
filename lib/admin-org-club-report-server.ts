@@ -176,11 +176,18 @@ function buildTeamRows(params: {
   members: ClubReportMemberInput[];
   activeMemberIds: Set<string>;
   completedReportsByUserId: Map<string, number>;
+  challengeCompletionsByTeam: Map<string, number>;
   teamNames: Map<string, string>;
 }): ClubReportTeamRow[] {
   const buckets = new Map<
     string,
-    { signUps: number; activeLast7Days: number; reportsCompleted: number; teamName: string }
+    {
+      signUps: number;
+      activeLast7Days: number;
+      reportsCompleted: number;
+      challengeCompletions: number;
+      teamName: string;
+    }
   >();
 
   for (const member of params.members) {
@@ -194,6 +201,7 @@ function buildTeamRows(params: {
       signUps: 0,
       activeLast7Days: 0,
       reportsCompleted: 0,
+      challengeCompletions: 0,
       teamName,
     };
     current.signUps += 1;
@@ -204,6 +212,13 @@ function buildTeamRows(params: {
     buckets.set(teamKey, current);
   }
 
+  for (const [teamKey, count] of params.challengeCompletionsByTeam.entries()) {
+    const current = buckets.get(teamKey);
+    if (current) {
+      current.challengeCompletions = count;
+    }
+  }
+
   return sortClubReportTeams(
     [...buckets.entries()].map(([teamKey, row]) => ({
       teamKey,
@@ -211,6 +226,7 @@ function buildTeamRows(params: {
       signUps: row.signUps,
       activeLast7Days: row.activeLast7Days,
       reportsCompleted: row.reportsCompleted,
+      challengeCompletions: row.challengeCompletions,
     })),
   );
 }
@@ -268,20 +284,29 @@ export async function loadAdminOrgClubReport(
   const since = new Date(now.getTime() - ACTIVE_WINDOW_MS);
   const weekStart = getWeekStartMondayChicago(now);
 
-  const [activeMemberIds, weeklyFocusWeeks, teamNames] = await Promise.all([
-    loadActiveMemberIds(memberIds, since),
-    prisma.orgWeeklyFocus.findMany({
-      where: {
-        organizationId: orgId,
-        ...(org.trialStartsAt
-          ? { weekStartDate: { gte: org.trialStartsAt } }
-          : {}),
-      },
-      select: { weekStartDate: true },
-      distinct: ["weekStartDate"],
-    }),
-    Promise.resolve(new Map(org.teams.map((team) => [team.id, team.name]))),
-  ]);
+  const teamByUserId = new Map(members.map((member) => [member.id, member.orgTeamId]));
+
+  const [activeMemberIds, weeklyFocusWeeks, teamNames, challengeCompletionsByTeam] =
+    await Promise.all([
+      loadActiveMemberIds(memberIds, since),
+      prisma.orgWeeklyFocus.findMany({
+        where: {
+          organizationId: orgId,
+          ...(org.trialStartsAt
+            ? { weekStartDate: { gte: org.trialStartsAt } }
+            : {}),
+        },
+        select: { weekStartDate: true },
+        distinct: ["weekStartDate"],
+      }),
+      Promise.resolve(new Map(org.teams.map((team) => [team.id, team.name]))),
+      (async () => {
+        const { loadOrgChallengeCompletionsByTeam } = await import(
+          "@/lib/daily-challenge-server"
+        );
+        return loadOrgChallengeCompletionsByTeam(orgId, memberIds, teamByUserId, now);
+      })(),
+    ]);
 
   const swingRows =
     memberIds.length === 0
@@ -321,6 +346,7 @@ export async function loadAdminOrgClubReport(
     members,
     activeMemberIds,
     completedReportsByUserId,
+    challengeCompletionsByTeam,
     teamNames,
   });
 

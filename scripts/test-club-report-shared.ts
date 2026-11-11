@@ -76,6 +76,7 @@ const sorted = sortClubReportTeams([
     signUps: 2,
     activeLast7Days: 0,
     reportsCompleted: 0,
+    challengeCompletions: 0,
   },
   {
     teamKey: "b",
@@ -83,6 +84,7 @@ const sorted = sortClubReportTeams([
     signUps: 5,
     activeLast7Days: 1,
     reportsCompleted: 0,
+    challengeCompletions: 0,
   },
 ]);
 

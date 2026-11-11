@@ -19,12 +19,14 @@ export async function loadContentHubCards(now = new Date()): Promise<AdminSectio
     resourceClicks30d,
     programCues,
     fixItGrants,
+    dailyChallenges,
   ] = await Promise.all([
     prisma.drillLibraryCatalog.count({ where: { isStarterDrill: true } }),
     prisma.quizAttempt.count({ where: { completedAt: { not: null } } }),
     prisma.leadResource.count({ where: { createdAt: { gte: monthStart } } }),
     prisma.coachCue.count(),
     prisma.userFixItGrant.count(),
+    prisma.dailyChallenge.count({ where: { active: true } }),
   ]);
 
   return [
@@ -34,6 +36,13 @@ export async function loadContentHubCards(now = new Date()): Promise<AdminSectio
       description: "Starter drills new Playbook buyers can access on the public catalog.",
       statValue: String(starterDrills),
       statLabel: "Starter drills enabled",
+    },
+    {
+      href: ADMIN_ROUTES.content.dailyChallenges,
+      title: "Daily Challenges",
+      description: "Age-group challenges, trivia/mindset questions, CSV import, and date preview.",
+      statValue: String(dailyChallenges),
+      statLabel: "Active challenges",
     },
     {
       href: ADMIN_ROUTES.content.quiz,

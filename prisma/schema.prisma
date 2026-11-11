@@ -153,7 +153,19 @@ enum PushNotificationType {
   COACH_VIDEO
   SETUP_REMINDER
   COACH_TASK_FEEDBACK
+  DAILY_CHALLENGE
   TEST
+}
+
+enum DailyChallengeAgeGroup {
+  AGE_8_11
+  AGE_12_14
+  AGE_15_PLUS
+}
+
+enum DailyQuestionType {
+  TRIVIA
+  MINDSET
 }
 
 enum CoachVideoDrillCategory {
@@ -245,6 +257,7 @@ model User {
   notifyGoalResponse       Boolean              @default(true)
   notifyWeeklyCheckin      Boolean              @default(true)
   notifyAnnouncements      Boolean              @default(true)
+  hideFromLeaderboards     Boolean              @default(false)
   termsVersion           String?
   termsAcceptedAt        DateTime?
   acceptedByName         String?
@@ -316,6 +329,7 @@ model User {
   extraReviewCredits     ExtraReviewCredit[]
   orgCommissionLedger    OrgCommissionLedgerEntry[]
   membershipEmailLogs    MembershipEmailLog[]
+  dailyChallengeCompletions DailyChallengeCompletion[]
 
   @@index([organizationId])
   @@index([commissionAttributionOrgId])
@@ -1327,5 +1341,69 @@ model AllAccessWaitlistEntry {
 model PlatformCoachingSettings {
   id                  String @id @default("default")
   allAccessProgramCap Int    @default(25)
+}
+
+model DailyChallengeSettings {
+  id                 String @id @default("default")
+  pushHourChicago    Int    @default(15)
+  pushMinuteChicago  Int    @default(30)
+}
+
+model DailyChallenge {
+  id                  String                 @id @default(cuid())
+  ageGroup            DailyChallengeAgeGroup
+  rotationDay         Int
+  title               String
+  instructions        String
+  drillLibraryVimeoId String?
+  active              Boolean                @default(true)
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+  completions         DailyChallengeCompletion[]
+
+  @@unique([ageGroup, rotationDay])
+  @@index([ageGroup, active, rotationDay])
+}
+
+model DailyQuestion {
+  id                 String                  @id @default(cuid())
+  ageGroup           DailyChallengeAgeGroup?
+  rotationDay        Int
+  type               DailyQuestionType
+  prompt             String
+  options            String[]                @default([])
+  correctOptionIndex Int?
+  explanation        String?
+  active             Boolean                 @default(true)
+  createdAt          DateTime                @default(now())
+  updatedAt          DateTime                @updatedAt
+  completions        DailyChallengeCompletion[]
+
+  @@index([type, ageGroup, active, rotationDay])
+  @@index([type, active, rotationDay])
+}
+
+model DailyChallengeCompletion {
+  id                   String                 @id @default(cuid())
+  userId               String
+  user                 User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chicagoDate          String
+  ageGroup             DailyChallengeAgeGroup
+  challengeId          String
+  challenge            DailyChallenge         @relation(fields: [challengeId], references: [id], onDelete: Restrict)
+  questionId           String?
+  question             DailyQuestion?         @relation(fields: [questionId], references: [id], onDelete: SetNull)
+  challengeDoneAt      DateTime?
+  triviaSelectedIndex  Int?
+  triviaCorrect        Boolean?
+  mindsetAnswer        String?
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+
+  @@unique([userId, chicagoDate])
+  @@index([userId, chicagoDate])
+  @@index([chicagoDate, ageGroup])
+  @@index([challengeId])
+  @@index([questionId])
 }
 

@@ -8,6 +8,7 @@ export type PushNotificationTypeName =
   | "GONE_QUIET"
   | "COACH_RESPONSE"
   | "PLAN_UPDATE"
+  | "DAILY_CHALLENGE"
   | "TEST";
 
 export type PushMessagePayload = {

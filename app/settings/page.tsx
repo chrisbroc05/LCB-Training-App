@@ -11,6 +11,7 @@ import NotificationPreferencesSection from "@/app/settings/NotificationPreferenc
 import ProgramEmailSettingsSection from "@/app/settings/ProgramEmailSettingsSection";
 import WorkoutEquipmentSection from "@/app/settings/WorkoutEquipmentSection";
 import PushNotificationsSection from "@/app/settings/PushNotificationsSection";
+import LeaderboardPrivacySection from "@/app/settings/LeaderboardPrivacySection";
 import InPersonTrainingSection from "@/app/settings/InPersonTrainingSection";
 import OrgTeamSection from "@/app/settings/OrgTeamSection";
 import LegalSettingsSection from "@/app/settings/LegalSettingsSection";
@@ -198,6 +199,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
 
         <NotificationPreferencesSection />
         <PushNotificationsSection />
+        <LeaderboardPrivacySection />
         <ProgramEmailSettingsSection />
         <WorkoutEquipmentSection />
         <LegalSettingsSection

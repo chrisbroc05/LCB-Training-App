@@ -147,6 +147,12 @@ export type MemberDetail = {
     commissionOverrideNote: string | null;
     eligibilityLabel: string;
   } | null;
+  dailyChallenge?: {
+    completedAllTime: number;
+    completedThisMonth: number;
+    currentStreak: number;
+    longestStreak: number;
+  };
 };
 
 type MemberDetailContentProps = {
@@ -330,6 +336,30 @@ export default function MemberDetailContent({
       </div>
 
       <MemberProfileCard profile={detail.memberProfile} />
+
+      {detail.dailyChallenge ? (
+        <div className="rounded-xl border border-[#2b3650] bg-[#0b1324]/70 p-4 text-sm text-zinc-300">
+          <p className="font-semibold text-zinc-100">Daily Challenge</p>
+          <p className="mt-2">
+            <span className="font-semibold text-zinc-100">Completed (all time):</span>{" "}
+            {detail.dailyChallenge.completedAllTime}
+          </p>
+          <p className="mt-2">
+            <span className="font-semibold text-zinc-100">Completed (this month):</span>{" "}
+            {detail.dailyChallenge.completedThisMonth}
+          </p>
+          <p className="mt-2">
+            <span className="font-semibold text-zinc-100">Current streak:</span>{" "}
+            {detail.dailyChallenge.currentStreak} day
+            {detail.dailyChallenge.currentStreak === 1 ? "" : "s"}
+          </p>
+          <p className="mt-2">
+            <span className="font-semibold text-zinc-100">Longest streak:</span>{" "}
+            {detail.dailyChallenge.longestStreak} day
+            {detail.dailyChallenge.longestStreak === 1 ? "" : "s"}
+          </p>
+        </div>
+      ) : null}
 
       <div className="rounded-xl border border-[#2b3650] bg-[#0b1324]/70 p-4 text-sm text-zinc-300">
         <p className="font-semibold text-zinc-100">Legal agreement</p>
