@@ -59,7 +59,32 @@ const hittingVideoSources: DrillLibraryVideoSource[] = [
     title: "The Ground Provides the Power",
     url: "https://player.vimeo.com/video/1238395520",
   },
+  {
+    title: "Knob to Knee Drill",
+    url: "https://player.vimeo.com/video/1246361113",
+  },
+  {
+    title: "Get Your Hands to a Good Hitting Position",
+    url: "https://player.vimeo.com/video/1246361856",
+  },
+  {
+    title: "Keep Your Hands Inside the Baseball",
+    url: "https://player.vimeo.com/video/1246362854",
+  },
+  {
+    title: "Stay Balanced Stay Strong",
+    url: "https://player.vimeo.com/video/1246364434",
+  },
 ];
+
+/**
+ * Starter (Core / trial) drill Vimeo IDs defined in code.
+ * Catalog seed marks these isStarterDrill=true so Core members can watch them.
+ */
+export const CODE_DEFINED_STARTER_DRILL_VIMEO_IDS = [
+  "1246361113", // Knob to Knee Drill
+  "1246364434", // Stay Balanced Stay Strong
+] as const;
 
 const fieldingVideoSources: DrillLibraryVideoSource[] = [
   { title: "Do these everyday", url: "https://player.vimeo.com/video/1200425708" },

@@ -1,6 +1,10 @@
 import "server-only";
 
-import { getDrillLibraryVideoId, allDrillLibraryVideos } from "@/lib/drill-library-videos";
+import {
+  allDrillLibraryVideos,
+  CODE_DEFINED_STARTER_DRILL_VIMEO_IDS,
+  getDrillLibraryVideoId,
+} from "@/lib/drill-library-videos";
 import { prisma } from "@/lib/prisma";
 
 export async function ensureDrillLibraryCatalogSeeded() {
@@ -20,6 +24,14 @@ export async function ensureDrillLibraryCatalogSeeded() {
     })),
     skipDuplicates: true,
   });
+
+  for (const vimeoId of CODE_DEFINED_STARTER_DRILL_VIMEO_IDS) {
+    await prisma.drillLibraryCatalog.upsert({
+      where: { vimeoId },
+      create: { vimeoId, isStarterDrill: true, updatedAt: new Date() },
+      update: { isStarterDrill: true, updatedAt: new Date() },
+    });
+  }
 }
 
 export async function loadStarterDrillIdSet(): Promise<Set<string>> {
