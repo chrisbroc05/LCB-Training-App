@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
@@ -17,6 +18,13 @@ import {
   TWELVE_WEEK_PROGRAM_PRICE_LABEL,
   twelveWeekProgramIncludes,
 } from "@/lib/twelve-week-program";
+
+export const metadata: Metadata = {
+  title: {
+    absolute: "12-Week Baseball Coaching Program | Coach Broc",
+  },
+  description: "Daily plan, weekly video, and messaging with Coach Broc for 12 weeks.",
+};
 
 type ProgramPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;

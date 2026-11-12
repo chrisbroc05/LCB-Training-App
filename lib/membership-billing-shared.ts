@@ -25,14 +25,18 @@ export function getMembershipLevelPriceDisplay(
   }
   if (interval === "ANNUAL") {
     if (level === "CORE") {
-      return "$100/yr - 2 months free";
+      return "$100/yr (~$8.33/mo)";
     }
     if (level === "PLUS") {
-      return "$200/yr - 2 months free";
+      return "$200/yr (~$16.67/mo)";
     }
   }
   return MEMBERSHIP_LEVELS[level].priceDisplay;
 }
+
+/** Always-visible yearly savings copy (crawlers see the default monthly toggle state). */
+export const MEMBERSHIP_YEARLY_SAVINGS_SUMMARY =
+  "Yearly - 2 months free: Core $100/yr (~$8.33/mo), Plus $200/yr (~$16.67/mo).";
 
 /** Recurring amount shown in transactional emails (no marketing suffix). */
 export function getMembershipBilledPriceDisplay(params: {

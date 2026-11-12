@@ -31,6 +31,7 @@ assert.ok(cards[2]!.bullets.some((bullet) => /Recruiting Guide/.test(bullet)));
 assert.ok(cards[2]!.bullets.some((bullet) => /1-on-1 coaching/.test(bullet)));
 assert.ok(cards[2]!.bullets.some((bullet) => /Kickoff call/.test(bullet)));
 assert.ok(cards[2]!.bullets.some((bullet) => /Monthly goal setting/.test(bullet)));
+assert.equal(cards[2]!.key, "ALL_ACCESS");
 
 const rows = listMembershipComparisonRows();
 const byId = Object.fromEntries(rows.map((row) => [row.id, row]));

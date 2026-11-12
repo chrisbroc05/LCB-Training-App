@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import BillingFrequencyToggle from "@/app/BillingFrequencyToggle";
 import MembershipLevelCheckoutButton from "@/app/components/MembershipLevelCheckoutButton";
@@ -68,6 +68,14 @@ export default function MembershipLevelCards({
   const cards = listMembershipStepUpCards();
   const showFounding =
     Boolean(foundingPlusHighlight) && billingInterval === "MONTHLY" && signedIn;
+
+  useEffect(() => {
+    if (!compareOpen) {
+      return;
+    }
+    const node = document.getElementById("membership-feature-comparison");
+    node?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [compareOpen]);
 
   return (
     <div className="space-y-6">
@@ -152,6 +160,19 @@ export default function MembershipLevelCards({
                 ))}
               </ul>
 
+              {card.key === "ALL_ACCESS" ? (
+                <p className="mt-4 text-xs leading-relaxed text-zinc-400">
+                  Month-to-month coaching. Want to commit? The{" "}
+                  <Link
+                    href="/program"
+                    className="font-semibold text-[#98b144] underline-offset-2 hover:underline"
+                  >
+                    12-Week Program
+                  </Link>{" "}
+                  is the same coaching for 12 weeks at $599, less than three months of All-Access.
+                </p>
+              ) : null}
+
               <div className="mt-6">
                 <CardAction
                   level={card.key}
@@ -172,7 +193,8 @@ export default function MembershipLevelCards({
         <button
           type="button"
           onClick={() => setCompareOpen((open) => !open)}
-          className="text-sm font-semibold text-[#98b144] underline-offset-2 hover:underline"
+          className="inline-flex min-h-11 items-center justify-center px-3 text-sm font-semibold text-[#98b144] underline-offset-2 hover:underline"
+          aria-expanded={compareOpen}
         >
           {compareOpen ? "Hide feature comparison" : "Compare all features"}
         </button>
@@ -188,31 +210,54 @@ function MembershipComparisonDetailGrid() {
   const rows = listMembershipComparisonRows();
 
   return (
-    <div className="overflow-x-auto rounded-2xl border border-[#18243a] bg-[#0b1324]/60 p-3 sm:p-4">
-      <table className="min-w-full border-collapse text-left text-sm">
-        <thead>
-          <tr className="border-b border-[#2b3650]">
-            <th className="py-2 pr-3 font-semibold text-zinc-400">Feature</th>
-            {columns.map((column) => (
-              <th key={column.key} className="px-2 py-2 font-semibold text-zinc-100">
-                {column.displayName}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.id} className="border-b border-[#1e2d45]">
-              <td className="py-2 pr-3 text-zinc-300">{row.label}</td>
+    <div
+      id="membership-feature-comparison"
+      className="rounded-2xl border border-[#18243a] bg-[#0b1324]/60 p-3 sm:p-4"
+    >
+      <div className="space-y-3 md:hidden">
+        {rows.map((row) => (
+          <div key={row.id} className="rounded-xl border border-[#1e2d45] bg-black/20 p-3">
+            <p className="text-sm font-semibold text-zinc-100">{row.label}</p>
+            <dl className="mt-2 space-y-1.5">
               {columns.map((column) => (
-                <td key={`${row.id}-${column.key}`} className="px-2 py-2">
-                  <CellValue value={row.cells[column.key]} />
-                </td>
+                <div key={`${row.id}-${column.key}`} className="flex items-start justify-between gap-3 text-sm">
+                  <dt className="text-zinc-400">{column.displayName}</dt>
+                  <dd className="text-right">
+                    <CellValue value={row.cells[column.key]} />
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        ))}
+      </div>
+
+      <div className="hidden overflow-x-auto md:block">
+        <table className="min-w-full border-collapse text-left text-sm">
+          <thead>
+            <tr className="border-b border-[#2b3650]">
+              <th className="py-2 pr-3 font-semibold text-zinc-400">Feature</th>
+              {columns.map((column) => (
+                <th key={column.key} className="px-2 py-2 font-semibold text-zinc-100">
+                  {column.displayName}
+                </th>
               ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.id} className="border-b border-[#1e2d45]">
+                <td className="py-2 pr-3 text-zinc-300">{row.label}</td>
+                {columns.map((column) => (
+                  <td key={`${row.id}-${column.key}`} className="px-2 py-2">
+                    <CellValue value={row.cells[column.key]} />
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

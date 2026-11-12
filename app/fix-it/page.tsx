@@ -6,12 +6,11 @@ import { FIX_IT_PLANS_META } from "@/lib/fix-it-plans-shared";
 import { getPublicAppUrl } from "@/lib/public-app-url";
 
 const siteUrl = getPublicAppUrl();
-const title = "Fix-It Hitting Plans | Coach Broc";
-const description =
-  "Two 3-week hitting Fix-It plans with Coach Broc drill videos. Fix a flying front shoulder or drifting hips off a tee or flips.";
+const title = "Fix-It Hitting Plans | LCB Training";
+const description = "3-week hitting plans for front shoulder and drifting hips.";
 
 export const metadata: Metadata = {
-  title,
+  title: { absolute: title },
   description,
   openGraph: {
     title,

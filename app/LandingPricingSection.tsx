@@ -36,7 +36,11 @@ export default function LandingPricingSection() {
       {membershipTiers.some((tier) => usesBillingFrequencyToggle(tier.key)) ? (
         <>
           <div className="mb-3 flex justify-center">
-            <BillingFrequencyToggle value={billingFrequency} onChange={setBillingFrequency} />
+            <BillingFrequencyToggle
+              value={billingFrequency}
+              onChange={setBillingFrequency}
+              showYearlySavingsSummary={false}
+            />
           </div>
           <p className="mb-8 text-center text-xs text-zinc-400">
             Toggle monthly or annual billing where available.

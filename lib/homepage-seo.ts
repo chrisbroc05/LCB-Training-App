@@ -1,18 +1,19 @@
 import type { Metadata } from "next";
 import { getPublicAppUrl } from "@/lib/public-app-url";
 
-export const HOMEPAGE_TITLE =
-  "LCB Training | Baseball and Softball for Youth, High School, and College";
+export const HOMEPAGE_TITLE = "LCB Training | Baseball Coaching with Coach Broc";
 
 export const HOMEPAGE_DESCRIPTION =
-  "Daily baseball and softball training for youth, high school, and college players. Personal swing feedback from Coach Broc between lessons. Start with free swing analysis, guides, and quizzes.";
+  "Daily baseball training and swing feedback from Coach Broc.";
 
 export function buildHomepageMetadata(): Metadata {
   const siteUrl = getPublicAppUrl();
   const ogImage = `${siteUrl}/images/app-preview/daily-plan.webp`;
 
   return {
-    title: HOMEPAGE_TITLE,
+    title: {
+      absolute: HOMEPAGE_TITLE,
+    },
     description: HOMEPAGE_DESCRIPTION,
     alternates: { canonical: siteUrl },
     openGraph: {

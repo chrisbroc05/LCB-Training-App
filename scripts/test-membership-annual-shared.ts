@@ -25,7 +25,8 @@ assert.equal(parseMembershipBillingInterval("annual"), "ANNUAL");
 assert.equal(parseMembershipBillingInterval("monthly"), "MONTHLY");
 assert.equal(membershipLevelSupportsAnnualBilling("CORE"), true);
 assert.equal(membershipLevelSupportsAnnualBilling("ALL_ACCESS"), false);
-assert.match(getMembershipLevelPriceDisplay("CORE", "ANNUAL"), /\$100\/yr/);
+assert.match(getMembershipLevelPriceDisplay("CORE", "ANNUAL"), /\$100\/yr \(\~\$8\.33\/mo\)/);
+assert.match(getMembershipLevelPriceDisplay("PLUS", "ANNUAL"), /\$200\/yr \(\~\$16\.67\/mo\)/);
 assert.equal(getMembershipBilledPriceDisplay({ level: "CORE", billingInterval: "ANNUAL" }), "$100/yr");
 assert.equal(
   getMembershipBilledPriceDisplay({ level: "PLUS", billingInterval: "ANNUAL" }),

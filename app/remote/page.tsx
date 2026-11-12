@@ -13,9 +13,10 @@ import {
 } from "@/lib/remote-session-branding";
 
 export const metadata: Metadata = {
-  title: "Book a Remote Training Session | LCB Training",
-  description:
-    "Book a live 60-minute remote training session with Coach Broc for hitting, fielding, or mental game feedback.",
+  title: {
+    absolute: "Remote Baseball Coaching Session | LCB Training",
+  },
+  description: "Book a live 60-minute remote session with Coach Broc.",
 };
 
 type RemoteSessionPageProps = {

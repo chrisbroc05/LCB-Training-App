@@ -14,3 +14,4 @@ User-agent: OAI-SearchBot
 Allow: /
 
 Sitemap: https://www.lcbtraining.com/sitemap.xml
+# LLM summary: https://www.lcbtraining.com/llms.txt

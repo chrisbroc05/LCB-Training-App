@@ -4,6 +4,7 @@ import MembershipLevelCards from "@/app/components/MembershipLevelCards";
 import { authOptions } from "@/lib/auth";
 import { toAccessUserFields, userAccessSelect } from "@/lib/access-server";
 import { activeMembershipLevel } from "@/lib/access-shared";
+import { loadRoundedActivePlayerCount } from "@/lib/active-players-count-server";
 import { resolveMembershipFoundingPlusHighlight } from "@/lib/membership-comparison-shared";
 import { listPublicMembershipLevelDefinitions } from "@/lib/membership-levels-shared";
 import { isAllAccessCheckoutAvailable } from "@/lib/membership-subscription-server";
@@ -14,8 +15,10 @@ export default async function PublicMembershipLevelsSection() {
   const levels = listPublicMembershipLevelDefinitions();
   const session = await getServerSession(authOptions);
   const signedIn = Boolean(session?.user?.id);
-  const allAccessAvailable =
-    levels.length > 0 ? await isAllAccessCheckoutAvailable() : false;
+  const [allAccessAvailable, activePlayerCount] = await Promise.all([
+    levels.length > 0 ? isAllAccessCheckoutAvailable() : Promise.resolve(false),
+    loadRoundedActivePlayerCount(),
+  ]);
 
   let currentLevel = null as ReturnType<typeof activeMembershipLevel>;
   let clubOrgName: string | null = null;
@@ -50,6 +53,11 @@ export default async function PublicMembershipLevelsSection() {
   return (
     <section id="plans" className="scroll-mt-site-header mt-14">
       <div className="mb-6 text-center">
+        {activePlayerCount > 0 ? (
+          <p className="mb-3 text-sm font-medium text-zinc-300 sm:text-base">
+            {activePlayerCount}+ players training with Coach Broc.
+          </p>
+        ) : null}
         <h2 className="text-2xl font-semibold text-zinc-100 sm:text-3xl">Plans and Programs</h2>
       </div>
 
