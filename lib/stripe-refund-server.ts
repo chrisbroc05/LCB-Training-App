@@ -350,12 +350,61 @@ async function processPlaybookRefund(params: {
   return { processed: true as const };
 }
 
+async function tryMarkClinicRegistrationRefunded(charge: Stripe.Charge, refundedAt: Date) {
+  const { markClinicRegistrationRefunded } = await import("@/lib/clinics-fulfill-server");
+
+  const paymentIntentId =
+    typeof charge.payment_intent === "string"
+      ? charge.payment_intent
+      : charge.payment_intent?.id ?? null;
+
+  if (paymentIntentId) {
+    const byPaymentIntent = await markClinicRegistrationRefunded({
+      stripePaymentIntentId: paymentIntentId,
+      refundedAt,
+    });
+    if (byPaymentIntent.processed) {
+      return byPaymentIntent;
+    }
+  }
+
+  try {
+    const sessions = await getStripe().checkout.sessions.list({
+      payment_intent: paymentIntentId ?? undefined,
+      limit: 5,
+    });
+    for (const session of sessions.data) {
+      if (session.metadata?.purchaseType?.trim() !== "clinic") {
+        continue;
+      }
+      const result = await markClinicRegistrationRefunded({
+        registrationId: session.metadata?.clinicRegistrationId?.trim() || null,
+        stripeCheckoutSessionId: session.id,
+        stripePaymentIntentId: paymentIntentId,
+        refundedAt,
+      });
+      if (result.processed) {
+        return result;
+      }
+    }
+  } catch (error) {
+    console.error("Failed looking up clinic checkout sessions for refund", error);
+  }
+
+  return { processed: false as const };
+}
+
 export async function processStripeChargeRefund(charge: Stripe.Charge) {
   if (charge.amount_refunded <= 0) {
     return { processed: false, reason: "no_refund_amount" as const };
   }
 
   const refundedAt = new Date();
+  const clinicRefund = await tryMarkClinicRegistrationRefunded(charge, refundedAt);
+  if (clinicRefund.processed) {
+    return clinicRefund;
+  }
+
   const resourceRefund = await tryMarkResourcePurchaseRefunded(charge, refundedAt);
   if (resourceRefund.processed) {
     return resourceRefund;

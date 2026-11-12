@@ -311,6 +311,7 @@ model User {
   quizAttempts           QuizAttempt[]
   resourcePurchases      ResourcePurchase[]
   remoteSessionPurchases RemoteSessionPurchase[]
+  clinicRegistrations    ClinicRegistration[]
   organizationId         String?
   orgTeamId              String?
   orgJoinedAt            DateTime?
@@ -534,6 +535,113 @@ model RemoteSessionPurchase {
   @@index([userId])
 }
 
+enum ClinicSport {
+  BASEBALL
+  SOFTBALL
+}
+
+enum ClinicRegistrationStatus {
+  PENDING
+  PAID
+  EXPIRED
+  CANCELLED
+  REFUNDED
+}
+
+model Clinic {
+  id                 String               @id @default(cuid())
+  slug               String               @unique
+  name               String
+  location           String
+  agesSportsText     String
+  description        String               @db.Text
+  whatToBring        String               @db.Text
+  refundPolicyText   String               @db.Text
+  startTimeLocal     String
+  endTimeLocal       String
+  pricePerDayCents   Int
+  allDaysPriceCents  Int
+  capacityPerDay     Int
+  active             Boolean              @default(true)
+  closed             Boolean              @default(false)
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  days               ClinicDay[]
+  registrations      ClinicRegistration[]
+
+  @@index([active, closed])
+}
+
+model ClinicDay {
+  id             String                    @id @default(cuid())
+  clinicId       String
+  clinic         Clinic                    @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  date           DateTime                  @db.Date
+  sortOrder      Int                       @default(0)
+  createdAt      DateTime                  @default(now())
+  registrationDays ClinicRegistrationDay[]
+
+  @@unique([clinicId, date])
+  @@index([clinicId, sortOrder])
+}
+
+model ClinicRegistration {
+  id                      String                   @id @default(cuid())
+  clinicId                String
+  clinic                  Clinic                   @relation(fields: [clinicId], references: [id], onDelete: Restrict)
+  userId                  String?
+  user                    User?                    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  waiverSignatureId       String?
+  waiverSignature         WaiverSignature?         @relation(fields: [waiverSignatureId], references: [id], onDelete: SetNull)
+  parentName              String
+  parentEmail             String
+  parentPhone             String?
+  playerName              String
+  playerAge               Int
+  sport                   ClinicSport
+  position                String?
+  emergencyContactName    String
+  emergencyContactPhone   String
+  typedSignature          String
+  termsAcceptedAt         DateTime
+  termsVersion            String
+  waiverAcknowledgedAt    DateTime
+  acceptedByName          String
+  mediaConsent            Boolean                  @default(false)
+  mediaConsentUpdatedAt   DateTime?
+  marketingOptIn          Boolean                  @default(false)
+  isAllDaysBundle         Boolean                  @default(false)
+  amountCents             Int
+  status                  ClinicRegistrationStatus @default(PENDING)
+  holdExpiresAt           DateTime?
+  stripeCheckoutSessionId String?                  @unique
+  stripePaymentIntentId   String?
+  paidAt                  DateTime?
+  refundedAt              DateTime?
+  clientIp                String?
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  days                    ClinicRegistrationDay[]
+
+  @@index([clinicId, status])
+  @@index([parentEmail])
+  @@index([userId])
+  @@index([status, holdExpiresAt])
+}
+
+model ClinicRegistrationDay {
+  id             String             @id @default(cuid())
+  registrationId String
+  registration   ClinicRegistration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  clinicDayId    String
+  clinicDay      ClinicDay          @relation(fields: [clinicDayId], references: [id], onDelete: Restrict)
+  createdAt      DateTime           @default(now())
+
+  @@unique([registrationId, clinicDayId])
+  @@unique([clinicDayId, registrationId])
+  @@index([clinicDayId])
+}
+
 model WaiverSignature {
   id                    String           @id @default(cuid())
   playerFirstName       String
@@ -558,6 +666,7 @@ model WaiverSignature {
   userId                String?
   user                  User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
   testPlayers           TestPlayer[]
+  clinicRegistrations   ClinicRegistration[]
 
   @@index([signedAt(sort: Desc)])
   @@index([teamSlug])

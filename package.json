@@ -7,6 +7,7 @@
     "dev": "tsx scripts/assert-dev-environment.ts && AUTH_TRUST_HOST=true next dev --webpack",
     "dev:phone": "npx --yes tsx scripts/dev-phone.ts",
     "db:seed:dev": "npx --yes tsx scripts/seed-dev-database.ts",
+    "db:seed:clinic:local": "npx --yes tsx scripts/seed-clinic-infield-local.ts",
     "db:migrate:dev": "prisma migrate deploy",
     "check:ascii": "tsx scripts/check-ascii.ts",
     "build": "npm run check:ascii && prisma generate && NODE_OPTIONS=--max-old-space-size=8192 next build --webpack",

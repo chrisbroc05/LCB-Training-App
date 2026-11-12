@@ -29,7 +29,7 @@ In a **second terminal** (keep `npm run dev` running in the first):
 
 ```bash
 stripe listen \
-  --events checkout.session.completed,customer.subscription.created,customer.subscription.updated,customer.subscription.deleted,invoice.paid,invoice.payment_failed,charge.refunded \
+  --events checkout.session.completed,checkout.session.expired,customer.subscription.created,customer.subscription.updated,customer.subscription.deleted,invoice.paid,invoice.payment_failed,charge.refunded \
   --forward-to localhost:3000/api/webhooks/stripe
 ```
 

@@ -29,6 +29,11 @@ import { subscriptionStatusGrantsAccess } from "@/lib/membership-subscription-sh
 import { parseMembershipLevelFromMetadata } from "@/lib/membership-subscription-shared";
 import { grantExtraReviewCreditFromCheckout } from "@/lib/extra-review-server";
 import { getInvoiceLinePriceId, getStripeInvoiceSubscriptionId } from "@/lib/stripe-invoice-shared";
+import {
+  fulfillClinicCheckoutSession,
+  releaseClinicCheckoutSession,
+} from "@/lib/clinics-fulfill-server";
+import { CLINIC_PURCHASE_TYPE } from "@/lib/clinics-shared";
 
 function mapPriceIdToTier(priceId?: string | null) {
   if (!priceId) {
@@ -101,6 +106,20 @@ export async function POST(request: Request) {
 
   if (event.type === "checkout.session.completed") {
     const checkoutSession = event.data.object as Stripe.Checkout.Session;
+    const purchaseTypeEarly = checkoutSession.metadata?.purchaseType?.trim();
+
+    if (purchaseTypeEarly === CLINIC_PURCHASE_TYPE) {
+      if (checkoutSession.payment_status === "paid") {
+        try {
+          await fulfillClinicCheckoutSession(checkoutSession);
+        } catch (error) {
+          console.error("Failed to fulfill clinic checkout session", error);
+          return NextResponse.json({ error: "Clinic fulfill failed." }, { status: 500 });
+        }
+      }
+      return NextResponse.json({ received: true, purchaseType: CLINIC_PURCHASE_TYPE });
+    }
+
     const userId = checkoutSession.metadata?.userId ?? checkoutSession.client_reference_id;
     const membershipTier = checkoutSession.metadata?.membershipTier;
     const stripeCustomerId =
@@ -493,6 +512,18 @@ export async function POST(request: Request) {
       },
       data,
     });
+  }
+
+  if (event.type === "checkout.session.expired") {
+    const checkoutSession = event.data.object as Stripe.Checkout.Session;
+    const purchaseType = checkoutSession.metadata?.purchaseType?.trim();
+    if (purchaseType === CLINIC_PURCHASE_TYPE) {
+      try {
+        await releaseClinicCheckoutSession(checkoutSession);
+      } catch (error) {
+        console.error("Failed to release expired clinic checkout session", error);
+      }
+    }
   }
 
   if (event.type === "charge.refunded") {

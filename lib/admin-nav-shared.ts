@@ -73,6 +73,7 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
         matchPrefix: ADMIN_ROUTES.business.commissions,
       },
       { href: ADMIN_ROUTES.business.grants, label: "Product grants", matchPrefix: ADMIN_ROUTES.business.grants },
+      { href: ADMIN_ROUTES.business.clinics, label: "Clinics", matchPrefix: ADMIN_ROUTES.business.clinics },
     ],
   },
   {

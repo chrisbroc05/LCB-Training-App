@@ -48,6 +48,8 @@ export const ADMIN_ROUTES = {
     waitlist: "/admin/business/waitlist",
     commissions: "/admin/business/commissions",
     grants: "/admin/business/grants",
+    clinics: "/admin/business/clinics",
+    clinicDetail: (clinicId: string) => `/admin/business/clinics/${clinicId}`,
   },
   settings: {
     hub: "/admin/settings",

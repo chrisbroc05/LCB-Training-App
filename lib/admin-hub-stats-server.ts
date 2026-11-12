@@ -196,9 +196,10 @@ export async function loadBusinessHubCards(now = new Date()): Promise<AdminSecti
   const start = getChicagoDayStart(todayKey);
   const end = getChicagoDayEnd(todayKey);
 
-  const [leadsTotal, salesToday] = await Promise.all([
+  const [leadsTotal, salesToday, clinicsActive] = await Promise.all([
     prisma.lead.count(),
     prisma.resourcePurchase.count({ where: { createdAt: { gte: start, lt: end }, refundedAt: null } }),
+    prisma.clinic.count({ where: { active: true } }).catch(() => 0),
   ]);
 
   return [
@@ -215,6 +216,13 @@ export async function loadBusinessHubCards(now = new Date()): Promise<AdminSecti
       description: "Paid resource purchases and Stripe sessions.",
       statValue: String(salesToday),
       statLabel: "Sales today",
+    },
+    {
+      href: ADMIN_ROUTES.business.clinics,
+      title: "Clinics",
+      description: "Clinic signup, roster, CSV export, and refunds.",
+      statValue: String(clinicsActive),
+      statLabel: "Active clinics",
     },
     {
       href: ADMIN_ROUTES.business.waitlist,

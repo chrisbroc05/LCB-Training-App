@@ -34,7 +34,7 @@ export default async function DevOutboxPage() {
               <p className="mt-1 text-sm font-medium text-zinc-100">{entry.subject}</p>
               <p className="text-sm text-zinc-400">To: {entry.to}</p>
               {entry.text ? (
-                <pre className="mt-3 max-h-48 overflow-auto whitespace-pre-wrap text-xs text-zinc-300">
+                <pre className="mt-3 overflow-auto whitespace-pre-wrap text-xs text-zinc-300">
                   {entry.text}
                 </pre>
               ) : null}
