@@ -452,6 +452,17 @@ export function hasPersonalProgramDashboard(user: AccessUserFields, now = new Da
   return effective === "TWELVE_WEEK" || effective === "ALL_ACCESS";
 }
 
+/** Monthly goal check-ins: 12-Week, All-Access, and legacy Memorable/Elite. */
+export function canAccessGoalCheckin(user: AccessUserFields, now = new Date()): boolean {
+  const effective = resolveEffectiveLevel(user, now);
+  return (
+    effective === "TWELVE_WEEK" ||
+    effective === "ALL_ACCESS" ||
+    effective === "LEGACY_ELITE" ||
+    effective === "LEGACY_MEMORABLE"
+  );
+}
+
 export function usesFixedTwelveWeekProgram(user: AccessUserFields, now = new Date()): boolean {
   return resolveEffectiveLevel(user, now) === "TWELVE_WEEK";
 }

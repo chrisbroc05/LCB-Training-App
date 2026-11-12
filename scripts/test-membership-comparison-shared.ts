@@ -28,6 +28,9 @@ assert.ok(cards[0]!.bullets.some((bullet) => /Written swing report/.test(bullet)
 assert.ok(cards[1]!.bullets.some((bullet) => /in-depth video review/.test(bullet)));
 assert.ok(cards[1]!.bullets.includes(MEMBERSHIP_COMPARISON_PLUS_EXTRA_REVIEW_NOTE));
 assert.ok(cards[2]!.bullets.some((bullet) => /Recruiting Guide/.test(bullet)));
+assert.ok(cards[2]!.bullets.some((bullet) => /1-on-1 coaching/.test(bullet)));
+assert.ok(cards[2]!.bullets.some((bullet) => /Kickoff call/.test(bullet)));
+assert.ok(cards[2]!.bullets.some((bullet) => /Monthly goal setting/.test(bullet)));
 
 const rows = listMembershipComparisonRows();
 const byId = Object.fromEntries(rows.map((row) => [row.id, row]));
@@ -35,9 +38,23 @@ assert.equal(
   formatMembershipComparisonCell(byId["swing-feedback"]!.cells.PLUS),
   "1 in-depth video review per month",
 );
+assert.equal(
+  formatMembershipComparisonCell(byId["swing-feedback"]!.cells.ALL_ACCESS),
+  "Weekly video review + progress check-in",
+);
 assert.equal(formatMembershipComparisonCell(byId.guides!.cells.CORE), "Starter guides");
 assert.equal(formatMembershipComparisonCell(byId.guides!.cells.PLUS), "All guides");
 assert.equal(formatMembershipComparisonCell(byId["daily-challenge"]!.cells.CORE), "Yes");
+assert.equal(byId["daily-plan"]!.label, "1-on-1 coaching with a personalized daily plan");
+assert.equal(formatMembershipComparisonCell(byId["daily-plan"]!.cells.CORE), "-");
+assert.equal(formatMembershipComparisonCell(byId["daily-plan"]!.cells.PLUS), "-");
+assert.equal(formatMembershipComparisonCell(byId["daily-plan"]!.cells.ALL_ACCESS), "Yes");
+assert.equal(formatMembershipComparisonCell(byId["weekly-focus-tasks"]!.cells.ALL_ACCESS), "Yes");
+assert.equal(formatMembershipComparisonCell(byId["monthly-goals"]!.cells.CORE), "-");
+assert.equal(formatMembershipComparisonCell(byId["monthly-goals"]!.cells.PLUS), "-");
+assert.equal(formatMembershipComparisonCell(byId["monthly-goals"]!.cells.ALL_ACCESS), "Yes");
+assert.equal(formatMembershipComparisonCell(byId["game-practice-logging"]!.cells.ALL_ACCESS), "Yes");
+assert.equal(formatMembershipComparisonCell(byId["kickoff-call"]!.cells.ALL_ACCESS), "Yes");
 assert.equal(listMembershipComparisonColumns()[1]!.note, MEMBERSHIP_COMPARISON_PLUS_EXTRA_REVIEW_NOTE);
 
 const founding = buildMembershipFoundingPlusHighlight({

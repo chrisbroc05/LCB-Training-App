@@ -60,6 +60,7 @@ export default async function RootLayout({
   let hasMemberDownloadsAccess = false;
   let hasProgramEnrollment = false;
   let hasCoachingAccess = false;
+  let hasGoalCheckinAccess = false;
   let orgTrialHeader: OrgTrialHeaderSummary | null = null;
   if (session?.user?.id) {
     const layoutAccess = await loadLoggedInLayoutAccess(session.user.id);
@@ -70,6 +71,7 @@ export default async function RootLayout({
     hasMemberDownloadsAccess = layoutAccess.hasMemberDownloadsAccess;
     hasProgramEnrollment = layoutAccess.hasProgramEnrollment;
     hasCoachingAccess = layoutAccess.hasCoachingAccess;
+    hasGoalCheckinAccess = layoutAccess.hasGoalCheckinAccess;
     orgTrialHeader = layoutAccess.orgTrialHeader;
   }
   const hasAdminAccess = isAdminEmail(session?.user?.email);
@@ -128,6 +130,7 @@ export default async function RootLayout({
                 hasPlaybookAccess={hasPlaybookAccess}
                 hasMemberDownloadsAccess={hasMemberDownloadsAccess}
                 hasCoachingAccess={hasCoachingAccess}
+                hasGoalCheckinAccess={hasGoalCheckinAccess}
                 hasProgramEnrollment={hasProgramEnrollment}
                 orgTrialHeader={orgTrialHeader}
               />

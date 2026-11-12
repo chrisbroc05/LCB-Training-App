@@ -70,7 +70,7 @@ export const twelveWeekProgramRequiredMessage =
 export const memorableRequiredMessage = twelveWeekProgramRequiredMessage;
 
 export const goalCheckinRequiredMessage =
-  "Monthly goal check-ins are available with the 12-Week Coaching Program.";
+  "Monthly goal check-ins are available with All-Access or the 12-Week Coaching Program.";
 
 export const freeSubmissionUsedUpgradeMessage =
   "Your one free submission has already been used. Join the 12-Week Coaching Program for a daily plan, weekly video breakdowns, and full coaching support.";

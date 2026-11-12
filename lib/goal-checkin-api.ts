@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { canAccessCoachingNav } from "@/lib/membership";
+import { canAccessGoalCheckin } from "@/lib/access-shared";
+import { toAccessUserFields, userAccessSelect } from "@/lib/access-server";
 import { prisma } from "@/lib/prisma";
 
 export async function requireGoalCheckinMember() {
@@ -18,7 +19,7 @@ export async function requireGoalCheckinMember() {
       id: true,
       email: true,
       name: true,
-      membershipTier: true,
+      ...userAccessSelect,
     },
   });
 
@@ -28,10 +29,14 @@ export async function requireGoalCheckinMember() {
     };
   }
 
-  if (!canAccessCoachingNav(user.membershipTier)) {
+  const access = toAccessUserFields(user);
+  if (!canAccessGoalCheckin(access)) {
     return {
       error: NextResponse.json(
-        { error: "Goal check-ins are available with the 12-Week Coaching Program." },
+        {
+          error:
+            "Goal check-ins are available with All-Access or the 12-Week Coaching Program.",
+        },
         { status: 403 },
       ),
     };

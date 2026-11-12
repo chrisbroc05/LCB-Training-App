@@ -4,6 +4,7 @@
  */
 
 import {
+  canAccessGoalCheckin,
   canDownloadGuideFilename,
   canMessageCoach,
   canViewPlaybook,
@@ -113,9 +114,17 @@ function swingFeedbackCell(level: MembershipLevelKey): MembershipComparisonCell 
     return text("1 in-depth video review per month");
   }
   if (allowance.kind === "unlimited") {
-    return text("Weekly video review");
+    return text("Weekly video review + progress check-in");
   }
   return dash();
+}
+
+function programFeatureCell(level: MembershipLevelKey): MembershipComparisonCell {
+  return cellFromBoolean(hasPersonalProgramDashboard(accessUserForLevel(level)));
+}
+
+function goalCheckinFeatureCell(level: MembershipLevelKey): MembershipComparisonCell {
+  return cellFromBoolean(canAccessGoalCheckin(accessUserForLevel(level)));
 }
 
 function guidesCell(user: AccessUserFields): MembershipComparisonCell {
@@ -167,8 +176,12 @@ export function listMembershipStepUpCards(): MembershipStepUpCard[] {
       recommended: false,
       includesPriorLabel: "Everything in Plus, plus:",
       bullets: [
-        "A personalized daily plan",
-        "Weekly video review (replaces the monthly review)",
+        "1-on-1 coaching: a personalized daily plan built for your player",
+        "Weekly focus and custom tasks set by Coach Broc",
+        "Weekly video review and progress check-in (replaces the monthly review)",
+        "Monthly goal setting in the app, reviewed by Coach Broc",
+        "Game and practice logging, plus a weekly recap email for parents",
+        "Kickoff call with Coach Broc and a parent to get set up",
         "College Baseball Recruiting Guide",
       ],
     },
@@ -274,11 +287,47 @@ export function listMembershipComparisonRows(): MembershipComparisonRow[] {
     },
     {
       id: "daily-plan",
-      label: "Daily plan",
+      label: "1-on-1 coaching with a personalized daily plan",
       cells: {
-        CORE: cellFromBoolean(hasPersonalProgramDashboard(byLevel.CORE)),
-        PLUS: cellFromBoolean(hasPersonalProgramDashboard(byLevel.PLUS)),
-        ALL_ACCESS: cellFromBoolean(hasPersonalProgramDashboard(byLevel.ALL_ACCESS)),
+        CORE: programFeatureCell("CORE"),
+        PLUS: programFeatureCell("PLUS"),
+        ALL_ACCESS: programFeatureCell("ALL_ACCESS"),
+      },
+    },
+    {
+      id: "weekly-focus-tasks",
+      label: "Weekly focus + custom tasks",
+      cells: {
+        CORE: programFeatureCell("CORE"),
+        PLUS: programFeatureCell("PLUS"),
+        ALL_ACCESS: programFeatureCell("ALL_ACCESS"),
+      },
+    },
+    {
+      id: "monthly-goals",
+      label: "Monthly goal setting (reviewed by Coach Broc)",
+      cells: {
+        CORE: goalCheckinFeatureCell("CORE"),
+        PLUS: goalCheckinFeatureCell("PLUS"),
+        ALL_ACCESS: goalCheckinFeatureCell("ALL_ACCESS"),
+      },
+    },
+    {
+      id: "game-practice-logging",
+      label: "Game and practice logging + parent weekly recap",
+      cells: {
+        CORE: programFeatureCell("CORE"),
+        PLUS: programFeatureCell("PLUS"),
+        ALL_ACCESS: programFeatureCell("ALL_ACCESS"),
+      },
+    },
+    {
+      id: "kickoff-call",
+      label: "Kickoff call",
+      cells: {
+        CORE: programFeatureCell("CORE"),
+        PLUS: programFeatureCell("PLUS"),
+        ALL_ACCESS: programFeatureCell("ALL_ACCESS"),
       },
     },
   ];

@@ -15,6 +15,7 @@ type LoggedInSiteHeaderProps = {
   hasPlaybookAccess: boolean;
   hasMemberDownloadsAccess: boolean;
   hasCoachingAccess: boolean;
+  hasGoalCheckinAccess: boolean;
   hasProgramEnrollment: boolean;
   orgTrialHeader: OrgTrialHeaderSummary | null;
 };
@@ -28,6 +29,7 @@ export default function LoggedInSiteHeader({
   hasPlaybookAccess,
   hasMemberDownloadsAccess,
   hasCoachingAccess,
+  hasGoalCheckinAccess,
   hasProgramEnrollment,
   orgTrialHeader,
 }: LoggedInSiteHeaderProps) {
@@ -57,6 +59,7 @@ export default function LoggedInSiteHeader({
               hasPlaybookAccess={hasPlaybookAccess}
               hasMemberDownloadsAccess={hasMemberDownloadsAccess}
               hasCoachingAccess={hasCoachingAccess}
+              hasGoalCheckinAccess={hasGoalCheckinAccess}
               hasProgramEnrollment={hasProgramEnrollment}
               userDisplayName={userDisplayName}
             />

@@ -3,7 +3,9 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import LockedFeaturePanel from "@/app/LockedFeaturePanel";
 import GoalSettingPageBody from "@/app/goal-setting/GoalSettingPageBody";
-import { canAccessCoachingNav, goalCheckinRequiredMessage } from "@/lib/membership";
+import { canAccessGoalCheckin } from "@/lib/access-shared";
+import { toAccessUserFields, userAccessSelect } from "@/lib/access-server";
+import { goalCheckinRequiredMessage } from "@/lib/membership";
 import { prisma } from "@/lib/prisma";
 
 export default async function GoalSettingPage() {
@@ -14,21 +16,22 @@ export default async function GoalSettingPage() {
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { membershipTier: true },
+    select: userAccessSelect,
   });
 
   if (!user) {
     redirect("/auth");
   }
 
-  if (!canAccessCoachingNav(user.membershipTier)) {
+  const access = toAccessUserFields(user);
+  if (!canAccessGoalCheckin(access)) {
     return (
       <LockedFeaturePanel
         title="Monthly Goal Check-In"
         description="Submit your monthly goals and get personal feedback from Coach Broc."
         message={goalCheckinRequiredMessage}
-        upgradeLabel="Join the 12-Week Program"
-        upgradeHref="/program"
+        upgradeLabel="See membership levels"
+        upgradeHref="/upgrade?level=ALL_ACCESS"
       />
     );
   }

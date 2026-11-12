@@ -15,6 +15,7 @@ type TopNavigationProps = {
   hasPlaybookAccess: boolean;
   hasMemberDownloadsAccess: boolean;
   hasCoachingAccess: boolean;
+  hasGoalCheckinAccess: boolean;
   hasProgramEnrollment: boolean;
   userDisplayName?: string;
 };
@@ -82,22 +83,29 @@ function buildTrainLinks(options: {
   return links;
 }
 
-function buildCoachingLinks(): NavLink[] {
-  return [
-    {
+function buildCoachingLinks(options: {
+  hasCoachingAccess: boolean;
+  hasGoalCheckinAccess: boolean;
+}): NavLink[] {
+  const links: NavLink[] = [];
+  if (options.hasCoachingAccess) {
+    links.push({
       label: "Coaching Submissions",
       href: "/coaching-submissions",
       isActive: (path) =>
         path.startsWith("/coaching-submissions") ||
         path.startsWith("/swing-analysis") ||
         path.startsWith("/mental-game"),
-    },
-    {
+    });
+  }
+  if (options.hasGoalCheckinAccess) {
+    links.push({
       label: "Goal Check-In",
       href: "/goal-setting",
       isActive: (path) => path.startsWith("/goal-setting"),
-    },
-  ];
+    });
+  }
+  return links;
 }
 
 function buildAccountLinks(): NavLink[] {
@@ -401,6 +409,7 @@ export default function TopNavigation({
   hasPlaybookAccess,
   hasMemberDownloadsAccess,
   hasCoachingAccess,
+  hasGoalCheckinAccess,
   hasProgramEnrollment,
   userDisplayName,
 }: TopNavigationProps) {
@@ -437,7 +446,9 @@ export default function TopNavigation({
   });
   const trainGroup: NavGroup = { label: "Train", links: trainLinks };
   const showTrainNav = trainLinks.length > 0;
-  const coachingGroup: NavGroup = { label: "Coaching", links: buildCoachingLinks() };
+  const coachingLinks = buildCoachingLinks({ hasCoachingAccess, hasGoalCheckinAccess });
+  const coachingGroup: NavGroup = { label: "Coaching", links: coachingLinks };
+  const showCoachingNav = coachingLinks.length > 0;
   const suppressMobileMenu = shouldUseMobileAppChrome(isLoggedIn, pathname);
 
   return (
@@ -485,7 +496,7 @@ export default function TopNavigation({
           />
         ) : null}
 
-        {hasCoachingAccess ? (
+        {showCoachingNav ? (
           <DesktopDropdown
             dropdownId="coaching"
             group={coachingGroup}
@@ -569,7 +580,7 @@ export default function TopNavigation({
                 />
               ) : null}
 
-              {hasCoachingAccess ? (
+              {showCoachingNav ? (
                 <MobileNavGroup
                   title="Coaching"
                   links={coachingGroup.links}

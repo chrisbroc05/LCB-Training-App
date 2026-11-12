@@ -6,9 +6,9 @@ import MobileCoachingStatusCard from "@/app/dashboard/MobileCoachingStatusCard";
 import MonthlyGoalProgressCard from "@/app/dashboard/MonthlyGoalProgressCard";
 import type { CoachingSubmissionUserFields } from "@/lib/coaching-submissions-shared";
 import type { KeepBuildingCoachingContext } from "@/lib/coaching-keep-building-shared";
-import { canAccessCoachingNav, type DatabaseTier } from "@/lib/membership";
+import { type DatabaseTier } from "@/lib/membership";
 import { MEMBERSHIP_LEVELS } from "@/lib/membership-levels-shared";
-import type { AccessUserFields } from "@/lib/access-shared";
+import { canAccessGoalCheckin, type AccessUserFields } from "@/lib/access-shared";
 import type { MembershipFoundingPlusHighlight } from "@/lib/membership-comparison-shared";
 import type { OrgTrialReportContext } from "@/lib/home-coaching-status-shared";
 import InPersonEmergencyReminderCard from "@/components/InPersonEmergencyReminderCard";
@@ -173,7 +173,7 @@ export default function MobileDashboardView({
 
           {showTwelveWeekCard ? <DashboardTwelveWeekUpsellCard /> : null}
 
-          {canAccessCoachingNav(membershipTier) ? (
+          {canAccessGoalCheckin(access) ? (
             <div className="mobile-card [&_article]:border-0 [&_article]:bg-transparent [&_article]:p-0">
               <MonthlyGoalProgressCard
                 hasCheckin={Boolean(currentMonthGoalCheckin)}

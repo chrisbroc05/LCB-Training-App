@@ -32,6 +32,7 @@ import {
   type DatabaseTier,
 } from "@/lib/membership";
 import {
+  canAccessGoalCheckin,
   canMessageCoach,
   canViewPlaybook,
   resolveEffectiveLevel,
@@ -246,10 +247,9 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     membershipTier,
     userRecord.stripeSubscriptionId,
   );
-  const currentMonthGoalCheckin =
-    canMessageCoach(access) || canAccessCoachingNav(membershipTier)
-      ? await getCurrentMonthGoalCheckin(session.user.id)
-      : null;
+  const currentMonthGoalCheckin = canAccessGoalCheckin(access)
+    ? await getCurrentMonthGoalCheckin(session.user.id)
+    : null;
 
   const unreadResponse = await prisma.notification.findFirst({
     where: {
@@ -563,7 +563,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
             <DashboardTwelveWeekUpsellCard className="mt-8" />
           ) : null}
 
-          {canAccessCoachingNav(membershipTier) ? (
+          {canAccessGoalCheckin(access) ? (
             <section className="mt-10 border-t border-[#18243a] pt-10 sm:mt-12 sm:pt-12">
               <div className="mb-5 sm:mb-6">
                 <h2 className="text-xl font-semibold text-zinc-100 sm:text-2xl">Monthly Goal Progress</h2>

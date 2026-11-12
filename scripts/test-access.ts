@@ -13,6 +13,7 @@ import {
   getReviewAllowance,
   getWorkoutAccessMode,
   hasFullDrillLibraryAccess,
+  canAccessGoalCheckin,
   hasPersonalProgramDashboard,
   resolveEffectiveLevel,
 } from "../lib/access-shared";
@@ -110,6 +111,12 @@ assert.equal(hasPersonalProgramDashboard(fields("FREE", { level: "ALL_ACCESS" })
 assert.equal(hasPersonalProgramDashboard(fields("FREE", { level: "PLUS" })), false);
 assert.equal(canAccessProgramDashboard(fields("FREE", { level: "ALL_ACCESS" })), true);
 assert.equal(canAccessProgramDashboard(fields("FREE", { level: "CORE" })), false);
+
+console.log("test-access: goal check-in");
+assert.equal(canAccessGoalCheckin(fields("FREE", { level: "CORE" })), false);
+assert.equal(canAccessGoalCheckin(fields("FREE", { level: "PLUS" })), false);
+assert.equal(canAccessGoalCheckin(fields("FREE", { level: "ALL_ACCESS" })), true);
+assert.equal(canAccessGoalCheckin(fields("TWELVE_WEEK")), true);
 
 console.log("test-access: messaging");
 assert.equal(canMessageCoach(fields("FREE", { level: "CORE" })), false);

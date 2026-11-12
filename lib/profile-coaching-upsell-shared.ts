@@ -19,5 +19,10 @@ export function getProfileResponseUpsellVariant(
 }
 
 export function shouldShowProfileGoalCheckinHistory(level: EffectiveAccessLevel): boolean {
-  return level === "TWELVE_WEEK";
+  return (
+    level === "TWELVE_WEEK" ||
+    level === "ALL_ACCESS" ||
+    level === "LEGACY_ELITE" ||
+    level === "LEGACY_MEMORABLE"
+  );
 }

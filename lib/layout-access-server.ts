@@ -2,6 +2,7 @@ import "server-only";
 
 import {
   canAccessDrillLibraryBrowse,
+  canAccessGoalCheckin,
   canMessageCoach,
   canViewPlaybook,
   hasPersonalProgramDashboard,
@@ -28,6 +29,7 @@ export type LoggedInLayoutAccess = {
   hasMemberDownloadsAccess: boolean;
   hasProgramEnrollment: boolean;
   hasCoachingAccess: boolean;
+  hasGoalCheckinAccess: boolean;
   isOrgTrial: boolean;
   orgTrialHeader: OrgTrialHeaderSummary | null;
 };
@@ -97,6 +99,7 @@ export async function loadLoggedInLayoutAccess(userId: string): Promise<LoggedIn
     hasMemberDownloadsAccess: canAccessMemberDownloadsPage(access.membershipTier),
     hasProgramEnrollment,
     hasCoachingAccess: canMessageCoach(access),
+    hasGoalCheckinAccess: canAccessGoalCheckin(access),
     isOrgTrial,
     orgTrialHeader,
   };
