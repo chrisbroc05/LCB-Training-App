@@ -24,7 +24,10 @@ export async function POST(request: Request) {
 
   const [content, leaderboard] = await Promise.all([
     loadDailyChallengeContentForUser(session.user.id),
-    loadDailyLeaderboardForUser(session.user.id),
+    loadDailyLeaderboardForUser(session.user.id, {
+      scope: "all",
+      includeEntries: false,
+    }),
   ]);
 
   return jsonNoStore({ ok: true, content, leaderboard });

@@ -63,10 +63,15 @@ export type DailyChallengeContentPayload = {
   longestStreak: number;
 };
 
+export const DAILY_LEADERBOARD_SCOPES = ["all", "age", "org"] as const;
+export type DailyLeaderboardScopeFilter = (typeof DAILY_LEADERBOARD_SCOPES)[number];
+
 export type DailyLeaderboardEntry = {
   rank: number;
   userId: string;
   displayName: string;
+  ageGroup: DailyChallengeAgeGroupKey | null;
+  ageGroupLabel: string | null;
   completedThisMonth: number;
   streak: number;
   isSelf: boolean;
@@ -78,12 +83,17 @@ export type DailyLeaderboardViewerNotice =
   | null;
 
 export type DailyLeaderboardPayload = {
-  scope: "org" | "overall";
+  scope: DailyLeaderboardScopeFilter;
   scopeLabel: string;
-  ageGroup: DailyChallengeAgeGroupKey;
-  ageGroupLabel: string;
+  ageGroup: DailyChallengeAgeGroupKey | null;
+  ageGroupLabel: string | null;
+  ageGroupFilterLabel: string | null;
+  organizationId: string | null;
+  organizationName: string | null;
+  canFilterByOrg: boolean;
   monthKey: string;
   top: DailyLeaderboardEntry[];
+  entries: DailyLeaderboardEntry[];
   self: DailyLeaderboardEntry | null;
   totalPlayers: number;
   viewerNotice: DailyLeaderboardViewerNotice;
@@ -102,6 +112,28 @@ export function dailyChallengeAgeGroupLabel(ageGroup: DailyChallengeAgeGroupKey)
     case "AGE_15_PLUS":
       return "15+";
   }
+}
+
+/** Filter tab label for the viewer's age group board. */
+export function dailyChallengeAgeGroupFilterLabel(ageGroup: DailyChallengeAgeGroupKey) {
+  switch (ageGroup) {
+    case "AGE_8_11":
+      return "Ages 8-11";
+    case "AGE_12_14":
+      return "Ages 12-14";
+    case "AGE_15_PLUS":
+      return "Ages 15 and up";
+  }
+}
+
+export function isDailyLeaderboardScopeFilter(value: string): value is DailyLeaderboardScopeFilter {
+  return (DAILY_LEADERBOARD_SCOPES as readonly string[]).includes(value);
+}
+
+export function formatDailyLeaderboardEntryPrimary(entry: Pick<DailyLeaderboardEntry, "displayName" | "ageGroupLabel">) {
+  return entry.ageGroupLabel
+    ? `${entry.displayName} | ${entry.ageGroupLabel}`
+    : entry.displayName;
 }
 
 export function parseDailyChallengeAgeGroupLabel(raw: string): DailyChallengeAgeGroupKey | null {
@@ -173,7 +205,7 @@ export function formatLeaderboardDisplayName(params: {
   firstName: string | null | undefined;
   lastName: string | null | undefined;
   fallbackName: string | null | undefined;
-  teamName: string | null | undefined;
+  teamName?: string | null | undefined;
 }) {
   const first =
     params.firstName?.trim() ||

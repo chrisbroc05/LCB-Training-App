@@ -6,6 +6,7 @@ import DailyLeaderboardNotice from "@/app/dashboard/DailyLeaderboardNotice";
 import {
   dailyChallengeAgeGroupLabel,
   formatDailyChallengeDayDoneMessage,
+  formatDailyLeaderboardEntryPrimary,
   formatDailyLeaderboardStats,
   isDailyChallengeQuestionAnswered,
   MINDSET_ANSWER_MAX_CHARS,
@@ -105,14 +106,21 @@ export default function DailyChallengeCard({ variant = "primary" }: DailyChallen
           : "border-[#52B788]/40 bg-[#22c55e]/5"
       }`}
     >
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs font-semibold uppercase tracking-wide text-[#9df3bd]">
-          {variant === "bonus" ? "Optional bonus" : "Daily Challenge"}
-          {ageLabel ? ` - ${ageLabel}` : ""}
-        </p>
-        <p className="text-xs font-semibold text-zinc-300">
-          Streak {content.streak} day{content.streak === 1 ? "" : "s"}
-        </p>
+      <div className="space-y-1">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-xs font-semibold uppercase tracking-wide text-[#9df3bd]">
+            {variant === "bonus" ? "Bonus: Daily Challenge" : "Daily Challenge"}
+            {variant === "primary" && ageLabel ? ` - ${ageLabel}` : ""}
+          </p>
+          <p className="text-xs font-semibold text-zinc-300">
+            Streak {content.streak} day{content.streak === 1 ? "" : "s"}
+          </p>
+        </div>
+        {variant === "bonus" ? (
+          <p className="text-xs text-zinc-500">
+            Not part of your daily plan{ageLabel ? ` | Ages ${ageLabel}` : ""}
+          </p>
+        ) : null}
       </div>
 
       {error ? <p className="mt-2 text-sm text-red-300">{error}</p> : null}
@@ -275,7 +283,7 @@ export default function DailyChallengeCard({ variant = "primary" }: DailyChallen
             <div className="mt-5 border-t border-[#18243a] pt-4">
               <div className="flex items-center justify-between gap-2">
                 <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                  {leaderboard.scopeLabel} leaderboard
+                  LCB Leaderboard
                 </p>
                 <Link
                   href="/dashboard/leaderboard"
@@ -293,14 +301,14 @@ export default function DailyChallengeCard({ variant = "primary" }: DailyChallen
                   {leaderboard.top.map((entry) => (
                     <li
                       key={entry.userId}
-                      className={`flex items-center justify-between text-sm ${
+                      className={`flex items-center justify-between gap-2 text-sm ${
                         entry.isSelf ? "font-semibold text-[#9df3bd]" : "text-zinc-300"
                       }`}
                     >
                       <span>
-                        #{entry.rank} {entry.displayName}
+                        #{entry.rank} {formatDailyLeaderboardEntryPrimary(entry)}
                       </span>
-                      <span>
+                      <span className="shrink-0">
                         {formatDailyLeaderboardStats(
                           entry.completedThisMonth,
                           entry.streak,
@@ -310,13 +318,9 @@ export default function DailyChallengeCard({ variant = "primary" }: DailyChallen
                   ))}
                 </ul>
               )}
-              {leaderboard.self && !leaderboard.top.some((entry) => entry.isSelf) ? (
+              {leaderboard.self ? (
                 <p className="mt-2 text-sm font-semibold text-[#9df3bd]">
-                  #{leaderboard.self.rank} {leaderboard.self.displayName} |{" "}
-                  {formatDailyLeaderboardStats(
-                    leaderboard.self.completedThisMonth,
-                    leaderboard.self.streak,
-                  )}
+                  You&apos;re #{leaderboard.self.rank}
                 </p>
               ) : null}
               <DailyLeaderboardNotice notice={leaderboard.viewerNotice} />

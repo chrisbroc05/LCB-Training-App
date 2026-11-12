@@ -17,7 +17,10 @@ export async function GET() {
 
   const [content, leaderboard] = await Promise.all([
     loadDailyChallengeContentForUser(session.user.id),
-    loadDailyLeaderboardForUser(session.user.id),
+    loadDailyLeaderboardForUser(session.user.id, {
+      scope: "all",
+      includeEntries: false,
+    }),
   ]);
 
   if (!content) {

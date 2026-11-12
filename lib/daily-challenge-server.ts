@@ -15,6 +15,7 @@ import {
   chicagoMonthPrefix,
   computeCurrentStreak,
   computeLongestStreak,
+  dailyChallengeAgeGroupFilterLabel,
   dailyChallengeAgeGroupLabel,
   formatLeaderboardDisplayName,
   MINDSET_ANSWER_MAX_CHARS,
@@ -27,6 +28,7 @@ import {
   type DailyChallengeContentPayload,
   type DailyLeaderboardEntry,
   type DailyLeaderboardPayload,
+  type DailyLeaderboardScopeFilter,
   type DailyQuestionTypeKey,
 } from "@/lib/daily-challenge-shared";
 
@@ -520,10 +522,32 @@ function leaderboardEligibleWhere(organizationId: string | null): Prisma.UserWhe
   };
 }
 
+function resolveLeaderboardScopeLabel(params: {
+  scope: DailyLeaderboardScopeFilter;
+  ageGroup: DailyChallengeAgeGroupKey | null;
+  organizationName: string | null;
+}) {
+  if (params.scope === "org") {
+    return params.organizationName?.trim() || "My club";
+  }
+  if (params.scope === "age" && params.ageGroup) {
+    return dailyChallengeAgeGroupFilterLabel(params.ageGroup);
+  }
+  return "LCB Leaderboard";
+}
+
 export async function loadDailyLeaderboardForUser(
   userId: string,
-  now = new Date(),
+  options?: {
+    scope?: DailyLeaderboardScopeFilter;
+    now?: Date;
+    topLimit?: number;
+    includeEntries?: boolean;
+  },
 ): Promise<DailyLeaderboardPayload | null> {
+  const now = options?.now ?? new Date();
+  const topLimit = options?.topLimit ?? 5;
+  const includeEntries = options?.includeEntries ?? true;
   const user = await loadContentUser(userId);
   if (!user) {
     return null;
@@ -534,13 +558,19 @@ export async function loadDailyLeaderboardForUser(
     return null;
   }
 
+  const canFilterByOrg = Boolean(user.organizationId);
+  let scope: DailyLeaderboardScopeFilter = options?.scope ?? "all";
+  if (scope === "org" && !canFilterByOrg) {
+    scope = "all";
+  }
+
   const { dateKey } = getChicagoDateTimeParts(now);
   const monthPrefix = chicagoMonthPrefix(dateKey);
-  const orgScoped = Boolean(user.organizationId);
-  const scopeOrgId = orgScoped ? user.organizationId : null;
+  const organizationId = user.organizationId;
+  const organizationName = user.organization?.name ?? null;
 
   const eligibleUsers = await prisma.user.findMany({
-    where: leaderboardEligibleWhere(scopeOrgId),
+    where: leaderboardEligibleWhere(scope === "org" ? organizationId : null),
     select: {
       id: true,
       playerFirstName: true,
@@ -548,16 +578,18 @@ export async function loadDailyLeaderboardForUser(
       name: true,
       age: true,
       playerAge: true,
-      orgTeam: { select: { name: true } },
-      organization: { select: { name: true } },
     },
   });
 
-  const ageFiltered = eligibleUsers.filter((row) => {
-    const rowAge = preferredPlayerAge(row.age, row.playerAge);
-    return resolveDailyChallengeAgeGroup(rowAge) === ageGroup;
-  });
-  const userIds = ageFiltered.map((row) => row.id);
+  const scopedUsers =
+    scope === "age"
+      ? eligibleUsers.filter((row) => {
+          const rowAge = preferredPlayerAge(row.age, row.playerAge);
+          return resolveDailyChallengeAgeGroup(rowAge) === ageGroup;
+        })
+      : eligibleUsers;
+
+  const userIds = scopedUsers.map((row) => row.id);
 
   const completions =
     userIds.length === 0
@@ -577,19 +609,23 @@ export async function loadDailyLeaderboardForUser(
     byUser.set(row.userId, list);
   }
 
-  const ranked = ageFiltered
+  const ranked = scopedUsers
     .map((row) => {
       const dates = byUser.get(row.id) ?? [];
       const completedThisMonth = dates.filter((key) => key.startsWith(monthPrefix)).length;
       const streak = computeCurrentStreak(dates, dateKey);
+      const rowAgeGroup = resolveDailyChallengeAgeGroup(
+        preferredPlayerAge(row.age, row.playerAge),
+      );
       return {
         userId: row.id,
         displayName: formatLeaderboardDisplayName({
           firstName: row.playerFirstName,
           lastName: row.playerLastName,
           fallbackName: row.name,
-          teamName: orgScoped ? row.orgTeam?.name ?? null : null,
         }),
+        ageGroup: rowAgeGroup,
+        ageGroupLabel: rowAgeGroup ? dailyChallengeAgeGroupLabel(rowAgeGroup) : null,
         completedThisMonth,
         streak,
       };
@@ -613,10 +649,6 @@ export async function loadDailyLeaderboardForUser(
 
   const self = withRank.find((row) => row.userId === userId) ?? null;
 
-  const scopeLabel = orgScoped
-    ? `${user.organization?.name ?? "Club"} ${dailyChallengeAgeGroupLabel(ageGroup)}`
-    : `LCB ${dailyChallengeAgeGroupLabel(ageGroup)}`;
-
   const viewerNotice =
     user.isTestAccount || user.clubReportExcluded
       ? ({ kind: "account_excluded" } as const)
@@ -625,12 +657,21 @@ export async function loadDailyLeaderboardForUser(
         : null;
 
   return {
-    scope: orgScoped ? "org" : "overall",
-    scopeLabel,
+    scope,
+    scopeLabel: resolveLeaderboardScopeLabel({
+      scope,
+      ageGroup,
+      organizationName,
+    }),
     ageGroup,
     ageGroupLabel: dailyChallengeAgeGroupLabel(ageGroup),
+    ageGroupFilterLabel: dailyChallengeAgeGroupFilterLabel(ageGroup),
+    organizationId,
+    organizationName,
+    canFilterByOrg,
     monthKey: monthPrefix,
-    top: withRank.slice(0, 5),
+    top: withRank.slice(0, topLimit),
+    entries: includeEntries ? withRank : withRank.slice(0, topLimit),
     self: viewerNotice ? null : self,
     totalPlayers: withRank.length,
     viewerNotice,
