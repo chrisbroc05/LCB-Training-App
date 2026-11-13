@@ -78,5 +78,9 @@ export function shouldShowMessageBubble(pathname: string) {
     return false;
   }
 
+  if (pathname.startsWith("/clinics")) {
+    return false;
+  }
+
   return true;
 }

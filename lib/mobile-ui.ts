@@ -9,6 +9,7 @@ export function isPublicMobilePage(pathname: string) {
     pathname.startsWith("/details") ||
     pathname.startsWith("/inperson") ||
     pathname.startsWith("/coaches") ||
+    pathname.startsWith("/clinics") ||
     pathname === "/terms" ||
     pathname === "/privacy" ||
     pathname === "/waiver" ||

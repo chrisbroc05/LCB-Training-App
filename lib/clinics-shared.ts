@@ -70,7 +70,19 @@ export function clinicDateKey(date: Date | string) {
   return `${year}-${month}-${day}`;
 }
 
-/** Format a clinic day as a calendar date only (never shift via America/Chicago). */
+function getClinicCurrentYear() {
+  return Number(
+    new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/Chicago",
+      year: "numeric",
+    }).format(new Date()),
+  );
+}
+
+/**
+ * Format a clinic day as a calendar date only (never shift via America/Chicago).
+ * Example: "Mon Nov 23" in the current year, or "Mon Nov 23, 2027" otherwise.
+ */
 export function formatClinicDayLabel(date: Date | string) {
   const key = clinicDateKey(date);
   const [year, month, day] = key.split("-").map((part) => Number(part));
@@ -78,13 +90,57 @@ export function formatClinicDayLabel(date: Date | string) {
     return key;
   }
   const value = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
-  return new Intl.DateTimeFormat("en-US", {
+  const weekday = new Intl.DateTimeFormat("en-US", {
     weekday: "short",
-    month: "short",
-    day: "numeric",
-    year: "numeric",
     timeZone: "UTC",
   }).format(value);
+  const monthDay = new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC",
+  }).format(value);
+  if (year === getClinicCurrentYear()) {
+    return `${weekday} ${monthDay}`;
+  }
+  return `${weekday} ${monthDay}, ${year}`;
+}
+
+export function formatClinicDaysList(dates: Array<Date | string>) {
+  return dates.map((date) => formatClinicDayLabel(date)).join(", ");
+}
+
+export function formatClinicDaySpotsLabel(params: {
+  dateLabel: string;
+  spotsLeft: number;
+  soldOut: boolean;
+}) {
+  if (params.soldOut) {
+    return `${params.dateLabel}: Sold out`;
+  }
+  const noun = params.spotsLeft === 1 ? "spot" : "spots";
+  return `${params.dateLabel}: ${params.spotsLeft} ${noun} left`;
+}
+
+export function formatClinicSpotsLines(days: ClinicDayAvailability[]) {
+  return days.map((day) =>
+    formatClinicDaySpotsLabel({
+      dateLabel: day.dateLabel,
+      spotsLeft: day.spotsLeft,
+      soldOut: day.soldOut,
+    }),
+  );
+}
+
+export function formatClinicPricingLine(params: {
+  pricePerDayCents: number;
+  allDaysPriceCents: number;
+  dayCount: number;
+}) {
+  const perDay = formatClinicMoney(params.pricePerDayCents);
+  if (params.dayCount <= 1) {
+    return `${perDay} per day`;
+  }
+  return `${perDay} per day, or ${formatClinicMoney(params.allDaysPriceCents)} for all ${params.dayCount} days`;
 }
 
 function formatClinicClockLabel(timeLocal: string) {

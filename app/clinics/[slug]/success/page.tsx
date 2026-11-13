@@ -1,11 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getServerSession } from "next-auth";
-import PublicPageShell from "@/components/PublicPageShell";
-import { authOptions } from "@/lib/auth";
 import { createClinicSetPasswordToken } from "@/lib/clinics-account-server";
 import {
-  formatClinicDayLabel,
+  formatClinicDaysList,
   formatClinicMoney,
   formatClinicTimeRange,
 } from "@/lib/clinics-shared";
@@ -71,7 +68,6 @@ async function resolveSuccessCta(params: {
 export default async function ClinicSuccessPage({ params, searchParams }: PageProps) {
   const { slug } = await params;
   const resolvedSearch = await searchParams;
-  const session = await getServerSession(authOptions);
   const sessionId =
     typeof resolvedSearch.session_id === "string" ? resolvedSearch.session_id : "";
 
@@ -80,7 +76,9 @@ export default async function ClinicSuccessPage({ params, searchParams }: PagePr
     notFound();
   }
 
-  const dayLabels = registration.days.map((row) => formatClinicDayLabel(row.clinicDay.date));
+  const daysListLabel = formatClinicDaysList(
+    registration.days.map((row) => row.clinicDay.date),
+  );
   const isPaid = registration.status === "PAID";
   const cta = await resolveSuccessCta({
     userId: registration.userId,
@@ -89,8 +87,7 @@ export default async function ClinicSuccessPage({ params, searchParams }: PagePr
   });
 
   return (
-    <PublicPageShell isLoggedIn={Boolean(session?.user)}>
-      <div className="mx-auto w-full max-w-2xl px-4 py-10 sm:px-6">
+    <div className="mx-auto w-full max-w-2xl px-4 py-10 sm:px-6">
         <h1 className="text-3xl font-semibold text-zinc-100">
           {isPaid ? "You're registered" : "Payment received"}
         </h1>
@@ -101,7 +98,7 @@ export default async function ClinicSuccessPage({ params, searchParams }: PagePr
         <div className="mt-8 space-y-3 rounded-2xl border border-[#18243a] bg-[#0b1324] px-5 py-6 text-sm text-zinc-300">
           <p>
             <span className="font-semibold text-zinc-100">Days: </span>
-            {dayLabels.join(", ")}
+            {daysListLabel}
           </p>
           <p>
             <span className="font-semibold text-zinc-100">Time: </span>
@@ -156,7 +153,6 @@ export default async function ClinicSuccessPage({ params, searchParams }: PagePr
             confirming payment.
           </p>
         ) : null}
-      </div>
-    </PublicPageShell>
+    </div>
   );
 }

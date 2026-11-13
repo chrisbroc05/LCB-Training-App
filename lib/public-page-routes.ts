@@ -8,6 +8,9 @@ export function isCompactPublicPage(pathname: string) {
     pathname === "/marketing/unsubscribe" ||
     pathname === "/leads/unsubscribe" ||
     pathname.startsWith("/resources/success") ||
+    pathname.startsWith("/resources/download") ||
+    pathname.startsWith("/resources/pdf") ||
+    pathname.startsWith("/clinics") ||
     pathname === "/program/parent/unsubscribe" ||
     pathname.startsWith("/messages/parent")
   );

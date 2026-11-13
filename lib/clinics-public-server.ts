@@ -4,7 +4,9 @@ import { prisma } from "@/lib/prisma";
 import {
   clinicOverallSoldOut,
   formatClinicDayLabel,
-  formatClinicMoney,
+  formatClinicDaysList,
+  formatClinicPricingLine,
+  formatClinicSpotsLines,
   formatClinicTimeRange,
   type ClinicDayAvailability,
 } from "@/lib/clinics-shared";
@@ -19,10 +21,10 @@ export type PublicClinicSummary = {
   startTimeLocal: string;
   endTimeLocal: string;
   timeRangeLabel: string;
-  pricePerDayLabel: string;
-  allDaysPriceLabel: string;
+  pricingLine: string;
   dayLabels: string[];
-  spotsSummary: string;
+  daysListLabel: string;
+  spotsLines: string[];
   soldOut: boolean;
   closed: boolean;
 };
@@ -38,15 +40,17 @@ export type PublicClinicDetail = PublicClinicSummary & {
   days: ClinicDayAvailability[];
 };
 
-function spotsSummaryFromDays(days: ClinicDayAvailability[]) {
-  if (days.length === 0) {
-    return "No dates scheduled";
+function spotsLinesForClinic(params: {
+  closed: boolean;
+  days: ClinicDayAvailability[];
+}) {
+  if (params.closed) {
+    return ["Closed"];
   }
-  if (clinicOverallSoldOut(days)) {
-    return "Sold out";
+  if (params.days.length === 0) {
+    return ["No dates scheduled"];
   }
-  const minLeft = Math.min(...days.map((day) => day.spotsLeft));
-  return `${minLeft} spot${minLeft === 1 ? "" : "s"} left (best day)`;
+  return formatClinicSpotsLines(params.days);
 }
 
 export async function listPublicClinics(): Promise<PublicClinicSummary[]> {
@@ -65,6 +69,7 @@ export async function listPublicClinics(): Promise<PublicClinicSummary[]> {
       capacityPerDay: clinic.capacityPerDay,
     });
     const soldOut = clinic.closed || clinicOverallSoldOut(availability);
+    const dayDates = clinic.days.map((day) => day.date);
     summaries.push({
       id: clinic.id,
       slug: clinic.slug,
@@ -74,10 +79,14 @@ export async function listPublicClinics(): Promise<PublicClinicSummary[]> {
       startTimeLocal: clinic.startTimeLocal,
       endTimeLocal: clinic.endTimeLocal,
       timeRangeLabel: formatClinicTimeRange(clinic.startTimeLocal, clinic.endTimeLocal),
-      pricePerDayLabel: formatClinicMoney(clinic.pricePerDayCents),
-      allDaysPriceLabel: formatClinicMoney(clinic.allDaysPriceCents),
-      dayLabels: clinic.days.map((day) => formatClinicDayLabel(day.date)),
-      spotsSummary: clinic.closed ? "Closed" : spotsSummaryFromDays(availability),
+      pricingLine: formatClinicPricingLine({
+        pricePerDayCents: clinic.pricePerDayCents,
+        allDaysPriceCents: clinic.allDaysPriceCents,
+        dayCount: clinic.days.length,
+      }),
+      dayLabels: dayDates.map((date) => formatClinicDayLabel(date)),
+      daysListLabel: formatClinicDaysList(dayDates),
+      spotsLines: spotsLinesForClinic({ closed: clinic.closed, days: availability }),
       soldOut,
       closed: clinic.closed,
     });
@@ -101,6 +110,7 @@ export async function getPublicClinicBySlug(slug: string): Promise<PublicClinicD
     capacityPerDay: clinic.capacityPerDay,
   });
   const soldOut = clinic.closed || clinicOverallSoldOut(availability);
+  const dayDates = clinic.days.map((day) => day.date);
 
   return {
     id: clinic.id,
@@ -116,14 +126,18 @@ export async function getPublicClinicBySlug(slug: string): Promise<PublicClinicD
     timeRangeLabel: formatClinicTimeRange(clinic.startTimeLocal, clinic.endTimeLocal),
     pricePerDayCents: clinic.pricePerDayCents,
     allDaysPriceCents: clinic.allDaysPriceCents,
-    pricePerDayLabel: formatClinicMoney(clinic.pricePerDayCents),
-    allDaysPriceLabel: formatClinicMoney(clinic.allDaysPriceCents),
+    pricingLine: formatClinicPricingLine({
+      pricePerDayCents: clinic.pricePerDayCents,
+      allDaysPriceCents: clinic.allDaysPriceCents,
+      dayCount: clinic.days.length,
+    }),
     capacityPerDay: clinic.capacityPerDay,
     active: clinic.active,
     closed: clinic.closed,
-    dayLabels: clinic.days.map((day) => formatClinicDayLabel(day.date)),
+    dayLabels: dayDates.map((date) => formatClinicDayLabel(date)),
+    daysListLabel: formatClinicDaysList(dayDates),
     days: availability,
-    spotsSummary: clinic.closed ? "Closed" : spotsSummaryFromDays(availability),
+    spotsLines: spotsLinesForClinic({ closed: clinic.closed, days: availability }),
     soldOut,
   };
 }
