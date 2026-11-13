@@ -15,7 +15,7 @@ import {
   sendClinicCoachPaidRegistrationEmail,
   sendClinicRegistrationConfirmationEmail,
 } from "@/lib/clinics-emails-server";
-import { formatClinicDayLabel } from "@/lib/clinics-shared";
+import { formatClinicDayWithTimeLabel } from "@/lib/clinics-shared";
 import { splitPlayerName } from "@/lib/testing-shared";
 import { WAIVER_VERSION } from "@/lib/waiver-sign-shared";
 import { linkWaiverSignaturesToUser } from "@/lib/waiver-sign-server";
@@ -225,7 +225,13 @@ export async function fulfillClinicCheckoutSession(session: Stripe.Checkout.Sess
     }
   }
 
-  const dayLabels = registration.days.map((row) => formatClinicDayLabel(row.clinicDay.date));
+  const dayLabels = registration.days.map((row) =>
+    formatClinicDayWithTimeLabel(
+      row.clinicDay.date,
+      registration.clinic.startTimeLocal,
+      registration.clinic.endTimeLocal,
+    ),
+  );
 
   try {
     await sendClinicRegistrationConfirmationEmail({

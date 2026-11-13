@@ -67,6 +67,8 @@ export default async function ClinicDetailPage({ params, searchParams }: PagePro
           pricePerDayCents={clinic.pricePerDayCents}
           allDaysPriceCents={clinic.allDaysPriceCents}
           refundPolicyText={clinic.refundPolicyText}
+          startTimeLocal={clinic.startTimeLocal}
+          endTimeLocal={clinic.endTimeLocal}
           checkoutCancelled={checkoutCancelled}
         />
       </div>

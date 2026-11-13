@@ -7,6 +7,7 @@ import {
   computeClinicAmountCents,
   formatClinicMoney,
   formatClinicSportLabel,
+  formatClinicTimeRange,
   type ClinicDayAvailability,
   type ClinicSportKey,
 } from "@/lib/clinics-shared";
@@ -21,6 +22,8 @@ type ClinicSignupFormProps = {
   pricePerDayCents: number;
   allDaysPriceCents: number;
   refundPolicyText: string;
+  startTimeLocal: string;
+  endTimeLocal: string;
   checkoutCancelled?: boolean;
 };
 
@@ -37,9 +40,12 @@ export default function ClinicSignupForm({
   pricePerDayCents,
   allDaysPriceCents,
   refundPolicyText,
+  startTimeLocal,
+  endTimeLocal,
   checkoutCancelled = false,
 }: ClinicSignupFormProps) {
   const openDays = days.filter((day) => !day.soldOut);
+  const timeRangeLabel = formatClinicTimeRange(startTimeLocal, endTimeLocal);
   const [parentName, setParentName] = useState("");
   const [parentEmail, setParentEmail] = useState("");
   const [parentPhone, setParentPhone] = useState("");
@@ -268,14 +274,18 @@ export default function ClinicSignupForm({
                 : "border-[#2b3650] text-zinc-200"
             }`}
           >
-            <span className="flex items-center gap-3">
+            <span className="flex min-w-0 items-start gap-3">
               <input
                 type="checkbox"
+                className="mt-0.5"
                 checked={selectedDayIds.includes(day.dayId)}
                 disabled={day.soldOut}
                 onChange={() => toggleDay(day.dayId, day.soldOut)}
               />
-              {day.dateLabel}
+              <span className="min-w-0">
+                <span className="block">{day.dateLabel}</span>
+                <span className="mt-0.5 block text-xs text-zinc-500">({timeRangeLabel})</span>
+              </span>
             </span>
             <span className="text-xs text-zinc-400">
               {day.soldOut ? "Sold out" : `${day.spotsLeft} left`}

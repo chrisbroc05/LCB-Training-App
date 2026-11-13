@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClinicSetPasswordToken } from "@/lib/clinics-account-server";
 import {
-  formatClinicDaysList,
+  formatClinicDaysWithTimeList,
   formatClinicMoney,
   formatClinicTimeRange,
 } from "@/lib/clinics-shared";
@@ -76,8 +76,10 @@ export default async function ClinicSuccessPage({ params, searchParams }: PagePr
     notFound();
   }
 
-  const daysListLabel = formatClinicDaysList(
+  const daysListLabel = formatClinicDaysWithTimeList(
     registration.days.map((row) => row.clinicDay.date),
+    registration.clinic.startTimeLocal,
+    registration.clinic.endTimeLocal,
   );
   const isPaid = registration.status === "PAID";
   const cta = await resolveSuccessCta({

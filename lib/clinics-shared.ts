@@ -109,6 +109,25 @@ export function formatClinicDaysList(dates: Array<Date | string>) {
   return dates.map((date) => formatClinicDayLabel(date)).join(", ");
 }
 
+/** e.g. "Mon Nov 23 (10:30 AM - 12:00 PM)" */
+export function formatClinicDayWithTimeLabel(
+  date: Date | string,
+  startTimeLocal: string,
+  endTimeLocal: string,
+) {
+  return `${formatClinicDayLabel(date)} (${formatClinicTimeRange(startTimeLocal, endTimeLocal)})`;
+}
+
+export function formatClinicDaysWithTimeList(
+  dates: Array<Date | string>,
+  startTimeLocal: string,
+  endTimeLocal: string,
+) {
+  return dates
+    .map((date) => formatClinicDayWithTimeLabel(date, startTimeLocal, endTimeLocal))
+    .join(", ");
+}
+
 export function formatClinicDaySpotsLabel(params: {
   dateLabel: string;
   spotsLeft: number;
