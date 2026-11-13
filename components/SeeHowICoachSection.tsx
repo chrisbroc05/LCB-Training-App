@@ -1,10 +1,10 @@
 import Link from "next/link";
 import HomepageVideoFrame from "@/components/HomepageVideoFrame";
-import { FREE_SWING_AUTH_URL } from "@/lib/free-swing-flow";
+import { FREE_SWING_LANDING_PATH } from "@/lib/free-swing-flow";
+import { SAMPLE_COACHING_BREAKDOWN_VIMEO_URL } from "@/lib/sample-coaching-breakdown-video-shared";
 import { toVimeoEmbedUrl } from "@/lib/vimeo";
 
-const SAMPLE_BREAKDOWN_VIMEO_URL = "https://vimeo.com/1238395520";
-const sampleBreakdownEmbedUrl = toVimeoEmbedUrl(SAMPLE_BREAKDOWN_VIMEO_URL);
+const sampleBreakdownEmbedUrl = toVimeoEmbedUrl(SAMPLE_COACHING_BREAKDOWN_VIMEO_URL);
 
 const freeSwingButtonClassName =
   "inline-flex w-full items-center justify-center rounded-full bg-[#22c55e] px-6 py-3 text-sm font-semibold text-black transition hover:bg-[#35db72] sm:w-auto";
@@ -21,7 +21,7 @@ export default function SeeHowICoachSection() {
             matter what part of their game we're developing.
             </p>
             <div className="mt-8 hidden md:flex">
-              <Link href={FREE_SWING_AUTH_URL} className={freeSwingButtonClassName}>
+              <Link href={FREE_SWING_LANDING_PATH} className={freeSwingButtonClassName}>
                 Get Your Free Swing Breakdown
               </Link>
             </div>
@@ -47,7 +47,7 @@ export default function SeeHowICoachSection() {
           )}
 
           <div className="flex justify-center md:hidden">
-            <Link href={FREE_SWING_AUTH_URL} className={freeSwingButtonClassName}>
+            <Link href={FREE_SWING_LANDING_PATH} className={freeSwingButtonClassName}>
               Get Your Free Swing Breakdown
             </Link>
           </div>

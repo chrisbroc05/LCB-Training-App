@@ -13,12 +13,9 @@ import { prisma } from "@/lib/prisma";
 import type { MembershipLevelKey } from "@/lib/membership-levels-shared";
 import { shouldShowPlaybookCorePlusUpsell } from "@/lib/playbook-core-upsell-shared";
 
-export const metadata: Metadata = {
-  title: {
-    absolute: "The Next Level Playbook: Mindset and Drills | LCB",
-  },
-  description: "Mindset chapters and drills to train like a next-level player.",
-};
+import { metadataForPublicPage } from "@/lib/public-seo";
+
+export const metadata: Metadata = metadataForPublicPage("playbook");
 
 type PlaybookPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;

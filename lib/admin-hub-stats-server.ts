@@ -20,6 +20,7 @@ export async function loadContentHubCards(now = new Date()): Promise<AdminSectio
     programCues,
     fixItGrants,
     dailyChallenges,
+    publishedArticles,
   ] = await Promise.all([
     prisma.drillLibraryCatalog.count({ where: { isStarterDrill: true } }),
     prisma.quizAttempt.count({ where: { completedAt: { not: null } } }),
@@ -27,6 +28,7 @@ export async function loadContentHubCards(now = new Date()): Promise<AdminSectio
     prisma.coachCue.count(),
     prisma.userFixItGrant.count(),
     prisma.dailyChallenge.count({ where: { active: true } }),
+    prisma.article.count({ where: { published: true } }),
   ]);
 
   return [
@@ -78,6 +80,13 @@ export async function loadContentHubCards(now = new Date()): Promise<AdminSectio
       description: "Social and marketing asset for the app highlight PDF.",
       statValue: "1",
       statLabel: "Highlight kit",
+    },
+    {
+      href: ADMIN_ROUTES.content.articles,
+      title: "Articles",
+      description: "Publish Markdown articles for the public /articles section.",
+      statValue: String(publishedArticles),
+      statLabel: "Published articles",
     },
   ];
 }

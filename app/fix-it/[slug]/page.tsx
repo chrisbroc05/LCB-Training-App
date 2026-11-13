@@ -5,40 +5,22 @@ import FixItPlanPageClient from "@/app/fix-it/FixItPlanPageClient";
 import { createFixItPlanAccessToken } from "@/lib/fix-it-plan-access-token";
 import { assertFixItPlanAccessFromRequest } from "@/lib/fix-it-plan-access-server";
 import { getFixItPlanByResourceSlug, isFixItResourceSlug } from "@/lib/fix-it-plans-shared";
+import { metadataForPublicPage } from "@/lib/public-seo";
 
 type FixItPlanPageProps = {
   params: Promise<{ slug: string }>;
   searchParams: Promise<{ token?: string }>;
 };
 
-function fixItPlanShortName(title: string) {
-  const beforeColon = title.split(":")[0]?.trim();
-  return beforeColon || title;
-}
-
 export async function generateMetadata({ params }: FixItPlanPageProps): Promise<Metadata> {
   const { slug } = await params;
-  if (!isFixItResourceSlug(slug)) {
-    return {
-      title: { absolute: "Fix-It Plan | LCB Training" },
-      description: "3-week hitting Fix-It plan with Coach Broc drills.",
-    };
+  if (slug === "fixit-stay-closed") {
+    return metadataForPublicPage("stayClosed");
   }
-  const plan = getFixItPlanByResourceSlug(slug);
-  const planName = plan ? fixItPlanShortName(plan.title) : "Fix-It";
-  const description =
-    planName === "Stay Closed"
-      ? "3-week plan to keep your front shoulder closed."
-      : planName === "Hit the Brakes"
-        ? "3-week plan to stop drifting and stay stacked."
-        : "3-week hitting Fix-It plan with Coach Broc drills.";
-
-  return {
-    title: {
-      absolute: `${planName} Fix-It Plan | LCB Training`,
-    },
-    description,
-  };
+  if (slug === "fixit-hit-the-brakes") {
+    return metadataForPublicPage("hitTheBrakes");
+  }
+  return metadataForPublicPage("fixIt");
 }
 
 export default async function FixItPlanPage({ params, searchParams }: FixItPlanPageProps) {

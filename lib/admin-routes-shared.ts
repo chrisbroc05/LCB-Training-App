@@ -36,6 +36,7 @@ export const ADMIN_ROUTES = {
     resourceDetail: (slug: string) => `/admin/content/resources/${slug}`,
     appHighlight: "/admin/content/app-highlight",
     fixIt: "/admin/content/fix-it",
+    articles: "/admin/content/articles",
     dailyChallenges: "/admin/content/daily-challenges",
     dailyChallengeAnswers: "/admin/content/daily-challenges/answers",
     dailyChallengeImport: "/admin/content/daily-challenges/import",

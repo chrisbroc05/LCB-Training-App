@@ -1544,3 +1544,20 @@ model DailyChallengeCompletion {
   @@index([questionId])
 }
 
+model Article {
+  id              String    @id @default(cuid())
+  slug            String    @unique
+  title           String
+  metaDescription String
+  contentMarkdown String    @db.Text
+  coverImageUrl   String?
+  authorName      String    @default("Coach Broc (Chris Broccolino)")
+  published       Boolean   @default(false)
+  publishedAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([published, publishedAt])
+  @@index([updatedAt])
+}
+

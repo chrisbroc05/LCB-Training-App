@@ -30,6 +30,7 @@ type SiteShellProps = {
   userDisplayName: string;
   userEmail?: string | null;
   isAdmin?: boolean;
+  showArticlesNav?: boolean;
 };
 
 export default function SiteShell({
@@ -48,6 +49,7 @@ export default function SiteShell({
   userDisplayName,
   userEmail,
   isAdmin = false,
+  showArticlesNav = false,
 }: SiteShellProps) {
   const pathname = usePathname();
   const isStandaloneLanding = pathname.startsWith("/details") || pathname.startsWith("/remote");
@@ -59,7 +61,11 @@ export default function SiteShell({
 
   if (isStandaloneLanding || isCompactPublic) {
     if (isCompactPublic) {
-      return <PublicPageShell isLoggedIn={isLoggedIn}>{children}</PublicPageShell>;
+      return (
+        <PublicPageShell isLoggedIn={isLoggedIn} showArticlesNav={showArticlesNav}>
+          {children}
+        </PublicPageShell>
+      );
     }
 
     return children;
@@ -82,7 +88,11 @@ export default function SiteShell({
         />
       ) : null}
       <div className={headerWrapperClass}>
-        {useMobileChrome ? header : <PublicSiteHeader isLoggedIn={isLoggedIn} />}
+        {useMobileChrome ? (
+          header
+        ) : (
+          <PublicSiteHeader isLoggedIn={isLoggedIn} showArticlesNav={showArticlesNav} />
+        )}
       </div>
       <main className={useMobileChrome ? "mobile-app-main flex-1 md:pb-0 md:pt-0" : "flex-1"}>
         {showMembershipPaymentBanner ? (

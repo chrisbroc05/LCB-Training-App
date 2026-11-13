@@ -82,6 +82,8 @@ export default function PWAInstallHint() {
       <img
         src="/apple-touch-icon.png"
         alt="LCB Training"
+        width={40}
+        height={40}
         style={{ width: "40px", height: "40px", borderRadius: "8px", flexShrink: 0 }}
         onError={(event) => {
           (event.target as HTMLImageElement).style.display = "none";

@@ -1,40 +1,19 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Suspense } from "react";
 import { getServerSession } from "next-auth";
 import ResourcesTabsShell from "@/app/resources/ResourcesTabsShell";
 import { authOptions } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/admin";
 import { toAccessUserFields, userAccessSelect } from "@/lib/access-server";
+import { FREE_SWING_LANDING_PATH } from "@/lib/free-swing-flow";
 import { buildMyResourcesViewModel } from "@/lib/my-resources-server";
 import { loadResourcesHubMemberContext } from "@/lib/resources-hub-member-server";
 import { parseResourcesTabParam } from "@/lib/my-resources-shared";
-import {
-  RESOURCES_PAGE_DESCRIPTION,
-  RESOURCES_PAGE_TITLE,
-} from "@/lib/resources-shared";
-import { getPublicAppUrl } from "@/lib/public-app-url";
+import { metadataForPublicPage } from "@/lib/public-seo";
 import { prisma } from "@/lib/prisma";
 
-const siteUrl = getPublicAppUrl();
-const ogImage = `${siteUrl}/apple-touch-icon.png`;
-
-export const metadata: Metadata = {
-  title: RESOURCES_PAGE_TITLE,
-  description: RESOURCES_PAGE_DESCRIPTION,
-  openGraph: {
-    title: RESOURCES_PAGE_TITLE,
-    description: RESOURCES_PAGE_DESCRIPTION,
-    url: `${siteUrl}/resources`,
-    siteName: "LCB Training",
-    type: "website",
-    images: [{ url: ogImage, width: 180, height: 180, alt: "LCB Training" }],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: RESOURCES_PAGE_TITLE,
-    description: RESOURCES_PAGE_DESCRIPTION,
-  },
-};
+export const metadata: Metadata = metadataForPublicPage("resources");
 
 type PageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -90,6 +69,16 @@ export default async function ResourcesPage({ searchParams }: PageProps) {
         </p>
         <p className="mt-4 text-sm text-zinc-400">
           12+ years of player development. NJCAA National Champion. Current high school varsity coach.
+        </p>
+        <p className="mt-4 text-sm text-zinc-400">
+          Not sure where to start?{" "}
+          <Link
+            href={FREE_SWING_LANDING_PATH}
+            className="font-semibold text-[#52B788] hover:text-[#9df3bd]"
+          >
+            Get a free swing breakdown from Coach Broc
+          </Link>
+          .
         </p>
       </header>
 

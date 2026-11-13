@@ -6,41 +6,11 @@ import {
   COACH_BIO_PDF_HREF,
   coachBioCalendlyUrl,
   coachBioContent,
-  coachBioPageDescription,
   getCoachOfferingLink,
 } from "@/lib/coach-bio-content";
-import { coachHeadshotFileExists } from "@/lib/coach-photo-shared";
-import { getPublicAppUrl } from "@/lib/public-app-url";
+import { metadataForPublicPage } from "@/lib/public-seo";
 
-const siteUrl = getPublicAppUrl();
-
-export const metadata: Metadata = {
-  title: "Coach Broc | LCB Training",
-  description: coachBioPageDescription,
-  openGraph: {
-    title: "Coach Broc | LCB Training",
-    description: coachBioPageDescription,
-    url: `${siteUrl}/coach`,
-    siteName: "LCB Training",
-    type: "profile",
-    images: coachHeadshotFileExists()
-      ? [
-          {
-            url: `${siteUrl}/images/coach-broc.jpg`,
-            width: 800,
-            height: 800,
-            alt: "Coach Broc - Chris Broccolino",
-          },
-        ]
-      : undefined,
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Coach Broc | LCB Training",
-    description: coachBioPageDescription,
-    images: coachHeadshotFileExists() ? [`${siteUrl}/images/coach-broc.jpg`] : undefined,
-  },
-};
+export const metadata: Metadata = metadataForPublicPage("coach");
 
 function SectionLabel({ children }: { children: ReactNode }) {
   return (

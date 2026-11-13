@@ -32,8 +32,9 @@ export default function CoachOptionalPhoto({
         <Image
           src={COACH_PHOTO_PUBLIC_PATH}
           alt="Coach Broc"
-          fill
-          className="object-cover object-[center_18%] contrast-[1.06] saturate-[1.04]"
+          width={size}
+          height={size}
+          className="h-full w-full object-cover object-[center_18%] contrast-[1.06] saturate-[1.04]"
           quality={92}
           sizes={`${size}px`}
           priority={priority}

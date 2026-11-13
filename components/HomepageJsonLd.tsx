@@ -1,18 +1,9 @@
 import { HOMEPAGE_DESCRIPTION, HOMEPAGE_TITLE } from "@/lib/homepage-seo";
 import { HOMEPAGE_FAQ_ITEMS } from "@/lib/homepage-faq-shared";
-import { getPublicAppUrl } from "@/lib/public-app-url";
-import { LCB_INSTAGRAM_URL, LCB_TIKTOK_URL } from "@/lib/social-links";
+import { getCanonicalSiteOrigin } from "@/lib/public-seo";
 
 export default function HomepageJsonLd() {
-  const siteUrl = getPublicAppUrl();
-
-  const organization = {
-    "@context": "https://schema.org",
-    "@type": "Organization",
-    name: "LCB Training",
-    url: siteUrl,
-    sameAs: [LCB_INSTAGRAM_URL, LCB_TIKTOK_URL],
-  };
+  const siteUrl = getCanonicalSiteOrigin();
 
   const service = {
     "@context": "https://schema.org",
@@ -20,7 +11,7 @@ export default function HomepageJsonLd() {
     name: "LCB Training player development",
     provider: {
       "@type": "Organization",
-      name: "LCB Training",
+      name: "LCB Training LLC",
       url: siteUrl,
     },
     areaServed: "Chicagoland",
@@ -52,10 +43,6 @@ export default function HomepageJsonLd() {
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(organization) }}
-      />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(service) }}

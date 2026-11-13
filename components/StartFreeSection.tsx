@@ -1,11 +1,11 @@
 import Link from "next/link";
-import { FREE_SWING_AUTH_URL } from "@/lib/free-swing-flow";
+import { FREE_SWING_LANDING_PATH } from "@/lib/free-swing-flow";
 
 const startFreeCards = [
   {
     title: "Free Swing Analysis",
     description: "Send me one swing and I'll personally break it down.",
-    href: FREE_SWING_AUTH_URL,
+    href: FREE_SWING_LANDING_PATH,
     buttonLabel: "Submit My Swing Free",
   },
   {

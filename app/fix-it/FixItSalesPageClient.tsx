@@ -82,7 +82,6 @@ function PlanCard({
 export default function FixItSalesPageClient({ isLoggedIn }: FixItSalesPageClientProps) {
   const [leadResource, setLeadResource] = useState<ResourceDefinition | null>(null);
   const [busySlug, setBusySlug] = useState<string | null>(null);
-  const swingResource = getResourceDefinition("free-swing-analysis");
 
   const runLeadAction = async (resource: ResourceDefinition, leadId?: string) => {
     setBusySlug(resource.slug);
@@ -117,19 +116,11 @@ export default function FixItSalesPageClient({ isLoggedIn }: FixItSalesPageClien
   };
 
   const handleFreeSwing = async () => {
-    if (!swingResource) {
-      return;
-    }
     if (isLoggedIn) {
-      await runLeadAction(swingResource);
+      window.location.href = "/swing-analysis";
       return;
     }
-    const leadId = readLeadIdFromCookie();
-    if (leadId) {
-      await runLeadAction(swingResource, leadId);
-      return;
-    }
-    setLeadResource(swingResource);
+    window.location.href = "/free-swing-breakdown";
   };
 
   return (
@@ -149,9 +140,8 @@ export default function FixItSalesPageClient({ isLoggedIn }: FixItSalesPageClien
         <p className="text-base text-zinc-300">{FIX_IT_PLANS_META.freeSwingCta}</p>
         <button
           type="button"
-          disabled={busySlug === "free-swing-analysis"}
           onClick={() => void handleFreeSwing()}
-          className="mt-5 inline-flex min-h-[48px] w-full max-w-md items-center justify-center rounded-full bg-[#2D6A4F] px-6 py-3 text-sm font-semibold text-white hover:bg-[#52B788] disabled:opacity-70 sm:w-auto"
+          className="mt-5 inline-flex min-h-[48px] w-full max-w-md items-center justify-center rounded-full bg-[#2D6A4F] px-6 py-3 text-sm font-semibold text-white hover:bg-[#52B788] sm:w-auto"
         >
           Get My Free Swing Analysis
         </button>

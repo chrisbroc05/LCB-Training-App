@@ -14,8 +14,10 @@ export default function BrandLogo({ className = "" }: BrandLogoProps) {
     <Image
       src={logoSrc}
       alt="LCB Training Logo"
-      fill
-      className={className}
+      width={776}
+      height={768}
+      className={`h-full w-full object-contain ${className}`.trim()}
+      sizes="160px"
       onError={() => setLogoSrc("/next.svg")}
     />
   );

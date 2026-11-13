@@ -54,9 +54,9 @@ function PhoneFrame({ preview, onOpen }: { preview: Preview; onOpen: (item: AppP
           <Image
             src={src}
             alt={alt}
-            fill
-            className="object-cover"
-            style={{ objectPosition: "center top" }}
+            width={intrinsicWidth}
+            height={intrinsicHeight}
+            className="h-full w-full object-cover object-[center_top]"
             sizes="(max-width: 640px) 280px, (max-width: 1024px) 30vw, 280px"
           />
           <span className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/50 to-transparent py-2 text-center text-xs font-medium text-zinc-200 opacity-0 transition group-hover:opacity-100 group-focus-visible:opacity-100">

@@ -53,6 +53,7 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
       { href: ADMIN_ROUTES.content.quiz, label: "Player IQ Quiz", matchPrefix: ADMIN_ROUTES.content.quiz },
       { href: ADMIN_ROUTES.content.appHighlight, label: "App highlight", matchPrefix: ADMIN_ROUTES.content.appHighlight },
       { href: ADMIN_ROUTES.content.fixIt, label: "Fix-It plans", matchPrefix: ADMIN_ROUTES.content.fixIt },
+      { href: ADMIN_ROUTES.content.articles, label: "Articles", matchPrefix: ADMIN_ROUTES.content.articles },
       {
         href: ADMIN_ROUTES.content.dailyChallenges,
         label: "Daily Challenges",

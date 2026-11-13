@@ -7,7 +7,7 @@ import HomepageVideoFrame from "@/components/HomepageVideoFrame";
 import SeeHowICoachSection from "@/components/SeeHowICoachSection";
 import HomepageFaqSection from "@/components/HomepageFaqSection";
 import HomepageJsonLd from "@/components/HomepageJsonLd";
-import { FREE_SWING_AUTH_URL } from "@/lib/free-swing-flow";
+import { FREE_SWING_LANDING_PATH } from "@/lib/free-swing-flow";
 import { getHomepagePlansHref } from "@/lib/homepage-plans-link";
 
 export const metadata: Metadata = buildHomepageMetadata();
@@ -144,7 +144,7 @@ export default async function Home() {
           </p>
           <div className="mt-5 flex flex-col items-stretch justify-center gap-2.5 sm:mt-8 sm:flex-row sm:items-center sm:justify-center sm:gap-3">
             <Link
-              href={FREE_SWING_AUTH_URL}
+              href={FREE_SWING_LANDING_PATH}
               className="inline-flex w-full items-center justify-center rounded-full bg-[#22c55e] px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-[#35db72] sm:w-auto sm:px-6 sm:py-3"
             >
               Get Your Free Swing Breakdown
@@ -310,6 +310,25 @@ export default async function Home() {
         </section>
 
         <HomepageFaqSection />
+
+        <section className="mt-10 rounded-2xl border border-[#18243a] bg-[#0b1324]/40 px-5 py-6 sm:px-8">
+          <h2 className="text-lg font-semibold text-zinc-200 sm:text-xl">Explore LCB Training</h2>
+          <p className="mt-3 text-sm leading-relaxed text-zinc-400 sm:text-base">
+            Start with the{" "}
+            <Link href="/program" className="font-semibold text-[#52B788] hover:text-[#9df3bd]">
+              12-Week Coaching Program
+            </Link>
+            , get a{" "}
+            <Link href={FREE_SWING_LANDING_PATH} className="font-semibold text-[#52B788] hover:text-[#9df3bd]">
+              free swing breakdown
+            </Link>
+            , or browse{" "}
+            <Link href="/resources" className="font-semibold text-[#52B788] hover:text-[#9df3bd]">
+              free and paid training resources
+            </Link>
+            .
+          </p>
+        </section>
 
         <div className="mx-auto w-full max-w-6xl px-4 pb-16 sm:px-6">
           <PublicMembershipLevelsSection />

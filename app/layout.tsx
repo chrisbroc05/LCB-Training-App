@@ -12,11 +12,22 @@ import {
 import LoggedInSiteHeader from "@/app/components/LoggedInSiteHeader";
 import SiteShell from "@/app/SiteShell";
 import AppSplashScreen from "@/components/AppSplashScreen";
+import OrganizationJsonLd from "@/components/OrganizationJsonLd";
 import PWAInstallHint from "@/components/PWAInstallHint";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 import LegalAgreementGate from "@/components/LegalAgreementGate";
 import OrgTeamReselectBanner from "@/app/components/OrgTeamReselectBanner";
 import Under13ParentConsentGate from "@/components/Under13ParentConsentGate";
+import { hasPublishedArticles } from "@/lib/articles-server";
+import {
+  PUBLIC_OG_IMAGE_ALT,
+  PUBLIC_OG_IMAGE_HEIGHT,
+  PUBLIC_OG_IMAGE_PATH,
+  PUBLIC_OG_IMAGE_WIDTH,
+  absolutePublicUrl,
+  getCanonicalSiteOrigin,
+  publicOgImageUrl,
+} from "@/lib/public-seo";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -29,13 +40,33 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const siteOrigin = getCanonicalSiteOrigin();
+const defaultOgImage = publicOgImageUrl();
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteOrigin),
   title: {
     default: "LCB Training",
     template: "%s | LCB Training",
   },
   description:
     "Baseball and softball player development with Coach Broc. Daily training plans and swing feedback between lessons.",
+  openGraph: {
+    siteName: "LCB Training",
+    type: "website",
+    images: [
+      {
+        url: absolutePublicUrl(PUBLIC_OG_IMAGE_PATH),
+        width: PUBLIC_OG_IMAGE_WIDTH,
+        height: PUBLIC_OG_IMAGE_HEIGHT,
+        alt: PUBLIC_OG_IMAGE_ALT,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: [defaultOgImage],
+  },
 };
 
 export const viewport = {
@@ -75,6 +106,7 @@ export default async function RootLayout({
     orgTrialHeader = layoutAccess.orgTrialHeader;
   }
   const hasAdminAccess = isAdminEmail(session?.user?.email);
+  const showArticlesNav = await hasPublishedArticles();
 
   return (
     <html
@@ -88,6 +120,7 @@ export default async function RootLayout({
         <meta name="apple-mobile-web-app-title" content="LCB Training" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <meta name="theme-color" content="#0A1628" />
+        <OrganizationJsonLd />
         {gaId ? (
           <>
             <script async src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`} />
@@ -119,6 +152,7 @@ export default async function RootLayout({
           userDisplayName={userDisplayName}
           userEmail={session?.user?.email}
           isAdmin={hasAdminAccess}
+          showArticlesNav={showArticlesNav}
           header={
             session?.user ? (
               <LoggedInSiteHeader
@@ -161,6 +195,11 @@ export default async function RootLayout({
                   >
                     TikTok
                   </a>
+                  {showArticlesNav ? (
+                    <Link href="/articles" className="transition hover:text-[#98b144]">
+                      Articles
+                    </Link>
+                  ) : null}
                   <Link href="/terms" className="transition hover:text-[#98b144]">
                     Terms of Service
                   </Link>

@@ -12,12 +12,9 @@ import {
   remoteSessionSteps,
 } from "@/lib/remote-session-branding";
 
-export const metadata: Metadata = {
-  title: {
-    absolute: "Remote Baseball Coaching Session | LCB Training",
-  },
-  description: "Book a live 60-minute remote session with Coach Broc.",
-};
+import { metadataForPublicPage } from "@/lib/public-seo";
+
+export const metadata: Metadata = metadataForPublicPage("remote");
 
 type RemoteSessionPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;

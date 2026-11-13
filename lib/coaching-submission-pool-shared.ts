@@ -119,6 +119,7 @@ function playbookOption(user: CoachingSubmissionUserFields, now: Date): Coaching
 
 export type CoachingAllowanceBuildOptions = {
   unusedExtraReviewCredits?: number;
+  freeSwingAnalysisResponseMode?: "VIDEO" | "WRITTEN_REPORT";
 };
 
 function buildAllCoachingAllowanceOptions(
@@ -177,12 +178,17 @@ function buildAllCoachingAllowanceOptions(
     }
   } else if (effective === "FREE") {
     const allowance = getReviewAllowance(user, now);
+    const freeIsWritten = buildOptions?.freeSwingAnalysisResponseMode === "WRITTEN_REPORT";
     options.push({
       poolId: "free-once",
-      title: "Free submission",
-      description: "One swing or mindset submission for new members.",
-      swingFormTitle: "Free submission",
-      swingFormDescription: "One submission for new members.",
+      title: freeIsWritten ? "Free written report" : "Free video breakdown",
+      description: freeIsWritten
+        ? "One written swing report for new members."
+        : "One in-depth video swing breakdown for new members.",
+      swingFormTitle: freeIsWritten ? "Free written report" : "Free video breakdown",
+      swingFormDescription: freeIsWritten
+        ? "One written swing report for new members."
+        : "I walk through your swing on video and give you drills to fix it.",
       availabilityLine: allowance.canSubmit ? "Available now" : "Already used",
       canSubmit: allowance.canSubmit,
       supportsSwing: true,

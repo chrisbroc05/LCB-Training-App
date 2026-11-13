@@ -1,25 +1,41 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getServerSession } from "next-auth";
 import FreeResourceLandingClient from "@/app/free/FreeResourceLandingClient";
 import { authOptions } from "@/lib/auth";
 import { getInstagramFreeLink } from "@/lib/instagram-free-links-shared";
+import { buildPublicPageMetadata, metadataForPublicPage } from "@/lib/public-seo";
 import { getResourceDefinition } from "@/lib/resources-shared";
 
 type FreeKeywordPageProps = {
   params: Promise<{ keyword: string }>;
 };
 
-export async function generateMetadata({ params }: FreeKeywordPageProps) {
+export async function generateMetadata({ params }: FreeKeywordPageProps): Promise<Metadata> {
   const { keyword } = await params;
+  if (keyword === "rotate") {
+    return metadataForPublicPage("freeRotate");
+  }
+  if (keyword === "mobility") {
+    return metadataForPublicPage("freeMobility");
+  }
   const link = getInstagramFreeLink(keyword);
   if (!link) {
-    return { title: "Free resource | LCB Training" };
+    return buildPublicPageMetadata({
+      path: `/free/${keyword}`,
+      title: "Free resource | LCB Training",
+      description:
+        "Download a free LCB Training resource from Coach Broc for baseball and softball player development.",
+    });
   }
   const resource = getResourceDefinition(link.resourceSlug);
-  return {
-    title: resource ? `${resource.title} | LCB Training` : "Free resource | LCB Training",
-    description: resource?.description,
-  };
+  return buildPublicPageMetadata({
+    path: link.path,
+    title: resource ? `${resource.title} | Free PDF` : "Free resource | LCB Training",
+    description:
+      resource?.description ||
+      "Download a free LCB Training resource from Coach Broc for baseball and softball player development.",
+  });
 }
 
 export default async function FreeKeywordPage({ params }: FreeKeywordPageProps) {

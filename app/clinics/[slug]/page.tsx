@@ -1,9 +1,11 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import ClinicSpotsLines from "@/components/ClinicSpotsLines";
 import { cancelClinicCheckoutOnReturn } from "@/lib/clinics-fulfill-server";
 import { getPublicClinicBySlug } from "@/lib/clinics-public-server";
 import ClinicSignupForm from "@/app/clinics/[slug]/ClinicSignupForm";
+import { buildPublicPageMetadata, metadataForPublicPage } from "@/lib/public-seo";
 
 export const dynamic = "force-dynamic";
 
@@ -11,6 +13,28 @@ type PageProps = {
   params: Promise<{ slug: string }>;
   searchParams: Promise<{ checkout?: string; session_id?: string }>;
 };
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const clinic = await getPublicClinicBySlug(slug);
+  if (!clinic) {
+    return metadataForPublicPage("clinics");
+  }
+  const title = `${clinic.name} | Clinics`.slice(0, 60);
+  const description =
+    `${clinic.name} at ${clinic.location}. ${clinic.daysListLabel}. ${clinic.pricingLine}`.slice(
+      0,
+      160,
+    );
+  return buildPublicPageMetadata({
+    path: `/clinics/${clinic.slug}`,
+    title: title.length >= 30 ? title : `${clinic.name} | LCB Clinics`,
+    description:
+      description.length >= 110
+        ? description
+        : `Sign up for ${clinic.name} with Coach Broc at LCB Training. Secure online registration and day selection.`,
+  });
+}
 
 export default async function ClinicDetailPage({ params, searchParams }: PageProps) {
   const { slug } = await params;

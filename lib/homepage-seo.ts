@@ -1,41 +1,11 @@
 import type { Metadata } from "next";
-import { getPublicAppUrl } from "@/lib/public-app-url";
+import { metadataForPublicPage } from "@/lib/public-seo";
 
-export const HOMEPAGE_TITLE = "LCB Training | Baseball Coaching with Coach Broc";
+export const HOMEPAGE_TITLE = "Work Hard. Be Memorable. | LCB Training";
 
 export const HOMEPAGE_DESCRIPTION =
-  "Daily baseball training and swing feedback from Coach Broc.";
+  "Daily plans and personal swing feedback from Coach Broc for youth, high school, and college baseball and softball players.";
 
 export function buildHomepageMetadata(): Metadata {
-  const siteUrl = getPublicAppUrl();
-  const ogImage = `${siteUrl}/images/app-preview/daily-plan.webp`;
-
-  return {
-    title: {
-      absolute: HOMEPAGE_TITLE,
-    },
-    description: HOMEPAGE_DESCRIPTION,
-    alternates: { canonical: siteUrl },
-    openGraph: {
-      title: HOMEPAGE_TITLE,
-      description: HOMEPAGE_DESCRIPTION,
-      url: siteUrl,
-      siteName: "LCB Training",
-      type: "website",
-      images: [
-        {
-          url: ogImage,
-          width: 750,
-          height: 1624,
-          alt: "LCB Training app daily plan screen on a phone",
-        },
-      ],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: HOMEPAGE_TITLE,
-      description: HOMEPAGE_DESCRIPTION,
-      images: [ogImage],
-    },
-  };
+  return metadataForPublicPage("home");
 }

@@ -7,7 +7,7 @@ export default async function AdminContentHubPage() {
   return (
     <AdminSectionHub
       title="Content"
-      description="Drills, daily challenges, quiz, resources, program focuses, Fix-It, and marketing assets."
+      description="Drills, daily challenges, quiz, resources, articles, program focuses, Fix-It, and marketing assets."
       cards={cards}
     />
   );

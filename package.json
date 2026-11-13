@@ -11,6 +11,7 @@
     "db:migrate:dev": "prisma migrate deploy",
     "check:ascii": "tsx scripts/check-ascii.ts",
     "build": "npm run check:ascii && prisma generate && NODE_OPTIONS=--max-old-space-size=8192 next build --webpack",
+    "seo:indexnow": "tsx scripts/ping-indexnow.ts",
     "start": "NODE_OPTIONS=--max-old-space-size=1536 next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
@@ -106,12 +107,15 @@
     "prisma": "^7.8.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
     "server-only": "^0.0.1",
     "stripe": "^22.2.1",
     "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/mdast": "^4.0.4",
     "@types/node": "^20",
     "@types/nodemailer": "^8.0.1",
     "@types/pg": "^8.20.0",

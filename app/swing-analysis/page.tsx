@@ -1,6 +1,8 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { buildPublicPageMetadata } from "@/lib/public-seo";
 import { buildReviewAllowanceFallbackCopy } from "@/app/components/CoachingSubmissionUsageNotice";
 import CoachingMonthlyLimitPanel from "@/app/components/CoachingMonthlyLimitPanel";
 import LockedFeaturePanel from "@/app/LockedFeaturePanel";
@@ -17,9 +19,11 @@ import { loadExtraReviewUiState } from "@/lib/extra-review-server";
 import { mapExtraReviewUiState } from "@/lib/extra-review-ui-shared";
 import { PLAYBOOK_SUBMISSIONS_EXHAUSTED_MESSAGE } from "@/lib/coaching-submissions";
 import {
+  getForcedSwingResponsePreference,
   getSwingSubmissionConfirmationVariant,
   shouldHideSwingResponsePreference,
 } from "@/lib/coaching-submission-confirmation-shared";
+import { getFreeSwingAnalysisResponseMode } from "@/lib/free-swing-analysis-response-server";
 import { freeSubmissionUsedUpgradeMessage } from "@/lib/membership";
 import { mergeOrgIntoAccessFields, userOrgAccessSelect } from "@/lib/org-server";
 import { loadCurrentOrgWeeklyFocusForUser } from "@/lib/org-weekly-focus-server";
@@ -30,6 +34,13 @@ import {
   listSwingCoachingAllowanceFormOptions,
   requiresSwingAllowanceFormChoice,
 } from "@/lib/coaching-submission-pool-shared";
+
+export const metadata: Metadata = buildPublicPageMetadata({
+  path: "/swing-analysis",
+  title: "Coaching Submissions | Swing Analysis | LCB",
+  description:
+    "Submit your swing for personal video feedback from Coach Broc. Free and paid coaching submissions are handled in the app.",
+});
 
 export default async function SwingAnalysisPage() {
   const session = await getServerSession(authOptions);
@@ -113,8 +124,10 @@ export default async function SwingAnalysisPage() {
     }
   }
 
+  const freeSwingAnalysisResponseMode = await getFreeSwingAnalysisResponseMode();
   const swingOptions = listSwingCoachingAllowanceFormOptions(userFields, new Date(), {
     unusedExtraReviewCredits,
+    freeSwingAnalysisResponseMode,
   });
   const hasSubmittableSwing = swingOptions.some((option) => option.canSubmit);
 
@@ -152,13 +165,20 @@ export default async function SwingAnalysisPage() {
   const effectiveLevel = accessFields ? resolveEffectiveLevel(accessFields) : "FREE";
   const confirmationVariant = getSwingSubmissionConfirmationVariant(effectiveLevel);
   const weeklyFocus = await loadCurrentOrgWeeklyFocusForUser(session.user.id);
-  const allowanceBuildOptions = { unusedExtraReviewCredits };
+  const allowanceBuildOptions = {
+    unusedExtraReviewCredits,
+    freeSwingAnalysisResponseMode,
+  };
   const requiresAllowanceChoice = requiresSwingAllowanceFormChoice(
     userFields,
     new Date(),
     allowanceBuildOptions,
   );
   const defaultHideResponsePreference = shouldHideSwingResponsePreference(effectiveLevel);
+  const forcedResponsePreference = getForcedSwingResponsePreference(
+    effectiveLevel,
+    freeSwingAnalysisResponseMode,
+  );
   const quotaFallbackCopy = buildReviewAllowanceFallbackCopy(getReviewAllowance(userFields), {
     coreQuickReportNextEligibleAt: userFields.coreQuickReportNextEligibleAt,
   });
@@ -174,6 +194,7 @@ export default async function SwingAnalysisPage() {
         <SwingAnalysisForm
           confirmationVariant={confirmationVariant}
           defaultHideResponsePreference={defaultHideResponsePreference}
+          forcedResponsePreference={forcedResponsePreference}
           weeklyFocusTitle={weeklyFocus?.title ?? null}
           swingAllowanceOptions={swingOptions}
           requiresSwingAllowanceChoice={requiresAllowanceChoice}

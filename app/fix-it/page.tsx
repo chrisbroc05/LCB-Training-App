@@ -3,29 +3,9 @@ import { getServerSession } from "next-auth";
 import FixItSalesPageClient from "@/app/fix-it/FixItSalesPageClient";
 import { authOptions } from "@/lib/auth";
 import { FIX_IT_PLANS_META } from "@/lib/fix-it-plans-shared";
-import { getPublicAppUrl } from "@/lib/public-app-url";
+import { metadataForPublicPage } from "@/lib/public-seo";
 
-const siteUrl = getPublicAppUrl();
-const title = "Fix-It Hitting Plans | LCB Training";
-const description = "3-week hitting plans for front shoulder and drifting hips.";
-
-export const metadata: Metadata = {
-  title: { absolute: title },
-  description,
-  openGraph: {
-    title,
-    description,
-    url: `${siteUrl}/fix-it`,
-    siteName: "LCB Training",
-    type: "website",
-    images: [{ url: `${siteUrl}/apple-touch-icon.png`, width: 180, height: 180, alt: "LCB Training" }],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title,
-    description,
-  },
-};
+export const metadata: Metadata = metadataForPublicPage("fixIt");
 
 export default async function FixItSalesPage() {
   const session = await getServerSession(authOptions);

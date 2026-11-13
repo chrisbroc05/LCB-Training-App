@@ -30,7 +30,10 @@ import {
   uploadVideoToPresignedUrl,
   type PresignedSwingUploadResponse,
 } from "@/lib/swing-submission-upload-client";
-import type { SwingSubmissionConfirmationVariant } from "@/lib/coaching-submission-confirmation-shared";
+import type {
+  SwingResponsePreferenceValue,
+  SwingSubmissionConfirmationVariant,
+} from "@/lib/coaching-submission-confirmation-shared";
 import CoachingSubmissionUsageNotice from "@/app/components/CoachingSubmissionUsageNotice";
 import SwingAllowanceChoice from "@/app/coaching-submissions/SwingAllowanceChoice";
 import type { formatReviewAllowanceDisplay } from "@/lib/coaching-submission-display-shared";
@@ -44,6 +47,8 @@ import { useMemo, useState } from "react";
 type SwingAnalysisFormProps = {
   confirmationVariant: SwingSubmissionConfirmationVariant;
   defaultHideResponsePreference?: boolean;
+  /** When set (and not using playbook pool), hides the chooser and submits this preference. */
+  forcedResponsePreference?: SwingResponsePreferenceValue | null;
   weeklyFocusTitle?: string | null;
   swingAllowanceOptions: CoachingAllowancePickerOption[];
   requiresSwingAllowanceChoice: boolean;
@@ -55,6 +60,7 @@ type SwingAnalysisFormProps = {
 export default function SwingAnalysisForm({
   confirmationVariant,
   defaultHideResponsePreference = false,
+  forcedResponsePreference = null,
   weeklyFocusTitle = null,
   swingAllowanceOptions,
   requiresSwingAllowanceChoice,
@@ -97,8 +103,12 @@ export default function SwingAnalysisForm({
     return null;
   }, [requiresSwingAllowanceChoice, selectedAllowancePool, swingAllowanceOptions]);
 
-  const showResponsePreference =
-    resolvedAllowancePool === "playbook-lifetime" || !defaultHideResponsePreference;
+  const effectiveForcedPreference =
+    resolvedAllowancePool === "playbook-lifetime"
+      ? null
+      : (forcedResponsePreference ??
+        (defaultHideResponsePreference ? ("WRITTEN_RESPONSE" as const) : null));
+  const showResponsePreference = effectiveForcedPreference == null;
 
   const submitButtonLabel = (() => {
     if (!isSubmitting) {
@@ -238,7 +248,7 @@ export default function SwingAnalysisForm({
 
       const effectiveResponsePreference = showResponsePreference
         ? responsePreference
-        : "WRITTEN_RESPONSE";
+        : (effectiveForcedPreference ?? "WRITTEN_RESPONSE");
 
       const response = await fetch("/api/swing-analysis/submit", {
         method: "POST",

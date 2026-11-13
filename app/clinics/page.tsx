@@ -1,8 +1,12 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import ClinicSpotsLines from "@/components/ClinicSpotsLines";
 import { listPublicClinics } from "@/lib/clinics-public-server";
+import { metadataForPublicPage } from "@/lib/public-seo";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = metadataForPublicPage("clinics");
 
 export default async function ClinicsIndexPage() {
   const clinics = await listPublicClinics();

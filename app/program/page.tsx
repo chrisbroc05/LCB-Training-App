@@ -11,20 +11,16 @@ import { toAccessUserFields, userAccessSelect } from "@/lib/access-server";
 import { canAccessProgramDashboard } from "@/lib/program-access-shared";
 import { fallbackDeferredParentAccountSignupConsent } from "@/lib/legal-server";
 import { prisma } from "@/lib/prisma";
-import { FREE_SWING_AUTH_URL } from "@/lib/free-swing-flow";
+import { FREE_SWING_LANDING_PATH } from "@/lib/free-swing-flow";
 import { PLAYBOOK_PROGRAM_INCLUDED_DESCRIPTION } from "@/lib/playbook-branding";
+import { metadataForPublicPage } from "@/lib/public-seo";
 import {
   TWELVE_WEEK_PROGRAM_NAME,
   TWELVE_WEEK_PROGRAM_PRICE_LABEL,
   twelveWeekProgramIncludes,
 } from "@/lib/twelve-week-program";
 
-export const metadata: Metadata = {
-  title: {
-    absolute: "12-Week Baseball Coaching Program | Coach Broc",
-  },
-  description: "Daily plan, weekly video, and messaging with Coach Broc for 12 weeks.",
-};
+export const metadata: Metadata = metadataForPublicPage("program");
 
 type ProgramPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -151,7 +147,7 @@ export default async function ProgramPage({ searchParams }: ProgramPageProps) {
         <div className="mx-auto max-w-2xl text-center">
           <p className="text-sm text-zinc-400">
             Want to try the program first?{" "}
-            <Link href={FREE_SWING_AUTH_URL} className="font-semibold text-[#52B788] hover:text-[#9df3bd]">
+            <Link href={FREE_SWING_LANDING_PATH} className="font-semibold text-[#52B788] hover:text-[#9df3bd]">
               Submit a free swing review
             </Link>
           </p>

@@ -14,8 +14,8 @@ import {
   resolveCoachingSubmissionPoolContext,
 } from "@/lib/coaching-submission-pool-server";
 import {
+  getForcedSwingResponsePreference,
   getSwingSubmissionConfirmationVariant,
-  shouldHideSwingResponsePreference,
 } from "@/lib/coaching-submission-confirmation-shared";
 import { isReportsQueueReviewTrack } from "@/lib/reports-queue-shared";
 import { getFreeSwingAnalysisResponseMode } from "@/lib/free-swing-analysis-response-server";
@@ -219,10 +219,19 @@ export async function POST(request: Request) {
     }
     const poolParams = coachingPoolParamsFromValidation(coachingUserFields, "swing", poolContext.validation);
 
+    console.log(`[swing-submit:${requestId}] Creating swing submission record`);
+    const freeSwingAnalysisResponseMode = await getFreeSwingAnalysisResponseMode();
+
     let normalizedResponsePreference = responsePreference;
     const usingPlaybookPool = poolParams.requestedPool === "playbook-lifetime";
-    if (shouldHideSwingResponsePreference(effectiveLevel) && !usingPlaybookPool) {
-      normalizedResponsePreference = "WRITTEN_RESPONSE";
+    if (!usingPlaybookPool) {
+      const forcedPreference = getForcedSwingResponsePreference(
+        effectiveLevel,
+        freeSwingAnalysisResponseMode,
+      );
+      if (forcedPreference) {
+        normalizedResponsePreference = forcedPreference;
+      }
     }
 
     if (!["VIDEO_RESPONSE", "WRITTEN_RESPONSE"].includes(normalizedResponsePreference)) {
@@ -231,9 +240,6 @@ export async function POST(request: Request) {
       );
       return NextResponse.json({ error: "Invalid response preference selected." }, { status: 400 });
     }
-
-    console.log(`[swing-submit:${requestId}] Creating swing submission record`);
-    const freeSwingAnalysisResponseMode = await getFreeSwingAnalysisResponseMode();
     const transactionResult = await withTimeout(
       prisma.$transaction(async (tx) => {
         const consumed = await consumeCoachingSubmission(tx, userId, {

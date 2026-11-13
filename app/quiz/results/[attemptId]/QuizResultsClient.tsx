@@ -15,7 +15,6 @@ import {
 } from "@/lib/player-iq-quiz-shared";
 import type { LeadRoleValue } from "@/lib/resources-shared";
 import { buildCalendlyUrlWithLead } from "@/lib/resources-lead-shared";
-import { buildSwingAnalysisSignupUrl } from "@/lib/resources-lead-shared";
 
 export type ReviewItem = {
   order: number;
@@ -57,11 +56,7 @@ function resolveSwingBreakdownHref(params: {
     return "/swing-analysis";
   }
   if (params.ctaKey === "free-swing-analysis") {
-    return buildSwingAnalysisSignupUrl({
-      firstName: params.firstName,
-      email: params.email,
-      role: params.role,
-    });
+    return "/free-swing-breakdown";
   }
   if (params.ctaKey.startsWith("/")) {
     return params.ctaKey;
@@ -87,11 +82,7 @@ export default function QuizResultsClient(props: QuizResultsClientProps) {
       })
     : props.isLoggedIn
       ? "/swing-analysis"
-      : buildSwingAnalysisSignupUrl({
-          firstName: props.firstName,
-          email: props.email,
-          role: props.role,
-        });
+      : "/free-swing-breakdown";
 
   const isExternalCoachCalendly = isCoach && cta.primaryHref === "calendly";
   const primaryButtonLabel = isCoach ? cta.primaryLabel : "Get Your Free Swing Breakdown";

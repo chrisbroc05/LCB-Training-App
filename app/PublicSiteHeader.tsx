@@ -7,6 +7,7 @@ import { getHomepagePlansHref } from "@/lib/homepage-plans-link";
 
 type PublicSiteHeaderProps = {
   isLoggedIn: boolean;
+  showArticlesNav?: boolean;
 };
 
 const publicHeaderTextLinkClassName =
@@ -18,7 +19,10 @@ const publicHeaderPrimaryButtonClassName =
 const mobileMenuLinkClassName =
   "block rounded-xl px-3 py-3 text-base font-semibold text-zinc-100 transition hover:bg-[#122038]";
 
-export default function PublicSiteHeader({ isLoggedIn }: PublicSiteHeaderProps) {
+export default function PublicSiteHeader({
+  isLoggedIn,
+  showArticlesNav = false,
+}: PublicSiteHeaderProps) {
   const plansHref = getHomepagePlansHref();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuId = useId();
@@ -124,6 +128,18 @@ export default function PublicSiteHeader({ isLoggedIn }: PublicSiteHeaderProps) 
             </Link>
             <Link href="/resources" className={mobileMenuLinkClassName} onClick={closeMenu}>
               Resources
+            </Link>
+            {showArticlesNav ? (
+              <Link href="/articles" className={mobileMenuLinkClassName} onClick={closeMenu}>
+                Articles
+              </Link>
+            ) : null}
+            <Link
+              href="/free-swing-breakdown"
+              className={mobileMenuLinkClassName}
+              onClick={closeMenu}
+            >
+              Free Swing Breakdown
             </Link>
             {isLoggedIn ? (
               <Link href="/dashboard" className={mobileMenuLinkClassName} onClick={closeMenu}>

@@ -145,8 +145,8 @@ export function getHomeCoachingStatus(params: {
   if (effective === "FREE") {
     if (allowance.canSubmit) {
       return {
-        headline: "You have 1 free swing report.",
-        detail: "Send your swing for a written report from Coach Broc.",
+        headline: "You have 1 free video swing breakdown.",
+        detail: "Send your swing for an in-depth video breakdown from Coach Broc.",
         primaryHref: "/coaching-submissions",
         primaryLabel: "Send your swing",
         secondaryHref: null,
@@ -156,12 +156,12 @@ export function getHomeCoachingStatus(params: {
       };
     }
     return {
-      headline: "You have used your free swing report.",
-      detail: "Want more feedback from Coach Broc? Memberships include more swing reports.",
+      headline: "You have used your free video swing breakdown.",
+      detail: "Want more feedback from Coach Broc? Memberships include more swing reviews.",
       primaryHref: membershipHref,
       primaryLabel: membershipLabel,
       secondaryHref: "/profile",
-      secondaryLabel: "View report",
+      secondaryLabel: "View response",
       canSubmit: false,
       showTwelveWeekPitch: false,
     };

@@ -59,7 +59,7 @@ export const RESOURCE_DEFINITIONS: ResourceDefinition[] = [
     section: "START_HERE",
     buttonLabel: "Get My Free Analysis",
     type: "LINK",
-    linkHref: "/swing-analysis",
+    linkHref: "/free-swing-breakdown",
     sortOrder: 10,
   },
   {
@@ -403,6 +403,6 @@ export function getResourceDownloadLabel(fileKey: string) {
   return basename.replace(/^LCB_/, "").replace(/\.pdf$/, "").replace(/_/g, " ");
 }
 
-export const RESOURCES_PAGE_TITLE = "Free + Paid Resources | LCB Training";
+export const RESOURCES_PAGE_TITLE = "Everything I Use to Build Better Players";
 export const RESOURCES_PAGE_DESCRIPTION =
-  "Free tools and paid programs for players, parents, and coaches from Coach Broc at LCB Training.";
+  "Free tools and paid programs from Coach Broc for players, parents, and coaches who want better work between lessons.";
