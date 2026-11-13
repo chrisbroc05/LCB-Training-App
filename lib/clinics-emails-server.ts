@@ -116,3 +116,47 @@ Parent: ${params.parentName} <${params.parentEmail}>`;
     text: body,
   });
 }
+
+export async function sendClinicCoachOverbookReviewEmail(params: {
+  clinicName: string;
+  playerName: string;
+  playerAge: number;
+  dayLabels: string[];
+  soldOutDayLabels: string[];
+  amountCents: number;
+  parentName: string;
+  parentEmail: string;
+  registrationId: string;
+  priorStatus: string;
+}) {
+  const toEmail = process.env.NOTIFICATION_EMAIL?.trim();
+  if (!toEmail) {
+    return;
+  }
+
+  const subject = `Clinic needs review (possible overbook): ${params.playerName} - ${params.clinicName}`;
+  const body = `A clinic payment completed after the registration was ${params.priorStatus.toLowerCase()}, and at least one selected day is full.
+
+Review this registration in admin and decide whether to keep the seat or refund.
+
+Clinic: ${params.clinicName}
+Registration ID: ${params.registrationId}
+Prior status: ${params.priorStatus}
+Player: ${params.playerName} (age ${params.playerAge})
+Days: ${params.dayLabels.join(", ")}
+Sold-out days: ${params.soldOutDayLabels.join(", ")}
+Amount: ${formatClinicMoney(params.amountCents)}
+Parent: ${params.parentName} <${params.parentEmail}>`;
+
+  await sendNotificationEmail({
+    from: `"LCB Training" <${toEmail}>`,
+    to: toEmail,
+    replyTo: EMAIL_REPLY_TO,
+    subject,
+    html: buildMemberEmailHtml({
+      title: subject,
+      bodyContentHtml: `<pre style="white-space:pre-wrap;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6;color:#0A1628;">${escapeHtml(body)}</pre>`,
+    }),
+    text: body,
+  });
+}

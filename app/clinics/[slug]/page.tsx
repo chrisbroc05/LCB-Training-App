@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import ClinicSpotsLines from "@/components/ClinicSpotsLines";
+import { cancelClinicCheckoutOnReturn } from "@/lib/clinics-fulfill-server";
 import { getPublicClinicBySlug } from "@/lib/clinics-public-server";
 import ClinicSignupForm from "@/app/clinics/[slug]/ClinicSignupForm";
 
@@ -8,18 +9,23 @@ export const dynamic = "force-dynamic";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ checkout?: string }>;
+  searchParams: Promise<{ checkout?: string; session_id?: string }>;
 };
 
 export default async function ClinicDetailPage({ params, searchParams }: PageProps) {
   const { slug } = await params;
   const resolvedSearch = await searchParams;
+  const checkoutCancelled = resolvedSearch.checkout === "cancelled";
+  const cancelSessionId = resolvedSearch.session_id?.trim() || "";
+
+  if (checkoutCancelled && cancelSessionId) {
+    await cancelClinicCheckoutOnReturn(cancelSessionId);
+  }
+
   const clinic = await getPublicClinicBySlug(slug);
   if (!clinic) {
     notFound();
   }
-
-  const checkoutCancelled = resolvedSearch.checkout === "cancelled";
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6">

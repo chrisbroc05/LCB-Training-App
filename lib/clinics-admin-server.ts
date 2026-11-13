@@ -10,7 +10,10 @@ import {
   slugifyClinicName,
   type ClinicSportKey,
 } from "@/lib/clinics-shared";
-import { loadClinicDayAvailability } from "@/lib/clinics-capacity-server";
+import {
+  clinicCapacityHoldingWhere,
+  loadClinicDayAvailability,
+} from "@/lib/clinics-capacity-server";
 import { markClinicRegistrationRefunded } from "@/lib/clinics-fulfill-server";
 
 function parseDateKey(dateKey: string) {
@@ -148,6 +151,8 @@ export async function getAdminClinicDetail(clinicId: string) {
       isAllDaysBundle: reg.isAllDaysBundle,
       paidAt: reg.paidAt?.toISOString() ?? null,
       refundedAt: reg.refundedAt?.toISOString() ?? null,
+      needsReview: Boolean(reg.needsReviewAt),
+      needsReviewAt: reg.needsReviewAt?.toISOString() ?? null,
       dayLabels: reg.days.map((row) => formatClinicDayLabel(row.clinicDay.date)),
     })),
   };
@@ -263,7 +268,7 @@ export async function updateAdminClinic(
     const paidOrPendingDayIds = await prisma.clinicRegistrationDay.findMany({
       where: {
         clinicDay: { clinicId },
-        registration: { status: { in: ["PAID", "PENDING"] } },
+        registration: clinicCapacityHoldingWhere(),
       },
       select: { clinicDayId: true },
     });
@@ -316,6 +321,7 @@ export async function buildClinicRosterCsv(clinicId: string) {
 
   const header = [
     "status",
+    "needsReview",
     "playerName",
     "playerAge",
     "sport",
@@ -337,6 +343,7 @@ export async function buildClinicRosterCsv(clinicId: string) {
     lines.push(
       [
         reg.status,
+        reg.needsReview ? "yes" : "",
         reg.playerName,
         String(reg.playerAge),
         reg.sportLabel,

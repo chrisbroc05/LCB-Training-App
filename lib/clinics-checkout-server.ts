@@ -226,7 +226,7 @@ export async function startClinicCheckout(params: {
         },
       ],
       success_url: `${appUrl}/clinics/${clinic.slug}/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${appUrl}/clinics/${clinic.slug}?checkout=cancelled`,
+      cancel_url: `${appUrl}/clinics/${clinic.slug}?checkout=cancelled&session_id={CHECKOUT_SESSION_ID}`,
       metadata: {
         purchaseType: CLINIC_PURCHASE_TYPE,
         clinicId: clinic.id,

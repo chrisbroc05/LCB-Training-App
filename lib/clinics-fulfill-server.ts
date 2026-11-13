@@ -10,15 +10,57 @@ import {
   findClinicUserByParentEmail,
   upsertClinicMarketingLead,
 } from "@/lib/clinics-account-server";
-import { expireStaleClinicHolds } from "@/lib/clinics-capacity-server";
 import {
+  assertClinicDaysHaveCapacity,
+  expireStaleClinicHolds,
+} from "@/lib/clinics-capacity-server";
+import {
+  sendClinicCoachOverbookReviewEmail,
   sendClinicCoachPaidRegistrationEmail,
   sendClinicRegistrationConfirmationEmail,
 } from "@/lib/clinics-emails-server";
 import { formatClinicDayWithTimeLabel } from "@/lib/clinics-shared";
+import { getStripe } from "@/lib/stripe";
 import { splitPlayerName } from "@/lib/testing-shared";
 import { WAIVER_VERSION } from "@/lib/waiver-sign-shared";
 import { linkWaiverSignaturesToUser } from "@/lib/waiver-sign-server";
+
+export async function cancelClinicCheckoutOnReturn(sessionId: string) {
+  const trimmed = sessionId.trim();
+  if (!trimmed) {
+    return { cancelled: false as const };
+  }
+
+  const registration = await prisma.clinicRegistration.findFirst({
+    where: {
+      stripeCheckoutSessionId: trimmed,
+      status: "PENDING",
+    },
+    select: { id: true },
+  });
+
+  if (registration) {
+    await prisma.clinicRegistration.update({
+      where: { id: registration.id },
+      data: {
+        status: "CANCELLED",
+        holdExpiresAt: null,
+        updatedAt: new Date(),
+      },
+    });
+  }
+
+  try {
+    await getStripe().checkout.sessions.expire(trimmed);
+  } catch (error) {
+    // Already expired, completed, or not open - safe to ignore after DB cancel.
+    console.warn("Clinic cancel return: Stripe session expire skipped", trimmed, error);
+  }
+
+  return registration
+    ? { cancelled: true as const, registrationId: registration.id }
+    : { cancelled: false as const };
+}
 
 export async function releaseClinicCheckoutSession(session: Stripe.Checkout.Session) {
   const registrationId = session.metadata?.clinicRegistrationId?.trim();
@@ -46,6 +88,7 @@ export async function releaseClinicCheckoutSession(session: Stripe.Checkout.Sess
     where: { id: registration.id },
     data: {
       status: "EXPIRED",
+      holdExpiresAt: null,
       updatedAt: new Date(),
     },
   });
@@ -125,16 +168,26 @@ export async function fulfillClinicCheckoutSession(session: Stripe.Checkout.Sess
     return { ok: false as const, reason: "registration_not_found" as const };
   }
 
-  if (registration.status === "REFUNDED" || registration.status === "CANCELLED") {
+  if (registration.status === "REFUNDED") {
     return { ok: false as const, reason: "invalid_status" as const };
   }
+
+  const revivedFromInactive =
+    registration.status === "CANCELLED" || registration.status === "EXPIRED";
+
+  const soldOutLabels = await assertClinicDaysHaveCapacity({
+    clinicDayIds: registration.days.map((row) => row.clinicDayId),
+    capacityPerDay: registration.clinic.capacityPerDay,
+    excludeRegistrationId: registration.id,
+  });
+  const needsReview = revivedFromInactive && soldOutLabels.length > 0;
+  const paidAt = new Date();
 
   const paymentIntentId =
     typeof session.payment_intent === "string"
       ? session.payment_intent
       : session.payment_intent?.id ?? null;
 
-  const paidAt = new Date();
   const { firstName, lastName } = splitPlayerName(registration.playerName);
   const playerFirstName = firstName || registration.playerName.trim();
   const playerLastName = lastName || "Player";
@@ -209,6 +262,7 @@ export async function fulfillClinicCheckoutSession(session: Stripe.Checkout.Sess
       stripePaymentIntentId: paymentIntentId,
       paidAt,
       holdExpiresAt: null,
+      needsReviewAt: needsReview ? paidAt : null,
       updatedAt: paidAt,
     },
   });
@@ -250,18 +304,37 @@ export async function fulfillClinicCheckoutSession(session: Stripe.Checkout.Sess
     console.error("Failed to send clinic confirmation email", error);
   }
 
-  try {
-    await sendClinicCoachPaidRegistrationEmail({
-      clinicName: registration.clinic.name,
-      playerName: registration.playerName,
-      playerAge: registration.playerAge,
-      dayLabels,
-      amountCents: registration.amountCents,
-      parentName: registration.parentName,
-      parentEmail: registration.parentEmail,
-    });
-  } catch (error) {
-    console.error("Failed to send clinic coach notification email", error);
+  if (needsReview) {
+    try {
+      await sendClinicCoachOverbookReviewEmail({
+        clinicName: registration.clinic.name,
+        playerName: registration.playerName,
+        playerAge: registration.playerAge,
+        dayLabels,
+        soldOutDayLabels: soldOutLabels,
+        amountCents: registration.amountCents,
+        parentName: registration.parentName,
+        parentEmail: registration.parentEmail,
+        registrationId: registration.id,
+        priorStatus: registration.status,
+      });
+    } catch (error) {
+      console.error("Failed to send clinic overbook review email", error);
+    }
+  } else {
+    try {
+      await sendClinicCoachPaidRegistrationEmail({
+        clinicName: registration.clinic.name,
+        playerName: registration.playerName,
+        playerAge: registration.playerAge,
+        dayLabels,
+        amountCents: registration.amountCents,
+        parentName: registration.parentName,
+        parentEmail: registration.parentEmail,
+      });
+    } catch (error) {
+      console.error("Failed to send clinic coach notification email", error);
+    }
   }
 
   return {
@@ -270,5 +343,6 @@ export async function fulfillClinicCheckoutSession(session: Stripe.Checkout.Sess
     registrationId: registration.id,
     userId,
     createdNewAccount,
+    needsReview,
   };
 }

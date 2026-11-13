@@ -23,6 +23,7 @@ type ClinicDetail = {
   registrations: Array<{
     id: string;
     status: string;
+    needsReview: boolean;
     playerName: string;
     playerAge: number;
     sportLabel: string;
@@ -262,7 +263,12 @@ export default function AdminClinicDetailPanel({ clinicId }: { clinicId: string 
                     <p>{reg.dayLabels.join(", ")}</p>
                     <p className="text-xs text-zinc-500">{reg.amountLabel}</p>
                   </td>
-                  <td className="px-3 py-2 align-top">{reg.status}</td>
+                  <td className="px-3 py-2 align-top">
+                    <p>{reg.status}</p>
+                    {reg.needsReview ? (
+                      <p className="mt-1 text-xs font-semibold text-amber-300">Needs review</p>
+                    ) : null}
+                  </td>
                   <td className="px-3 py-2 align-top">
                     {reg.status === "PAID" ? (
                       <button

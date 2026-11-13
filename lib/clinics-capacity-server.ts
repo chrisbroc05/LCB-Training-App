@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { ClinicRegistrationStatus } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import {
   CLINIC_HOLD_MS,
@@ -9,7 +9,18 @@ import {
   formatClinicDayLabel,
 } from "@/lib/clinics-shared";
 
-const HOLDING_STATUSES: ClinicRegistrationStatus[] = ["PENDING", "PAID"];
+/** PAID always counts; PENDING only while holdExpiresAt is still in the future. */
+export function clinicCapacityHoldingWhere(now = new Date()): Prisma.ClinicRegistrationWhereInput {
+  return {
+    OR: [
+      { status: "PAID" },
+      {
+        status: "PENDING",
+        holdExpiresAt: { gt: now },
+      },
+    ],
+  };
+}
 
 export async function expireStaleClinicHolds(now = new Date()) {
   const result = await prisma.clinicRegistration.updateMany({
@@ -19,6 +30,7 @@ export async function expireStaleClinicHolds(now = new Date()) {
     },
     data: {
       status: "EXPIRED",
+      holdExpiresAt: null,
       updatedAt: now,
     },
   });
@@ -39,16 +51,7 @@ export async function countTakenSpotsForClinicDay(params: {
       ...(params.excludeRegistrationId
         ? { registrationId: { not: params.excludeRegistrationId } }
         : {}),
-      registration: {
-        status: { in: HOLDING_STATUSES },
-        OR: [
-          { status: "PAID" },
-          {
-            status: "PENDING",
-            holdExpiresAt: { gt: now },
-          },
-        ],
-      },
+      registration: clinicCapacityHoldingWhere(now),
     },
   });
 }
