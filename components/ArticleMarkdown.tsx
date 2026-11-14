@@ -35,7 +35,7 @@ export default function ArticleMarkdown({ markdown, headingIds }: ArticleMarkdow
   let h2Index = 0;
 
   return (
-    <div className="article-prose">
+    <div className="article-prose max-w-[70ch]">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
@@ -57,37 +57,37 @@ export default function ArticleMarkdown({ markdown, headingIds }: ArticleMarkdow
             return (
               <h2
                 id={id}
-                className="scroll-mt-site-header mt-10 font-[family-name:var(--font-article-display)] text-2xl font-semibold tracking-wide text-zinc-100 sm:text-3xl"
+                className="scroll-mt-site-header mt-10 border-b border-[#52B788]/55 pb-2 font-[family-name:var(--font-article-display)] text-[28px] font-bold tracking-wide text-white first:mt-0 sm:mt-12 sm:text-[34px]"
               >
                 {children}
               </h2>
             );
           },
           h3: ({ children }) => (
-            <h3 className="scroll-mt-site-header mt-8 font-[family-name:var(--font-article-display)] text-xl font-semibold tracking-wide text-zinc-100 sm:text-2xl">
+            <h3 className="scroll-mt-site-header mt-8 text-[20px] font-semibold text-zinc-200 sm:mt-9 sm:text-[22px]">
               {children}
             </h3>
           ),
           p: ({ children }) => (
-            <p className="mt-4 text-base leading-relaxed text-zinc-300 sm:text-[1.05rem] sm:leading-7">
+            <p className="mt-5 text-[17px] leading-[1.7] text-zinc-300 sm:text-lg sm:leading-[1.7]">
               {children}
             </p>
           ),
           ul: ({ children }) => (
-            <ul className="mt-4 list-disc space-y-2 pl-5 text-base leading-relaxed text-zinc-300">
+            <ul className="mt-5 list-disc space-y-3 pl-5 text-[17px] leading-[1.7] text-zinc-300 marker:text-[#52B788] sm:text-lg">
               {children}
             </ul>
           ),
           ol: ({ children }) => (
-            <ol className="mt-4 list-decimal space-y-2 pl-5 text-base leading-relaxed text-zinc-300">
+            <ol className="mt-5 list-decimal space-y-3 pl-5 text-[17px] leading-[1.7] text-zinc-300 marker:text-[#52B788] sm:text-lg">
               {children}
             </ol>
           ),
-          li: ({ children }) => <li className="pl-1">{children}</li>,
+          li: ({ children }) => <li className="pl-1 [&>p]:mt-0">{children}</li>,
           a: ({ href, children }) => (
             <a
               href={href}
-              className="font-semibold text-[#52B788] underline decoration-[#52B788]/40 underline-offset-2 hover:text-[#9df3bd]"
+              className="font-semibold text-[#52B788] no-underline hover:underline hover:decoration-[#52B788]/70 hover:underline-offset-2"
               rel={href?.startsWith("http") ? "noopener noreferrer" : undefined}
               target={href?.startsWith("http") ? "_blank" : undefined}
             >
@@ -95,26 +95,28 @@ export default function ArticleMarkdown({ markdown, headingIds }: ArticleMarkdow
             </a>
           ),
           table: ({ children }) => (
-            <div className="mt-6 overflow-x-auto rounded-xl border border-[#18243a]">
-              <table className="min-w-full border-collapse text-left text-sm text-zinc-300">
+            <div className="mt-6 -mx-1 overflow-x-auto sm:mx-0">
+              <table className="min-w-full border-collapse border border-[#18243a] text-left text-sm text-zinc-300">
                 {children}
               </table>
             </div>
           ),
           thead: ({ children }) => <thead className="bg-[#0b1324] text-zinc-200">{children}</thead>,
           th: ({ children }) => (
-            <th className="border-b border-[#18243a] px-3 py-2 font-semibold">{children}</th>
+            <th className="border border-[#18243a] px-3 py-2 font-semibold">{children}</th>
           ),
           td: ({ children }) => (
-            <td className="border-b border-[#18243a] px-3 py-2 align-top">{children}</td>
+            <td className="border border-[#18243a] px-3 py-2 align-top">{children}</td>
           ),
           blockquote: ({ children }) => (
-            <blockquote className="mt-6 border-l-4 border-[#52B788] bg-[#0b1324]/70 px-4 py-3 text-zinc-300">
+            <blockquote className="mt-6 border-l-4 border-[#52B788] bg-[#0b1324]/70 px-4 py-3 text-[17px] leading-[1.7] text-zinc-300">
               {children}
             </blockquote>
           ),
           hr: () => <hr className="my-10 border-[#18243a]" />,
-          strong: ({ children }) => <strong className="font-semibold text-zinc-100">{children}</strong>,
+          strong: ({ children }) => (
+            <strong className="font-semibold text-zinc-100">{children}</strong>
+          ),
         }}
       >
         {markdown}
