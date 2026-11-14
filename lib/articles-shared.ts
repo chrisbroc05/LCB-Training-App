@@ -9,6 +9,11 @@ export type ArticleFaqItem = {
   answer: string;
 };
 
+export type ArticleTocItem = {
+  id: string;
+  title: string;
+};
+
 export function slugifyArticleTitle(title: string) {
   return title
     .trim()
@@ -16,6 +21,90 @@ export function slugifyArticleTitle(title: string) {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 80);
+}
+
+export function isArticleTocSkippedHeading(title: string) {
+  const normalized = title.trim().toLowerCase();
+  return (
+    /^key\s+takeaways?$/.test(normalized) ||
+    /^faq$/.test(normalized) ||
+    /^frequently\s+asked\s+questions?$/.test(normalized)
+  );
+}
+
+function assignUniqueHeadingIds(titles: string[]): ArticleTocItem[] {
+  const used = new Map<string, number>();
+  return titles.map((title) => {
+    const base = slugifyArticleTitle(title) || "section";
+    const count = used.get(base) ?? 0;
+    used.set(base, count + 1);
+    const id = count === 0 ? base : `${base}-${count + 1}`;
+    return { id, title };
+  });
+}
+
+/** All ## headings in document order, with unique anchor ids. */
+export function extractArticleH2Headings(markdown: string): ArticleTocItem[] {
+  const lines = markdown.replace(/\r\n/g, "\n").split("\n");
+  const titles: string[] = [];
+  for (const rawLine of lines) {
+    const match = /^##\s+(.+)$/.exec(rawLine.trim());
+    if (!match) {
+      continue;
+    }
+    const title = match[1].replace(/\s+#+\s*$/, "").trim();
+    if (title) {
+      titles.push(title);
+    }
+  }
+  return assignUniqueHeadingIds(titles);
+}
+
+/** TOC entries: ## headings excluding Key takeaways and FAQ. */
+export function extractArticleTocItems(markdown: string): ArticleTocItem[] {
+  return extractArticleH2Headings(markdown).filter(
+    (item) => !isArticleTocSkippedHeading(item.title),
+  );
+}
+
+/**
+ * Split markdown so Key takeaways (heading + body until the next ##) stay above the TOC.
+ * If there is no Key takeaways section, `before` is empty and `after` is the full markdown.
+ */
+export function splitMarkdownAfterKeyTakeaways(markdown: string): {
+  before: string;
+  after: string;
+} {
+  const normalized = markdown.replace(/\r\n/g, "\n");
+  const lines = normalized.split("\n");
+  let takeawaysStart = -1;
+  for (let index = 0; index < lines.length; index += 1) {
+    const match = /^##\s+(.+)$/.exec(lines[index]!.trim());
+    if (!match) {
+      continue;
+    }
+    const title = match[1].replace(/\s+#+\s*$/, "").trim();
+    if (/^key\s+takeaways?$/i.test(title)) {
+      takeawaysStart = index;
+      break;
+    }
+  }
+
+  if (takeawaysStart < 0) {
+    return { before: "", after: normalized };
+  }
+
+  let takeawaysEnd = lines.length;
+  for (let index = takeawaysStart + 1; index < lines.length; index += 1) {
+    if (/^##\s+/.test(lines[index]!.trim())) {
+      takeawaysEnd = index;
+      break;
+    }
+  }
+
+  const before = lines.slice(0, takeawaysEnd).join("\n").replace(/\n+$/, "");
+  const after = lines.slice(takeawaysEnd).join("\n").replace(/^\n+/, "");
+  return { before, after };
 }
 
 export function isValidArticleSlug(slug: string) {

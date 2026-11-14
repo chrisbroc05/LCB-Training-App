@@ -1,23 +1,70 @@
+import type { ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import {
+  extractArticleH2Headings,
+  type ArticleTocItem,
+} from "@/lib/articles-shared";
 
 type ArticleMarkdownProps = {
   markdown: string;
+  /** Prefer full-document heading ids when content is split around the TOC. */
+  headingIds?: ArticleTocItem[];
 };
 
-export default function ArticleMarkdown({ markdown }: ArticleMarkdownProps) {
+function childrenToPlainText(children: ReactNode): string {
+  if (children == null || typeof children === "boolean") {
+    return "";
+  }
+  if (typeof children === "string" || typeof children === "number") {
+    return String(children);
+  }
+  if (Array.isArray(children)) {
+    return children.map((child) => childrenToPlainText(child)).join("");
+  }
+  if (typeof children === "object" && "props" in children) {
+    return childrenToPlainText(
+      (children as { props?: { children?: ReactNode } }).props?.children,
+    );
+  }
+  return "";
+}
+
+export default function ArticleMarkdown({ markdown, headingIds }: ArticleMarkdownProps) {
+  const resolvedHeadingIds = headingIds ?? extractArticleH2Headings(markdown);
+  let h2Index = 0;
+
   return (
     <div className="article-prose">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
-          h2: ({ children }) => (
-            <h2 className="mt-10 font-[family-name:var(--font-article-display)] text-2xl font-semibold tracking-wide text-zinc-100 first:mt-0 sm:text-3xl">
-              {children}
-            </h2>
-          ),
+          h2: ({ children }) => {
+            const text = childrenToPlainText(children).trim();
+            const matched = resolvedHeadingIds[h2Index];
+            const id =
+              matched && matched.title === text
+                ? matched.id
+                : resolvedHeadingIds.find((item) => item.title === text)?.id;
+            if (matched && matched.title === text) {
+              h2Index += 1;
+            } else if (id) {
+              const foundIndex = resolvedHeadingIds.findIndex((item) => item.id === id);
+              if (foundIndex >= 0) {
+                h2Index = foundIndex + 1;
+              }
+            }
+            return (
+              <h2
+                id={id}
+                className="scroll-mt-site-header mt-10 font-[family-name:var(--font-article-display)] text-2xl font-semibold tracking-wide text-zinc-100 sm:text-3xl"
+              >
+                {children}
+              </h2>
+            );
+          },
           h3: ({ children }) => (
-            <h3 className="mt-8 font-[family-name:var(--font-article-display)] text-xl font-semibold tracking-wide text-zinc-100 sm:text-2xl">
+            <h3 className="scroll-mt-site-header mt-8 font-[family-name:var(--font-article-display)] text-xl font-semibold tracking-wide text-zinc-100 sm:text-2xl">
               {children}
             </h3>
           ),

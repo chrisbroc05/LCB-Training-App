@@ -5,10 +5,14 @@ import { notFound } from "next/navigation";
 import { Inter, Oswald } from "next/font/google";
 import ArticleJsonLd from "@/components/ArticleJsonLd";
 import ArticleMarkdown from "@/components/ArticleMarkdown";
+import ArticleTableOfContents from "@/components/ArticleTableOfContents";
 import {
   FREE_SWING_ARTICLE_CTA_HREF,
   FREE_SWING_ARTICLE_CTA_TEXT,
+  extractArticleH2Headings,
+  extractArticleTocItems,
   formatArticleDateLabel,
+  splitMarkdownAfterKeyTakeaways,
 } from "@/lib/articles-shared";
 import { articleFaqForSchema, getPublishedArticleBySlug } from "@/lib/articles-server";
 import { buildPublicPageMetadata } from "@/lib/public-seo";
@@ -85,6 +89,14 @@ export default async function ArticleDetailPage({ params }: PageProps) {
   const faqItems = articleFaqForSchema(article.contentMarkdown);
   const datePublished = (article.publishedAt ?? article.createdAt).toISOString();
   const dateModified = article.updatedAt.toISOString();
+  const headingIds = extractArticleH2Headings(article.contentMarkdown);
+  const tocItems = extractArticleTocItems(article.contentMarkdown);
+  const { before: markdownBeforeToc, after: markdownAfterToc } = splitMarkdownAfterKeyTakeaways(
+    article.contentMarkdown,
+  );
+  const beforeHeadingCount = extractArticleH2Headings(markdownBeforeToc).length;
+  const beforeHeadingIds = headingIds.slice(0, beforeHeadingCount);
+  const afterHeadingIds = headingIds.slice(beforeHeadingCount);
 
   return (
     <article
@@ -126,7 +138,15 @@ export default async function ArticleDetailPage({ params }: PageProps) {
       ) : null}
 
       <div className="mt-8">
-        <ArticleMarkdown markdown={article.contentMarkdown} />
+        {markdownBeforeToc ? (
+          <ArticleMarkdown markdown={markdownBeforeToc} headingIds={beforeHeadingIds} />
+        ) : null}
+        <ArticleTableOfContents items={tocItems} />
+        {markdownAfterToc ? (
+          <div className={markdownBeforeToc ? "mt-2" : undefined}>
+            <ArticleMarkdown markdown={markdownAfterToc} headingIds={afterHeadingIds} />
+          </div>
+        ) : null}
       </div>
 
       <aside className="mt-12 rounded-2xl border border-[#52B788]/35 bg-[#0b1324] px-5 py-6 sm:px-6">
