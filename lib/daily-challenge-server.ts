@@ -31,6 +31,22 @@ import {
   type DailyLeaderboardScopeFilter,
   type DailyQuestionTypeKey,
 } from "@/lib/daily-challenge-shared";
+import { getDrillLibraryVideoById } from "@/lib/drill-library-videos";
+
+function resolveDailyChallengeDrillWatch(drillLibraryVimeoId: string | null) {
+  if (!drillLibraryVimeoId) {
+    return null;
+  }
+  const video = getDrillLibraryVideoById(drillLibraryVimeoId);
+  if (!video) {
+    return null;
+  }
+  return {
+    title: video.title,
+    url: video.url,
+    category: video.category,
+  };
+}
 
 export type {
   DailyChallengeContentPayload,
@@ -243,6 +259,7 @@ export async function loadDailyChallengeContentForUser(
           title: challenge.title,
           instructions: challenge.instructions,
           drillLibraryVimeoId: challenge.drillLibraryVimeoId,
+          drillWatch: resolveDailyChallengeDrillWatch(challenge.drillLibraryVimeoId),
           rotationDay: challenge.rotationDay,
         }
       : null,
@@ -907,8 +924,18 @@ export async function upsertAdminDailyChallenge(input: {
         active: input.active ?? true,
       },
     });
-    return { ok: true as const, row };
+    return { ok: true as const, row, created: false };
   }
+
+  const existing = await prisma.dailyChallenge.findUnique({
+    where: {
+      ageGroup_rotationDay: {
+        ageGroup: input.ageGroup,
+        rotationDay: input.rotationDay,
+      },
+    },
+    select: { id: true },
+  });
 
   const row = await prisma.dailyChallenge.upsert({
     where: {
@@ -932,7 +959,7 @@ export async function upsertAdminDailyChallenge(input: {
       active: input.active ?? true,
     },
   });
-  return { ok: true as const, row };
+  return { ok: true as const, row, created: !existing };
 }
 
 export async function upsertAdminDailyQuestion(input: {
@@ -989,7 +1016,7 @@ export async function upsertAdminDailyQuestion(input: {
       where: { id: input.id },
       data,
     });
-    return { ok: true as const, row };
+    return { ok: true as const, row, created: false };
   }
 
   const existing = await prisma.dailyQuestion.findFirst({
@@ -1002,7 +1029,7 @@ export async function upsertAdminDailyQuestion(input: {
   const row = existing
     ? await prisma.dailyQuestion.update({ where: { id: existing.id }, data })
     : await prisma.dailyQuestion.create({ data });
-  return { ok: true as const, row };
+  return { ok: true as const, row, created: !existing };
 }
 
 export async function deleteAdminDailyChallenge(id: string) {

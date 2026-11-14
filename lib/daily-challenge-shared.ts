@@ -39,6 +39,12 @@ export type DailyChallengeContentPayload = {
     title: string;
     instructions: string;
     drillLibraryVimeoId: string | null;
+    /** Present when a drill is linked - playable for any member on the challenge card. */
+    drillWatch: {
+      title: string;
+      url: string;
+      category: "hitting" | "fielding" | "mindset" | "speed_agility";
+    } | null;
     rotationDay: number;
   } | null;
   question: {

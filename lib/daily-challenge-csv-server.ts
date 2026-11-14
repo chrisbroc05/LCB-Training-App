@@ -2,25 +2,98 @@ import "server-only";
 
 import {
   previewDailyChallengeCsv,
-  type DailyChallengeCsvPreview,
+  type DailyChallengeCsvChallengePreviewRow,
+  type DailyChallengeCsvImportPreview,
+  type DailyChallengeCsvQuestionPreviewRow,
 } from "@/lib/daily-challenge-csv-shared";
 import {
   upsertAdminDailyChallenge,
   upsertAdminDailyQuestion,
 } from "@/lib/daily-challenge-server";
+import { prisma } from "@/lib/prisma";
 
-export async function previewDailyChallengeCsvImport(csvText: string): Promise<DailyChallengeCsvPreview> {
-  return previewDailyChallengeCsv(csvText);
+function challengeKey(ageGroup: string, rotationDay: number) {
+  return `${ageGroup}|${rotationDay}`;
+}
+
+function questionKey(type: string, ageGroup: string | null, rotationDay: number) {
+  return `${type}|${ageGroup ?? "ALL"}|${rotationDay}`;
+}
+
+export async function previewDailyChallengeCsvImport(
+  csvText: string,
+): Promise<DailyChallengeCsvImportPreview> {
+  const preview = previewDailyChallengeCsv(csvText);
+  if (!preview.ok) {
+    return preview;
+  }
+
+  const existingChallenges = await prisma.dailyChallenge.findMany({
+    select: { ageGroup: true, rotationDay: true },
+  });
+  const existingChallengeKeys = new Set(
+    existingChallenges.map((row) => challengeKey(row.ageGroup, row.rotationDay)),
+  );
+
+  const existingQuestions = await prisma.dailyQuestion.findMany({
+    select: { type: true, ageGroup: true, rotationDay: true },
+  });
+  const existingQuestionKeys = new Set(
+    existingQuestions.map((row) => questionKey(row.type, row.ageGroup, row.rotationDay)),
+  );
+
+  let challengesCreated = 0;
+  let challengesUpdated = 0;
+  const challenges: DailyChallengeCsvChallengePreviewRow[] = preview.challenges.map((row) => {
+    const exists = existingChallengeKeys.has(challengeKey(row.ageGroup, row.rotationDay));
+    if (exists) {
+      challengesUpdated += 1;
+    } else {
+      challengesCreated += 1;
+    }
+    return {
+      ...row,
+      importAction: exists ? "update" : "create",
+    };
+  });
+
+  let questionsCreated = 0;
+  let questionsUpdated = 0;
+  const questions: DailyChallengeCsvQuestionPreviewRow[] = preview.questions.map((row) => {
+    const exists = existingQuestionKeys.has(questionKey(row.type, row.ageGroup, row.rotationDay));
+    if (exists) {
+      questionsUpdated += 1;
+    } else {
+      questionsCreated += 1;
+    }
+    return {
+      ...row,
+      importAction: exists ? "update" : "create",
+    };
+  });
+
+  return {
+    ok: true,
+    challenges,
+    questions,
+    warnings: preview.warnings,
+    challengesCreated,
+    challengesUpdated,
+    questionsCreated,
+    questionsUpdated,
+  };
 }
 
 export async function commitDailyChallengeCsvImport(csvText: string) {
-  const preview = previewDailyChallengeCsv(csvText);
+  const preview = await previewDailyChallengeCsvImport(csvText);
   if (!preview.ok) {
     return { ok: false as const, error: preview.error };
   }
 
-  let challengesUpserted = 0;
-  let questionsUpserted = 0;
+  let challengesCreated = 0;
+  let challengesUpdated = 0;
+  let questionsCreated = 0;
+  let questionsUpdated = 0;
 
   for (const row of preview.challenges) {
     const result = await upsertAdminDailyChallenge({
@@ -34,7 +107,11 @@ export async function commitDailyChallengeCsvImport(csvText: string) {
     if (!result.ok) {
       return { ok: false as const, error: `Challenge line ${row.lineNumber}: ${result.error}` };
     }
-    challengesUpserted += 1;
+    if (result.created) {
+      challengesCreated += 1;
+    } else {
+      challengesUpdated += 1;
+    }
   }
 
   for (const row of preview.questions) {
@@ -51,14 +128,22 @@ export async function commitDailyChallengeCsvImport(csvText: string) {
     if (!result.ok) {
       return { ok: false as const, error: `Question line ${row.lineNumber}: ${result.error}` };
     }
-    questionsUpserted += 1;
+    if (result.created) {
+      questionsCreated += 1;
+    } else {
+      questionsUpdated += 1;
+    }
   }
 
   return {
     ok: true as const,
     result: {
-      challengesUpserted,
-      questionsUpserted,
+      challengesCreated,
+      challengesUpdated,
+      questionsCreated,
+      questionsUpdated,
+      challengesUpserted: challengesCreated + challengesUpdated,
+      questionsUpserted: questionsCreated + questionsUpdated,
       warnings: preview.warnings,
     },
   };

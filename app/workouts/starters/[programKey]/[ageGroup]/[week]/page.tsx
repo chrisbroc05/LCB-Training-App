@@ -73,6 +73,16 @@ export default async function StarterWorkoutWeekPage({ params }: PageProps) {
                   {exercise.formCue ? (
                     <p className="mt-1 text-zinc-400">{exercise.formCue}</p>
                   ) : null}
+                  {exercise.drillHref && exercise.drillTitle ? (
+                    <p className="mt-1">
+                      <Link
+                        href={exercise.drillHref}
+                        className="font-semibold text-[#52B788] underline underline-offset-2"
+                      >
+                        Watch: {exercise.drillTitle}
+                      </Link>
+                    </p>
+                  ) : null}
                 </li>
               ))}
             </ul>

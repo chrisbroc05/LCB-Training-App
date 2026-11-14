@@ -9,7 +9,7 @@ import {
 export type AdminDrillPickerOption = {
   id: string;
   title: string;
-  category: "hitting" | "fielding" | "mindset";
+  category: "hitting" | "fielding" | "mindset" | "speed_agility";
   categoryLabel: string;
   url: string;
   thumbnailUrl: string | null;

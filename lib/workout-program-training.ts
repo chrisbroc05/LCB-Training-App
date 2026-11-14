@@ -1,4 +1,5 @@
 import type { StrengthVariant } from "@/lib/strength-variant-shared";
+import { resolveExerciseDrillLink } from "@/lib/workout-exercise-drill-shared";
 import { getHomeStrengthWorkout } from "@/lib/workout-program-home";
 import { WORKOUT_CUES_SUPPLEMENTARY } from "@/lib/workout-cues-supplementary";
 import { WORKOUT_PROGRAMS } from "@/lib/workout-program-data.generated";
@@ -263,11 +264,21 @@ export function getWorkout(
     ageGroup: program.ageGroup,
     sections: workout.sections.map((section) => ({
       ...section,
-      exercises: section.exercises.map((exercise) => ({
-        ...exercise,
-        rest: exercise.rest ?? "-",
-        formCue: lookupFormCue(exercise.name, program.glossary),
-      })),
+      exercises: section.exercises.map((exercise) => {
+        const drill = resolveExerciseDrillLink(exercise.name, program.ageGroup);
+        return {
+          ...exercise,
+          rest: exercise.rest ?? "-",
+          formCue: lookupFormCue(exercise.name, program.glossary),
+          ...(drill
+            ? {
+                drillLibraryVimeoId: drill.vimeoId,
+                drillTitle: drill.title,
+                drillHref: drill.href,
+              }
+            : {}),
+        };
+      }),
     })),
   };
 }

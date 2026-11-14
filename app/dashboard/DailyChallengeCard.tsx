@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import DailyLeaderboardNotice from "@/app/dashboard/DailyLeaderboardNotice";
+import VideoPlayer from "@/app/components/mobile/VideoPlayer";
 import {
   dailyChallengeAgeGroupLabel,
   formatDailyChallengeDayDoneMessage,
@@ -14,6 +15,7 @@ import {
   type DailyChallengeContentPayload,
   type DailyLeaderboardPayload,
 } from "@/lib/daily-challenge-shared";
+import { buildDrillLibraryEmbedUrl } from "@/lib/vimeo";
 
 type DailyChallengeCardProps = {
   variant?: "primary" | "bonus";
@@ -32,6 +34,7 @@ export default function DailyChallengeCard({ variant = "primary" }: DailyChallen
   const [busy, setBusy] = useState(false);
   const [ageDraft, setAgeDraft] = useState("");
   const [mindsetDraft, setMindsetDraft] = useState("");
+  const [watchDrillOpen, setWatchDrillOpen] = useState(false);
 
   const applyPayload = useCallback((data: ApiPayload) => {
     if (data.content) {
@@ -159,13 +162,17 @@ export default function DailyChallengeCard({ variant = "primary" }: DailyChallen
               <p className="mt-2 whitespace-pre-wrap text-sm text-zinc-300">
                 {content.challenge.instructions}
               </p>
-              {content.challenge.drillLibraryVimeoId ? (
-                <Link
-                  href={`/drill-library?v=${encodeURIComponent(content.challenge.drillLibraryVimeoId)}`}
-                  className="mt-2 inline-block text-sm font-semibold text-[#52B788]"
-                >
-                  Open related drill
-                </Link>
+              {content.challenge.drillWatch ? (
+                <div className="mt-3">
+                  <button
+                    type="button"
+                    onClick={() => setWatchDrillOpen(true)}
+                    className="rounded-full border border-[#52B788]/50 bg-[#22c55e]/10 px-4 py-2 text-sm font-semibold text-[#9df3bd] transition hover:bg-[#22c55e]/20"
+                  >
+                    Watch the drill
+                  </button>
+                  <p className="mt-1 text-xs text-zinc-500">{content.challenge.drillWatch.title}</p>
+                </div>
               ) : null}
               <div className="mt-4">
                 {content.completion.challengeDone ? (
@@ -328,6 +335,52 @@ export default function DailyChallengeCard({ variant = "primary" }: DailyChallen
           ) : null}
         </>
       )}
+
+      {watchDrillOpen && content.challenge?.drillWatch ? (
+        <>
+          <div className="md:hidden">
+            <VideoPlayer
+              video={content.challenge.drillWatch}
+              videos={[content.challenge.drillWatch]}
+              startIndex={0}
+              onClose={() => setWatchDrillOpen(false)}
+            />
+          </div>
+          <div
+            className="fixed inset-0 z-50 hidden items-center justify-center bg-black/85 p-4 md:flex"
+            onClick={() => setWatchDrillOpen(false)}
+          >
+            <div
+              className="w-full max-w-4xl overflow-hidden rounded-2xl border border-[#2b3650] bg-black"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="flex items-center justify-between border-b border-[#2b3650] px-4 py-3">
+                <p className="text-sm font-semibold text-zinc-100">
+                  {content.challenge.drillWatch.title}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setWatchDrillOpen(false)}
+                  className="rounded-full border border-[#2b3650] px-3 py-1 text-xs text-zinc-300 transition hover:border-[#3c4a68]"
+                >
+                  Close
+                </button>
+              </div>
+              <div className="aspect-video w-full">
+                <iframe
+                  src={buildDrillLibraryEmbedUrl(content.challenge.drillWatch.url, {
+                    autoplay: true,
+                  })}
+                  title={content.challenge.drillWatch.title}
+                  className="h-full w-full"
+                  allow="autoplay; fullscreen; picture-in-picture"
+                  allowFullScreen
+                />
+              </div>
+            </div>
+          </div>
+        </>
+      ) : null}
     </article>
   );
 }

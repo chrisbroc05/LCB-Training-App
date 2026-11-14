@@ -12,6 +12,7 @@ import {
   getDrillLibraryVideoId,
   hittingVideos,
   mindsetVideos,
+  speedAgilityVideos,
   type DrillLibraryVideoItem,
 } from "@/lib/drill-library-videos";
 import { buildDrillLibraryEmbedUrl } from "@/lib/vimeo";
@@ -38,6 +39,10 @@ function getVideosForCategory(category: DrillCategoryKey) {
 
   if (category === "fielding") {
     return fieldingVideos;
+  }
+
+  if (category === "speed_agility") {
+    return speedAgilityVideos;
   }
 
   return mindsetVideos;
@@ -139,6 +144,9 @@ function VideoSection({
                   </span>
                 </div>
                 <p className="mt-4 text-base font-semibold text-zinc-300 sm:text-lg">{video.title}</p>
+                {video.description ? (
+                  <p className="mt-1 text-sm text-zinc-500">{video.description}</p>
+                ) : null}
                 <DrillLibraryLockLine
                   effective={lockedContentEffective}
                   customMessage={lockedDrillMessage}
@@ -156,6 +164,9 @@ function VideoSection({
             >
               <VideoThumbnail thumbnailUrl={thumbnailMap[video.url]} />
               <p className="mt-4 text-base font-semibold text-zinc-100 sm:text-lg">{video.title}</p>
+              {video.description ? (
+                <p className="mt-1 text-sm text-zinc-400">{video.description}</p>
+              ) : null}
             </button>
           );
         })}
@@ -381,6 +392,16 @@ export default function VideoLibrary({
             heading="Mindset Library"
             description="Mental performance lessons to build confidence, focus, and composure."
             videos={mindsetVideos}
+            thumbnailMap={thumbnailMap}
+            onSelectVideo={setDesktopVideo}
+            lockedDrillIds={lockedDrillIdSet}
+            lockedContentEffective={lockedContentEffective}
+            lockedDrillMessage={lockedDrillMessage}
+          />
+          <VideoSection
+            heading="Speed & Agility Library"
+            description="Speed, plyometrics, and footwork drills for acceleration and athletic movement."
+            videos={speedAgilityVideos}
             thumbnailMap={thumbnailMap}
             onSelectVideo={setDesktopVideo}
             lockedDrillIds={lockedDrillIdSet}

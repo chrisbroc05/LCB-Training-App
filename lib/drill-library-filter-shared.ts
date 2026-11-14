@@ -5,6 +5,7 @@ export const DRILL_LIBRARY_CATEGORY_FILTERS = [
   { key: "hitting", label: "Hitting" },
   { key: "fielding", label: "Fielding" },
   { key: "mindset", label: "Mindset" },
+  { key: "speed_agility", label: "Speed & Agility" },
 ] as const;
 
 export type DrillLibraryCategoryFilterKey =

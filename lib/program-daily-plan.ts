@@ -30,6 +30,7 @@ import {
   getMindsetDrillsForDay,
   type ProgramDrillRef,
 } from "@/lib/program-drill-tags";
+import { getSprintFocusDrillRef } from "@/lib/workout-exercise-drill-shared";
 import {
   PROGRAM_AGE_GROUP_WORKOUT_AGE,
   type ProgramAgeGroup,
@@ -442,6 +443,7 @@ function buildSprintTask(
     title: "Speed focus sprints",
     target: inSeason ? SPRINT_TASK_IN_SEASON_BY_AGE[ageGroup] : SPRINT_TASK_BY_AGE[ageGroup],
     inSeasonNote: inSeason ? IN_SEASON_SPRINT_NOTE : undefined,
+    drills: getSprintFocusDrillRef(),
     needsNote: true,
     dropRank: DROP_RANK.sprint,
     isFocusExtra: true,

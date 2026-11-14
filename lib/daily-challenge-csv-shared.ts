@@ -30,12 +30,35 @@ export type DailyChallengeCsvQuestionRow = {
   lineNumber: number;
 };
 
+export type DailyChallengeCsvImportAction = "create" | "update";
+
 export type DailyChallengeCsvPreview =
   | {
       ok: true;
       challenges: DailyChallengeCsvChallengeRow[];
       questions: DailyChallengeCsvQuestionRow[];
       warnings: string[];
+    }
+  | { ok: false; error: string };
+
+export type DailyChallengeCsvChallengePreviewRow = DailyChallengeCsvChallengeRow & {
+  importAction: DailyChallengeCsvImportAction;
+};
+
+export type DailyChallengeCsvQuestionPreviewRow = DailyChallengeCsvQuestionRow & {
+  importAction: DailyChallengeCsvImportAction;
+};
+
+export type DailyChallengeCsvImportPreview =
+  | {
+      ok: true;
+      challenges: DailyChallengeCsvChallengePreviewRow[];
+      questions: DailyChallengeCsvQuestionPreviewRow[];
+      warnings: string[];
+      challengesCreated: number;
+      challengesUpdated: number;
+      questionsCreated: number;
+      questionsUpdated: number;
     }
   | { ok: false; error: string };
 

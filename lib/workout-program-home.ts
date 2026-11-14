@@ -1,4 +1,5 @@
 import type { StrengthVariant } from "@/lib/strength-variant-shared";
+import { resolveExerciseDrillLink } from "@/lib/workout-exercise-drill-shared";
 import {
   HOME_STRENGTH_GLOSSARY,
   HOME_STRENGTH_SAFETY_NOTE,
@@ -138,12 +139,24 @@ function lookupHomeFormCue(name: string) {
   return undefined;
 }
 
-function enrichExercise(exercise: WorkoutExercise, weekNumber: number): WorkoutExercise {
+function enrichExercise(
+  exercise: WorkoutExercise,
+  weekNumber: number,
+  ageGroup: "12-15" | "16-18",
+): WorkoutExercise {
   const progressed = applyProgressionToExercise(exercise, weekNumber);
+  const drill = resolveExerciseDrillLink(progressed.name, ageGroup);
   return {
     ...progressed,
     rest: progressed.rest ?? "-",
     formCue: lookupHomeFormCue(progressed.name),
+    ...(drill
+      ? {
+          drillLibraryVimeoId: drill.vimeoId,
+          drillTitle: drill.title,
+          drillHref: drill.href,
+        }
+      : {}),
   };
 }
 
@@ -188,7 +201,7 @@ export function buildHomeStrengthWorkout(params: {
     sections: template.sections.map((section) => ({
       ...section,
       exercises: section.exercises.map((exercise) =>
-        enrichExercise(exercise, params.weekNumber),
+        enrichExercise(exercise, params.weekNumber, params.ageGroup),
       ),
     })),
   };

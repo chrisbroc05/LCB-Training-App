@@ -195,6 +195,14 @@ export default function ProgramWorkoutChecklist({
                         {exercise.formCue ? (
                           <span className="mt-2 block text-sm text-[#52B788]">{exercise.formCue}</span>
                         ) : null}
+                        {exercise.drillHref && exercise.drillTitle ? (
+                          <Link
+                            href={exercise.drillHref}
+                            className="mt-2 inline-block text-sm font-semibold text-[#52B788] underline underline-offset-2"
+                          >
+                            Watch: {exercise.drillTitle}
+                          </Link>
+                        ) : null}
                       </span>
                     </label>
                   </li>

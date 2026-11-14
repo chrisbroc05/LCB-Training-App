@@ -14,6 +14,10 @@ export type WorkoutExercise = {
   formCue?: string;
   alternativeName?: string;
   alternativeRepsOrTime?: string;
+  /** Linked Drill Library video when a matching demo exists. */
+  drillLibraryVimeoId?: string;
+  drillTitle?: string;
+  drillHref?: string;
 };
 
 export type WorkoutSection = {

@@ -1,12 +1,17 @@
+export type DrillLibraryCategory = "hitting" | "fielding" | "mindset" | "speed_agility";
+
 export type DrillLibraryVideoItem = {
   title: string;
   url: string;
-  category: "hitting" | "fielding" | "mindset";
+  category: DrillLibraryCategory;
+  /** Optional one-line coaching description shown in the library. */
+  description?: string;
 };
 
 type DrillLibraryVideoSource = {
   title: string;
   url: string;
+  description?: string;
 };
 
 const hittingVideoSources: DrillLibraryVideoSource[] = [
@@ -84,6 +89,9 @@ const hittingVideoSources: DrillLibraryVideoSource[] = [
 export const CODE_DEFINED_STARTER_DRILL_VIMEO_IDS = [
   "1246361113", // Knob to Knee Drill
   "1246364434", // Stay Balanced Stay Strong
+  "1246662222", // Pogo Hops
+  "1246663963", // Quick Feet Circuit
+  "1246665045", // Speed Starts With the Arms
 ] as const;
 
 const fieldingVideoSources: DrillLibraryVideoSource[] = [
@@ -170,6 +178,59 @@ const mindsetVideoSources: DrillLibraryVideoSource[] = [
   },
 ];
 
+const speedAgilityVideoSources: DrillLibraryVideoSource[] = [
+  {
+    title: "Pogo Hops",
+    url: "https://player.vimeo.com/video/1246662222",
+    description: "Trains stiff-ankle bounce and ground contact speed - stay on the balls of your feet and get off the ground fast.",
+  },
+  {
+    title: "Depth Jumps",
+    url: "https://player.vimeo.com/video/1246662433",
+    description: "Builds reactive power off a drop landing - land soft, then explode up without settling.",
+  },
+  {
+    title: "Box Steps",
+    url: "https://player.vimeo.com/video/1246663053",
+    description: "Trains controlled single-leg drive onto a box - drive through the front foot and stand tall at the top.",
+  },
+  {
+    title: "Depth Drop to Double Broad Jump",
+    url: "https://player.vimeo.com/video/1246663568",
+    description: "Links a soft depth landing into two broad jumps - stick the drop, then project forward with both feet.",
+  },
+  {
+    title: "Quick Feet Circuit",
+    url: "https://player.vimeo.com/video/1246663963",
+    description: "Trains fast feet and rhythm for ladders and first-step work - stay low and keep the feet quiet and quick.",
+  },
+  {
+    title: "Seated Box Jumps",
+    url: "https://player.vimeo.com/video/1246663334",
+    description: "Builds explosive hip extension from a seated start - pause briefly on the box, then jump and land soft.",
+  },
+  {
+    title: "Skater Jumps",
+    url: "https://player.vimeo.com/video/1246664185",
+    description: "Trains lateral power and single-leg landing control - push sideways, stick the landing, then go.",
+  },
+  {
+    title: "Weighted Skater Jumps",
+    url: "https://player.vimeo.com/video/1246664442",
+    description: "Adds load to lateral skater power for older athletes - keep the chest up and stick each landing.",
+  },
+  {
+    title: "Triple Broad Jumps",
+    url: "https://player.vimeo.com/video/1246664791",
+    description: "Trains repeated horizontal power - swing the arms, jump far, and stick each landing before the next.",
+  },
+  {
+    title: "Speed Starts With the Arms",
+    url: "https://player.vimeo.com/video/1246665045",
+    description: "Teaches arm drive for faster acceleration - punch the elbows and keep the arms aggressive from the first step.",
+  },
+];
+
 export const hittingVideos: DrillLibraryVideoItem[] = hittingVideoSources.map((video) => ({
   ...video,
   category: "hitting" as const,
@@ -185,10 +246,16 @@ export const mindsetVideos: DrillLibraryVideoItem[] = mindsetVideoSources.map((v
   category: "mindset" as const,
 }));
 
+export const speedAgilityVideos: DrillLibraryVideoItem[] = speedAgilityVideoSources.map((video) => ({
+  ...video,
+  category: "speed_agility" as const,
+}));
+
 export const allDrillLibraryVideos: DrillLibraryVideoItem[] = [
   ...hittingVideos,
   ...fieldingVideos,
   ...mindsetVideos,
+  ...speedAgilityVideos,
 ];
 
 export function extractVimeoVideoId(url: string) {
@@ -224,6 +291,10 @@ export function getDrillCategoryLabel(category: DrillLibraryVideoItem["category"
 
   if (category === "fielding") {
     return "Fielding";
+  }
+
+  if (category === "speed_agility") {
+    return "Speed & Agility";
   }
 
   return "Mindset";
