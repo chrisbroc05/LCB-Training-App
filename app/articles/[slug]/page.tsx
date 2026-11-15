@@ -6,6 +6,7 @@ import { Inter, Oswald } from "next/font/google";
 import ArticleFaqSection from "@/components/ArticleFaqSection";
 import ArticleJsonLd from "@/components/ArticleJsonLd";
 import ArticleKeyTakeaways from "@/components/ArticleKeyTakeaways";
+import ArticleLeadCaptureForm from "@/components/ArticleLeadCaptureForm";
 import ArticleMarkdown from "@/components/ArticleMarkdown";
 import ArticleTableOfContents from "@/components/ArticleTableOfContents";
 import {
@@ -132,6 +133,10 @@ export default async function ArticleDetailPage({ params }: PageProps) {
       <ArticleKeyTakeaways items={prepared.takeaways} />
       <ArticleTableOfContents items={prepared.tocItems} />
 
+      <div className="mt-6">
+        <ArticleLeadCaptureForm articleSlug={article.slug} compact />
+      </div>
+
       {prepared.bodyMarkdown ? (
         <div className="mt-8">
           <ArticleMarkdown markdown={prepared.bodyMarkdown} headingIds={prepared.headingIds} />
@@ -139,6 +144,10 @@ export default async function ArticleDetailPage({ params }: PageProps) {
       ) : null}
 
       <ArticleFaqSection items={prepared.faqItems} />
+
+      <div className="mt-10">
+        <ArticleLeadCaptureForm articleSlug={article.slug} />
+      </div>
 
       <aside className="mt-12 rounded-2xl border border-[#52B788]/35 bg-[#0b1324] px-5 py-6 sm:px-6">
         <p className="font-[family-name:var(--font-article-display)] text-xl font-semibold tracking-wide text-zinc-100 sm:text-2xl">

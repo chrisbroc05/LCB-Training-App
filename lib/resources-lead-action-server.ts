@@ -88,7 +88,10 @@ async function resolveLeadContext(params: {
       await prisma.leadResource.create({
         data: { leadId: lead.id, resourceSlug: params.resourceSlug },
       });
-      if (source && (source === "quiz" || source.startsWith("ig-"))) {
+      if (
+        source &&
+        (source === "quiz" || source.startsWith("ig-") || /^Article:\s*/i.test(source))
+      ) {
         await prisma.lead.update({
           where: { id: lead.id },
           data: { source },

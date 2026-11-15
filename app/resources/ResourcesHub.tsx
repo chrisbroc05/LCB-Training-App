@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import ResourceCard from "@/app/resources/ResourceCard";
 import ResourceLeadModal from "@/app/resources/ResourceLeadModal";
@@ -18,6 +19,7 @@ import type {
   ResourceHubMemberOverride,
   ResourceHubMemberSwingCard,
 } from "@/lib/resources-hub-member-shared";
+import { ARTICLES_INDEX_PATH } from "@/lib/articles-shared";
 
 type ResourcesHubProps = {
   isLoggedIn: boolean;
@@ -71,6 +73,24 @@ export default function ResourcesHub({
   return (
     <>
       <div className="grid gap-4 sm:grid-cols-2">
+        <article className="flex h-full flex-col rounded-2xl border border-[#1e2d45] bg-[#0A1628] p-5 shadow-lg shadow-black/20">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded-full bg-[#52B788]/15 px-2.5 py-1 text-xs font-bold uppercase tracking-wide text-[#52B788]">
+              Free
+            </span>
+          </div>
+          <h3 className="mt-4 text-lg font-semibold leading-snug text-white">Blog</h3>
+          <p className="mt-2 flex-1 text-sm leading-relaxed text-zinc-300">
+            Drills, plans, and advice from Coach Broc
+          </p>
+          <Link
+            href={ARTICLES_INDEX_PATH}
+            className="mt-5 flex min-h-[48px] w-full items-center justify-center rounded-full bg-[#2D6A4F] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#52B788] hover:text-[#0A1628]"
+          >
+            Read the Blog
+          </Link>
+        </article>
+
         {cards.map((resource, index) => {
           if (resource.slug === "free-swing-analysis" && memberSwingCard) {
             return (

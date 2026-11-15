@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { LeadRole } from "@prisma/client";
+import { buildArticleLeadSource, isArticleLeadSource } from "@/lib/articles-lead-shared";
 import { normalizeLeadEmail } from "@/lib/leads-shared";
 import { buildLeadMarketingAutoExcludeData } from "@/lib/lead-marketing-server";
 import { prisma } from "@/lib/prisma";
@@ -10,6 +11,14 @@ export { normalizeLeadEmail };
 
 export function toPrismaLeadRole(role: LeadRoleValue): LeadRole {
   return role as LeadRole;
+}
+
+function shouldStampLeadSource(source: string | undefined) {
+  return (
+    source === "quiz" ||
+    Boolean(source && source.startsWith("ig-")) ||
+    isArticleLeadSource(source)
+  );
 }
 
 export async function linkLeadToUserByEmail(userId: string, email: string) {
@@ -57,8 +66,7 @@ export async function upsertLeadForResourceDownload(params: {
   });
 
   const source = params.source?.trim() || undefined;
-  const shouldStampSource =
-    source === "quiz" || Boolean(source && source.startsWith("ig-"));
+  const stampSource = shouldStampLeadSource(source);
 
   const lead = await prisma.lead.upsert({
     where: { email },
@@ -78,8 +86,8 @@ export async function upsertLeadForResourceDownload(params: {
       role: toPrismaLeadRole(params.role),
       userId: existingUser?.id ?? undefined,
       ...(params.emailProvidedByParent ? { emailProvidedByParent: true } : {}),
-      /** Quiz and Instagram free-link sources take precedence over generic "resources". */
-      ...(shouldStampSource && source ? { source } : {}),
+      /** Quiz, Instagram free-link, and article sources take precedence over generic "resources". */
+      ...(stampSource && source ? { source } : {}),
       ...(params.source === "quiz" && params.quizChallengeRef
         ? { quizChallengeRef: params.quizChallengeRef }
         : {}),
@@ -91,6 +99,45 @@ export async function upsertLeadForResourceDownload(params: {
     data: {
       leadId: lead.id,
       resourceSlug: params.resourceSlug,
+    },
+  });
+
+  return { lead, existingUser };
+}
+
+export async function upsertLeadForArticle(params: {
+  email: string;
+  firstName: string;
+  role: LeadRoleValue;
+  articleSlug: string;
+  emailProvidedByParent?: boolean;
+}) {
+  const email = normalizeLeadEmail(params.email);
+  const marketingAutoExclude = buildLeadMarketingAutoExcludeData(email);
+  const existingUser = await prisma.user.findUnique({
+    where: { email },
+    select: { id: true },
+  });
+  const source = buildArticleLeadSource(params.articleSlug);
+
+  const lead = await prisma.lead.upsert({
+    where: { email },
+    create: {
+      email,
+      firstName: params.firstName.trim(),
+      role: toPrismaLeadRole(params.role),
+      source,
+      userId: existingUser?.id ?? null,
+      emailProvidedByParent: params.emailProvidedByParent ?? false,
+      ...(marketingAutoExclude ?? {}),
+    },
+    update: {
+      firstName: params.firstName.trim(),
+      role: toPrismaLeadRole(params.role),
+      userId: existingUser?.id ?? undefined,
+      source,
+      ...(params.emailProvidedByParent ? { emailProvidedByParent: true } : {}),
+      ...(marketingAutoExclude ?? {}),
     },
   });
 

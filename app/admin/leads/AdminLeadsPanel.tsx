@@ -4,6 +4,10 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import AdminQuizPanel from "@/app/admin/leads/AdminQuizPanel";
 import { ADMIN_ROUTES } from "@/lib/admin-routes-shared";
+import {
+  formatLeadSourceLabel,
+  parseArticleLeadSource,
+} from "@/lib/articles-lead-shared";
 import { formatLeadResourceCheckoutStatus } from "@/lib/lead-checkout-status-shared";
 import { getResourceDefinition } from "@/lib/resources-shared";
 
@@ -75,13 +79,6 @@ type AdminLeadsPanelProps = {
   quizDashboard?: QuizDashboard;
   view?: "leads" | "sales" | "combined";
 };
-
-function formatLeadSourceLabel(source: string) {
-  if (source === "quiz") {
-    return "Quiz";
-  }
-  return source;
-}
 
 function buildPurchasedSlugsByEmail(purchases: PurchaseRow[]) {
   const map = new Map<string, Set<string>>();
@@ -260,7 +257,27 @@ export default function AdminLeadsPanel({
                       </Link>
                     </td>
                     <td className="px-2 py-2">{lead.role}</td>
-                    <td className="px-2 py-2">{formatLeadSourceLabel(lead.source)}</td>
+                    <td className="px-2 py-2">
+                      {(() => {
+                        const articleSlug = parseArticleLeadSource(lead.source);
+                        if (articleSlug) {
+                          return (
+                            <span>
+                              Article:{" "}
+                              <Link
+                                href={`/articles/${articleSlug}`}
+                                className="text-[#52B788] hover:underline"
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                {articleSlug}
+                              </Link>
+                            </span>
+                          );
+                        }
+                        return formatLeadSourceLabel(lead.source);
+                      })()}
+                    </td>
                     <td className="px-2 py-2">
                       {lead.resources.map((resource) => resource.resourceSlug).join(", ") || "-"}
                     </td>
