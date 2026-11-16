@@ -17,7 +17,11 @@ import {
   normalizeWrittenReportLines,
   stripWrittenReportLinePrefix,
 } from "@/lib/written-report-line-shared";
-import { getDrillLibraryVideosByIds } from "@/lib/drill-library-videos";
+import {
+  getDrillLibraryVideoId,
+  getDrillLibraryVideosByIds,
+} from "@/lib/drill-library-videos";
+import { getPublicAppUrl } from "@/lib/public-app-url";
 
 function splitPlayerName(playerName: string) {
   const formatted = formatPlayerDisplayName(playerName);
@@ -61,6 +65,22 @@ export function buildPlayerEvaluationTypedDrillLines(sections: WrittenReportSect
 
 export function buildPlayerEvaluationLibraryDrillTitles(libraryDrillIds: string[]): string[] {
   return getDrillLibraryVideosByIds(libraryDrillIds).map((video) => video.title);
+}
+
+export function buildPlayerEvaluationLibraryDrillLinks(libraryDrillIds: string[]) {
+  const baseUrl = getPublicAppUrl();
+  return getDrillLibraryVideosByIds(libraryDrillIds).flatMap((video) => {
+    const id = getDrillLibraryVideoId(video);
+    if (!id) {
+      return [];
+    }
+    return [
+      {
+        title: video.title,
+        href: `${baseUrl}/drill-library?drill=${encodeURIComponent(id)}`,
+      },
+    ];
+  });
 }
 
 type PdfUserContext = Parameters<typeof mergeOrgIntoAccessFields>[0] & {
@@ -114,7 +134,7 @@ export async function generatePlayerEvaluationPdfBuffer(params: {
   const { firstName, lastName } = splitPlayerName(params.playerName);
   const sections = normalizeWrittenReportSections(params.sections);
   const typedDrills = buildPlayerEvaluationTypedDrillLines(sections);
-  const libraryDrillTitles = buildPlayerEvaluationLibraryDrillTitles(params.libraryDrillIds);
+  const libraryDrills = buildPlayerEvaluationLibraryDrillLinks(params.libraryDrillIds);
 
   const accessFields = params.user ? mergeOrgIntoAccessFields(params.user) : null;
   const effective = accessFields ? resolveEffectiveLevel(accessFields) : null;
@@ -146,7 +166,7 @@ export async function generatePlayerEvaluationPdfBuffer(params: {
     strengths: sections.strengths,
     areasToImprove: sections.areasToImprove,
     recommendedDrills: typedDrills,
-    libraryDrillTitles,
+    libraryDrills,
     noteFromCoach: sections.noteFromCoach,
     cta,
   });
