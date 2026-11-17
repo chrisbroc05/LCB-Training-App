@@ -4,6 +4,7 @@ import { formatWeekStartLabel } from "@/lib/org-weekly-focus-shared";
 import { loadCurrentOrgWeeklyFocusForUser } from "@/lib/org-weekly-focus-server";
 import OrgWeeklyFocusComingSoonCard from "@/app/dashboard/OrgWeeklyFocusComingSoonCard";
 import FocusDrillCards from "@/app/components/FocusDrillCards";
+import CoachFormattedText from "@/components/CoachFormattedText";
 import { getDrillLibraryVideosByIds } from "@/lib/drill-library-videos";
 import { fetchVimeoThumbnailMap } from "@/lib/vimeo-oembed";
 import { prisma } from "@/lib/prisma";
@@ -41,7 +42,9 @@ export default async function OrgWeeklyFocusCard({ userId }: OrgWeeklyFocusCardP
       </p>
       <h2 className="mt-2 text-lg font-semibold text-zinc-100">{focus.title}</h2>
       <p className="mt-1 text-xs text-zinc-500">Week of {formatWeekStartLabel(focus.weekStartDate)}</p>
-      {focus.notes ? <p className="mt-3 text-sm text-zinc-300">{focus.notes}</p> : null}
+      {focus.notes ? (
+        <CoachFormattedText text={focus.notes} className="mt-3 text-sm text-zinc-300" />
+      ) : null}
       <FocusDrillCards
         drillIds={focus.drillIds}
         thumbnailMap={thumbnailMap}

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { formatDateTime } from "@/lib/format-date";
 import { useCallback, useEffect, useState } from "react";
 import RecommendDrillsPicker from "@/app/admin/RecommendDrillsPicker";
+import CoachTextFormattingHint from "@/components/CoachTextFormattingHint";
 import {
   PROGRAM_AGE_GROUP_LABELS,
   PROGRAM_EQUIPMENT_OPTIONS,
@@ -266,6 +267,7 @@ function CustomTaskForm({
         placeholder="Optional details"
         className="min-h-20 w-full rounded-xl border border-[#2b3650] bg-black/30 px-4 py-3 text-sm text-zinc-100"
       />
+      <CoachTextFormattingHint />
       <RecommendDrillsPicker
         selectedIds={taskForm.drillIds}
         onChange={(ids) => setTaskForm({ ...taskForm, drillIds: ids })}

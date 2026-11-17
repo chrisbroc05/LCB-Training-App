@@ -4,6 +4,7 @@ import { adminFetchJson } from "@/lib/admin-fetch-shared";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AdminDrillPicker from "@/app/components/admin/AdminDrillPicker";
+import CoachTextFormattingHint from "@/components/CoachTextFormattingHint";
 import {
   fixItSlugToLabel,
   formatTurnaroundDuration,
@@ -413,6 +414,7 @@ export default function AdminReportsSentPanel() {
                       rows={5}
                       className="mt-2 w-full rounded-lg border border-[#2b3650] bg-black/40 px-3 py-2 text-sm text-zinc-100"
                     />
+                    <CoachTextFormattingHint />
                   </label>
                   <AdminDrillPicker
                     title="Library drills"

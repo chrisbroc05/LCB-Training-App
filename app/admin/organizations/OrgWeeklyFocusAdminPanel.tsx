@@ -3,6 +3,7 @@ import { adminFetchJson } from "@/lib/admin-fetch-shared";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AdminDrillPicker from "@/app/components/admin/AdminDrillPicker";
+import CoachTextFormattingHint from "@/components/CoachTextFormattingHint";
 import type { AdminOrganizationTeamRecord } from "@/lib/admin-organizations-shared";
 import { formatWeekStartLabel } from "@/lib/org-weekly-focus-shared";
 
@@ -255,6 +256,7 @@ export default function OrgWeeklyFocusAdminPanel({
         placeholder="Notes for players (optional)"
         className="mt-2 w-full rounded-lg border border-[#2b3650] bg-black px-3 py-2 text-sm text-zinc-100"
       />
+      <CoachTextFormattingHint />
 
       <AdminDrillPicker
         selectedIds={form.drillIds}

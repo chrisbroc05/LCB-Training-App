@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import CoachTextFormattingHint from "@/components/CoachTextFormattingHint";
 import {
   adminFetchJson,
   ADMIN_FETCH_COULD_NOT_LOAD_JSON,
@@ -400,6 +401,7 @@ export default function AdminDailyChallengesPanel() {
               rows={3}
               className="mt-1 block w-full rounded-lg border border-[#2b3650] bg-[#0A1628] px-3 py-2"
             />
+            <CoachTextFormattingHint />
           </label>
           <label className="text-sm text-zinc-300 sm:col-span-2">
             Drill library Vimeo id (optional)

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import ClinicSpotsLines from "@/components/ClinicSpotsLines";
+import CoachFormattedText from "@/components/CoachFormattedText";
 import { cancelClinicCheckoutOnReturn } from "@/lib/clinics-fulfill-server";
 import { getPublicClinicBySlug } from "@/lib/clinics-public-server";
 import ClinicSignupForm from "@/app/clinics/[slug]/ClinicSignupForm";
@@ -76,7 +77,7 @@ export default async function ClinicDetailPage({ params, searchParams }: PagePro
       </header>
 
       <section className="mt-6 space-y-3 text-sm leading-6 text-zinc-300">
-        <p>{clinic.description}</p>
+        <CoachFormattedText text={clinic.description} />
         <p>
           <span className="font-semibold text-zinc-100">What to bring: </span>
           {clinic.whatToBring}

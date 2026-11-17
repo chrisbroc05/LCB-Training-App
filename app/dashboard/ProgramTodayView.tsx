@@ -6,6 +6,7 @@ import ProgramDayLogSection from "@/app/dashboard/ProgramDayLogSection";
 import DailyChallengeCard from "@/app/dashboard/DailyChallengeCard";
 import ProgramPushPrompt from "@/components/ProgramPushPrompt";
 import VideosFromCoachLink from "@/components/VideosFromCoachLink";
+import CoachFormattedText from "@/components/CoachFormattedText";
 import OwnLiftBottomSheet from "@/app/components/OwnLiftBottomSheet";
 import ProgramNoteField from "@/app/components/ProgramNoteField";
 import { isOwnLiftCompletion } from "@/lib/program-task-completion-shared";
@@ -589,7 +590,7 @@ function TaskCard({
       <h3 className="mt-3 text-lg font-semibold text-zinc-100">{task.title}</h3>
       <p className="mt-2 text-[28px] font-bold leading-tight text-zinc-100">{task.target}</p>
       {task.targetDetail ? (
-        <p className="mt-1 text-base text-zinc-300">{task.targetDetail}</p>
+        <CoachFormattedText text={task.targetDetail} className="mt-1 text-base text-zinc-300" />
       ) : null}
       {task.focus ? <p className="mt-2 text-base font-medium text-zinc-200">{task.focus}</p> : null}
       {task.inSeasonNote ? (

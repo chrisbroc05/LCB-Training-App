@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import CoachTextFormattingHint from "@/components/CoachTextFormattingHint";
 import { adminFetchJson } from "@/lib/admin-fetch-shared";
 
 type ClinicDetail = {
@@ -191,6 +192,7 @@ export default function AdminClinicDetailPanel({ clinicId }: { clinicId: string 
                 onChange={(event) => setForm((current) => ({ ...current, [key]: event.target.value }))}
               />
             )}
+            {key === "description" ? <CoachTextFormattingHint /> : null}
           </label>
         ))}
         <label className="flex items-center gap-2 text-sm text-zinc-300">

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import FocusDrillCards from "@/app/components/FocusDrillCards";
+import CoachFormattedText from "@/components/CoachFormattedText";
 import { buildMemberPdfHref } from "@/lib/my-resources-shared";
 import { formatWrittenReportLineForDisplay } from "@/lib/written-report-line-shared";
 
@@ -111,9 +112,10 @@ export default function WrittenPlayerReportSection({
       {noteFromCoach ? (
         <div className="rounded-xl border border-[#2b3650] bg-black/20 p-4">
           <p className="text-sm font-semibold text-zinc-100">Note from Coach Broc</p>
-          <p className="mt-2 whitespace-pre-wrap text-sm italic text-zinc-300">
-            {formatWrittenReportLineForDisplay(noteFromCoach)}
-          </p>
+          <CoachFormattedText
+            text={noteFromCoach}
+            className="mt-2 text-sm italic text-zinc-300"
+          />
         </div>
       ) : null}
     </div>

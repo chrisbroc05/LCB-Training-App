@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import DailyLeaderboardNotice from "@/app/dashboard/DailyLeaderboardNotice";
 import VideoPlayer from "@/app/components/mobile/VideoPlayer";
+import CoachFormattedText from "@/components/CoachFormattedText";
 import {
   dailyChallengeAgeGroupLabel,
   formatDailyChallengeDayDoneMessage,
@@ -159,9 +160,10 @@ export default function DailyChallengeCard({ variant = "primary" }: DailyChallen
           {content.challenge ? (
             <div className="mt-3">
               <h2 className="text-lg font-semibold text-zinc-100">{content.challenge.title}</h2>
-              <p className="mt-2 whitespace-pre-wrap text-sm text-zinc-300">
-                {content.challenge.instructions}
-              </p>
+              <CoachFormattedText
+                text={content.challenge.instructions}
+                className="mt-2 text-sm text-zinc-300"
+              />
               {content.challenge.drillWatch ? (
                 <div className="mt-3">
                   <button

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import CoachTextFormattingHint from "@/components/CoachTextFormattingHint";
 import { adminFetchJson } from "@/lib/admin-fetch-shared";
 import { ADMIN_ROUTES } from "@/lib/admin-routes-shared";
 import { CLINIC_DEFAULT_REFUND_POLICY } from "@/lib/clinics-shared";
@@ -180,6 +181,7 @@ export default function AdminClinicsPanel() {
                 required
               />
             )}
+            {key === "description" ? <CoachTextFormattingHint /> : null}
           </label>
         ))}
         {formError ? <p className="text-sm text-red-400">{formError}</p> : null}
