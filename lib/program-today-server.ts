@@ -239,16 +239,26 @@ export async function buildProgramTodayPayload(params: {
   };
   const planMode = params.enrollment.planMode ?? defaultProgramPlanMode();
   const todayInfo = getProgramDay(enrollmentSchedule, now);
-  const currentWeekNumber =
-    todayInfo.weekNumber > 0 ? todayInfo.weekNumber : todayInfo.isBeforeStart ? 0 : 1;
+  // Program weeks (days 1-7, 8-14, ...), not calendar Mon-Sun. After the plan ends, keep Weeks 1-12.
+  const latestViewableProgramDay =
+    todayInfo.isBeforeStart
+      ? 0
+      : todayInfo.isComplete || todayInfo.programDay > PROGRAM_DAY_COUNT
+        ? PROGRAM_DAY_COUNT
+        : Math.min(todayInfo.programDay, PROGRAM_DAY_COUNT);
+  const currentWeekNumber = todayInfo.isBeforeStart
+    ? 0
+    : todayInfo.isComplete || todayInfo.programDay >= PROGRAM_DAY_COUNT
+      ? 12
+      : Math.max(todayInfo.weekNumber, 1);
 
-  let resolvedProgramDay = todayInfo.programDay;
+  let resolvedProgramDay = latestViewableProgramDay;
   if (
     typeof params.viewedProgramDay === "number" &&
     Number.isFinite(params.viewedProgramDay) &&
     params.viewedProgramDay > 0
   ) {
-    resolvedProgramDay = Math.min(params.viewedProgramDay, Math.max(todayInfo.programDay, 0));
+    resolvedProgramDay = Math.min(params.viewedProgramDay, Math.max(latestViewableProgramDay, 0));
   } else if (
     typeof params.viewedWeekNumber === "number" &&
     Number.isFinite(params.viewedWeekNumber) &&
@@ -256,15 +266,20 @@ export async function buildProgramTodayPayload(params: {
     currentWeekNumber > 0
   ) {
     const clampedWeek = Math.min(Math.max(1, Math.floor(params.viewedWeekNumber)), currentWeekNumber);
-    if (clampedWeek === currentWeekNumber && todayInfo.programDay > 0) {
-      resolvedProgramDay = todayInfo.programDay;
+    if (
+      clampedWeek === currentWeekNumber &&
+      latestViewableProgramDay > 0 &&
+      !todayInfo.isComplete &&
+      todayInfo.programDay <= PROGRAM_DAY_COUNT
+    ) {
+      resolvedProgramDay = latestViewableProgramDay;
     } else {
       resolvedProgramDay = getProgramWeekStartProgramDay(clampedWeek);
     }
   }
 
-  if (todayInfo.programDay > 0 && resolvedProgramDay > todayInfo.programDay) {
-    resolvedProgramDay = todayInfo.programDay;
+  if (latestViewableProgramDay > 0 && resolvedProgramDay > latestViewableProgramDay) {
+    resolvedProgramDay = latestViewableProgramDay;
   }
 
   const viewedProgramDay = resolvedProgramDay;
@@ -498,9 +513,13 @@ export async function buildProgramTodayPayload(params: {
     const weekdayName = startDate
       ? getWeekdayNameForProgramDay(startDate, programDay)
       : "Day";
-    const isToday = programDay === todayInfo.programDay && todayInfo.programDay > 0;
+    const isToday =
+      !todayInfo.isComplete &&
+      programDay === todayInfo.programDay &&
+      todayInfo.programDay > 0 &&
+      todayInfo.programDay <= PROGRAM_DAY_COUNT;
 
-    if (programDay > todayInfo.programDay) {
+    if (programDay > latestViewableProgramDay) {
       weekDays.push({
         programDay,
         dayOfWeek,
@@ -518,8 +537,9 @@ export async function buildProgramTodayPayload(params: {
     const editable =
       yesterdayInfo.programDay > 0 &&
       programDay === yesterdayInfo.programDay &&
-      programDay !== todayInfo.programDay;
-    const tappable = programDay > 0 && programDay <= todayInfo.programDay;
+      programDay !== todayInfo.programDay &&
+      !todayInfo.isComplete;
+    const tappable = programDay > 0 && programDay <= latestViewableProgramDay;
 
     const dayOverrides =
       planInput && dayInfo.weekNumber > 0
