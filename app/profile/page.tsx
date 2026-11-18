@@ -7,6 +7,7 @@ import CoachingSubmissionHistory, {
 } from "@/app/profile/CoachingSubmissionHistory";
 import PlayerProfileCard from "@/app/profile/PlayerProfileCard";
 import PlaybookProgressCard from "@/app/profile/PlaybookProgressCard";
+import RecruitingHelpCard from "@/app/profile/RecruitingHelpCard";
 import ProfileGoalCheckinHistory from "@/app/profile/ProfileGoalCheckinHistory";
 import SignOutButton from "@/app/components/SignOutButton";
 import { profilePageStackClass, profilePageTitleClass } from "@/app/profile/profile-styles";
@@ -210,6 +211,8 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
         />
 
         <PlayerProfileCard />
+
+        <RecruitingHelpCard />
 
         <VideosFromCoachLink layout="profile" unwatchedCount={unwatchedCoachVideoCount} />
 

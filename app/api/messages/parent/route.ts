@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { listConversationMessages } from "@/lib/direct-messaging-server";
 import { verifyParentMessagesToken } from "@/lib/parent-messages-token";
+import { serializeRecruitingProfile } from "@/lib/recruiting-shared";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(request: Request) {
@@ -18,6 +19,7 @@ export async function GET(request: Request) {
         select: {
           name: true,
           email: true,
+          recruitingProfile: true,
         },
       },
       conversation: {
@@ -26,10 +28,13 @@ export async function GET(request: Request) {
     },
   });
 
+  const recruiting = serializeRecruitingProfile(enrollment?.user.recruitingProfile ?? null);
+
   if (!enrollment?.conversation) {
     return NextResponse.json({
       playerName: enrollment?.user.name ?? enrollment?.user.email ?? "Player",
       messages: [],
+      recruiting,
     });
   }
 
@@ -42,5 +47,6 @@ export async function GET(request: Request) {
       createdAt: message.createdAt.toISOString(),
       readAt: message.readAt?.toISOString() ?? null,
     })),
+    recruiting,
   });
 }

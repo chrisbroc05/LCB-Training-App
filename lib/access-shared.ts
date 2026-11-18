@@ -452,6 +452,11 @@ export function hasPersonalProgramDashboard(user: AccessUserFields, now = new Da
   return effective === "TWELVE_WEEK" || effective === "ALL_ACCESS";
 }
 
+/** Recruiting help: 12-Week Program and All-Access only. */
+export function canAccessRecruitingHelp(user: AccessUserFields, now = new Date()): boolean {
+  return hasPersonalProgramDashboard(user, now);
+}
+
 /** Monthly goal check-ins: 12-Week, All-Access, and legacy Memorable/Elite. */
 export function canAccessGoalCheckin(user: AccessUserFields, now = new Date()): boolean {
   const effective = resolveEffectiveLevel(user, now);

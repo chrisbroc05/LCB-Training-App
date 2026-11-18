@@ -39,4 +39,14 @@ if (numbered[0]?.type === "ol") {
 const mixedBullets = parseCoachText("* Star\n- Dash");
 assert.equal(mixedBullets[0]?.type, "ul");
 
+const withLink = parseCoachTextInlines("See https://example.com/path for more");
+assert.deepEqual(withLink, [
+  { type: "text", value: "See " },
+  { type: "link", href: "https://example.com/path", value: "https://example.com/path" },
+  { type: "text", value: " for more" },
+]);
+
+const javascriptIgnored = parseCoachTextInlines("Bad javascript:alert(1)");
+assert.deepEqual(javascriptIgnored, [{ type: "text", value: "Bad javascript:alert(1)" }]);
+
 console.log("test-coach-text-format-shared: ok");

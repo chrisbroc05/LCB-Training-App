@@ -16,6 +16,7 @@ import AdminMembershipLevelSection from "@/app/admin/AdminMembershipLevelSection
 import AdminMembershipSubscriptionPanel from "@/app/admin/AdminMembershipSubscriptionPanel";
 import AdminMemberCommissionPanel from "@/app/admin/AdminMemberCommissionPanel";
 import AdminMemberClubReportPanel from "@/app/admin/AdminMemberClubReportPanel";
+import AdminMemberRecruitingPanel from "@/app/admin/AdminMemberRecruitingPanel";
 import AdminMediaOptOutToggle from "@/app/admin/AdminMediaOptOutToggle";
 import type { MembershipBillingIntervalKey } from "@/lib/membership-billing-shared";
 import type { MembershipLevelKey } from "@/lib/membership-levels-shared";
@@ -336,6 +337,10 @@ export default function MemberDetailContent({
       </div>
 
       <MemberProfileCard profile={detail.memberProfile} />
+
+      <div className="mt-4">
+        <AdminMemberRecruitingPanel memberId={detail.id} />
+      </div>
 
       {detail.dailyChallenge ? (
         <div className="rounded-xl border border-[#2b3650] bg-[#0b1324]/70 p-4 text-sm text-zinc-300">

@@ -156,6 +156,7 @@ enum PushNotificationType {
   DAILY_CHALLENGE
   ORG_TEAM_PICK
   GOAL_CHECKIN_REMINDER
+  RECRUITING_SCHOOL_LIST
   TEST
 }
 
@@ -337,10 +338,36 @@ model User {
   membershipEmailLogs    MembershipEmailLog[]
   dailyChallengeCompletions DailyChallengeCompletion[]
   passwordResetTokens       PasswordResetToken[]
+  recruitingProfile         RecruitingProfile?
 
   @@index([organizationId])
   @@index([commissionAttributionOrgId])
   @@index([orgTeamId])
+}
+
+model RecruitingProfile {
+  id                    String   @id @default(cuid())
+  userId                String   @unique
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  enabled               Boolean  @default(false)
+  gradYear              Int?
+  primaryPosition       String?
+  secondaryPosition     String?
+  levelsOpenTo          String[] @default([])
+  locationPreference    String?
+  schoolSize            String?
+  majorOrStudy          String?
+  gpaRange              String?
+  scholarshipImportance String?
+  videoUrl              String?
+  notesForCoach         String?
+  coachSchoolList       String?
+  answersUpdatedAt      DateTime?
+  schoolListUpdatedAt   DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([enabled])
 }
 
 model UserFixItGrant {

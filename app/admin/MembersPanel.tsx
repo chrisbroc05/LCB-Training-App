@@ -62,7 +62,11 @@ type MemberSummary = {
   playbookSubmissionsRemaining: number | null;
   playbookSubmissionsLimit: number | null;
   mediaDisplayStatus: import("@/lib/media-consent-shared").MediaDisplayStatus;
+  recruitingHelpEnabled?: boolean;
+  recruitingWaitingOnList?: boolean;
 };
+
+type RecruitingFilter = "ALL" | "RECRUITING" | "WAITING_ON_LIST";
 
 function formatRemainingSubmissions(member: MemberSummary) {
   if (member.membershipTier === "TWELVE_WEEK") {
@@ -115,6 +119,7 @@ export default function MembersPanel() {
   const [levelFilter, setLevelFilter] = useState<AdminMemberLevelFilter>("ALL");
   const [orgFilter, setOrgFilter] = useState<string>("ALL");
   const [mediaFilter, setMediaFilter] = useState<MediaDisplayFilter>("ALL");
+  const [recruitingFilter, setRecruitingFilter] = useState<RecruitingFilter>("ALL");
   const [tierDraft, setTierDraft] = useState<DatabaseTier>("FREE");
   const [notesDraft, setNotesDraft] = useState("");
   const [tierError, setTierError] = useState("");
@@ -227,6 +232,13 @@ export default function MembersPanel() {
         return false;
       }
 
+      if (recruitingFilter === "RECRUITING" && !member.recruitingHelpEnabled) {
+        return false;
+      }
+      if (recruitingFilter === "WAITING_ON_LIST" && !member.recruitingWaitingOnList) {
+        return false;
+      }
+
       if (!normalizedQuery) {
         return true;
       }
@@ -235,7 +247,7 @@ export default function MembersPanel() {
       const email = member.email.toLowerCase();
       return name.includes(normalizedQuery) || email.includes(normalizedQuery);
     });
-  }, [members, searchQuery, levelFilter, orgFilter, mediaFilter]);
+  }, [members, searchQuery, levelFilter, orgFilter, mediaFilter, recruitingFilter]);
 
   const updateMemberInList = (updatedMember: MemberDetail) => {
     setMembers((current) =>
@@ -609,7 +621,7 @@ export default function MembersPanel() {
                 className="mt-2 w-full min-w-0 rounded-lg border border-[#2b3650] bg-[#0b1324]/80 px-3 py-2 text-sm text-zinc-100"
               />
             </div>
-            <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-3">
+            <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <div className="min-w-0">
                 <label
                   className="block whitespace-nowrap text-sm font-medium text-zinc-200"
@@ -652,6 +664,26 @@ export default function MembersPanel() {
                       {option.label}
                     </option>
                   ))}
+                </select>
+              </div>
+              <div className="min-w-0">
+                <label
+                  className="block whitespace-nowrap text-sm font-medium text-zinc-200"
+                  htmlFor="member-recruiting-filter"
+                >
+                  Recruiting
+                </label>
+                <select
+                  id="member-recruiting-filter"
+                  value={recruitingFilter}
+                  onChange={(event) =>
+                    setRecruitingFilter(event.target.value as RecruitingFilter)
+                  }
+                  className="mt-2 w-full min-w-0 rounded-lg border border-[#2b3650] bg-[#0b1324]/80 px-3 py-2 text-sm text-zinc-100"
+                >
+                  <option value="ALL">All</option>
+                  <option value="RECRUITING">Recruiting on</option>
+                  <option value="WAITING_ON_LIST">Waiting on list</option>
                 </select>
               </div>
               <div className="min-w-0">
@@ -702,6 +734,13 @@ export default function MembersPanel() {
                             {member.name?.trim() || "Unnamed member"}
                           </p>
                           <p className="mt-0.5 truncate text-xs text-zinc-400">{member.email}</p>
+                          {member.recruitingHelpEnabled ? (
+                            <p className="mt-2 inline-flex rounded-full border border-[#52B788]/40 bg-[#52B788]/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#9df3bd]">
+                              {member.recruitingWaitingOnList
+                                ? "Recruiting - waiting"
+                                : "Recruiting"}
+                            </p>
+                          ) : null}
                         </div>
                         <div className="flex flex-col items-end gap-2">
                           <MediaDisplayBadge status={member.mediaDisplayStatus} />
@@ -755,7 +794,16 @@ export default function MembersPanel() {
                           }`}
                         >
                           <td className="px-3 py-3 font-medium text-zinc-100">
-                            {member.name?.trim() || "Unnamed member"}
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span>{member.name?.trim() || "Unnamed member"}</span>
+                              {member.recruitingHelpEnabled ? (
+                                <span className="rounded-full border border-[#52B788]/40 bg-[#52B788]/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#9df3bd]">
+                                  {member.recruitingWaitingOnList
+                                    ? "Recruiting - waiting"
+                                    : "Recruiting"}
+                                </span>
+                              ) : null}
+                            </div>
                           </td>
                           <td className="max-w-0 px-3 py-3 text-zinc-300">
                             <span

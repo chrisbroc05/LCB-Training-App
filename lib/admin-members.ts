@@ -88,6 +88,12 @@ export const adminMemberListSelect = {
   eliteRolloverCredits: true,
   mediaConsent: true,
   mediaOptOutAll: true,
+  recruitingProfile: {
+    select: {
+      enabled: true,
+      coachSchoolList: true,
+    },
+  },
   _count: {
     select: {
       swingAnalysisSubmissions: true,
@@ -134,6 +140,10 @@ type AdminMemberListRecord = {
   eliteRolloverCredits: number;
   mediaConsent: boolean;
   mediaOptOutAll: boolean;
+  recruitingProfile: {
+    enabled: boolean;
+    coachSchoolList: string | null;
+  } | null;
   _count: {
     swingAnalysisSubmissions: number;
     mentalGameSubmissions: number;
@@ -264,6 +274,10 @@ export function serializeAdminMemberSummary(user: AdminMemberListRecord) {
       mediaConsent: user.mediaConsent,
       mediaOptOutAll: user.mediaOptOutAll,
     }) satisfies MediaDisplayStatus,
+    recruitingHelpEnabled: Boolean(user.recruitingProfile?.enabled),
+    recruitingWaitingOnList: Boolean(
+      user.recruitingProfile?.enabled && !user.recruitingProfile.coachSchoolList?.trim(),
+    ),
   };
 }
 
@@ -434,6 +448,12 @@ export const adminMemberDetailSelect = {
           },
         },
       },
+    },
+  },
+  recruitingProfile: {
+    select: {
+      enabled: true,
+      coachSchoolList: true,
     },
   },
   _count: {

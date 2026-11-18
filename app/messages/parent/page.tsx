@@ -3,12 +3,15 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import MessageChatView, { type MessageChatItem } from "@/components/MessageChatView";
+import ParentRecruitingSection from "@/app/messages/parent/ParentRecruitingSection";
+import type { RecruitingProfileView } from "@/lib/recruiting-shared";
 
 export default function ParentMessagesPage() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token") ?? "";
   const [playerName, setPlayerName] = useState("");
   const [messages, setMessages] = useState<MessageChatItem[]>([]);
+  const [recruiting, setRecruiting] = useState<RecruitingProfileView | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
 
@@ -24,6 +27,7 @@ export default function ParentMessagesPage() {
       const data = (await response.json().catch(() => ({}))) as {
         playerName?: string;
         messages?: MessageChatItem[];
+        recruiting?: RecruitingProfileView;
         error?: string;
       };
 
@@ -36,6 +40,7 @@ export default function ParentMessagesPage() {
 
       setPlayerName(data.playerName ?? "Player");
       setMessages(data.messages ?? []);
+      setRecruiting(data.recruiting ?? null);
     };
 
     void load();
@@ -64,6 +69,7 @@ export default function ParentMessagesPage() {
       <div className="mt-6 rounded-3xl border border-[#18243a] bg-[#0b1324]/80 p-5 sm:p-6">
         <MessageChatView messages={messages} readOnly />
       </div>
+      <ParentRecruitingSection profile={recruiting} />
     </div>
   );
 }

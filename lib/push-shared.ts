@@ -5,6 +5,7 @@ export type PushNotificationTypeName =
   | "DAILY_WORK"
   | "DAY_BEFORE_START"
   | "SATURDAY_VIDEO"
+  | "RECRUITING_SCHOOL_LIST"
   | "GONE_QUIET"
   | "COACH_RESPONSE"
   | "PLAN_UPDATE"

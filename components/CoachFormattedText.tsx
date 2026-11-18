@@ -11,15 +11,29 @@ type CoachFormattedTextProps = {
 };
 
 function renderInlines(inlines: CoachTextInline[]): ReactNode[] {
-  return inlines.map((part, index) =>
-    part.type === "bold" ? (
-      <strong key={index} className="font-semibold text-zinc-100">
-        {part.value}
-      </strong>
-    ) : (
-      <span key={index}>{part.value}</span>
-    ),
-  );
+  return inlines.map((part, index) => {
+    if (part.type === "bold") {
+      return (
+        <strong key={index} className="font-semibold text-zinc-100">
+          {part.value}
+        </strong>
+      );
+    }
+    if (part.type === "link") {
+      return (
+        <a
+          key={index}
+          href={part.href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="break-all font-medium text-[#52B788] underline underline-offset-2 hover:text-[#9df3bd]"
+        >
+          {part.value}
+        </a>
+      );
+    }
+    return <span key={index}>{part.value}</span>;
+  });
 }
 
 function renderBlock(block: CoachTextBlock, index: number): ReactNode {

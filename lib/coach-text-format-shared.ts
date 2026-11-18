@@ -6,7 +6,8 @@
 
 export type CoachTextInline =
   | { type: "text"; value: string }
-  | { type: "bold"; value: string };
+  | { type: "bold"; value: string }
+  | { type: "link"; href: string; value: string };
 
 export type CoachTextBlock =
   | { type: "paragraph"; lines: CoachTextInline[][] }
@@ -20,6 +21,39 @@ const BULLET_LINE = /^[-*]\s+(.*)$/;
 const NUMBERED_LINE = /^\d+\.\s+(.*)$/;
 const BOLD_SPLIT = /(\*\*[^*]+\*\*)/g;
 const BOLD_INNER = /^\*\*([^*]+)\*\*$/;
+const URL_FIND = /https?:\/\/[^\s<]+[^\s<.,;:!?"')\]]/g;
+
+function isSafeHttpUrl(href: string) {
+  try {
+    const parsed = new URL(href);
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+function parseTextWithLinks(text: string): CoachTextInline[] {
+  const inlines: CoachTextInline[] = [];
+  const finder = new RegExp(URL_FIND.source, "g");
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  while ((match = finder.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      inlines.push({ type: "text", value: text.slice(lastIndex, match.index) });
+    }
+    const href = match[0];
+    if (isSafeHttpUrl(href)) {
+      inlines.push({ type: "link", href, value: href });
+    } else {
+      inlines.push({ type: "text", value: href });
+    }
+    lastIndex = match.index + href.length;
+  }
+  if (lastIndex < text.length) {
+    inlines.push({ type: "text", value: text.slice(lastIndex) });
+  }
+  return inlines.length > 0 ? inlines : [];
+}
 
 export function parseCoachTextInlines(line: string): CoachTextInline[] {
   if (!line) {
@@ -33,7 +67,7 @@ export function parseCoachTextInlines(line: string): CoachTextInline[] {
     if (boldMatch) {
       inlines.push({ type: "bold", value: boldMatch[1] });
     } else {
-      inlines.push({ type: "text", value: part });
+      inlines.push(...parseTextWithLinks(part));
     }
   }
   return inlines;
