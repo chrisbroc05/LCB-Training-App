@@ -157,6 +157,9 @@ type ProgramTodayPayload = {
   viewedWeekdayName: string;
   headerLabel: string;
   progressWeekNumber: number;
+  currentWeekNumber: number;
+  viewedWeekNumber: number;
+  maxSelectableWeek: number;
   weekFocusCue?: string | null;
   weekFocusNote?: string | null;
   dayLogs?: DayLogPayload[];
@@ -431,12 +434,14 @@ function RestIcon() {
 
 function WeekDayCircle({
   day,
+  selected,
   onSelect,
 }: {
   day: ProgramWeekDayStatus;
+  selected: boolean;
   onSelect: (programDay: number, isToday: boolean) => void;
 }) {
-  const size = day.isToday ? 44 : 36;
+  const size = day.isToday || selected ? 44 : 36;
   const radius = (size - 6) / 2;
   const circumference = 2 * Math.PI * radius;
   const progress = Math.max(0, Math.min(1, day.completionRatio));
@@ -448,7 +453,9 @@ function WeekDayCircle({
   const inner = (
     <div className="flex min-w-[42px] flex-col items-center gap-1">
       <div
-        className={`relative flex items-center justify-center ${day.isToday ? "rounded-full ring-2 ring-[#52B788]" : ""}`}
+        className={`relative flex items-center justify-center ${
+          day.isToday || selected ? "rounded-full ring-2 ring-[#52B788]" : ""
+        }`}
         style={{ width: size, height: size }}
       >
         {day.status === "rest" ? (
@@ -513,7 +520,7 @@ function WeekDayCircle({
         )}
       </div>
       <span className="min-h-[14px] text-[10px] font-semibold text-[#52B788]">
-        {day.isToday ? "Today" : day.status === "complete" && day.dayOfWeek !== 7 ? "" : ""}
+        {day.isToday ? "Today" : selected ? "Viewing" : ""}
       </span>
     </div>
   );
@@ -862,11 +869,17 @@ export default function ProgramTodayView() {
   const [answerSheet, setAnswerSheet] = useState<AnswerSheetState>(null);
   const todayTasksRef = useRef<HTMLDivElement | null>(null);
 
-  const loadToday = useCallback(async (programDay?: number) => {
+  const loadToday = useCallback(async (options?: { programDay?: number; week?: number }) => {
     setLoading(true);
     setError("");
 
-    const query = programDay ? `?programDay=${programDay}` : "";
+    const params = new URLSearchParams();
+    if (options?.programDay) {
+      params.set("programDay", String(options.programDay));
+    } else if (options?.week) {
+      params.set("week", String(options.week));
+    }
+    const query = params.toString() ? `?${params.toString()}` : "";
     const response = await fetch(`/api/program/today${query}`);
     const data = (await response.json().catch(() => ({}))) as ProgramTodayPayload & {
       error?: string;
@@ -964,12 +977,19 @@ export default function ProgramTodayView() {
   const viewingDifferentDay = payload.viewedProgramDay !== payload.todayProgramDay;
 
   const handleWeekDaySelect = (programDay: number, isToday: boolean) => {
-    if (isToday) {
+    if (isToday && payload.viewedWeekNumber === payload.currentWeekNumber) {
       todayTasksRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       return;
     }
 
-    void loadToday(programDay);
+    void loadToday({ programDay });
+  };
+
+  const handleWeekSelect = (weekNumber: number) => {
+    if (weekNumber === payload.viewedWeekNumber) {
+      return;
+    }
+    void loadToday({ week: weekNumber });
   };
 
   return (
@@ -1020,7 +1040,7 @@ export default function ProgramTodayView() {
               <li key={`${item.programDay}:${item.taskKey}`}>
                 <button
                   type="button"
-                  onClick={() => void loadToday(item.programDay)}
+                  onClick={() => void loadToday({ programDay: item.programDay })}
                   className="w-full rounded-xl border border-[#2b3650] bg-black/20 px-4 py-3 text-left"
                 >
                   <p className="text-sm font-semibold text-zinc-100">{item.taskTitle}</p>
@@ -1065,7 +1085,9 @@ export default function ProgramTodayView() {
           programDay={payload.viewedProgramDay}
           canLogDay={Boolean(payload.canLogDay)}
           dayLogs={payload.dayLogs ?? []}
-          onSaved={() => void loadToday(viewedProgramDay ?? undefined)}
+          onSaved={() =>
+            void loadToday(viewedProgramDay ? { programDay: viewedProgramDay } : undefined)
+          }
         />
       ) : null}
 
@@ -1077,11 +1099,44 @@ export default function ProgramTodayView() {
       ) : null}
 
       <section className={CARD}>
+        {payload.maxSelectableWeek > 1 ? (
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <label className="flex items-center gap-2 text-sm text-zinc-300">
+              <span className="font-semibold text-zinc-200">Week</span>
+              <select
+                value={payload.viewedWeekNumber}
+                onChange={(event) => handleWeekSelect(Number(event.target.value))}
+                className="rounded-lg border border-[#2b3650] bg-black/40 px-3 py-2 text-sm font-semibold text-zinc-100"
+                aria-label="Select program week"
+              >
+                {Array.from({ length: payload.maxSelectableWeek }, (_, index) => {
+                  const weekNumber = index + 1;
+                  return (
+                    <option key={weekNumber} value={weekNumber}>
+                      Week {weekNumber} of 12
+                      {weekNumber === payload.currentWeekNumber ? " (current)" : ""}
+                    </option>
+                  );
+                })}
+              </select>
+            </label>
+            {payload.viewedWeekNumber !== payload.currentWeekNumber ? (
+              <button
+                type="button"
+                onClick={() => void loadToday()}
+                className={BTN_OUTLINE}
+              >
+                Back to this week
+              </button>
+            ) : null}
+          </div>
+        ) : null}
         <div className="flex items-center justify-between gap-2">
           {payload.weekDays.map((day) => (
             <WeekDayCircle
               key={day.programDay}
               day={day}
+              selected={day.programDay === payload.viewedProgramDay}
               onSelect={handleWeekDaySelect}
             />
           ))}
@@ -1182,7 +1237,9 @@ export default function ProgramTodayView() {
                 weekdayName={payload.viewedWeekdayName || "Today"}
                 canComplete={payload.canCompleteTasks}
                 canAccessPlaybook={payload.canAccessPlaybook}
-                onUpdate={() => void loadToday(viewedProgramDay ?? undefined)}
+                onUpdate={() =>
+                  void loadToday(viewedProgramDay ? { programDay: viewedProgramDay } : undefined)
+                }
                 onOpenAnswer={setAnswerSheet}
               />
             ))}
@@ -1254,7 +1311,9 @@ export default function ProgramTodayView() {
                 weekdayName={payload.viewedWeekdayName || "Today"}
                 canComplete={payload.canCompleteTasks}
                 canAccessPlaybook={payload.canAccessPlaybook}
-                onUpdate={() => void loadToday(viewedProgramDay ?? undefined)}
+                onUpdate={() =>
+                  void loadToday(viewedProgramDay ? { programDay: viewedProgramDay } : undefined)
+                }
                 onOpenAnswer={setAnswerSheet}
               />
             ))}
@@ -1311,7 +1370,9 @@ export default function ProgramTodayView() {
           programDay={payload.viewedProgramDay}
           canComplete={payload.canCompleteTasks}
           onClose={() => setAnswerSheet(null)}
-          onSaved={() => void loadToday(viewedProgramDay ?? undefined)}
+          onSaved={() =>
+            void loadToday(viewedProgramDay ? { programDay: viewedProgramDay } : undefined)
+          }
         />
       ) : null}
     </div>

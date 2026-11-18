@@ -32,13 +32,16 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const viewedProgramDayParam = searchParams.get("programDay");
+  const viewedWeekParam = searchParams.get("week");
   const viewedProgramDay = viewedProgramDayParam ? Number(viewedProgramDayParam) : undefined;
+  const viewedWeekNumber = viewedWeekParam ? Number(viewedWeekParam) : undefined;
 
   try {
     const payload = await buildProgramTodayPayload({
       enrollment,
       userId: session.user.id,
       viewedProgramDay: Number.isFinite(viewedProgramDay) ? viewedProgramDay : undefined,
+      viewedWeekNumber: Number.isFinite(viewedWeekNumber) ? viewedWeekNumber : undefined,
     });
 
     const access = toAccessUserFields(user);

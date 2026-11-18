@@ -17,24 +17,16 @@ import {
 import type { ProgramFocusArea, ProgramEquipmentOption } from "@/lib/program-enrollment-shared";
 import { computeProgramStreak } from "@/lib/program-streak-shared";
 import {
-  addChicagoCalendarDays,
   buildProgramDayInfo,
   formatProgramStartDateKey,
-  getChicagoMondayStart,
   getChicagoSundayStart,
-  getChicagoTodayDateKey,
-  getChicagoWeekdayIndex,
   getDateForProgramDay,
   getFirstSundayOnOrAfterStart,
   getProgramDay,
-  getProgramDayNumberForEnrollmentDate,
-  getProgramEndDateKey,
-  isProgramCalendarDayAfterFixedEnd,
   getProgramDayStartProgramDay,
+  getProgramWeekStartProgramDay,
   getWeekdayLabelForProgramDay,
   getWeekdayNameForProgramDay,
-  isDateBeforeEnrollmentStart,
-  parseProgramDateKey,
   PROGRAM_DAY_COUNT,
   type ProgramDayInfo,
 } from "@/lib/program-schedule";
@@ -237,6 +229,7 @@ export async function buildProgramTodayPayload(params: {
   };
   userId: string;
   viewedProgramDay?: number;
+  viewedWeekNumber?: number;
   now?: Date;
 }) {
   const now = params.now ?? new Date();
@@ -246,11 +239,45 @@ export async function buildProgramTodayPayload(params: {
   };
   const planMode = params.enrollment.planMode ?? defaultProgramPlanMode();
   const todayInfo = getProgramDay(enrollmentSchedule, now);
-  const viewedProgramDay = params.viewedProgramDay ?? todayInfo.programDay;
+  const currentWeekNumber =
+    todayInfo.weekNumber > 0 ? todayInfo.weekNumber : todayInfo.isBeforeStart ? 0 : 1;
+
+  let resolvedProgramDay = todayInfo.programDay;
+  if (
+    typeof params.viewedProgramDay === "number" &&
+    Number.isFinite(params.viewedProgramDay) &&
+    params.viewedProgramDay > 0
+  ) {
+    resolvedProgramDay = Math.min(params.viewedProgramDay, Math.max(todayInfo.programDay, 0));
+  } else if (
+    typeof params.viewedWeekNumber === "number" &&
+    Number.isFinite(params.viewedWeekNumber) &&
+    params.viewedWeekNumber > 0 &&
+    currentWeekNumber > 0
+  ) {
+    const clampedWeek = Math.min(Math.max(1, Math.floor(params.viewedWeekNumber)), currentWeekNumber);
+    if (clampedWeek === currentWeekNumber && todayInfo.programDay > 0) {
+      resolvedProgramDay = todayInfo.programDay;
+    } else {
+      resolvedProgramDay = getProgramWeekStartProgramDay(clampedWeek);
+    }
+  }
+
+  if (todayInfo.programDay > 0 && resolvedProgramDay > todayInfo.programDay) {
+    resolvedProgramDay = todayInfo.programDay;
+  }
+
+  const viewedProgramDay = resolvedProgramDay;
   const viewedDayInfo =
     viewedProgramDay > 0
       ? buildProgramDayInfoForProgramDay(enrollmentSchedule, viewedProgramDay)
       : todayInfo;
+  const viewedWeekNumber =
+    viewedDayInfo.weekNumber > 0
+      ? viewedDayInfo.weekNumber
+      : currentWeekNumber > 0
+        ? currentWeekNumber
+        : 1;
 
   const planInput = toEnrollmentPlanInput(params.enrollment);
   const overrideBundle = await loadEnrollmentPlanOverrideBundle(params.enrollment.id);
@@ -437,16 +464,6 @@ export async function buildProgramTodayPayload(params: {
     : 0;
 
   const weekDays: ProgramWeekDayStatus[] = [];
-  const calendarWeekdayLabels = ["M", "T", "W", "T", "F", "S", "S"] as const;
-  const calendarWeekdayNames = [
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday",
-    "Sunday",
-  ] as const;
 
   const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
   const yesterdayInfo = getProgramDay(
@@ -454,24 +471,12 @@ export async function buildProgramTodayPayload(params: {
     yesterday,
   );
   const startDate = params.enrollment.startDate;
-  const calendarMonday = getChicagoMondayStart(now);
-  const calendarMondayKey = formatProgramStartDateKey(calendarMonday);
-  const todayKey = getChicagoTodayDateKey(now);
-  const endDateKey =
-    startDate && planMode !== "OPEN_ENDED" ? getProgramEndDateKey(startDate) : null;
+  const weekStartProgramDay = getProgramWeekStartProgramDay(Math.max(viewedWeekNumber, 1));
   const weekProgramDays: number[] = [];
-
   for (let offset = 0; offset < 7; offset += 1) {
-    const dateKey = addChicagoCalendarDays(calendarMondayKey, offset);
-    if (
-      startDate &&
-      !isDateBeforeEnrollmentStart(startDate, dateKey) &&
-      (!endDateKey || dateKey <= endDateKey)
-    ) {
-      const programDay = getProgramDayNumberForEnrollmentDate(enrollmentSchedule, dateKey);
-      if (programDay >= 1 && programDay <= PROGRAM_DAY_COUNT) {
-        weekProgramDays.push(programDay);
-      }
+    const programDay = weekStartProgramDay + offset;
+    if (programDay >= 1 && programDay <= PROGRAM_DAY_COUNT) {
+      weekProgramDays.push(programDay);
     }
   }
 
@@ -484,37 +489,31 @@ export async function buildProgramTodayPayload(params: {
   });
   const dayLogProgramDays = new Set(weekDayLogs.map((log) => log.programDay));
 
-  for (let offset = 0; offset < 7; offset += 1) {
-    const dateKey = addChicagoCalendarDays(calendarMondayKey, offset);
-    const calendarDate = parseProgramDateKey(dateKey);
-    const dayOfWeek = getChicagoWeekdayIndex(calendarDate) + 1;
-    const weekdayLabel = calendarWeekdayLabels[offset] ?? "?";
-    const weekdayName = calendarWeekdayNames[offset] ?? "Day";
-    const isToday = dateKey === todayKey;
+  for (const programDay of weekProgramDays) {
+    const dayInfo = buildProgramDayInfoForProgramDay(enrollmentSchedule, programDay);
+    const dayOfWeek = dayInfo.dayOfWeek;
+    const weekdayLabel = startDate
+      ? getWeekdayLabelForProgramDay(startDate, programDay)
+      : "?";
+    const weekdayName = startDate
+      ? getWeekdayNameForProgramDay(startDate, programDay)
+      : "Day";
+    const isToday = programDay === todayInfo.programDay && todayInfo.programDay > 0;
 
-    const isBeforeStart = startDate ? isDateBeforeEnrollmentStart(startDate, dateKey) : true;
-    const isAfterEnd = isProgramCalendarDayAfterFixedEnd(enrollmentSchedule, dateKey);
-    const programDay =
-      startDate && !isBeforeStart && !isAfterEnd
-        ? getProgramDayNumberForEnrollmentDate(enrollmentSchedule, dateKey)
-        : 0;
-
-    if (isBeforeStart || isAfterEnd || programDay > PROGRAM_DAY_COUNT || programDay <= 0) {
+    if (programDay > todayInfo.programDay) {
       weekDays.push({
         programDay,
         dayOfWeek,
         weekdayLabel,
         weekdayName,
-        status: isBeforeStart ? "not_started" : "upcoming",
-        isToday,
+        status: "upcoming",
+        isToday: false,
         tappable: false,
         editable: false,
         completionRatio: 0,
       });
       continue;
     }
-
-    const dayInfo = buildProgramDayInfoForProgramDay(enrollmentSchedule, programDay);
 
     const editable =
       yesterdayInfo.programDay > 0 &&
@@ -597,6 +596,9 @@ export async function buildProgramTodayPayload(params: {
     programDayInfo: viewedDayInfo,
     headerLabel: `${headerWeekdayName} - Week ${headerWeekNumber} of 12`,
     progressWeekNumber: todayInfo.weekNumber > 0 ? todayInfo.weekNumber : 0,
+    currentWeekNumber,
+    viewedWeekNumber,
+    maxSelectableWeek: currentWeekNumber,
     tasks,
     previewTasks,
     streak,
