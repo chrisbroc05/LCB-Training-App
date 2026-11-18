@@ -6,9 +6,13 @@ import {
   buildGoneQuietPushBody,
   DAILY_WORK_PUSH_TITLE,
   GONE_QUIET_PUSH_TITLE,
+  SATURDAY_CHECK_IN_PUSH_BODY,
+  SATURDAY_CHECK_IN_PUSH_TITLE,
+  SATURDAY_CHECK_IN_PUSH_URL,
   SETUP_REMINDER_PUSH_BODY,
   SETUP_REMINDER_PUSH_TITLE,
   shouldSkipDailyWorkPushForGoneQuiet,
+  shouldSkipDailyWorkPushOnSaturday,
 } from "@/lib/program-push-copy";
 import {
   isInSendWindow,
@@ -133,6 +137,10 @@ async function maybeSendDailyWorkPush(
     return false;
   }
 
+  if (shouldSkipDailyWorkPushOnSaturday(schedule.dayOfWeek)) {
+    return false;
+  }
+
   if (shouldSkipDailyWorkPushForGoneQuiet(await willSendGoneQuietPush(enrollment, now))) {
     return false;
   }
@@ -231,7 +239,7 @@ async function maybeSendDayBeforeStartPush(
   return true;
 }
 
-async function maybeSendSaturdayVideoPush(
+async function maybeSendSaturdayCheckInPush(
   enrollment: ActiveEnrollmentRecord,
   dateKey: string,
   now: Date,
@@ -244,14 +252,16 @@ async function maybeSendSaturdayVideoPush(
   }
 
   const schedule = getProgramDay({ startDate: enrollment.startDate }, now);
-  if (schedule.isBeforeStart || schedule.isComplete || schedule.programDay <= 0) {
+  if (
+    schedule.isBeforeStart ||
+    schedule.isComplete ||
+    schedule.programDay <= 0 ||
+    schedule.dayOfWeek !== 6
+  ) {
     return false;
   }
 
-  if (!(await enrollmentNeedsVideoReminder(enrollment, now))) {
-    return false;
-  }
-
+  // Keep enum value SATURDAY_VIDEO for existing PushLog rows / dedupe keys.
   const type = "SATURDAY_VIDEO" as const;
   const dedupeKey = buildPushDedupeKey(enrollment.userId, type, dateKey);
 
@@ -260,9 +270,9 @@ async function maybeSendSaturdayVideoPush(
     type,
     userId: enrollment.userId,
     enrollmentId: enrollment.id,
-    title: "Your weekly video is due Sunday night",
-    body: "Send me one video before Sunday night.",
-    url: "/coaching-submissions",
+    title: SATURDAY_CHECK_IN_PUSH_TITLE,
+    body: SATURDAY_CHECK_IN_PUSH_BODY,
+    url: SATURDAY_CHECK_IN_PUSH_URL,
     dateKey,
   });
 
@@ -270,9 +280,9 @@ async function maybeSendSaturdayVideoPush(
     await sendPushToUser(
       enrollment.userId,
       {
-        title: "Your weekly video is due Sunday night",
-        body: "Send me one video before Sunday night.",
-        url: "/coaching-submissions",
+        title: SATURDAY_CHECK_IN_PUSH_TITLE,
+        body: SATURDAY_CHECK_IN_PUSH_BODY,
+        url: SATURDAY_CHECK_IN_PUSH_URL,
       },
       { type, dedupeKey },
     );
@@ -507,8 +517,8 @@ export async function runScheduledPushJobs(params: {
     isScheduleWindowActiveForDay(saturdayVideoWindow, day)
   ) {
     for (const enrollment of enrollments) {
-      await params.trySend(`push-saturday-video:${enrollment.id}`, () =>
-        maybeSendSaturdayVideoPush(
+      await params.trySend(`push-saturday-check-in:${enrollment.id}`, () =>
+        maybeSendSaturdayCheckInPush(
           enrollment,
           params.dateKey,
           params.now,

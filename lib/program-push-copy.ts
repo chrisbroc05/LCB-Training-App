@@ -9,6 +9,13 @@ export const SETUP_REMINDER_PUSH_TITLE = "Finish your setup";
 export const SETUP_REMINDER_PUSH_BODY =
   "Finish setting up your plan so I can get you started.";
 
+export const SATURDAY_CHECK_IN_PUSH_TITLE = "Saturday check-in";
+
+export const SATURDAY_CHECK_IN_PUSH_BODY =
+  "Saturday check-in: answer your 3 reflection questions. Weekly video due Sunday night.";
+
+export const SATURDAY_CHECK_IN_PUSH_URL = "/dashboard/today";
+
 type PushCategoryKey = "hitting" | "fielding" | "workout" | "mindset" | "weekly-video";
 
 const PUSH_CATEGORY_LABELS: Record<PushCategoryKey, string> = {
@@ -140,6 +147,11 @@ export function shouldSkipDailyWorkPushForGoneQuiet(willSendGoneQuietPush: boole
   return willSendGoneQuietPush;
 }
 
+/** Saturday already gets the combined check-in push; skip the 3pm daily work push. */
+export function shouldSkipDailyWorkPushOnSaturday(dayOfWeek: number) {
+  return dayOfWeek === 6;
+}
+
 export function runProgramPushCopySelfTests() {
   const hittingFieldingWorkout = [
     { type: "hitting" },
@@ -197,6 +209,18 @@ export function runProgramPushCopySelfTests() {
 
   if (shouldSkipDailyWorkPushForGoneQuiet(false)) {
     throw new Error("daily work should not skip when gone quiet will not send");
+  }
+
+  if (!shouldSkipDailyWorkPushOnSaturday(6)) {
+    throw new Error("daily work should skip on Saturday");
+  }
+
+  if (shouldSkipDailyWorkPushOnSaturday(5)) {
+    throw new Error("daily work should not skip on Friday");
+  }
+
+  if (SATURDAY_CHECK_IN_PUSH_BODY.indexOf("reflection") < 0) {
+    throw new Error("saturday check-in body should mention reflection");
   }
 
   return 8;

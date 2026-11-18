@@ -20,7 +20,11 @@ import {
   MIN_PROGRAM_NOTE_LENGTH,
   PROGRAM_NOTE_REMINDER,
 } from "@/lib/program-note-shared";
-import { parseReflectionNote, SATURDAY_REFLECTION_FIELDS } from "@/lib/program-content";
+import {
+  getPlaybookChapterForWeek,
+  parseReflectionNote,
+  SATURDAY_REFLECTION_FIELDS,
+} from "@/lib/program-content";
 import { PROGRAM_PHASE_LABELS } from "@/lib/program-content";
 import { BRAND_SECONDARY_TAGLINE } from "@/lib/brand-copy";
 import { formatProgramStartLabel, parseProgramDateKey } from "@/lib/program-schedule";
@@ -225,6 +229,50 @@ function PlayChipIcon() {
       <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.8" />
       <path d="M10 8.5v7l6-3.5-6-3.5Z" fill="currentColor" />
     </svg>
+  );
+}
+
+function SaturdayCheckInCard({
+  reflectionTask,
+  canComplete,
+  onOpenAnswer,
+}: {
+  reflectionTask: ProgramTodayTask;
+  canComplete: boolean;
+  onOpenAnswer: (sheet: NonNullable<AnswerSheetState>) => void;
+}) {
+  return (
+    <section className={`${CARD} border-[#52B788]/50 bg-[#22c55e]/5`}>
+      <p className="text-xs font-bold tracking-wide text-[#9df3bd]">SATURDAY CHECK-IN</p>
+      <h3 className="mt-2 text-lg font-semibold text-zinc-100">Answer your 3 reflection questions</h3>
+      <ul className="mt-3 space-y-1.5 text-sm text-zinc-300">
+        {SATURDAY_REFLECTION_FIELDS.map((field) => (
+          <li key={field.key} className="flex gap-2">
+            <span className="text-[#52B788]">-</span>
+            <span>{field.label}</span>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-3 text-xs text-zinc-500">Weekly video is due Sunday night.</p>
+      {reflectionTask.completed ? (
+        <p className="mt-4 text-sm font-semibold text-[#9df3bd]">Reflection done for this week.</p>
+      ) : canComplete ? (
+        <button
+          type="button"
+          onClick={() =>
+            onOpenAnswer({
+              task: reflectionTask,
+              placeholder: getTaskNotePlaceholder(reflectionTask),
+            })
+          }
+          className={`${BTN_PRIMARY} mt-4`}
+        >
+          Start Saturday check-in
+        </button>
+      ) : (
+        <p className="mt-4 text-sm text-zinc-400">View only for this day.</p>
+      )}
+    </section>
   );
 }
 
@@ -631,7 +679,7 @@ function TaskCard({
       ) : null}
 
       {isPlaybookRead && task.playbookHref && canAccessPlaybook ? (
-        <Link href={task.playbookHref} className={`${BTN_OUTLINE} mt-4 w-full`}>
+        <Link href={task.playbookHref} className={`${BTN_PRIMARY} mt-4`}>
           Open Chapter {task.playbookChapter}
         </Link>
       ) : null}
@@ -1172,6 +1220,28 @@ export default function ProgramTodayView() {
                 <p className="mt-2 text-lg font-bold text-zinc-100">{payload.weekFocusCue}</p>
               ) : null}
               <p className="mt-2 text-sm leading-relaxed text-zinc-300">{payload.weekFocusNote}</p>
+            </section>
+          ) : null}
+
+          {payload.programDayInfo.dayOfWeek === 6 &&
+          payload.tasks.some((task) => task.type === "reflection") ? (
+            <SaturdayCheckInCard
+              reflectionTask={payload.tasks.find((task) => task.type === "reflection")!}
+              canComplete={payload.canCompleteTasks}
+              onOpenAnswer={setAnswerSheet}
+            />
+          ) : null}
+
+          {payload.canAccessPlaybook &&
+          !getPlaybookChapterForWeek(payload.programDayInfo.weekNumber) ? (
+            <section className={`${CARD} border-[#52B788]/30`}>
+              <p className="text-xs font-bold tracking-wide text-[#9df3bd]">PLAYBOOK REMINDER</p>
+              <p className="mt-2 text-sm text-zinc-300">
+                Open the Playbook when you can. A few pages go a long way.
+              </p>
+              <Link href="/playbook" className={`${BTN_OUTLINE} mt-3`}>
+                Open Playbook
+              </Link>
             </section>
           ) : null}
 

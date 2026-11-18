@@ -17,7 +17,7 @@ export const PROGRAM_SCHEDULE_WINDOWS: ProgramScheduleWindow[] = [
   },
   {
     id: "saturday-video",
-    label: "Saturday 10am video email/push",
+    label: "Saturday 10am check-in push (reflection + weekly video) and video email",
     startHour: 10,
     endHour: 15,
     dayFilter: "saturday",
