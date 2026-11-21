@@ -1317,6 +1317,75 @@ export async function buildSessionCsv(sessionId: string) {
   );
 }
 
+export async function getTestPlayerProfileForUser(userId: string) {
+  const player = await prisma.testPlayer.findFirst({
+    where: { userId },
+    select: { id: true },
+  });
+  if (!player) {
+    return null;
+  }
+  return getTestPlayerProfile(player.id);
+}
+
+/** Player-facing slice: latest result per metric + history, no rankings. */
+export async function getMyTestingSummaryForUser(userId: string) {
+  const profile = await getTestPlayerProfileForUser(userId);
+  if (!profile) {
+    return null;
+  }
+
+  const metricsWithResults = profile.metrics
+    .filter((metric) => metric.active)
+    .map((metric) => {
+      const best = profile.personalBests[metric.key];
+      const history = profile.historyByMetric[metric.key] ?? [];
+      const latest = history.length > 0 ? history[history.length - 1] : null;
+      return {
+        key: metric.key,
+        label: metric.label,
+        unit: metric.unit,
+        decimals: metric.decimals,
+        inputType: metric.inputType,
+        betterIs: metric.betterIs,
+        latest: latest
+          ? {
+              best: latest.best,
+              date: latest.date,
+              label: latest.label,
+            }
+          : null,
+        personalBest: best,
+        history,
+      };
+    })
+    .filter((metric) => metric.latest !== null || metric.personalBest !== null);
+
+  if (metricsWithResults.length === 0) {
+    return {
+      player: {
+        id: profile.player.id,
+        firstName: profile.player.firstName,
+        lastName: profile.player.lastName,
+      },
+      teams: profile.teams,
+      metrics: [] as typeof metricsWithResults,
+      hasHistory: false,
+    };
+  }
+
+  return {
+    player: {
+      id: profile.player.id,
+      firstName: profile.player.firstName,
+      lastName: profile.player.lastName,
+    },
+    teams: profile.teams,
+    metrics: metricsWithResults,
+    hasHistory: metricsWithResults.some((metric) => metric.history.length > 1),
+  };
+}
+
 export async function getTestPlayerProfile(playerId: string) {
   const player = await prisma.testPlayer.findUnique({
     where: { id: playerId },

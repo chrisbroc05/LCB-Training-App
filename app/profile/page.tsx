@@ -30,6 +30,8 @@ import { fetchVimeoThumbnailMap } from "@/lib/vimeo-oembed";
 import { getUnwatchedCoachVideoCount } from "@/lib/coach-video-server";
 import VideosFromCoachLink from "@/components/VideosFromCoachLink";
 import MyDownloadsCard from "@/app/profile/MyDownloadsCard";
+import MyTestingCard from "@/app/profile/MyTestingCard";
+import { getMyTestingSummaryForUser } from "@/lib/testing-server";
 
 type ProfilePageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -184,7 +186,10 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
     playbookProgress = serializePlaybookProgress(progress);
   }
 
-  const unwatchedCoachVideoCount = await getUnwatchedCoachVideoCount(session.user.id);
+  const [unwatchedCoachVideoCount, myTesting] = await Promise.all([
+    getUnwatchedCoachVideoCount(session.user.id),
+    getMyTestingSummaryForUser(session.user.id),
+  ]);
 
   return (
     <div className="mx-auto w-full max-w-4xl px-4 py-10 sm:px-6 sm:py-14 md:py-20">
@@ -211,6 +216,8 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
         />
 
         <PlayerProfileCard />
+
+        {myTesting ? <MyTestingCard data={myTesting} /> : null}
 
         <RecruitingHelpCard />
 
