@@ -1,6 +1,46 @@
+import {
+  formatChicagoDateInputValue,
+  parseChicagoDateInput,
+} from "@/lib/org-trial-dates-shared";
+
 export type TestBetterIs = "LOWER" | "HIGHER";
 
 export type TestMetricInputType = "number" | "feet_inches";
+
+/**
+ * Normalize a testing session calendar day to YYYY-MM-DD.
+ * Empty/invalid input becomes America's Chicago calendar day for `now`.
+ */
+export function normalizeTestSessionDateKey(
+  raw: string | null | undefined,
+  now: Date = new Date(),
+): string {
+  const trimmed = raw?.trim() ?? "";
+  if (trimmed && parseChicagoDateInput(trimmed)) {
+    return trimmed;
+  }
+  return formatChicagoDateInputValue(now);
+}
+
+/**
+ * Prisma @db.Date value for a YYYY-MM-DD session day.
+ * Noon UTC keeps the calendar day stable across timezones.
+ */
+export function testSessionDateValue(dateKey: string): Date {
+  const parsed = parseChicagoDateInput(dateKey);
+  if (!parsed) {
+    throw new Error(`Invalid test session date: ${dateKey}`);
+  }
+  return new Date(Date.UTC(parsed.year, parsed.month - 1, parsed.day, 12, 0, 0, 0));
+}
+
+/** Format a stored session Date back to YYYY-MM-DD (UTC calendar components). */
+export function formatTestSessionDateKey(value: Date): string {
+  const year = value.getUTCFullYear();
+  const month = String(value.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(value.getUTCDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
 
 export type TestMetricRecord = {
   key: string;

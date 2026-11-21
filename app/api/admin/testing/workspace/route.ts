@@ -1,6 +1,7 @@
 import { requireAdminTestingSession } from "@/lib/admin-testing-auth";
 import { jsonNoStore } from "@/lib/api-no-store";
 import { getTestingWorkspace } from "@/lib/testing-server";
+import { normalizeTestSessionDateKey } from "@/lib/testing-shared";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -13,7 +14,7 @@ export async function GET(request: Request) {
 
   const url = new URL(request.url);
   const teamSlug = url.searchParams.get("teamSlug")?.trim();
-  const date = url.searchParams.get("date")?.trim() || new Date().toISOString().slice(0, 10);
+  const date = normalizeTestSessionDateKey(url.searchParams.get("date"));
 
   if (!teamSlug) {
     return jsonNoStore({ error: "teamSlug is required." }, { status: 400 });

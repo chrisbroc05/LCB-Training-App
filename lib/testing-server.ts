@@ -1,14 +1,18 @@
 import "server-only";
 
-import type { Prisma, TestBetterIs } from "@prisma/client";
+import type { Prisma, TestBetterIs, TestSession } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { createOrFindOnUniqueViolation } from "@/lib/prisma-get-or-create-shared";
 import { normalizeTeamSlug } from "@/lib/waiver-sign-shared";
 import {
   buildClaimCode,
   buildPlayerDisplayName,
   computeBestAttempt,
+  formatTestSessionDateKey,
   normalizePersonName,
+  normalizeTestSessionDateKey,
   splitPlayerName,
+  testSessionDateValue,
   MAX_TEST_ATTEMPTS,
   type CsvImportPreview,
   type TestMetricRecord,
@@ -365,7 +369,9 @@ export async function listTestTeams(includeArchived = false) {
     archived: team.archived,
     createdAt: team.createdAt.toISOString(),
     playerCount: team.roster.length,
-    lastSessionDate: team.sessions[0]?.date.toISOString().slice(0, 10) ?? null,
+    lastSessionDate: team.sessions[0]
+      ? formatTestSessionDateKey(team.sessions[0].date)
+      : null,
     lastSessionLabel: team.sessions[0]?.label ?? null,
   }));
 }
@@ -440,7 +446,7 @@ export async function getTestTeamDetail(teamId: string) {
       (session): TestSessionSummary => ({
         id: session.id,
         teamId: session.teamId,
-        date: session.date.toISOString().slice(0, 10),
+        date: formatTestSessionDateKey(session.date),
         label: session.label,
         notes: session.notes,
         resultCount: session._count.results,
@@ -526,31 +532,59 @@ export async function updateTestPlayer(
   return serializePlayer(player);
 }
 
-export async function getOrCreateSessionForDate(
-  teamId: string,
-  date: string,
-): Promise<TestSessionSummary> {
-  const dateValue = new Date(`${date}T12:00:00.000Z`);
-  const session = await prisma.testSession.upsert({
-    where: {
-      teamId_date: { teamId, date: dateValue },
-    },
-    create: {
-      teamId,
-      date: dateValue,
-      label: date,
-    },
-    update: {},
-    include: { _count: { select: { results: true } } },
-  });
+type SessionWithResultCount = TestSession & { _count: { results: number } };
+
+function serializeSessionSummary(session: SessionWithResultCount): TestSessionSummary {
   return {
     id: session.id,
     teamId: session.teamId,
-    date: session.date.toISOString().slice(0, 10),
+    date: formatTestSessionDateKey(session.date),
     label: session.label,
     notes: session.notes,
     resultCount: session._count.results,
   };
+}
+
+async function findSessionForTeamDate(
+  teamId: string,
+  dateValue: Date,
+): Promise<SessionWithResultCount | null> {
+  return prisma.testSession.findUnique({
+    where: { teamId_date: { teamId, date: dateValue } },
+    include: { _count: { select: { results: true } } },
+  });
+}
+
+/**
+ * Get or create the team session for a calendar day.
+ * Concurrent callers can race Prisma upsert; on P2002 we re-read and continue.
+ */
+export async function getOrCreateSessionForDate(
+  teamId: string,
+  date: string,
+): Promise<TestSessionSummary> {
+  const dateKey = normalizeTestSessionDateKey(date);
+  const dateValue = testSessionDateValue(dateKey);
+
+  const existing = await findSessionForTeamDate(teamId, dateValue);
+  if (existing) {
+    return serializeSessionSummary(existing);
+  }
+
+  const session = await createOrFindOnUniqueViolation(
+    () =>
+      prisma.testSession.create({
+        data: {
+          teamId,
+          date: dateValue,
+          label: dateKey,
+        },
+        include: { _count: { select: { results: true } } },
+      }),
+    () => findSessionForTeamDate(teamId, dateValue),
+  );
+
+  return serializeSessionSummary(session);
 }
 
 export async function createTestSession(
@@ -716,7 +750,7 @@ export async function getStationEntryData(sessionId: string, stationKey: string)
     if (!lastByPlayerMetric.has(key)) {
       lastByPlayerMetric.set(key, {
         value: result.best,
-        date: result.session.date.toISOString().slice(0, 10),
+        date: formatTestSessionDateKey(result.session.date),
       });
     }
     const currentBest = personalBestByPlayerMetric.get(key);
@@ -734,7 +768,7 @@ export async function getStationEntryData(sessionId: string, stationKey: string)
       teamId: session.teamId,
       teamSlug: session.team.teamSlug,
       teamName: session.team.name,
-      date: session.date.toISOString().slice(0, 10),
+      date: formatTestSessionDateKey(session.date),
       label: session.label,
     },
     stationKey,
@@ -869,7 +903,7 @@ export async function getSessionEntryData(sessionId: string, metricKey: string) 
       id: session.id,
       teamId: session.teamId,
       teamName: session.team.name,
-      date: session.date.toISOString().slice(0, 10),
+      date: formatTestSessionDateKey(session.date),
       label: session.label,
     },
     metric: serializeMetric(metric),
@@ -966,7 +1000,7 @@ export async function getSessionResultsGrid(sessionId: string) {
       id: session.id,
       teamId: session.teamId,
       teamName: session.team.name,
-      date: session.date.toISOString().slice(0, 10),
+      date: formatTestSessionDateKey(session.date),
       label: session.label,
       notes: session.notes,
     },
@@ -1041,7 +1075,7 @@ export async function getTestPlayerProfile(playerId: string) {
     if (result.absent || result.skipped || result.best === null) {
       continue;
     }
-    const date = result.session.date.toISOString().slice(0, 10);
+    const date = formatTestSessionDateKey(result.session.date);
     const history = historyByMetric.get(result.metricKey) ?? [];
     history.push({ date, label: result.session.label, best: result.best });
     historyByMetric.set(result.metricKey, history);
@@ -1081,7 +1115,7 @@ export async function getTestPlayerProfile(playerId: string) {
       : null,
     results: player.results.map((result) => ({
       ...serializeResult(result),
-      sessionDate: result.session.date.toISOString().slice(0, 10),
+      sessionDate: formatTestSessionDateKey(result.session.date),
       sessionLabel: result.session.label,
       teamName: result.session.team.name,
       metricLabel: result.metric.label,

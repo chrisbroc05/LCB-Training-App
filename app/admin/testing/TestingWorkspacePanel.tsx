@@ -12,6 +12,7 @@ import {
   formatMetricValue,
   inchesToFeetInches,
   MAX_TEST_ATTEMPTS,
+  normalizeTestSessionDateKey,
   type TestMetricRecord,
   type TestPlayerSummary,
   type TestResultRecord,
@@ -62,7 +63,7 @@ type SyncState = "saved" | "waiting" | "syncing";
 type DraftSlot = { a: string; b: string; c: string; d: string };
 
 function todayIso() {
-  return new Date().toISOString().slice(0, 10);
+  return normalizeTestSessionDateKey(null);
 }
 
 function emptyDraft(): DraftSlot {
@@ -435,6 +436,7 @@ export default function TestingWorkspacePanel() {
     if (!newTeamName.trim()) {
       return;
     }
+    setError(null);
     const res = await adminFetchJson<{ team?: TestTeamOption; error?: string }>(
       "/api/admin/testing/teams",
       {
@@ -442,7 +444,11 @@ export default function TestingWorkspacePanel() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: newTeamName.trim() }),
       },
-      { context: "testing-create-team", notJsonUserMessage: ADMIN_FETCH_COULD_NOT_LOAD_JSON },
+      {
+        context: "testing-create-team",
+        okUserMessage: "Couldn't create team. Try again.",
+        notJsonUserMessage: ADMIN_FETCH_COULD_NOT_LOAD_JSON,
+      },
     );
     if (!res.ok) {
       setError(res.userMessage);
@@ -461,8 +467,14 @@ export default function TestingWorkspacePanel() {
 
   async function addPlayer() {
     if (!workspace?.team.id) {
+      setError("Wait for the team to finish loading, then add the player again.");
       return;
     }
+    if (!addFirst.trim() || !addLast.trim()) {
+      setError("First and last name are required.");
+      return;
+    }
+    setError(null);
     const res = await adminFetchJson<{ player?: TestPlayerSummary; error?: string }>(
       `/api/admin/testing/teams/${workspace.team.id}/players`,
       {
@@ -474,7 +486,11 @@ export default function TestingWorkspacePanel() {
           age: addAge ? Number(addAge) : null,
         }),
       },
-      { context: "testing-add-player", notJsonUserMessage: ADMIN_FETCH_COULD_NOT_LOAD_JSON },
+      {
+        context: "testing-add-player",
+        okUserMessage: "Couldn't add player. Try again.",
+        notJsonUserMessage: ADMIN_FETCH_COULD_NOT_LOAD_JSON,
+      },
     );
     if (!res.ok) {
       setError(res.userMessage);
