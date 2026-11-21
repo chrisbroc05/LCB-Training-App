@@ -15,6 +15,7 @@ export type ResultsCsvMetricColumn =
   | "shuttle_5_10_5_sec"
   | "broad_jump_in"
   | "exit_velo_mph"
+  | "bat_speed_mph"
   | "pulldown_velo_mph";
 
 export type ResultsCsvMetricDefinition = {
@@ -119,6 +120,20 @@ export const RESULTS_CSV_METRIC_DEFINITIONS: ResultsCsvMetricDefinition[] = [
     stationSortOrder: 20,
   },
   {
+    csvColumn: "bat_speed_mph",
+    metricKey: "bat_speed",
+    label: "Bat Speed",
+    unit: "mph",
+    decimals: 1,
+    betterIs: "HIGHER",
+    category: "hitting",
+    inputType: "number",
+    sortOrder: 85,
+    stationKey: "hitting",
+    stationLabel: "Hitting",
+    stationSortOrder: 20,
+  },
+  {
     csvColumn: "pulldown_velo_mph",
     metricKey: "pulldown_velo",
     label: "Pulldown Velo",
@@ -134,10 +149,8 @@ export const RESULTS_CSV_METRIC_DEFINITIONS: ResultsCsvMetricDefinition[] = [
   },
 ];
 
-export const RESULTS_CSV_REQUIRED_HEADERS = [
-  ...RESULTS_CSV_IDENTITY_COLUMNS,
-  ...RESULTS_CSV_METRIC_DEFINITIONS.map((definition) => definition.csvColumn),
-] as const;
+/** Identity columns required. Metric columns are optional so older CSVs still import. */
+export const RESULTS_CSV_REQUIRED_HEADERS = [...RESULTS_CSV_IDENTITY_COLUMNS] as const;
 
 export type ResultsCsvParsedRow = {
   rowIndex: number;

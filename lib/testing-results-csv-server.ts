@@ -97,8 +97,8 @@ async function loadExistingResultsForPreview(
   const sessions = await Promise.all(
     Array.from(sessionKeys.values()).map(async ({ teamId, date }) => {
       const dateValue = new Date(`${date}T12:00:00.000Z`);
-      const session = await prisma.testSession.findUnique({
-        where: { teamId_date: { teamId, date: dateValue } },
+      const session = await prisma.testSession.findFirst({
+        where: { teamId, date: dateValue },
         select: { id: true, teamId: true, date: true },
       });
       return session

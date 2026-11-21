@@ -102,11 +102,21 @@ export type TestPlayerSummary = {
 
 export type TestSessionSummary = {
   id: string;
-  teamId: string;
+  teamId: string | null;
   date: string;
   label: string;
   notes: string | null;
   resultCount: number;
+};
+
+export type TestingMode = "team" | "individual";
+
+export type TestingUserSearchHit = {
+  id: string;
+  name: string | null;
+  email: string;
+  playerFirstName: string | null;
+  playerLastName: string | null;
 };
 
 export type TestResultRecord = {

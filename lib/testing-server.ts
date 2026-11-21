@@ -455,6 +455,80 @@ export async function getTestTeamDetail(teamId: string) {
   };
 }
 
+export async function createTestPlayer(input: {
+  firstName: string;
+  lastName: string;
+  age?: number | null;
+  birthYear?: number | null;
+  positions?: string[];
+  bats?: string | null;
+  throws?: string | null;
+  parentEmail?: string | null;
+  userId?: string | null;
+  teamId?: string | null;
+  claimCodeSeed?: string;
+}) {
+  const firstName = input.firstName.trim();
+  const lastName = input.lastName.trim();
+  if (!firstName || !lastName) {
+    throw new Error("First and last name are required.");
+  }
+
+  let team: { id: string; name: string; teamSlug: string } | null = null;
+  if (input.teamId) {
+    team = await prisma.testTeam.findUnique({ where: { id: input.teamId } });
+    if (!team) {
+      throw new Error("Team not found.");
+    }
+  }
+
+  if (input.userId) {
+    const user = await prisma.user.findUnique({
+      where: { id: input.userId },
+      select: { id: true },
+    });
+    if (!user) {
+      throw new Error("App account not found.");
+    }
+    const alreadyLinked = await prisma.testPlayer.findFirst({
+      where: { userId: input.userId },
+      select: { id: true },
+    });
+    if (alreadyLinked) {
+      throw new Error("That app account is already linked to another testing player.");
+    }
+  }
+
+  const claimSeed = input.claimCodeSeed?.trim() || team?.name || `${firstName} ${lastName}`;
+  const claimCode = await generateUniqueClaimCode(claimSeed);
+  const waiver = team
+    ? await findMatchingWaiverSignature({
+        firstName,
+        lastName,
+        teamSlug: team.teamSlug,
+      })
+    : null;
+
+  const player = await prisma.testPlayer.create({
+    data: {
+      firstName,
+      lastName,
+      age: input.age ?? null,
+      birthYear: input.birthYear ?? null,
+      positions: input.positions ?? [],
+      bats: input.bats?.trim() || null,
+      throws: input.throws?.trim() || null,
+      parentEmail: input.parentEmail?.trim() || waiver?.signerEmail.trim() || null,
+      claimCode,
+      userId: input.userId ?? null,
+      waiverSignatureId: waiver?.id ?? null,
+      ...(team ? { teams: { create: { teamId: team.id } } } : {}),
+    },
+  });
+
+  return serializePlayer(player);
+}
+
 export async function addPlayerToTeam(
   teamId: string,
   input: {
@@ -466,39 +540,22 @@ export async function addPlayerToTeam(
     bats?: string | null;
     throws?: string | null;
     parentEmail?: string | null;
+    userId?: string | null;
   },
 ) {
+  return createTestPlayer({ ...input, teamId });
+}
+
+export async function addExistingPlayerToTeam(teamId: string, playerId: string) {
   const team = await prisma.testTeam.findUnique({ where: { id: teamId } });
   if (!team) {
     throw new Error("Team not found.");
   }
-
-  const claimCode = await generateUniqueClaimCode(team.name);
-  const waiver = await findMatchingWaiverSignature({
-    firstName: input.firstName,
-    lastName: input.lastName,
-    teamSlug: team.teamSlug,
-  });
-
-  const player = await prisma.testPlayer.create({
-    data: {
-      firstName: input.firstName.trim(),
-      lastName: input.lastName.trim(),
-      age: input.age ?? null,
-      birthYear: input.birthYear ?? null,
-      positions: input.positions ?? [],
-      bats: input.bats?.trim() || null,
-      throws: input.throws?.trim() || null,
-      parentEmail: input.parentEmail?.trim() || waiver?.signerEmail.trim() || null,
-      claimCode,
-      waiverSignatureId: waiver?.id ?? null,
-    },
-  });
-
-  await prisma.testTeamPlayer.create({
-    data: { teamId, playerId: player.id },
-  });
-
+  const player = await prisma.testPlayer.findUnique({ where: { id: playerId } });
+  if (!player) {
+    throw new Error("Player not found.");
+  }
+  await ensurePlayerOnTeam(teamId, playerId);
   return serializePlayer(player);
 }
 
@@ -513,8 +570,26 @@ export async function updateTestPlayer(
     bats: string | null;
     throws: string | null;
     parentEmail: string | null;
+    userId: string | null;
   }>,
 ) {
+  if (input.userId) {
+    const user = await prisma.user.findUnique({
+      where: { id: input.userId },
+      select: { id: true },
+    });
+    if (!user) {
+      throw new Error("App account not found.");
+    }
+    const alreadyLinked = await prisma.testPlayer.findFirst({
+      where: { userId: input.userId, id: { not: playerId } },
+      select: { id: true },
+    });
+    if (alreadyLinked) {
+      throw new Error("That app account is already linked to another testing player.");
+    }
+  }
+
   const player = await prisma.testPlayer.update({
     where: { id: playerId },
     data: {
@@ -527,9 +602,82 @@ export async function updateTestPlayer(
       throws: input.throws === undefined ? undefined : input.throws?.trim() || null,
       parentEmail:
         input.parentEmail === undefined ? undefined : input.parentEmail?.trim() || null,
+      userId: input.userId === undefined ? undefined : input.userId,
     },
   });
   return serializePlayer(player);
+}
+
+export async function searchTestingUsers(query: string, limit = 8) {
+  const trimmed = query.trim();
+  if (trimmed.length < 2) {
+    return [] as Array<{
+      id: string;
+      name: string | null;
+      email: string;
+      playerFirstName: string | null;
+      playerLastName: string | null;
+    }>;
+  }
+
+  const parts = trimmed.split(/\s+/).filter(Boolean);
+  const orFilters: Prisma.UserWhereInput[] = [
+    { email: { contains: trimmed, mode: "insensitive" } },
+    { name: { contains: trimmed, mode: "insensitive" } },
+    { playerFirstName: { contains: trimmed, mode: "insensitive" } },
+    { playerLastName: { contains: trimmed, mode: "insensitive" } },
+  ];
+  if (parts.length >= 2) {
+    orFilters.push({
+      AND: [
+        { playerFirstName: { contains: parts[0], mode: "insensitive" } },
+        { playerLastName: { contains: parts.slice(-1)[0], mode: "insensitive" } },
+      ],
+    });
+  }
+
+  return prisma.user.findMany({
+    where: { OR: orFilters },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      playerFirstName: true,
+      playerLastName: true,
+    },
+    take: limit,
+    orderBy: [{ playerLastName: "asc" }, { email: "asc" }],
+  });
+}
+
+export async function searchTestPlayers(query: string, limit = 12) {
+  const trimmed = query.trim();
+  if (trimmed.length < 1) {
+    return [] as TestPlayerSummary[];
+  }
+
+  const parts = trimmed.split(/\s+/).filter(Boolean);
+  const players = await prisma.testPlayer.findMany({
+    where:
+      parts.length >= 2
+        ? {
+            AND: [
+              { firstName: { contains: parts[0], mode: "insensitive" } },
+              { lastName: { contains: parts.slice(-1)[0], mode: "insensitive" } },
+            ],
+          }
+        : {
+            OR: [
+              { firstName: { contains: trimmed, mode: "insensitive" } },
+              { lastName: { contains: trimmed, mode: "insensitive" } },
+              { parentEmail: { contains: trimmed, mode: "insensitive" } },
+              { claimCode: { contains: trimmed, mode: "insensitive" } },
+            ],
+          },
+    orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
+    take: limit,
+  });
+  return players.map(serializePlayer);
 }
 
 type SessionWithResultCount = TestSession & { _count: { results: number } };
@@ -546,21 +694,22 @@ function serializeSessionSummary(session: SessionWithResultCount): TestSessionSu
 }
 
 async function findSessionForTeamDate(
-  teamId: string,
+  teamId: string | null,
   dateValue: Date,
 ): Promise<SessionWithResultCount | null> {
-  return prisma.testSession.findUnique({
-    where: { teamId_date: { teamId, date: dateValue } },
+  return prisma.testSession.findFirst({
+    where: { teamId, date: dateValue },
     include: { _count: { select: { results: true } } },
   });
 }
 
 /**
- * Get or create the team session for a calendar day.
- * Concurrent callers can race Prisma upsert; on P2002 we re-read and continue.
+ * Get or create a session for a calendar day.
+ * Pass teamId null for the shared individual session that day.
+ * Concurrent callers can race create; on P2002 we re-read and continue.
  */
 export async function getOrCreateSessionForDate(
-  teamId: string,
+  teamId: string | null,
   date: string,
 ): Promise<TestSessionSummary> {
   const dateKey = normalizeTestSessionDateKey(date);
@@ -577,7 +726,7 @@ export async function getOrCreateSessionForDate(
         data: {
           teamId,
           date: dateValue,
-          label: dateKey,
+          label: teamId ? dateKey : `Individual ${dateKey}`,
         },
         include: { _count: { select: { results: true } } },
       }),
@@ -609,10 +758,47 @@ export async function getTestingWorkspace(teamSlug: string, date: string) {
   }
   const stations = await listActiveStations();
   return {
+    mode: "team" as const,
     team: detail.team,
     players: detail.players,
     session,
     sessions: detail.sessions,
+    stations,
+  };
+}
+
+export async function getIndividualTestingWorkspace(date: string) {
+  const dateKey = normalizeTestSessionDateKey(date);
+  const session = await getOrCreateSessionForDate(null, dateKey);
+  const stations = await listActiveStations();
+  const resultPlayers = await prisma.testResult.findMany({
+    where: { sessionId: session.id },
+    select: { playerId: true },
+    distinct: ["playerId"],
+  });
+  const players =
+    resultPlayers.length === 0
+      ? []
+      : (
+          await prisma.testPlayer.findMany({
+            where: { id: { in: resultPlayers.map((row) => row.playerId) } },
+            orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
+          })
+        ).map(serializePlayer);
+
+  const individualSessions = await prisma.testSession.findMany({
+    where: { teamId: null },
+    orderBy: { date: "desc" },
+    take: 30,
+    include: { _count: { select: { results: true } } },
+  });
+
+  return {
+    mode: "individual" as const,
+    team: null,
+    players,
+    session,
+    sessions: individualSessions.map(serializeSessionSummary),
     stations,
   };
 }
@@ -681,7 +867,11 @@ async function resolveStationMetricKeys(stationKey: string) {
   return station.metricKeys;
 }
 
-export async function getStationEntryData(sessionId: string, stationKey: string) {
+export async function getStationEntryData(
+  sessionId: string,
+  stationKey: string,
+  options?: { includePlayerIds?: string[] },
+) {
   const session = await prisma.testSession.findUnique({
     where: { id: sessionId },
     include: {
@@ -713,31 +903,58 @@ export async function getStationEntryData(sessionId: string, stationKey: string)
     .filter((metric): metric is (typeof metrics)[number] => Boolean(metric))
     .map(serializeMetric);
 
-  const playerIds = session.team.roster.map((entry) => entry.playerId);
-  const sessionResults = await prisma.testResult.findMany({
-    where: {
-      sessionId,
-      metricKey: { in: metricKeys },
-      playerId: { in: playerIds },
-    },
-  });
+  let playersForEntry: Array<Parameters<typeof serializePlayer>[0]> = [];
+  if (session.team) {
+    playersForEntry = session.team.roster.map((entry) => entry.player);
+  } else {
+    const includeIds = (options?.includePlayerIds ?? []).filter(Boolean);
+    const resultPlayerIds = (
+      await prisma.testResult.findMany({
+        where: { sessionId },
+        select: { playerId: true },
+        distinct: ["playerId"],
+      })
+    ).map((row) => row.playerId);
+    const playerIdSet = new Set([...resultPlayerIds, ...includeIds]);
+    if (playerIdSet.size > 0) {
+      playersForEntry = await prisma.testPlayer.findMany({
+        where: { id: { in: Array.from(playerIdSet) } },
+        orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
+      });
+    }
+  }
+
+  const playerIds = playersForEntry.map((player) => player.id);
+  const sessionResults =
+    playerIds.length === 0
+      ? []
+      : await prisma.testResult.findMany({
+          where: {
+            sessionId,
+            metricKey: { in: metricKeys },
+            playerId: { in: playerIds },
+          },
+        });
   const resultByPlayerMetric = new Map(
     sessionResults.map((result) => [`${result.playerId}:${result.metricKey}`, result]),
   );
 
-  const priorResults = await prisma.testResult.findMany({
-    where: {
-      playerId: { in: playerIds },
-      metricKey: { in: metricKeys },
-      sessionId: { not: sessionId },
-      absent: false,
-      skipped: false,
-      best: { not: null },
-      session: { date: { lt: session.date } },
-    },
-    include: { session: true, metric: true },
-    orderBy: { session: { date: "desc" } },
-  });
+  const priorResults =
+    playerIds.length === 0
+      ? []
+      : await prisma.testResult.findMany({
+          where: {
+            playerId: { in: playerIds },
+            metricKey: { in: metricKeys },
+            sessionId: { not: sessionId },
+            absent: false,
+            skipped: false,
+            best: { not: null },
+            session: { date: { lt: session.date } },
+          },
+          include: { session: true, metric: true },
+          orderBy: { session: { date: "desc" } },
+        });
 
   const lastByPlayerMetric = new Map<string, { value: number; date: string }>();
   const personalBestByPlayerMetric = new Map<string, number>();
@@ -766,14 +983,14 @@ export async function getStationEntryData(sessionId: string, stationKey: string)
     session: {
       id: session.id,
       teamId: session.teamId,
-      teamSlug: session.team.teamSlug,
-      teamName: session.team.name,
+      teamSlug: session.team?.teamSlug ?? null,
+      teamName: session.team?.name ?? "Individual",
       date: formatTestSessionDateKey(session.date),
       label: session.label,
     },
     stationKey,
     metrics: orderedMetrics,
-    players: session.team.roster.map((entry) => {
+    players: playersForEntry.map((player) => {
       const metricData: Record<
         string,
         {
@@ -784,7 +1001,7 @@ export async function getStationEntryData(sessionId: string, stationKey: string)
       > = {};
 
       for (const metric of orderedMetrics) {
-        const resultKey = `${entry.player.id}:${metric.key}`;
+        const resultKey = `${player.id}:${metric.key}`;
         const raw = resultByPlayerMetric.get(resultKey);
         metricData[metric.key] = {
           result: raw ? serializeResult(raw) : null,
@@ -794,7 +1011,7 @@ export async function getStationEntryData(sessionId: string, stationKey: string)
       }
 
       return {
-        ...serializePlayer(entry.player),
+        ...serializePlayer(player),
         metrics: metricData,
       };
     }),
@@ -865,19 +1082,30 @@ export async function getSessionEntryData(sessionId: string, metricKey: string) 
     return null;
   }
 
-  const playerIds = session.team.roster.map((entry) => entry.playerId);
-  const previousBests = await prisma.testResult.findMany({
-    where: {
-      playerId: { in: playerIds },
-      metricKey,
-      sessionId: { not: sessionId },
-      best: { not: null },
-      absent: false,
-      skipped: false,
-    },
-    include: { session: true },
-    orderBy: { session: { date: "desc" } },
-  });
+  const players = session.team
+    ? session.team.roster.map((entry) => entry.player)
+    : await prisma.testPlayer.findMany({
+        where: {
+          id: { in: session.results.map((result) => result.playerId) },
+        },
+        orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
+      });
+  const playerIds = players.map((player) => player.id);
+  const previousBests =
+    playerIds.length === 0
+      ? []
+      : await prisma.testResult.findMany({
+          where: {
+            playerId: { in: playerIds },
+            metricKey,
+            sessionId: { not: sessionId },
+            best: { not: null },
+            absent: false,
+            skipped: false,
+          },
+          include: { session: true },
+          orderBy: { session: { date: "desc" } },
+        });
 
   const previousBestByPlayer = new Map<string, number>();
   for (const result of previousBests) {
@@ -902,17 +1130,17 @@ export async function getSessionEntryData(sessionId: string, metricKey: string) 
     session: {
       id: session.id,
       teamId: session.teamId,
-      teamName: session.team.name,
+      teamName: session.team?.name ?? "Individual",
       date: formatTestSessionDateKey(session.date),
       label: session.label,
     },
     metric: serializeMetric(metric),
-    players: session.team.roster.map((entry) => {
-      const result = resultByPlayer.get(entry.player.id);
+    players: players.map((player) => {
+      const result = resultByPlayer.get(player.id);
       return {
-        ...serializePlayer(entry.player),
+        ...serializePlayer(player),
         result: result ? serializeResult(result) : null,
-        previousBest: previousBestByPlayer.get(entry.player.id) ?? null,
+        previousBest: previousBestByPlayer.get(player.id) ?? null,
       };
     }),
   };
@@ -995,17 +1223,30 @@ export async function getSessionResultsGrid(sessionId: string) {
     resultMap.set(`${result.playerId}:${result.metricKey}`, serializeResult(result));
   }
 
+  const players = session.team
+    ? session.team.roster.map((entry) => serializePlayer(entry.player))
+    : (
+        await prisma.testPlayer.findMany({
+          where: {
+            id: {
+              in: Array.from(new Set(session.results.map((result) => result.playerId))),
+            },
+          },
+          orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
+        })
+      ).map(serializePlayer);
+
   return {
     session: {
       id: session.id,
       teamId: session.teamId,
-      teamName: session.team.name,
+      teamName: session.team?.name ?? "Individual",
       date: formatTestSessionDateKey(session.date),
       label: session.label,
       notes: session.notes,
     },
     metrics,
-    players: session.team.roster.map((entry) => serializePlayer(entry.player)),
+    players,
     results: Object.fromEntries(resultMap),
   };
 }
@@ -1117,7 +1358,7 @@ export async function getTestPlayerProfile(playerId: string) {
       ...serializeResult(result),
       sessionDate: formatTestSessionDateKey(result.session.date),
       sessionLabel: result.session.label,
-      teamName: result.session.team.name,
+      teamName: result.session.team?.name ?? "Individual",
       metricLabel: result.metric.label,
       metricUnit: result.metric.unit,
       metricDecimals: result.metric.decimals,

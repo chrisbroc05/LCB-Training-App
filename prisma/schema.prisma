@@ -1322,15 +1322,18 @@ model TestMetric {
 
 model TestSession {
   id      String       @id @default(cuid())
-  teamId  String
-  team    TestTeam     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  teamId  String?
+  team    TestTeam?    @relation(fields: [teamId], references: [id], onDelete: Cascade)
   date    DateTime     @db.Date
   label   String
   notes   String?
   results TestResult[]
 
-  @@unique([teamId, date])
+  // Partial uniques live in SQL migration:
+  // - (teamId, date) WHERE teamId IS NOT NULL
+  // - (date) WHERE teamId IS NULL
   @@index([teamId, date(sort: Desc)])
+  @@index([date])
 }
 
 model TestResult {

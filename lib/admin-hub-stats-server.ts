@@ -192,8 +192,8 @@ export async function loadPlayersHubCards(): Promise<AdminSectionHubCard[]> {
     },
     {
       href: ADMIN_ROUTES.players.testing,
-      title: "Team testing",
-      description: "Testing sessions, metrics, and player profiles.",
+      title: "Testing",
+      description: "Team and individual testing sessions, metrics, and player profiles.",
       statValue: "Open",
       statLabel: "Testing workspace",
     },

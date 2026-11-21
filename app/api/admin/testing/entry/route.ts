@@ -18,17 +18,30 @@ export async function GET(request: Request) {
 
   try {
     const url = new URL(request.url);
+    const mode = url.searchParams.get("mode")?.trim() === "individual" ? "individual" : "team";
     const teamSlug = url.searchParams.get("teamSlug")?.trim();
     const date = normalizeTestSessionDateKey(url.searchParams.get("date"));
     const stationKey = url.searchParams.get("stationKey")?.trim();
+    const includePlayerIds = url.searchParams
+      .getAll("playerId")
+      .map((value) => value.trim())
+      .filter(Boolean);
 
-    if (!teamSlug || !stationKey) {
+    if (!stationKey) {
+      return jsonNoStore({ error: "stationKey is required." }, { status: 400 });
+    }
+    if (mode === "team" && !teamSlug) {
       return jsonNoStore({ error: "teamSlug and stationKey are required." }, { status: 400 });
     }
 
-    const team = await ensureTestTeamBySlug(teamSlug, teamSlug);
-    const session = await getOrCreateSessionForDate(team.id, date);
-    const entry = await getStationEntryData(session.id, stationKey);
+    const session =
+      mode === "individual"
+        ? await getOrCreateSessionForDate(null, date)
+        : await getOrCreateSessionForDate(
+            (await ensureTestTeamBySlug(teamSlug!, teamSlug!)).id,
+            date,
+          );
+    const entry = await getStationEntryData(session.id, stationKey, { includePlayerIds });
 
     if (!entry) {
       return jsonNoStore(

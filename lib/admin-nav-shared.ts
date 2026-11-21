@@ -39,7 +39,7 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
       { href: ADMIN_ROUTES.players.free, label: "Free accounts", matchPrefix: ADMIN_ROUTES.players.free },
       { href: ADMIN_ROUTES.players.organizations, label: "Organizations", matchPrefix: ADMIN_ROUTES.players.organizations },
       { href: ADMIN_ROUTES.players.waivers, label: "Waivers", matchPrefix: ADMIN_ROUTES.players.waivers },
-      { href: ADMIN_ROUTES.players.testing, label: "Team testing", matchPrefix: "/admin/testing" },
+      { href: ADMIN_ROUTES.players.testing, label: "Testing", matchPrefix: "/admin/testing" },
     ],
   },
   {

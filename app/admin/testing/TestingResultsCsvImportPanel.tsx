@@ -140,9 +140,10 @@ export default function TestingResultsCsvImportPanel() {
       <section className="rounded-3xl border border-[#18243a] bg-[#0b1324]/80 p-5">
         <h2 className="text-lg font-semibold text-zinc-100">Upload</h2>
         <p className="mt-1 text-xs text-zinc-500">
-          Required columns: team, test_date, first_name, last_name, ten_yard_sec,
-          thirty_yard_sec, sixty_yard_sec, shuttle_5_10_5_sec, broad_jump_in, exit_velo_mph,
-          pulldown_velo_mph. A jersey column is ignored if present.
+          Required columns: team, test_date, first_name, last_name. Metric columns are
+          optional (ten_yard_sec, thirty_yard_sec, sixty_yard_sec, shuttle_5_10_5_sec,
+          broad_jump_in, exit_velo_mph, bat_speed_mph, pulldown_velo_mph). A jersey column
+          is ignored if present.
         </p>
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <label className="inline-flex cursor-pointer rounded-full border border-[#2b3650] px-4 py-2 text-sm font-semibold text-zinc-200">

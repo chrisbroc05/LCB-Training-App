@@ -79,6 +79,18 @@ async function testConcurrentGetOrCreateReturnsSameSession() {
       where: { teamId: team.id, date: testSessionDateValue(dateKey) },
     });
     assert.equal(count, 1);
+
+    const individualDate = "2026-11-21";
+    const [indA, indB] = await Promise.all([
+      getOrCreateSessionForDate(null, individualDate),
+      getOrCreateSessionForDate(null, individualDate),
+    ]);
+    assert.equal(indA.id, indB.id);
+    assert.equal(indA.teamId, null);
+    assert.equal(indB.date, individualDate);
+    await prisma.testSession.deleteMany({
+      where: { id: indA.id },
+    });
   } finally {
     await prisma.testSession.deleteMany({ where: { teamId: team.id } });
     await prisma.testTeam.delete({ where: { id: team.id } });

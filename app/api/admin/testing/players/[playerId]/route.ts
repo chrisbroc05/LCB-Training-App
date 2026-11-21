@@ -27,18 +27,24 @@ export async function PATCH(request: Request, context: RouteContext) {
     return auth.response;
   }
 
-  const { playerId } = await context.params;
-  const body = (await request.json()) as Partial<{
-    firstName: string;
-    lastName: string;
-    age: number | null;
-    birthYear: number | null;
-    positions: string[];
-    bats: string | null;
-    throws: string | null;
-    parentEmail: string | null;
-  }>;
+  try {
+    const { playerId } = await context.params;
+    const body = (await request.json()) as Partial<{
+      firstName: string;
+      lastName: string;
+      age: number | null;
+      birthYear: number | null;
+      positions: string[];
+      bats: string | null;
+      throws: string | null;
+      parentEmail: string | null;
+      userId: string | null;
+    }>;
 
-  const player = await updateTestPlayer(playerId, body);
-  return jsonNoStore({ player });
+    const player = await updateTestPlayer(playerId, body);
+    return jsonNoStore({ player });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to update player.";
+    return jsonNoStore({ error: message }, { status: 500 });
+  }
 }

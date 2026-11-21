@@ -19,6 +19,8 @@ import {
   type TestSessionSummary,
   type TestStationRecord,
   type TestTeamOption,
+  type TestingMode,
+  type TestingUserSearchHit,
 } from "@/lib/testing-shared";
 import {
   enqueuePendingTestResult,
@@ -39,8 +41,8 @@ type EntryPlayer = TestPlayerSummary & {
 type EntryData = {
   session: {
     id: string;
-    teamId: string;
-    teamSlug: string;
+    teamId: string | null;
+    teamSlug: string | null;
     teamName: string;
     date: string;
     label: string;
@@ -51,7 +53,8 @@ type EntryData = {
 };
 
 type WorkspaceData = {
-  team: { id: string; name: string; teamSlug: string };
+  mode?: TestingMode;
+  team: { id: string; name: string; teamSlug: string } | null;
   players: TestPlayerSummary[];
   session: TestSessionSummary;
   sessions: TestSessionSummary[];
@@ -195,6 +198,7 @@ export default function TestingWorkspacePanel() {
   const searchRef = useRef<HTMLInputElement>(null);
   const searchBoxRef = useRef<HTMLDivElement>(null);
   const pendingFocusPlayerId = useRef<string | null>(null);
+  const [mode, setMode] = useState<TestingMode>("team");
   const [teamOptions, setTeamOptions] = useState<TestTeamOption[]>([]);
   const [teamSlug, setTeamSlug] = useState("");
   const [date, setDate] = useState(todayIso());
@@ -210,6 +214,12 @@ export default function TestingWorkspacePanel() {
   const [addFirst, setAddFirst] = useState("");
   const [addLast, setAddLast] = useState("");
   const [addAge, setAddAge] = useState("");
+  const [linkUserQuery, setLinkUserQuery] = useState("");
+  const [linkUserHits, setLinkUserHits] = useState<TestingUserSearchHit[]>([]);
+  const [linkedUser, setLinkedUser] = useState<TestingUserSearchHit | null>(null);
+  const [existingPlayerQuery, setExistingPlayerQuery] = useState("");
+  const [existingPlayerHits, setExistingPlayerHits] = useState<TestPlayerSummary[]>([]);
+  const [includePlayerIds, setIncludePlayerIds] = useState<string[]>([]);
   const [syncState, setSyncState] = useState<SyncState>("saved");
   const [pendingCount, setPendingCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -232,11 +242,18 @@ export default function TestingWorkspacePanel() {
   }, []);
 
   const loadWorkspace = useCallback(async () => {
-    if (!teamSlug) {
+    if (mode === "team" && !teamSlug) {
       return;
     }
+    const params = new URLSearchParams({
+      mode,
+      date,
+    });
+    if (mode === "team") {
+      params.set("teamSlug", teamSlug);
+    }
     const res = await adminFetchJson<WorkspaceData & { error?: string }>(
-      `/api/admin/testing/workspace?teamSlug=${encodeURIComponent(teamSlug)}&date=${encodeURIComponent(date)}`,
+      `/api/admin/testing/workspace?${params.toString()}`,
       { cache: "no-store" },
       {
         context: "testing-workspace",
@@ -248,7 +265,7 @@ export default function TestingWorkspacePanel() {
       throw new Error(res.userMessage);
     }
     setWorkspace(res.data);
-  }, [teamSlug, date]);
+  }, [mode, teamSlug, date]);
 
   useEffect(() => {
     if (!workspace?.stations?.length) {
@@ -264,11 +281,22 @@ export default function TestingWorkspacePanel() {
   }, [workspace]);
 
   const loadEntry = useCallback(async () => {
-    if (!teamSlug || !stationKey) {
+    if ((mode === "team" && !teamSlug) || !stationKey) {
       return;
     }
+    const params = new URLSearchParams({
+      mode,
+      date,
+      stationKey,
+    });
+    if (mode === "team") {
+      params.set("teamSlug", teamSlug);
+    }
+    for (const playerId of includePlayerIds) {
+      params.append("playerId", playerId);
+    }
     const res = await adminFetchJson<EntryData & { error?: string }>(
-      `/api/admin/testing/entry?teamSlug=${encodeURIComponent(teamSlug)}&date=${encodeURIComponent(date)}&stationKey=${encodeURIComponent(stationKey)}`,
+      `/api/admin/testing/entry?${params.toString()}`,
       { cache: "no-store" },
       {
         context: "testing-entry",
@@ -289,7 +317,7 @@ export default function TestingWorkspacePanel() {
       }
     }
     setDrafts(nextDrafts);
-  }, [teamSlug, date, stationKey]);
+  }, [mode, teamSlug, date, stationKey, includePlayerIds]);
 
   const refreshPending = useCallback(() => {
     setPendingCount(listPendingTestResults().length);
@@ -314,22 +342,24 @@ export default function TestingWorkspacePanel() {
   }, [loadTeamOptions]);
 
   useEffect(() => {
-    if (!teamSlug) {
+    if (mode === "team" && !teamSlug) {
+      setWorkspace(null);
+      setEntry(null);
       return;
     }
     void loadWorkspace().catch((loadError) => {
       setError(loadError instanceof Error ? loadError.message : "Failed to load workspace.");
     });
-  }, [loadWorkspace, teamSlug]);
+  }, [loadWorkspace, mode, teamSlug]);
 
   useEffect(() => {
-    if (!teamSlug) {
+    if ((mode === "team" && !teamSlug) || !stationKey) {
       return;
     }
     void loadEntry().catch((loadError) => {
       setError(loadError instanceof Error ? loadError.message : "Failed to load entry.");
     });
-  }, [loadEntry, teamSlug]);
+  }, [loadEntry, mode, teamSlug, stationKey]);
 
   useEffect(() => {
     if (!entry || !pendingFocusPlayerId.current) {
@@ -465,8 +495,102 @@ export default function TestingWorkspacePanel() {
     await loadTeamOptions();
   }
 
+  async function searchLinkUsers(query: string) {
+    setLinkUserQuery(query);
+    if (query.trim().length < 2) {
+      setLinkUserHits([]);
+      return;
+    }
+    const res = await adminFetchJson<{ users?: TestingUserSearchHit[] }>(
+      `/api/admin/testing/users/search?q=${encodeURIComponent(query.trim())}`,
+      { cache: "no-store" },
+      {
+        context: "testing-user-search",
+        okUserMessage: "Couldn't search accounts. Try again.",
+        notJsonUserMessage: ADMIN_FETCH_COULD_NOT_LOAD_JSON,
+      },
+    );
+    if (!res.ok) {
+      setError(res.userMessage);
+      return;
+    }
+    setLinkUserHits(res.data.users ?? []);
+  }
+
+  async function searchExistingPlayers(query: string) {
+    if (query.trim().length < 1) {
+      setExistingPlayerHits([]);
+      return;
+    }
+    const res = await adminFetchJson<{ players?: TestPlayerSummary[] }>(
+      `/api/admin/testing/players?q=${encodeURIComponent(query.trim())}`,
+      { cache: "no-store" },
+      {
+        context: "testing-player-search",
+        okUserMessage: "Couldn't search players. Try again.",
+        notJsonUserMessage: ADMIN_FETCH_COULD_NOT_LOAD_JSON,
+      },
+    );
+    if (!res.ok) {
+      setError(res.userMessage);
+      return;
+    }
+    setExistingPlayerHits(res.data.players ?? []);
+  }
+
+  function resetAddPlayerForm() {
+    setAddFirst("");
+    setAddLast("");
+    setAddAge("");
+    setLinkUserQuery("");
+    setLinkUserHits([]);
+    setLinkedUser(null);
+    setExistingPlayerQuery("");
+    setExistingPlayerHits([]);
+    setShowAddPlayer(false);
+  }
+
+  async function addExistingPlayerToSession(player: TestPlayerSummary) {
+    setError(null);
+    if (mode === "team") {
+      if (!workspace?.team?.id) {
+        setError("Wait for the team to finish loading, then add the player again.");
+        return;
+      }
+      const res = await adminFetchJson<{ player?: TestPlayerSummary; error?: string }>(
+        `/api/admin/testing/teams/${workspace.team.id}/players`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ existingPlayerId: player.id }),
+        },
+        {
+          context: "testing-add-existing-player",
+          okUserMessage: "Couldn't add player. Try again.",
+          notJsonUserMessage: ADMIN_FETCH_COULD_NOT_LOAD_JSON,
+        },
+      );
+      if (!res.ok) {
+        setError(res.userMessage);
+        return;
+      }
+      if (!res.data.player) {
+        setError(res.data.error ?? "Failed to add player.");
+        return;
+      }
+    } else {
+      setIncludePlayerIds((current) =>
+        current.includes(player.id) ? current : [...current, player.id],
+      );
+    }
+    pendingFocusPlayerId.current = player.id;
+    resetAddPlayerForm();
+    await loadWorkspace();
+    await loadEntry();
+  }
+
   async function addPlayer() {
-    if (!workspace?.team.id) {
+    if (mode === "team" && !workspace?.team?.id) {
       setError("Wait for the team to finish loading, then add the player again.");
       return;
     }
@@ -475,16 +599,23 @@ export default function TestingWorkspacePanel() {
       return;
     }
     setError(null);
+    const payload = {
+      firstName: addFirst,
+      lastName: addLast,
+      age: addAge ? Number(addAge) : null,
+      userId: linkedUser?.id ?? null,
+      teamId: mode === "team" ? workspace?.team?.id ?? null : null,
+    };
+    const url =
+      mode === "team" && workspace?.team?.id
+        ? `/api/admin/testing/teams/${workspace.team.id}/players`
+        : "/api/admin/testing/players";
     const res = await adminFetchJson<{ player?: TestPlayerSummary; error?: string }>(
-      `/api/admin/testing/teams/${workspace.team.id}/players`,
+      url,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          firstName: addFirst,
-          lastName: addLast,
-          age: addAge ? Number(addAge) : null,
-        }),
+        body: JSON.stringify(payload),
       },
       {
         context: "testing-add-player",
@@ -501,11 +632,13 @@ export default function TestingWorkspacePanel() {
       setError(data.error ?? "Failed to add player.");
       return;
     }
-    setAddFirst("");
-    setAddLast("");
-    setAddAge("");
-    setShowAddPlayer(false);
+    if (mode === "individual") {
+      setIncludePlayerIds((current) =>
+        current.includes(data.player!.id) ? current : [...current, data.player!.id],
+      );
+    }
     pendingFocusPlayerId.current = data.player.id;
+    resetAddPlayerForm();
     await loadWorkspace();
     await loadEntry();
   }
@@ -589,7 +722,7 @@ export default function TestingWorkspacePanel() {
           >
             Metrics
           </Link>
-          {entry ? (
+          {entry?.session.teamId ? (
             <Link
               href={`/admin/testing/teams/${entry.session.teamId}/sessions/${entry.session.id}`}
               className="rounded-full border border-[#2b3650] px-4 py-2 text-sm font-semibold text-zinc-300"
@@ -617,30 +750,67 @@ export default function TestingWorkspacePanel() {
 
       {error ? <p className="text-sm text-red-300">{error}</p> : null}
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <label className="text-sm text-zinc-300">
-          Team
-          <select
-            value={teamSlug}
-            onChange={(event) => {
-              if (event.target.value === "__new__") {
-                setShowNewTeam(true);
-                return;
-              }
+      <div className="flex flex-wrap gap-2">
+        {(
+          [
+            { key: "team", label: "Team" },
+            { key: "individual", label: "Individual" },
+          ] as const
+        ).map((option) => (
+          <button
+            key={option.key}
+            type="button"
+            onClick={() => {
+              setError(null);
+              setMode(option.key);
+              setIncludePlayerIds([]);
+              setShowAddPlayer(false);
               setShowNewTeam(false);
-              setTeamSlug(event.target.value);
             }}
-            className="mt-1 w-full rounded-xl border border-[#2b3650] bg-[#0a1628] px-4 py-3 text-sm text-zinc-100"
+            className={`rounded-full px-4 py-2 text-sm font-semibold ${
+              mode === option.key
+                ? "bg-[#22c55e] text-[#0A1628]"
+                : "border border-[#2b3650] text-zinc-300"
+            }`}
           >
-            <option value="">Select team</option>
-            {teamOptions.map((team) => (
-              <option key={team.teamSlug} value={team.teamSlug}>
-                {team.name}
-              </option>
-            ))}
-            <option value="__new__">+ New team</option>
-          </select>
-        </label>
+            {option.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        {mode === "team" ? (
+          <label className="text-sm text-zinc-300">
+            Team
+            <select
+              value={teamSlug}
+              onChange={(event) => {
+                if (event.target.value === "__new__") {
+                  setShowNewTeam(true);
+                  return;
+                }
+                setShowNewTeam(false);
+                setTeamSlug(event.target.value);
+              }}
+              className="mt-1 w-full rounded-xl border border-[#2b3650] bg-[#0a1628] px-4 py-3 text-sm text-zinc-100"
+            >
+              <option value="">Select team</option>
+              {teamOptions.map((team) => (
+                <option key={team.teamSlug} value={team.teamSlug}>
+                  {team.name}
+                </option>
+              ))}
+              <option value="__new__">+ New team</option>
+            </select>
+          </label>
+        ) : (
+          <div className="text-sm text-zinc-300">
+            Mode
+            <p className="mt-1 rounded-xl border border-[#2b3650] bg-[#0a1628] px-4 py-3 text-sm text-zinc-100">
+              Individual (no team required)
+            </p>
+          </div>
+        )}
         <label className="text-sm text-zinc-300">
           Date
           <select
@@ -675,7 +845,7 @@ export default function TestingWorkspacePanel() {
         </div>
       ) : null}
 
-      {teamSlug ? (
+      {mode === "individual" || teamSlug ? (
         <>
           <div className="flex flex-wrap gap-2">
             {stationOptions.map((station) => (
@@ -704,33 +874,128 @@ export default function TestingWorkspacePanel() {
               <span className="text-zinc-500">{showAddPlayer ? "^" : "v"}</span>
             </button>
             {showAddPlayer ? (
-              <div className="mt-3 grid gap-2 sm:grid-cols-4">
-                <input
-                  value={addFirst}
-                  onChange={(event) => setAddFirst(event.target.value)}
-                  placeholder="First"
-                  className="rounded-xl border border-[#2b3650] bg-[#0a1628] px-3 py-3 text-sm text-zinc-100"
-                />
-                <input
-                  value={addLast}
-                  onChange={(event) => setAddLast(event.target.value)}
-                  placeholder="Last"
-                  className="rounded-xl border border-[#2b3650] bg-[#0a1628] px-3 py-3 text-sm text-zinc-100"
-                />
-                <input
-                  value={addAge}
-                  onChange={(event) => setAddAge(event.target.value)}
-                  placeholder="Age"
-                  inputMode="numeric"
-                  className="rounded-xl border border-[#2b3650] bg-[#0a1628] px-3 py-3 text-sm text-zinc-100"
-                />
-                <button
-                  type="button"
-                  onClick={() => void addPlayer()}
-                  className="rounded-full bg-[#22c55e] px-4 py-3 text-sm font-semibold text-[#0A1628]"
-                >
-                  Add
-                </button>
+              <div className="mt-3 space-y-3">
+                <div>
+                  <p className="mb-2 text-xs text-zinc-500">
+                    Pick an existing testing player, or enter a new name below.
+                  </p>
+                  <input
+                    value={existingPlayerQuery}
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      setExistingPlayerQuery(value);
+                      void searchExistingPlayers(value);
+                    }}
+                    placeholder="Search existing players by name"
+                    className="w-full rounded-xl border border-[#2b3650] bg-[#0a1628] px-3 py-3 text-sm text-zinc-100"
+                  />
+                  {existingPlayerHits.length > 0 ? (
+                    <ul className="mt-2 max-h-40 overflow-y-auto rounded-xl border border-[#2b3650] bg-[#0b1324]">
+                      {existingPlayerHits.map((player) => (
+                        <li key={player.id}>
+                          <button
+                            type="button"
+                            onClick={() => void addExistingPlayerToSession(player)}
+                            className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm text-zinc-100 hover:bg-[#0a1628]"
+                          >
+                            <span>{playerDisplayName(player)}</span>
+                            <span className="text-xs text-zinc-500">
+                              {player.userId ? "Linked" : "Name only"}
+                            </span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </div>
+                <div className="grid gap-2 sm:grid-cols-4">
+                  <input
+                    value={addFirst}
+                    onChange={(event) => setAddFirst(event.target.value)}
+                    placeholder="First"
+                    className="rounded-xl border border-[#2b3650] bg-[#0a1628] px-3 py-3 text-sm text-zinc-100"
+                  />
+                  <input
+                    value={addLast}
+                    onChange={(event) => setAddLast(event.target.value)}
+                    placeholder="Last"
+                    className="rounded-xl border border-[#2b3650] bg-[#0a1628] px-3 py-3 text-sm text-zinc-100"
+                  />
+                  <input
+                    value={addAge}
+                    onChange={(event) => setAddAge(event.target.value)}
+                    placeholder="Age"
+                    inputMode="numeric"
+                    className="rounded-xl border border-[#2b3650] bg-[#0a1628] px-3 py-3 text-sm text-zinc-100"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => void addPlayer()}
+                    className="rounded-full bg-[#22c55e] px-4 py-3 text-sm font-semibold text-[#0A1628]"
+                  >
+                    Add
+                  </button>
+                </div>
+                <div>
+                  <p className="mb-2 text-xs text-zinc-500">
+                    Optional: link to an existing app account (name or email). Leave blank for
+                    name only; you can link later.
+                  </p>
+                  {linkedUser ? (
+                    <div className="flex flex-wrap items-center gap-2 rounded-xl border border-[#2b3650] bg-[#0a1628] px-3 py-3 text-sm text-zinc-100">
+                      <span>
+                        Linked: {linkedUser.name || linkedUser.email} ({linkedUser.email})
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setLinkedUser(null)}
+                        className="rounded-full border border-[#2b3650] px-3 py-1 text-xs text-zinc-300"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <input
+                        value={linkUserQuery}
+                        onChange={(event) => void searchLinkUsers(event.target.value)}
+                        placeholder="Search app accounts by name or email"
+                        className="w-full rounded-xl border border-[#2b3650] bg-[#0a1628] px-3 py-3 text-sm text-zinc-100"
+                      />
+                      {linkUserHits.length > 0 ? (
+                        <ul className="mt-2 max-h-40 overflow-y-auto rounded-xl border border-[#2b3650] bg-[#0b1324]">
+                          {linkUserHits.map((user) => (
+                            <li key={user.id}>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setLinkedUser(user);
+                                  setLinkUserHits([]);
+                                  if (!addFirst.trim() && user.playerFirstName) {
+                                    setAddFirst(user.playerFirstName);
+                                  }
+                                  if (!addLast.trim() && user.playerLastName) {
+                                    setAddLast(user.playerLastName);
+                                  }
+                                }}
+                                className="flex w-full flex-col gap-0.5 px-4 py-3 text-left text-sm text-zinc-100 hover:bg-[#0a1628]"
+                              >
+                                <span>
+                                  {user.name ||
+                                    [user.playerFirstName, user.playerLastName]
+                                      .filter(Boolean)
+                                      .join(" ") ||
+                                    user.email}
+                                </span>
+                                <span className="text-xs text-zinc-500">{user.email}</span>
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : null}
+                    </>
+                  )}
+                </div>
               </div>
             ) : null}
           </section>
