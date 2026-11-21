@@ -249,6 +249,8 @@ export async function previewResultsCsvImport(csvText: string): Promise<ResultsC
     rows: previewRows,
     resultCreateCount,
     resultUpdateCount,
+    unrecognizedHeaders: parsed.unrecognizedHeaders,
+    warnings: parsed.warnings,
   };
 }
 

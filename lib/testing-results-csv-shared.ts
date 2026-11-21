@@ -152,6 +152,15 @@ export const RESULTS_CSV_METRIC_DEFINITIONS: ResultsCsvMetricDefinition[] = [
 /** Identity columns required. Metric columns are optional so older CSVs still import. */
 export const RESULTS_CSV_REQUIRED_HEADERS = [...RESULTS_CSV_IDENTITY_COLUMNS] as const;
 
+/** Known optional non-metric headers that are intentionally ignored. */
+export const RESULTS_CSV_IGNORED_HEADERS = ["jersey"] as const;
+
+export const RESULTS_CSV_KNOWN_HEADERS = new Set<string>([
+  ...RESULTS_CSV_IDENTITY_COLUMNS,
+  ...RESULTS_CSV_METRIC_DEFINITIONS.map((definition) => definition.csvColumn),
+  ...RESULTS_CSV_IGNORED_HEADERS,
+]);
+
 export type ResultsCsvParsedRow = {
   rowIndex: number;
   teamName: string;
@@ -165,6 +174,8 @@ export type ResultsCsvParseSuccess = {
   ok: true;
   rows: ResultsCsvParsedRow[];
   teamNames: string[];
+  unrecognizedHeaders: string[];
+  warnings: string[];
 };
 
 export type ResultsCsvParseFailure = {
@@ -209,6 +220,8 @@ export type ResultsCsvImportPreview =
       rows: ResultsCsvImportPreviewRow[];
       resultCreateCount: number;
       resultUpdateCount: number;
+      unrecognizedHeaders: string[];
+      warnings: string[];
     }
   | {
       ok: false;
@@ -283,7 +296,8 @@ export function parseResultsCsvText(csvText: string): ResultsCsvParseSuccess | R
     return { ok: false, error: "CSV is empty." };
   }
 
-  const headerSet = new Set(headers.map((header) => header.trim()));
+  const trimmedHeaders = headers.map((header) => header.trim());
+  const headerSet = new Set(trimmedHeaders.filter(Boolean));
   const missing = RESULTS_CSV_REQUIRED_HEADERS.filter((header) => !headerSet.has(header));
   if (missing.length > 0) {
     return {
@@ -292,7 +306,23 @@ export function parseResultsCsvText(csvText: string): ResultsCsvParseSuccess | R
     };
   }
 
-  const indexByHeader = new Map(headers.map((header, index) => [header.trim(), index]));
+  const unrecognizedHeaders = Array.from(
+    new Set(
+      trimmedHeaders.filter(
+        (header) => Boolean(header) && !RESULTS_CSV_KNOWN_HEADERS.has(header),
+      ),
+    ),
+  );
+  const warnings =
+    unrecognizedHeaders.length > 0
+      ? [
+          `Unrecognized column${unrecognizedHeaders.length === 1 ? "" : "s"} ignored: ${unrecognizedHeaders.join(", ")}.`,
+        ]
+      : [];
+
+  const indexByHeader = new Map(
+    trimmedHeaders.flatMap((header, index) => (header ? [[header, index] as const] : [])),
+  );
   const parsedRows: ResultsCsvParsedRow[] = [];
   const teamNames = new Set<string>();
 
@@ -360,5 +390,7 @@ export function parseResultsCsvText(csvText: string): ResultsCsvParseSuccess | R
     ok: true,
     rows: parsedRows,
     teamNames: Array.from(teamNames).sort((a, b) => a.localeCompare(b)),
+    unrecognizedHeaders,
+    warnings,
   };
 }

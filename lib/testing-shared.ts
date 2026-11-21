@@ -117,6 +117,9 @@ export type TestingUserSearchHit = {
   email: string;
   playerFirstName: string | null;
   playerLastName: string | null;
+  age: number | null;
+  playerAge: number | null;
+  ageGroupLabel: string | null;
 };
 
 export type TestResultRecord = {

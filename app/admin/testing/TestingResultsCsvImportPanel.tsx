@@ -162,6 +162,13 @@ export default function TestingResultsCsvImportPanel() {
 
       {preview ? (
         <>
+          {preview.warnings.length > 0 ? (
+            <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+              {preview.warnings.map((warning) => (
+                <p key={warning}>{warning}</p>
+              ))}
+            </div>
+          ) : null}
           <section className="rounded-3xl border border-[#18243a] bg-[#0b1324]/80 p-5">
             <h2 className="text-lg font-semibold text-zinc-100">Metric mapping</h2>
             <div className="mt-3 overflow-x-auto">

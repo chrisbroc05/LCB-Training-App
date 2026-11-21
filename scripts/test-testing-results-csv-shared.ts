@@ -73,5 +73,26 @@ if (!withBatSpeed.ok) {
 }
 assert.equal(withBatSpeed.rows[0].metrics.exit_velo_mph, 82.5);
 assert.equal(withBatSpeed.rows[0].metrics.bat_speed_mph, 68);
+assert.deepEqual(withBatSpeed.unrecognizedHeaders, []);
+assert.deepEqual(withBatSpeed.warnings, []);
+
+const withUnknown = parseResultsCsvText(
+  "team,test_date,first_name,last_name,mystery_col,exit_velo_mph\nNWT/RAGE 16U White,2026-03-15,AJ,Fong,x,80",
+);
+if (!withUnknown.ok) {
+  assert.fail(withUnknown.error);
+}
+assert.deepEqual(withUnknown.unrecognizedHeaders, ["mystery_col"]);
+assert.equal(withUnknown.warnings.length, 1);
+assert.match(withUnknown.warnings[0], /mystery_col/);
+
+const withJerseyOnly = parseResultsCsvText(
+  "team,test_date,first_name,last_name,jersey\nNWT/RAGE 16U White,2026-03-15,AJ,Fong,12",
+);
+if (!withJerseyOnly.ok) {
+  assert.fail(withJerseyOnly.error);
+}
+assert.deepEqual(withJerseyOnly.unrecognizedHeaders, []);
+assert.deepEqual(withJerseyOnly.warnings, []);
 
 console.log("test-testing-results-csv-shared: ok");

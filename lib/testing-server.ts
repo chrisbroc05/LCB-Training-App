@@ -3,6 +3,7 @@ import "server-only";
 import type { Prisma, TestBetterIs, TestSession } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { createOrFindOnUniqueViolation } from "@/lib/prisma-get-or-create-shared";
+import { PROGRAM_AGE_GROUP_LABELS } from "@/lib/program-enrollment-shared";
 import { normalizeTeamSlug } from "@/lib/waiver-sign-shared";
 import {
   buildClaimCode,
@@ -617,6 +618,9 @@ export async function searchTestingUsers(query: string, limit = 8) {
       email: string;
       playerFirstName: string | null;
       playerLastName: string | null;
+      age: number | null;
+      playerAge: number | null;
+      ageGroupLabel: string | null;
     }>;
   }
 
@@ -636,7 +640,7 @@ export async function searchTestingUsers(query: string, limit = 8) {
     });
   }
 
-  return prisma.user.findMany({
+  const users = await prisma.user.findMany({
     where: { OR: orFilters },
     select: {
       id: true,
@@ -644,9 +648,33 @@ export async function searchTestingUsers(query: string, limit = 8) {
       email: true,
       playerFirstName: true,
       playerLastName: true,
+      age: true,
+      playerAge: true,
+      programEnrollment: { select: { ageGroup: true } },
     },
     take: limit,
     orderBy: [{ playerLastName: "asc" }, { email: "asc" }],
+  });
+
+  return users.map((user) => {
+    const enrollmentAgeGroup = user.programEnrollment?.ageGroup ?? null;
+    const ageGroupLabel = enrollmentAgeGroup
+      ? PROGRAM_AGE_GROUP_LABELS[enrollmentAgeGroup]
+      : user.playerAge != null
+        ? `Age ${user.playerAge}`
+        : user.age != null
+          ? `Age ${user.age}`
+          : null;
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      playerFirstName: user.playerFirstName,
+      playerLastName: user.playerLastName,
+      age: user.age,
+      playerAge: user.playerAge,
+      ageGroupLabel,
+    };
   });
 }
 

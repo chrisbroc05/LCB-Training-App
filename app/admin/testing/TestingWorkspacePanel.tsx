@@ -944,7 +944,8 @@ export default function TestingWorkspacePanel() {
                   {linkedUser ? (
                     <div className="flex flex-wrap items-center gap-2 rounded-xl border border-[#2b3650] bg-[#0a1628] px-3 py-3 text-sm text-zinc-100">
                       <span>
-                        Linked: {linkedUser.name || linkedUser.email} ({linkedUser.email})
+                        Linked: {linkedUser.name || linkedUser.email} ({linkedUser.email}
+                        {linkedUser.ageGroupLabel ? ` | ${linkedUser.ageGroupLabel}` : ""})
                       </span>
                       <button
                         type="button"
@@ -987,7 +988,10 @@ export default function TestingWorkspacePanel() {
                                       .join(" ") ||
                                     user.email}
                                 </span>
-                                <span className="text-xs text-zinc-500">{user.email}</span>
+                                <span className="text-xs text-zinc-500">
+                                  {user.email}
+                                  {user.ageGroupLabel ? ` | ${user.ageGroupLabel}` : ""}
+                                </span>
                               </button>
                             </li>
                           ))}
