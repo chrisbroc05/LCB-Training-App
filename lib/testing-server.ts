@@ -411,6 +411,155 @@ export async function updateTestTeam(
   });
 }
 
+export type TestTeamDeleteResultsAction = "move" | "delete";
+
+export async function getTestTeamDeletePreview(teamId: string) {
+  const team = await prisma.testTeam.findUnique({
+    where: { id: teamId },
+    include: {
+      _count: { select: { roster: true, sessions: true } },
+      sessions: {
+        select: {
+          id: true,
+          _count: { select: { results: true } },
+        },
+      },
+    },
+  });
+  if (!team) {
+    return null;
+  }
+
+  const resultCount = team.sessions.reduce((sum, session) => sum + session._count.results, 0);
+  return {
+    team: {
+      id: team.id,
+      name: team.name,
+      teamSlug: team.teamSlug,
+    },
+    playerCount: team._count.roster,
+    sessionCount: team._count.sessions,
+    resultCount,
+  };
+}
+
+async function moveTeamSessionResultsToIndividual(teamSessionId: string, dateValue: Date) {
+  const dateKey = formatTestSessionDateKey(dateValue);
+  const individual = await getOrCreateSessionForDate(null, dateKey);
+  if (individual.id === teamSessionId) {
+    return { moved: 0, merged: 0 };
+  }
+
+  const results = await prisma.testResult.findMany({
+    where: { sessionId: teamSessionId },
+    include: { metric: true },
+  });
+
+  let moved = 0;
+  let merged = 0;
+
+  for (const result of results) {
+    const existing = await prisma.testResult.findUnique({
+      where: {
+        sessionId_playerId_metricKey: {
+          sessionId: individual.id,
+          playerId: result.playerId,
+          metricKey: result.metricKey,
+        },
+      },
+    });
+
+    if (!existing) {
+      await prisma.testResult.update({
+        where: { id: result.id },
+        data: { sessionId: individual.id },
+      });
+      moved += 1;
+      continue;
+    }
+
+    const preferTeam =
+      result.best !== null &&
+      (existing.best === null ||
+        (result.metric.betterIs === "LOWER"
+          ? result.best < existing.best
+          : result.best > existing.best));
+
+    if (preferTeam) {
+      await prisma.testResult.update({
+        where: { id: existing.id },
+        data: {
+          attempts: result.attempts,
+          best: result.best,
+          absent: result.absent,
+          skipped: result.skipped,
+          notes: result.notes,
+        },
+      });
+    }
+    await prisma.testResult.delete({ where: { id: result.id } });
+    merged += 1;
+  }
+
+  return { moved, merged };
+}
+
+/**
+ * Delete a testing team. Never deletes TestPlayer rows or User links.
+ * resultsAction "move" re-homes session results onto the individual session for that date.
+ */
+export async function deleteTestTeam(
+  teamId: string,
+  input: {
+    confirmName: string;
+    resultsAction: TestTeamDeleteResultsAction;
+  },
+) {
+  const preview = await getTestTeamDeletePreview(teamId);
+  if (!preview) {
+    throw new Error("Team not found.");
+  }
+
+  if (input.confirmName.trim() !== preview.team.name) {
+    throw new Error("Type the exact team name to confirm delete.");
+  }
+
+  const sessions = await prisma.testSession.findMany({
+    where: { teamId },
+    select: { id: true, date: true },
+  });
+
+  let resultsMoved = 0;
+  let resultsMerged = 0;
+  let resultsDeleted = 0;
+
+  if (input.resultsAction === "move") {
+    for (const session of sessions) {
+      const outcome = await moveTeamSessionResultsToIndividual(session.id, session.date);
+      resultsMoved += outcome.moved;
+      resultsMerged += outcome.merged;
+    }
+  } else {
+    const deleted = await prisma.testResult.deleteMany({
+      where: { sessionId: { in: sessions.map((session) => session.id) } },
+    });
+    resultsDeleted = deleted.count;
+  }
+
+  await prisma.testSession.deleteMany({ where: { teamId } });
+  await prisma.testTeamPlayer.deleteMany({ where: { teamId } });
+  await prisma.testTeam.delete({ where: { id: teamId } });
+
+  return {
+    teamName: preview.team.name,
+    playersUnlinked: preview.playerCount,
+    sessionsDeleted: preview.sessionCount,
+    resultsMoved,
+    resultsMerged,
+    resultsDeleted,
+  };
+}
+
 export async function getTestTeamDetail(teamId: string) {
   const team = await prisma.testTeam.findUnique({
     where: { id: teamId },

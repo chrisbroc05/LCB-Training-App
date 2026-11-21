@@ -220,6 +220,16 @@ export default function TestingWorkspacePanel() {
   const [existingPlayerQuery, setExistingPlayerQuery] = useState("");
   const [existingPlayerHits, setExistingPlayerHits] = useState<TestPlayerSummary[]>([]);
   const [includePlayerIds, setIncludePlayerIds] = useState<string[]>([]);
+  const [showDeleteTeam, setShowDeleteTeam] = useState(false);
+  const [deletePreview, setDeletePreview] = useState<{
+    team: { id: string; name: string; teamSlug: string };
+    playerCount: number;
+    sessionCount: number;
+    resultCount: number;
+  } | null>(null);
+  const [deleteConfirmName, setDeleteConfirmName] = useState("");
+  const [deleteResultsAction, setDeleteResultsAction] = useState<"move" | "delete">("move");
+  const [deleteBusy, setDeleteBusy] = useState(false);
   const [syncState, setSyncState] = useState<SyncState>("saved");
   const [pendingCount, setPendingCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -460,6 +470,101 @@ export default function TestingWorkspacePanel() {
   function clearSearch() {
     setSearch("");
     setSearchOpen(false);
+  }
+
+  async function openDeleteTeam() {
+    if (!workspace?.team?.id) {
+      setError("Select a team first.");
+      return;
+    }
+    setError(null);
+    setDeleteBusy(true);
+    try {
+      const res = await adminFetchJson<{
+        preview?: {
+          team: { id: string; name: string; teamSlug: string };
+          playerCount: number;
+          sessionCount: number;
+          resultCount: number;
+        };
+        error?: string;
+      }>(
+        `/api/admin/testing/teams/${workspace.team.id}/delete`,
+        { cache: "no-store" },
+        {
+          context: "testing-delete-preview",
+          okUserMessage: "Couldn't load delete preview. Try again.",
+          notJsonUserMessage: ADMIN_FETCH_COULD_NOT_LOAD_JSON,
+        },
+      );
+      if (!res.ok) {
+        setError(res.userMessage);
+        return;
+      }
+      if (!res.data.preview) {
+        setError(res.data.error ?? "Couldn't load delete preview.");
+        return;
+      }
+      setDeletePreview(res.data.preview);
+      setDeleteConfirmName("");
+      setDeleteResultsAction("move");
+      setShowDeleteTeam(true);
+    } finally {
+      setDeleteBusy(false);
+    }
+  }
+
+  async function confirmDeleteTeam() {
+    if (!workspace?.team?.id || !deletePreview) {
+      return;
+    }
+    setError(null);
+    setDeleteBusy(true);
+    try {
+      const res = await adminFetchJson<{
+        result?: {
+          teamName: string;
+          playersUnlinked: number;
+          sessionsDeleted: number;
+          resultsMoved: number;
+          resultsMerged: number;
+          resultsDeleted: number;
+        };
+        error?: string;
+      }>(
+        `/api/admin/testing/teams/${workspace.team.id}/delete`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            confirmName: deleteConfirmName,
+            resultsAction: deleteResultsAction,
+          }),
+        },
+        {
+          context: "testing-delete-team",
+          okUserMessage: "Couldn't delete team. Try again.",
+          notJsonUserMessage: ADMIN_FETCH_COULD_NOT_LOAD_JSON,
+        },
+      );
+      if (!res.ok) {
+        setError(res.userMessage);
+        return;
+      }
+      if (!res.data.result) {
+        setError(res.data.error ?? "Couldn't delete team.");
+        return;
+      }
+      setShowDeleteTeam(false);
+      setDeletePreview(null);
+      setDeleteConfirmName("");
+      setTeamSlug("");
+      setWorkspace(null);
+      setEntry(null);
+      await loadTeamOptions();
+    } finally {
+      setDeleteBusy(false);
+    }
   }
 
   async function createTeam() {
@@ -843,6 +948,106 @@ export default function TestingWorkspacePanel() {
             Add team
           </button>
         </div>
+      ) : null}
+
+      {mode === "team" && workspace?.team ? (
+        <section className="rounded-3xl border border-[#18243a] bg-[#0b1324]/80 p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold text-zinc-100">Team actions</p>
+              <p className="mt-1 text-xs text-zinc-500">
+                {workspace.team.name}. Deleting removes the team and roster links only; players
+                stay in the system.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => void openDeleteTeam()}
+              disabled={deleteBusy}
+              className="rounded-full border border-red-500/50 px-4 py-2 text-sm font-semibold text-red-300 hover:bg-red-500/10 disabled:opacity-60"
+            >
+              Delete team
+            </button>
+          </div>
+
+          {showDeleteTeam && deletePreview ? (
+            <div className="mt-4 space-y-3 rounded-2xl border border-red-500/30 bg-red-500/5 p-4">
+              <p className="text-sm text-zinc-200">
+                This team has {deletePreview.playerCount} player
+                {deletePreview.playerCount === 1 ? "" : "s"} on the roster,{" "}
+                {deletePreview.sessionCount} session
+                {deletePreview.sessionCount === 1 ? "" : "s"}, and {deletePreview.resultCount}{" "}
+                result{deletePreview.resultCount === 1 ? "" : "s"}.
+              </p>
+
+              {deletePreview.resultCount > 0 ? (
+                <fieldset className="space-y-2">
+                  <legend className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
+                    Results
+                  </legend>
+                  <label className="flex items-start gap-2 text-sm text-zinc-200">
+                    <input
+                      type="radio"
+                      name="deleteResultsAction"
+                      checked={deleteResultsAction === "move"}
+                      onChange={() => setDeleteResultsAction("move")}
+                      className="mt-1"
+                    />
+                    <span>
+                      Move results to Individual (default). Keeps numbers on the same test dates.
+                    </span>
+                  </label>
+                  <label className="flex items-start gap-2 text-sm text-zinc-200">
+                    <input
+                      type="radio"
+                      name="deleteResultsAction"
+                      checked={deleteResultsAction === "delete"}
+                      onChange={() => setDeleteResultsAction("delete")}
+                      className="mt-1"
+                    />
+                    <span>Delete results too. This cannot be undone.</span>
+                  </label>
+                </fieldset>
+              ) : null}
+
+              <label className="block text-sm text-zinc-300">
+                Type <span className="font-semibold text-zinc-100">{deletePreview.team.name}</span> to
+                confirm
+                <input
+                  value={deleteConfirmName}
+                  onChange={(event) => setDeleteConfirmName(event.target.value)}
+                  className="mt-1 w-full rounded-xl border border-[#2b3650] bg-[#0a1628] px-3 py-3 text-sm text-zinc-100"
+                  autoComplete="off"
+                />
+              </label>
+
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowDeleteTeam(false);
+                    setDeletePreview(null);
+                    setDeleteConfirmName("");
+                  }}
+                  className="rounded-full border border-[#2b3650] px-4 py-2 text-sm font-semibold text-zinc-300"
+                  disabled={deleteBusy}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void confirmDeleteTeam()}
+                  disabled={
+                    deleteBusy || deleteConfirmName.trim() !== deletePreview.team.name
+                  }
+                  className="rounded-full bg-red-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+                >
+                  {deleteBusy ? "Deleting..." : "Confirm delete"}
+                </button>
+              </div>
+            </div>
+          ) : null}
+        </section>
       ) : null}
 
       {mode === "individual" || teamSlug ? (
