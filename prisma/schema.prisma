@@ -1414,6 +1414,7 @@ model MembershipSubscriptionPayment {
   createdAt                DateTime                @default(now())
   membershipSubscription   MembershipSubscription? @relation(fields: [membershipSubscriptionId], references: [id], onDelete: SetNull)
 
+  @@index([membershipSubscriptionId])
   @@index([userId, paidAt(sort: Desc)])
   @@index([commissionFeePending])
 }
@@ -1513,7 +1514,8 @@ model PlatformCoachingSettings {
 }
 
 model DailyChallengeSettings {
-  id                 String @id @default("default")
+  // Singleton row id is always "default" (set explicitly in upserts; no DB default).
+  id                 String @id
   pushHourChicago    Int    @default(15)
   pushMinuteChicago  Int    @default(30)
 }
