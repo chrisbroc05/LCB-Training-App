@@ -1329,9 +1329,11 @@ model TestSession {
   notes   String?
   results TestResult[]
 
-  // Partial uniques live in SQL migration:
-  // - (teamId, date) WHERE teamId IS NOT NULL
-  // - (date) WHERE teamId IS NULL
+  // Do NOT add @@unique([teamId, date]) here. Prisma cannot express partial uniques.
+  // Enforced only in SQL migration 202611211200_testing_individual_bat_speed:
+  // - UNIQUE (teamId, date) WHERE teamId IS NOT NULL
+  // - UNIQUE (date) WHERE teamId IS NULL
+  // Future migrate diff/dev must keep those indexes; never recreate a full unique.
   @@index([teamId, date(sort: Desc)])
   @@index([date])
 }

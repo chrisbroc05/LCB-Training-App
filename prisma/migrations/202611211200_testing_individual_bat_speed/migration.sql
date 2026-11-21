@@ -1,4 +1,6 @@
 -- Individual testing sessions (no team) + Bat Speed metric.
+-- NOTE: Partial unique indexes below are intentional and are NOT modeled in schema.prisma
+-- (Prisma lacks partial unique support). Do not replace them with a full @@unique([teamId, date]).
 
 DROP INDEX IF EXISTS "TestSession_teamId_date_key";
 
