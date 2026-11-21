@@ -478,25 +478,33 @@ async function moveTeamSessionResultsToIndividual(teamSessionId: string, dateVal
       continue;
     }
 
-    const preferTeam =
-      result.best !== null &&
-      (existing.best === null ||
-        (result.metric.betterIs === "LOWER"
-          ? result.best < existing.best
-          : result.best > existing.best));
+    // Conflict: same player + metric already on Individual for that date.
+    // Merge attempts from both sides and keep the best attempts (up to MAX_TEST_ATTEMPTS).
+    // Never silently overwrite one side with the other.
+    const betterIs = result.metric.betterIs;
+    const combinedAttempts = [...existing.attempts, ...result.attempts].filter((value) =>
+      Number.isFinite(value),
+    );
+    const sortedAttempts = [...combinedAttempts].sort((a, b) =>
+      betterIs === "LOWER" ? a - b : b - a,
+    );
+    const attempts = sortedAttempts.slice(0, MAX_TEST_ATTEMPTS);
+    const best = computeBestAttempt(attempts, betterIs);
+    const notes = [existing.notes, result.notes]
+      .map((value) => value?.trim())
+      .filter((value): value is string => Boolean(value))
+      .join(" | ");
 
-    if (preferTeam) {
-      await prisma.testResult.update({
-        where: { id: existing.id },
-        data: {
-          attempts: result.attempts,
-          best: result.best,
-          absent: result.absent,
-          skipped: result.skipped,
-          notes: result.notes,
-        },
-      });
-    }
+    await prisma.testResult.update({
+      where: { id: existing.id },
+      data: {
+        attempts,
+        best,
+        absent: false,
+        skipped: attempts.length === 0 ? existing.skipped || result.skipped : false,
+        notes: notes || null,
+      },
+    });
     await prisma.testResult.delete({ where: { id: result.id } });
     merged += 1;
   }
